@@ -348,29 +348,34 @@ function BannerManagement() {
                     {mockBanners
                       .filter(banner => banner.positionId === position.shortcode && !banner.isActive)
                       .map(banner => (
-                        <div key={banner.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div key={banner.id} className="flex flex-col sm:flex-row items-start justify-between p-4 border rounded-lg gap-4">
                           <div className="flex items-center gap-4">
-                            <div className="relative w-16 h-16 rounded-lg overflow-hidden">
+                            <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-muted shrink-0">
                               <img
                                 src={banner.appImage}
                                 alt={banner.name}
                                 className="object-cover w-full h-full"
                               />
                             </div>
-                            <div>
-                              <h4 className="font-medium">{banner.name}</h4>
+                            <div className="min-w-0">
+                              <h4 className="font-medium truncate">{banner.name}</h4>
                               <div className="text-sm text-muted-foreground">
                                 Erstellt am {format(banner.createdAt, "dd.MM.yyyy")}
                               </div>
-                              <div className="text-sm text-muted-foreground">
-                                {banner.stats.views} Views • {banner.stats.clicks} Clicks • {banner.stats.ctr} CTR
+                              <div className="text-sm text-muted-foreground flex items-center gap-2 flex-wrap">
+                                <span>{banner.stats.views} Views</span>
+                                <span>•</span>
+                                <span>{banner.stats.clicks} Clicks</span>
+                                <span>•</span>
+                                <span>{banner.stats.ctr} CTR</span>
                               </div>
                             </div>
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                             <Button 
                               variant="outline" 
                               size="sm"
+                              className="w-full sm:w-auto"
                               onClick={() => setEditingBanner(banner.id)}
                             >
                               Bearbeiten
@@ -378,6 +383,7 @@ function BannerManagement() {
                             <Button 
                               variant="default" 
                               size="sm"
+                              className="w-full sm:w-auto"
                               onClick={() => {
                                 toast({
                                   title: "Banner reaktiviert",
