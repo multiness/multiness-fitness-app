@@ -136,6 +136,9 @@ export const mockChallenges: Challenge[] = [
     creatorId: 1,
     startDate: new Date(),
     endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    prize: "Protein Mega Pack",
+    prizeDescription: "Ein Monatsvorrat Premium Protein Shake (2.5kg) + Shaker + Supplement Guide",
+    prizeImage: "https://images.unsplash.com/photo-1579722821273-0f6c7d44362f?w=800&auto=format",
   },
   {
     id: 2,
@@ -145,6 +148,9 @@ export const mockChallenges: Challenge[] = [
     creatorId: 3,
     startDate: new Date(),
     endDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+    prize: "Jahres-Fitness-Paket",
+    prizeDescription: "1 Jahr Premium Mitgliedschaft + 5 Personal Training Sessions + Ernährungsplan",
+    prizeImage: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&auto=format",
   },
   {
     id: 3,
@@ -154,6 +160,9 @@ export const mockChallenges: Challenge[] = [
     creatorId: 2,
     startDate: new Date(),
     endDate: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000),
+    prize: "Yoga Starter Kit",
+    prizeDescription: "Premium Yogamatte + Yoga Block Set + 3 Online Kurse",
+    prizeImage: "https://images.unsplash.com/photo-1552286450-4a669f880062?w=800&auto=format",
   },
   {
     id: 4,
@@ -163,6 +172,9 @@ export const mockChallenges: Challenge[] = [
     creatorId: 5,
     startDate: new Date(),
     endDate: new Date(Date.now() + 56 * 24 * 60 * 60 * 1000),
+    prize: "Runner's Dream Pack",
+    prizeDescription: "Premium Laufschuhe + Sport Smartwatch + Laufbekleidung Set",
+    prizeImage: "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=800&auto=format",
   },
   {
     id: 5,
@@ -172,15 +184,9 @@ export const mockChallenges: Challenge[] = [
     creatorId: 4,
     startDate: new Date(),
     endDate: new Date(Date.now() + 28 * 24 * 60 * 60 * 1000),
-  },
-  {
-    id: 6,
-    title: "Mobility Master",
-    description: "30 Tage Beweglichkeitstraining für bessere Performance",
-    image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&auto=format",
-    creatorId: 3,
-    startDate: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000),
-    endDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
+    prize: "Healthy Kitchen Set",
+    prizeDescription: "Hochleistungsmixer + Meal Prep Container Set + Bio-Kochbuch",
+    prizeImage: "https://images.unsplash.com/photo-1495546968767-f0573cca821e?w=800&auto=format",
   }
 ];
 

@@ -27,6 +27,9 @@ export const challenges = pgTable("challenges", {
   creatorId: integer("creator_id").references(() => users.id).notNull(),
   startDate: timestamp("start_date").notNull(),
   endDate: timestamp("end_date").notNull(),
+  prize: text("prize").notNull(), // Name des Preises
+  prizeDescription: text("prize_description").notNull(), // Beschreibung des Preises
+  prizeImage: text("prize_image"), // Optionales Bild des Preises
 });
 
 export const groups = pgTable("groups", {
