@@ -1,10 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+import { Users } from "lucide-react";
 import { Group } from "@shared/schema";
 import { mockUsers } from "../data/mockData";
 import { Link } from "wouter";
-import { Globe, Lock, Users } from "lucide-react";
 
 interface GroupPreviewProps {
   group: Group;
@@ -14,7 +13,6 @@ export default function GroupPreview({ group }: GroupPreviewProps) {
   const creator = mockUsers.find(u => u.id === group.creatorId);
   // Simuliere Teilnehmer (in einer echten App würde dies aus der DB kommen)
   const participants = mockUsers.slice(0, Math.floor(Math.random() * 5) + 3);
-  const isPrivate = Math.random() > 0.5; // Simuliert private/öffentliche Gruppen
 
   return (
     <Link href={`/groups/${group.id}`}>
@@ -25,22 +23,6 @@ export default function GroupPreview({ group }: GroupPreviewProps) {
             alt={group.name}
             className="w-full h-32 object-cover"
           />
-          <Badge 
-            variant={isPrivate ? "secondary" : "default"}
-            className="absolute top-2 right-2 flex items-center gap-1"
-          >
-            {isPrivate ? (
-              <>
-                <Lock className="h-3 w-3" />
-                Privat
-              </>
-            ) : (
-              <>
-                <Globe className="h-3 w-3" />
-                Öffentlich
-              </>
-            )}
-          </Badge>
         </CardHeader>
         <CardContent className="p-4">
           <CardTitle className="text-lg mb-2">{group.name}</CardTitle>
