@@ -28,6 +28,7 @@ const eventSchema = z.object({
   isRecurring: z.boolean().default(false),
   recurringType: z.enum(["daily", "weekly", "monthly"]).optional(),
   image: z.string().optional(),
+  isHighlight: z.boolean().default(false), // Neues Feld für Highlight-Events
 });
 
 type EventFormData = z.infer<typeof eventSchema>;
@@ -42,6 +43,7 @@ export default function CreateEvent() {
     defaultValues: {
       isRecurring: false,
       recurringType: "weekly",
+      isHighlight: false, // Default: kein Highlight
     },
   });
 
@@ -185,6 +187,20 @@ export default function CreateEvent() {
                 </div>
               )}
             </div>
+
+            <div className="space-y-2">
+              <Label>Als Highlight markieren</Label>
+              <div className="space-y-0.5">
+                <div className="text-sm text-muted-foreground">
+                  Highlight-Events werden prominent auf der Events-Seite angezeigt
+                </div>
+              </div>
+              <Switch
+                checked={form.watch("isHighlight")}
+                onCheckedChange={(checked) => form.setValue("isHighlight", checked)}
+              />
+            </div>
+
 
             <div className="space-y-2">
               <Label>Event Bild</Label>
