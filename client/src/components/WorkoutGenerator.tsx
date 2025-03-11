@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -9,7 +11,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { mockWorkoutTemplates, workoutGoals } from "../data/mockData";
 
 interface WorkoutGeneratorProps {
@@ -21,6 +22,8 @@ export default function WorkoutGenerator({ onSelectWorkout }: WorkoutGeneratorPr
   const [duration, setDuration] = useState<string>("30");
   const [difficulty, setDifficulty] = useState<string>("mittel");
   const [suggestedWorkout, setSuggestedWorkout] = useState<any>(null);
+  const [workoutType, setWorkoutType] = useState<string>("emom");
+  const [exercises, setExercises] = useState<any[]>([{ name: "", reps: "", sets: "", description: "" }]);
 
   const generateWorkout = () => {
     // Filter Workouts basierend auf den Kriterien
@@ -37,6 +40,16 @@ export default function WorkoutGenerator({ onSelectWorkout }: WorkoutGeneratorPr
       const randomIndex = Math.floor(Math.random() * matchingWorkouts.length);
       setSuggestedWorkout(matchingWorkouts[randomIndex]);
     }
+  };
+
+  const addExercise = () => {
+    setExercises([...exercises, { name: "", reps: "", sets: "", description: "" }]);
+  };
+
+  const updateExercise = (index: number, field: string, value: string) => {
+    const newExercises = [...exercises];
+    newExercises[index] = { ...newExercises[index], [field]: value };
+    setExercises(newExercises);
   };
 
   return (
@@ -58,6 +71,23 @@ export default function WorkoutGenerator({ onSelectWorkout }: WorkoutGeneratorPr
                   </div>
                 </SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Workout-Typ */}
+        <div className="space-y-2">
+          <Label className="text-base">Workout-Typ</Label>
+          <Select value={workoutType} onValueChange={setWorkoutType}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Wähle einen Workout-Typ" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="emom">EMOM (Every Minute On the Minute)</SelectItem>
+              <SelectItem value="amrap">AMRAP (As Many Rounds As Possible)</SelectItem>
+              <SelectItem value="hit">HIT (High Intensity Training)</SelectItem>
+              <SelectItem value="running">Lauf-Workout</SelectItem>
+              <SelectItem value="custom">Eigenes Workout</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -112,6 +142,158 @@ export default function WorkoutGenerator({ onSelectWorkout }: WorkoutGeneratorPr
           </div>
         </div>
 
+        {/* Workout-spezifische Details */}
+        {workoutType === "emom" && (
+          <div className="space-y-4 border rounded-lg p-4">
+            <h3 className="font-semibold">EMOM Details</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Sekunden pro Runde</Label>
+                <Input type="number" placeholder="60" />
+              </div>
+              <div>
+                <Label>Anzahl Runden</Label>
+                <Input type="number" placeholder="10" />
+              </div>
+            </div>
+            <div className="space-y-4">
+              <Label>Übungen</Label>
+              {exercises.map((exercise, index) => (
+                <div key={index} className="space-y-2 p-4 border rounded-lg">
+                  <Input
+                    placeholder="Übungsname"
+                    value={exercise.name}
+                    onChange={(e) => updateExercise(index, "name", e.target.value)}
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input
+                      placeholder="Wiederholungen"
+                      value={exercise.reps}
+                      onChange={(e) => updateExercise(index, "reps", e.target.value)}
+                    />
+                    <Input
+                      placeholder="Sätze"
+                      value={exercise.sets}
+                      onChange={(e) => updateExercise(index, "sets", e.target.value)}
+                    />
+                  </div>
+                  <Textarea
+                    placeholder="Beschreibung (optional)"
+                    value={exercise.description}
+                    onChange={(e) => updateExercise(index, "description", e.target.value)}
+                  />
+                </div>
+              ))}
+              <Button type="button" variant="outline" onClick={addExercise}>
+                Übung hinzufügen
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {workoutType === "amrap" && (
+          <div className="space-y-4 border rounded-lg p-4">
+            <h3 className="font-semibold">AMRAP Details</h3>
+            <div>
+              <Label>Gesamtzeit (Minuten)</Label>
+              <Input type="number" placeholder="20" />
+            </div>
+            <div className="space-y-4">
+              <Label>Übungen</Label>
+              {exercises.map((exercise, index) => (
+                <div key={index} className="space-y-2 p-4 border rounded-lg">
+                  <Input
+                    placeholder="Übungsname"
+                    value={exercise.name}
+                    onChange={(e) => updateExercise(index, "name", e.target.value)}
+                  />
+                  <Input
+                    placeholder="Wiederholungen"
+                    value={exercise.reps}
+                    onChange={(e) => updateExercise(index, "reps", e.target.value)}
+                  />
+                  <Textarea
+                    placeholder="Beschreibung (optional)"
+                    value={exercise.description}
+                    onChange={(e) => updateExercise(index, "description", e.target.value)}
+                  />
+                </div>
+              ))}
+              <Button type="button" variant="outline" onClick={addExercise}>
+                Übung hinzufügen
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {workoutType === "hit" && (
+          <div className="space-y-4 border rounded-lg p-4">
+            <h3 className="font-semibold">HIT Details</h3>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label>Intervalle</Label>
+                <Input type="number" placeholder="8" />
+              </div>
+              <div>
+                <Label>Arbeitszeit (Sek)</Label>
+                <Input type="number" placeholder="40" />
+              </div>
+              <div>
+                <Label>Pausenzeit (Sek)</Label>
+                <Input type="number" placeholder="20" />
+              </div>
+            </div>
+            <div className="space-y-4">
+              <Label>Übungen</Label>
+              {exercises.map((exercise, index) => (
+                <div key={index} className="space-y-2 p-4 border rounded-lg">
+                  <Input
+                    placeholder="Übungsname"
+                    value={exercise.name}
+                    onChange={(e) => updateExercise(index, "name", e.target.value)}
+                  />
+                  <Textarea
+                    placeholder="Beschreibung (optional)"
+                    value={exercise.description}
+                    onChange={(e) => updateExercise(index, "description", e.target.value)}
+                  />
+                </div>
+              ))}
+              <Button type="button" variant="outline" onClick={addExercise}>
+                Übung hinzufügen
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {workoutType === "running" && (
+          <div className="space-y-4 border rounded-lg p-4">
+            <h3 className="font-semibold">Lauf Details</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Art des Laufs</Label>
+                <Select defaultValue="distance">
+                  <SelectTrigger>
+                    <SelectValue placeholder="Wähle die Art" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="distance">Distanz</SelectItem>
+                    <SelectItem value="time">Zeit</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Zielwert</Label>
+                <Input type="number" placeholder="5" />
+              </div>
+            </div>
+            <div>
+              <Label>Zusätzliche Details</Label>
+              <Textarea placeholder="z.B. Intervalle, Tempowechsel, etc." />
+            </div>
+          </div>
+        )}
+
         <Button onClick={generateWorkout} className="w-full">
           Workout generieren
         </Button>
@@ -132,6 +314,32 @@ export default function WorkoutGenerator({ onSelectWorkout }: WorkoutGeneratorPr
               <div className="flex gap-4 text-sm">
                 <span>🕒 {suggestedWorkout.duration} Min</span>
                 <span>💪 {suggestedWorkout.difficulty}</span>
+              </div>
+              {/* Workout Details */}
+              <div className="space-y-2">
+                <h4 className="font-medium">Übungen:</h4>
+                <ul className="space-y-2">
+                  {suggestedWorkout.workoutDetails.exercises?.map((exercise: any, index: number) => (
+                    <li key={index} className="p-3 border rounded-lg">
+                      <div className="font-medium">{exercise.name}</div>
+                      {exercise.reps && (
+                        <div className="text-sm text-muted-foreground">
+                          {exercise.reps} Wiederholungen
+                        </div>
+                      )}
+                      {exercise.time && (
+                        <div className="text-sm text-muted-foreground">
+                          {exercise.time} Sekunden
+                        </div>
+                      )}
+                      {exercise.description && (
+                        <div className="text-sm text-muted-foreground mt-1">
+                          {exercise.description}
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
               </div>
               <Button 
                 onClick={() => onSelectWorkout(suggestedWorkout)}

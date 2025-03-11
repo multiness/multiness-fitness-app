@@ -9,8 +9,6 @@ import WorkoutGenerator from "@/components/WorkoutGenerator";
 import { useToast } from "@/hooks/use-toast";
 import { format, addDays } from "date-fns";
 
-type WorkoutType = "emom" | "amrap" | "hit" | "running" | "custom";
-
 export default function CreateChallenge() {
   const { toast } = useToast();
   const [selectedWorkout, setSelectedWorkout] = useState<any>(null);
@@ -24,7 +22,12 @@ export default function CreateChallenge() {
   const handleWorkoutSelect = (template: any) => {
     setSelectedWorkout(template);
     setChallengeTitle(`${template.name} Challenge`);
-    setChallengeDescription(template.description);
+    setChallengeDescription(
+      `${template.description}\n\n` +
+      `Workout-Typ: ${template.workoutType.toUpperCase()}\n` +
+      `Dauer: ${template.duration} Minuten\n` +
+      `Schwierigkeit: ${template.difficulty}`
+    );
   };
 
   const handleCreateChallenge = () => {
@@ -46,7 +49,21 @@ export default function CreateChallenge() {
       return;
     }
 
+    const challenge = {
+      title: challengeTitle,
+      description: challengeDescription,
+      startDate: new Date(startDate),
+      endDate: new Date(endDate),
+      prize,
+      prizeDescription,
+      workoutType: selectedWorkout.workoutType,
+      workoutDetails: selectedWorkout.workoutDetails,
+      creatorId: 1, // In einer echten App würde dies der eingeloggte User sein
+    };
+
     // Hier würde in einer echten App die Challenge erstellt werden
+    console.log("Neue Challenge:", challenge);
+
     toast({
       title: "Challenge erstellt!",
       description: "Deine Challenge wurde erfolgreich erstellt.",
