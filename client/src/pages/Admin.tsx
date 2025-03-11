@@ -31,7 +31,7 @@ import { useUsers } from "../contexts/UserContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 
-// Erweiterte Mock-Daten mit archivierten Bannern
+// Erweiterte Mock-Daten mit Button-Konfiguration und archivierten Bannern
 const mockBanners = [
   {
     id: 1,
@@ -43,6 +43,16 @@ const mockBanners = [
     isActive: true,
     targetUrl: "https://example.com",
     createdAt: new Date(),
+    buttons: [
+      {
+        text: "Jetzt teilnehmen",
+        url: "https://example.com/challenge"
+      },
+      {
+        text: "Mehr erfahren",
+        url: "https://example.com/info"
+      }
+    ],
     stats: {
       views: 1234,
       clicks: 89,
@@ -59,6 +69,7 @@ const mockBanners = [
     isActive: false,
     targetUrl: "https://example.com/spring",
     createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 Tage alt
+    buttons: [],
     stats: {
       views: 2500,
       clicks: 180,
@@ -76,6 +87,7 @@ const mockPosts = [];
 function BannerManagement() {
   const { toast } = useToast();
   const [editingBanner, setEditingBanner] = useState<number | null>(null);
+  const [showSecondButton, setShowSecondButton] = useState(true);
 
   const copyShortcode = (shortcode: string) => {
     navigator.clipboard.writeText(`[banner position="${shortcode}"]`);
@@ -170,9 +182,51 @@ function BannerManagement() {
                             <label className="text-sm font-medium">Beschreibung</label>
                             <Input defaultValue={banner.description} className="mt-1.5" />
                           </div>
-                          <div>
-                            <label className="text-sm font-medium">Link</label>
-                            <Input defaultValue={banner.targetUrl} className="mt-1.5" placeholder="https://" />
+
+                          {/* Button Konfiguration */}
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <label className="text-sm font-medium">Button Konfiguration</label>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm">Zweiter Button</span>
+                                <Switch 
+                                  checked={showSecondButton}
+                                  onCheckedChange={setShowSecondButton}
+                                />
+                              </div>
+                            </div>
+
+                            {/* Erster Button */}
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium">Button 1</label>
+                              <div className="grid gap-2">
+                                <Input 
+                                  placeholder="Button Text" 
+                                  defaultValue={banner.buttons[0]?.text}
+                                />
+                                <Input 
+                                  placeholder="Button Link (https://...)" 
+                                  defaultValue={banner.buttons[0]?.url}
+                                />
+                              </div>
+                            </div>
+
+                            {/* Zweiter Button (optional) */}
+                            {showSecondButton && (
+                              <div className="space-y-2">
+                                <label className="text-sm font-medium">Button 2</label>
+                                <div className="grid gap-2">
+                                  <Input 
+                                    placeholder="Button Text" 
+                                    defaultValue={banner.buttons[1]?.text}
+                                  />
+                                  <Input 
+                                    placeholder="Button Link (https://...)" 
+                                    defaultValue={banner.buttons[1]?.url}
+                                  />
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
 
@@ -191,9 +245,32 @@ function BannerManagement() {
                               }}
                             />
                           </div>
-                          <Button variant="outline" size="sm">
-                            Änderungen speichern
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                toast({
+                                  title: "Vorschau aktualisiert",
+                                  description: "Die Änderungen werden in der Vorschau angezeigt."
+                                });
+                              }}
+                            >
+                              Vorschau
+                            </Button>
+                            <Button 
+                              variant="default" 
+                              size="sm"
+                              onClick={() => {
+                                toast({
+                                  title: "Änderungen gespeichert",
+                                  description: "Die Änderungen wurden erfolgreich gespeichert und sind jetzt live."
+                                });
+                              }}
+                            >
+                              Speichern
+                            </Button>
+                          </div>
                         </div>
                       </div>
 
