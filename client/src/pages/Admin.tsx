@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -11,15 +12,36 @@ import {
   Image as ImageIcon,
   Upload,
   Shield,
-  CheckCircle,
-  UserCog
+  Search
 } from "lucide-react";
 import { mockUsers, mockChallenges, mockGroups, mockPosts } from "../data/mockData";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 
 export default function Admin() {
+  const [users, setUsers] = useState(mockUsers);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showVerifiedOnly, setShowVerifiedOnly] = useState(true);
+
+  // Filtere Benutzer basierend auf Suche und Verifizierungsstatus
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         user.name.toLowerCase().includes(searchQuery.toLowerCase());
+    if (showVerifiedOnly) {
+      return user.isVerified && matchesSearch;
+    }
+    return matchesSearch;
+  });
+
+  // Toggle Verifizierung
+  const toggleVerification = (userId: number) => {
+    setUsers(users.map(user =>
+      user.id === userId
+        ? { ...user, isVerified: !user.isVerified }
+        : user
+    ));
+  };
+
   return (
     <div className="container max-w-6xl mx-auto p-4">
       {/* Statistics Cards */}
@@ -30,9 +52,9 @@ export default function Admin() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockUsers.length}</div>
+            <div className="text-2xl font-bold">{users.length}</div>
             <p className="text-xs text-muted-foreground">
-              +12% from last month
+              {users.filter(u => u.isVerified).length} verified
             </p>
           </CardContent>
         </Card>
@@ -78,33 +100,43 @@ export default function Admin() {
       </div>
 
       {/* Main Content Area */}
-      <Tabs defaultValue="team">
-        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 gap-2">
-          <TabsTrigger value="team">Team Management</TabsTrigger>
-          <TabsTrigger value="banner">Marketing Banner</TabsTrigger>
+      <Tabs defaultValue="verification">
+        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 gap-2">
+          <TabsTrigger value="verification">User Verification</TabsTrigger>
           <TabsTrigger value="moderation">Content Moderation</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="team">
+        <TabsContent value="verification">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Shield className="h-5 w-5" />
-                Team & Verification Management
+                User Verification
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
                 <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                  <Input placeholder="Search users..." className="w-full sm:max-w-sm" />
-                  <Button variant="outline" className="w-full sm:w-auto">
-                    <UserCog className="h-4 w-4 mr-2" />
-                    Add Team Member
-                  </Button>
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search users..."
+                      className="pl-9 w-full"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm whitespace-nowrap">Verified Only</span>
+                    <Switch
+                      checked={showVerifiedOnly}
+                      onCheckedChange={setShowVerifiedOnly}
+                    />
+                  </div>
                 </div>
 
                 <ScrollArea className="h-[400px]">
-                  {mockUsers.map(user => (
+                  {filteredUsers.map(user => (
                     <div key={user.id} className="flex flex-col sm:flex-row sm:items-center justify-between border-b p-4 gap-4">
                       <div className="flex items-center gap-3">
                         <img
@@ -121,75 +153,18 @@ export default function Admin() {
                         </div>
                       </div>
 
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
+                      <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2">
                           <span className="text-sm whitespace-nowrap">Verified</span>
                           <Switch
                             checked={user.isVerified}
-                            onCheckedChange={() => {}}
+                            onCheckedChange={() => toggleVerification(user.id)}
                           />
                         </div>
-
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm whitespace-nowrap">Team Role</span>
-                          <Select defaultValue={user.teamRole || "none"}>
-                            <SelectTrigger className="w-[140px]">
-                              <SelectValue placeholder="Select role" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">No Role</SelectItem>
-                              <SelectItem value="moderator">Moderator</SelectItem>
-                              <SelectItem value="content_manager">Content Manager</SelectItem>
-                              <SelectItem value="support">Support</SelectItem>
-                              <SelectItem value="trainer">Trainer</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <Button variant="ghost" size="sm" className="w-full sm:w-auto">
-                          Save
-                        </Button>
                       </div>
                     </div>
                   ))}
                 </ScrollArea>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="banner">
-          <Card>
-            <CardHeader>
-              <CardTitle>Marketing Banner Management</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="border rounded-lg p-4">
-                  <h3 className="font-semibold mb-2">Current Banner</h3>
-                  <img
-                    src="https://images.unsplash.com/photo-1517963879433-6ad2b056d712?w=1200&auto=format"
-                    alt="Current banner"
-                    className="w-full h-32 object-cover rounded-lg mb-2"
-                  />
-                  <div className="text-sm text-muted-foreground">
-                    Impressions: 1,234 | Clicks: 89 | CTR: 7.2%
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <h3 className="font-semibold">Upload New Banner</h3>
-                  <div className="border-2 border-dashed rounded-lg p-8 text-center">
-                    <ImageIcon className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                    <div className="text-sm text-muted-foreground mb-2">
-                      Drag and drop or click to upload
-                    </div>
-                    <Button>
-                      <Upload className="h-4 w-4 mr-2" />
-                      Upload Image
-                    </Button>
-                  </div>
-                </div>
               </div>
             </CardContent>
           </Card>
