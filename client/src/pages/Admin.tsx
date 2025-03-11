@@ -30,7 +30,6 @@ import { format } from "date-fns";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { useUsers } from "../contexts/UserContext";
 
-
 // Simulierte Banner-Daten für den Prototyp
 const mockBanners = [
   {
@@ -48,6 +47,11 @@ const mockBanners = [
     }
   }
 ];
+
+// Leere Mock-Daten für die Statistik-Karten
+const mockChallenges = [];
+const mockGroups = [];
+const mockPosts = [];
 
 function BannerManagement() {
   const { toast } = useToast();
@@ -133,13 +137,13 @@ function BannerManagement() {
                         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                           <div className="flex items-center gap-2">
                             <span className="text-sm">Aktiv</span>
-                            <Switch 
+                            <Switch
                               checked={banner.isActive}
                               onCheckedChange={() => {
                                 toast({
                                   title: banner.isActive ? "Banner deaktiviert" : "Banner aktiviert",
-                                  description: banner.isActive 
-                                    ? "Der Banner wird nicht mehr angezeigt." 
+                                  description: banner.isActive
+                                    ? "Der Banner wird nicht mehr angezeigt."
                                     : "Der Banner wird jetzt auf der Website angezeigt."
                                 });
                               }}
@@ -220,7 +224,6 @@ function BannerManagement() {
   );
 }
 
-// Hauptkomponente bleibt gleich, füge BannerManagement zur TabsContent hinzu
 export default function Admin() {
   const { users, toggleVerification } = useUsers();
   const [searchQuery, setSearchQuery] = useState("");
