@@ -8,20 +8,10 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { VerifiedBadge } from "./VerifiedBadge";
-import { useState } from "react";
-import { mockUsers } from "../data/mockData";
+import { useUsers } from "../contexts/UserContext";
 
 export default function UserSlider() {
-  const [users, setUsers] = useState(mockUsers);
-
-  // Prototyp-Funktion zum Umschalten des Verifizierungsstatus
-  const toggleVerification = (userId: number) => {
-    setUsers(users.map(user => 
-      user.id === userId 
-        ? { ...user, isVerified: !user.isVerified }
-        : user
-    ));
-  };
+  const { users, toggleVerification } = useUsers();
 
   return (
     <Carousel

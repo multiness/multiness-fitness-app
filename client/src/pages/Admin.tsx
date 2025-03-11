@@ -14,12 +14,13 @@ import {
   Shield,
   Search
 } from "lucide-react";
-import { mockUsers, mockChallenges, mockGroups, mockPosts } from "../data/mockData";
+import { mockChallenges, mockGroups, mockPosts } from "../data/mockData";
 import { Switch } from "@/components/ui/switch";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
+import { useUsers } from "../contexts/UserContext";
 
 export default function Admin() {
-  const [users, setUsers] = useState(mockUsers);
+  const { users, toggleVerification } = useUsers();
   const [searchQuery, setSearchQuery] = useState("");
   const [showVerifiedOnly, setShowVerifiedOnly] = useState(true);
 
@@ -32,15 +33,6 @@ export default function Admin() {
     }
     return matchesSearch;
   });
-
-  // Toggle Verifizierung
-  const toggleVerification = (userId: number) => {
-    setUsers(users.map(user =>
-      user.id === userId
-        ? { ...user, isVerified: !user.isVerified }
-        : user
-    ));
-  };
 
   return (
     <div className="container max-w-6xl mx-auto p-4">
@@ -185,7 +177,7 @@ export default function Admin() {
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                       <div>
                         <h3 className="font-semibold">
-                          Post by @{mockUsers.find(u => u.id === post.userId)?.username}
+                          Post by @{users.find(u => u.id === post.userId)?.username}
                         </h3>
                         <p className="text-sm text-muted-foreground">
                           {post.content}
