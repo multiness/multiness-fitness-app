@@ -11,6 +11,8 @@ import ChallengeDetail from "./pages/ChallengeDetail";
 import CreateChallenge from "./pages/CreateChallenge";
 import CreatePost from "./pages/CreatePost";
 import CreateGroup from "./pages/CreateGroup";
+import CreateEvent from "./pages/CreateEvent";
+import CreateNotification from "./pages/CreateNotification";
 import Groups from "./pages/Groups";
 import Chat from "./pages/Chat";
 import Admin from "./pages/Admin";
@@ -27,6 +29,8 @@ function Router() {
         <Route path="/create/challenge" component={CreateChallenge} />
         <Route path="/create/post" component={CreatePost} />
         <Route path="/create/group" component={CreateGroup} />
+        <Route path="/create/event" component={CreateEvent} />
+        <Route path="/create/notification" component={CreateNotification} />
         <Route path="/groups" component={Groups} />
         <Route path="/chat" component={Chat} />
         <Route path="/admin" component={Admin} />
