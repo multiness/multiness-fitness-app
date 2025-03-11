@@ -45,18 +45,21 @@ export default function WorkoutGenerator({ onSelectWorkout }: WorkoutGeneratorPr
         <CardHeader>
           <CardTitle>Workout Generator</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
           {/* Ziel-Auswahl */}
-          <div>
-            <Label>Dein Trainingsziel</Label>
+          <div className="space-y-2">
+            <Label className="text-base">Dein Trainingsziel</Label>
             <Select onValueChange={setSelectedGoal}>
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Wähle dein Ziel" />
               </SelectTrigger>
               <SelectContent>
                 {workoutGoals.map(goal => (
                   <SelectItem key={goal.id} value={goal.id}>
-                    {goal.name}
+                    <div className="flex flex-col">
+                      <span className="font-medium">{goal.name}</span>
+                      <span className="text-xs text-muted-foreground">{goal.description}</span>
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -64,44 +67,46 @@ export default function WorkoutGenerator({ onSelectWorkout }: WorkoutGeneratorPr
           </div>
 
           {/* Dauer-Auswahl */}
-          <div>
-            <Label>Gewünschte Trainingsdauer</Label>
-            <RadioGroup defaultValue="30" onValueChange={setDuration}>
-              <div className="grid grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Label className="text-base">Gewünschte Trainingsdauer</Label>
+            <RadioGroup defaultValue="30" onValueChange={setDuration} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <RadioGroupItem value="15">
                 <Label className="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-accent">
-                  <RadioGroupItem value="15" className="mr-2" />
                   15 Minuten
                 </Label>
+              </RadioGroupItem>
+              <RadioGroupItem value="30">
                 <Label className="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-accent">
-                  <RadioGroupItem value="30" className="mr-2" />
                   30 Minuten
                 </Label>
+              </RadioGroupItem>
+              <RadioGroupItem value="45">
                 <Label className="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-accent">
-                  <RadioGroupItem value="45" className="mr-2" />
                   45 Minuten
                 </Label>
-              </div>
+              </RadioGroupItem>
             </RadioGroup>
           </div>
 
           {/* Schwierigkeitsgrad */}
-          <div>
-            <Label>Schwierigkeitsgrad</Label>
-            <RadioGroup defaultValue="mittel" onValueChange={setDifficulty}>
-              <div className="grid grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Label className="text-base">Schwierigkeitsgrad</Label>
+            <RadioGroup defaultValue="mittel" onValueChange={setDifficulty} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <RadioGroupItem value="anfänger">
                 <Label className="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-accent">
-                  <RadioGroupItem value="anfänger" className="mr-2" />
                   Anfänger
                 </Label>
+              </RadioGroupItem>
+              <RadioGroupItem value="mittel">
                 <Label className="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-accent">
-                  <RadioGroupItem value="mittel" className="mr-2" />
                   Mittel
                 </Label>
+              </RadioGroupItem>
+              <RadioGroupItem value="fortgeschritten">
                 <Label className="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-accent">
-                  <RadioGroupItem value="fortgeschritten" className="mr-2" />
                   Fortgeschritten
                 </Label>
-              </div>
+              </RadioGroupItem>
             </RadioGroup>
           </div>
 
