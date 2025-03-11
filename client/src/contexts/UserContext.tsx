@@ -9,10 +9,13 @@ type User = {
   avatar: string | null;
   isAdmin: boolean;
   isVerified: boolean;
+  isTeamMember: boolean;
+  teamRole: string | null;
 };
 
 interface UserContextType {
   users: User[];
+  currentUser: User;
   toggleVerification: (userId: number) => void;
 }
 
@@ -20,6 +23,8 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const [users, setUsers] = useState(mockUsers);
+  // Setze den ersten User als currentUser (für Demo-Zwecke)
+  const [currentUser] = useState(mockUsers[0]);
 
   const toggleVerification = (userId: number) => {
     setUsers(users.map(user =>
@@ -30,7 +35,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <UserContext.Provider value={{ users, toggleVerification }}>
+    <UserContext.Provider value={{ users, currentUser, toggleVerification }}>
       {children}
     </UserContext.Provider>
   );
