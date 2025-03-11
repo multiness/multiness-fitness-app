@@ -14,6 +14,8 @@ import CreateGroup from "./pages/CreateGroup";
 import CreateEvent from "./pages/CreateEvent";
 import CreateNotification from "./pages/CreateNotification";
 import Groups from "./pages/Groups";
+import Events from "./pages/Events";
+import Members from "./pages/Members";
 import Chat from "./pages/Chat";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/not-found";
@@ -32,6 +34,8 @@ function Router() {
         <Route path="/create/event" component={CreateEvent} />
         <Route path="/create/notification" component={CreateNotification} />
         <Route path="/groups" component={Groups} />
+        <Route path="/events" component={Events} />
+        <Route path="/members" component={Members} />
         <Route path="/chat" component={Chat} />
         <Route path="/admin" component={Admin} />
         <Route component={NotFound} />

@@ -5,8 +5,9 @@ import GroupPreview from "@/components/GroupPreview";
 import ChallengeCard from "@/components/ChallengeCard";
 import FeedPost from "@/components/FeedPost";
 import EventSlider from "@/components/EventSlider";
+import { ArrowRight } from "lucide-react";
 import { mockGroups, mockChallenges, mockPosts } from "../data/mockData";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -53,19 +54,34 @@ export default function Home() {
 
       {/* Events & Kurse */}
       <section className="mb-12">
-        <h2 className="text-2xl font-bold mb-6">Events & Kurse</h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold">Events & Kurse</h2>
+          <Link href="/events" className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1">
+            Alle Events <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
         <EventSlider />
       </section>
 
       {/* Neue Mitglieder */}
       <section className="mb-12">
-        <h2 className="text-2xl font-bold mb-6">Neue Mitglieder</h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold">Neue Mitglieder</h2>
+          <Link href="/members" className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1">
+            Alle Mitglieder <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
         <UserSlider />
       </section>
 
       {/* Beliebte Gruppen */}
       <section className="mb-12">
-        <h2 className="text-2xl font-bold mb-6">Beliebte Gruppen</h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold">Beliebte Gruppen</h2>
+          <Link href="/groups" className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1">
+            Alle Gruppen <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
         <div className="grid grid-cols-2 gap-4">
           {mockGroups.slice(0, 4).map(group => (
             <GroupPreview key={group.id} group={group} />
@@ -75,7 +91,12 @@ export default function Home() {
 
       {/* Aktive Challenges */}
       <section className="mb-12">
-        <h2 className="text-2xl font-bold mb-6">Aktive Challenges</h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold">Aktive Challenges</h2>
+          <Link href="/challenges" className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1">
+            Alle Challenges <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
         <div className="grid grid-cols-2 gap-4">
           {mockChallenges.slice(0, 4).map(challenge => (
             <ChallengeCard key={challenge.id} challenge={challenge} />
