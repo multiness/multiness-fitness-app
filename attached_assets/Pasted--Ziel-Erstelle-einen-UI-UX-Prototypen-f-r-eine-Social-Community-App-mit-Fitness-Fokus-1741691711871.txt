@@ -1,0 +1,131 @@
+📌 **Ziel:**  
+Erstelle einen **UI/UX-Prototypen** für eine **Social Community App mit Fitness-Fokus**.  
+⚠ **Kein Backend!** Alle Daten sollen als **Mock-Daten (Dummys)** dargestellt werden.  
+⚠ **Keine API-Anbindung!** UI soll vollständig unabhängig vom Server funktionieren.  
+
+---
+
+## **🎨 Haupt-UI-Komponenten (Mock-Daten nutzen!)**  
+
+### **1️⃣ Navigationsstruktur (Mobile-App-Stil)**  
+✅ **Unteres Navigationsmenü (Fix am unteren Rand, inspiriert von Instagram & TikTok)**  
+   - **Zentraler Plus-Button (`+` Creator) für:**  
+     - Challenge erstellen  
+     - Gruppe erstellen  
+     - Beitrag posten  
+   - **Vier Navigations-Icons für:**  
+     - Startseite  
+     - Challenges  
+     - Gruppen  
+     - Chats  
+
+✅ **Oberes Navigationsmenü (Fix am oberen Rand)**  
+   - **Links:** Multiness-App-Logo  
+   - **Rechts:** Profilbild-Icon → Beim Klicken öffnet sich ein Dropdown-Menü mit:  
+     - **Profil anzeigen**  
+     - **Einstellungen**  
+     - **Abmelden**  
+
+---
+
+### **2️⃣ Startseite (Instagram-ähnliches Layout mit verschiedenen Content-Bereichen)**  
+✅ **Marketing-Banner (Admin-gesteuert)**  
+   - Admin kann über ein Interface ein Werbe-Bild hochladen, das hier erscheint  
+   - Anzeige von Klickzahlen & Performance im Admin-Dashboard  
+
+✅ **Neue Mitglieder (Horizontale Liste mit Profilbildern)**  
+   - Slider mit neuen Community-Mitgliedern (rundes Profilbild + Username)  
+
+✅ **Fitness-Gruppen (Horizontale Liste mit Gruppenbildern & Namen)**  
+   - Zeigt 4 Gruppen → Button für „Alle Gruppen anzeigen“  
+
+✅ **Challenges (Horizontale Liste mit neuesten Challenges)**  
+   - Zeigt 4 Challenges → Button für „Alle Challenges anzeigen“  
+
+✅ **Postings (Feed-Bereich mit Social Media Funktionen)**  
+   - Beiträge von Nutzern mit Bildern/Text  
+   - Like-Button, Kommentar-Funktion, Teilen-Button  
+
+---
+
+### **3️⃣ Challenge-Bereich**  
+✅ **Challenge-Übersicht:**  
+   - Aktive Challenges (farblich hervorgehoben)  
+   - Abgeschlossene Challenges (mit „Vergangen“-Status)  
+
+✅ **Challenge-Detailseite:**  
+   - Beschreibung, Ersteller, Teilnehmerliste (mit Mock-Daten)  
+   - "Teilnehmen"-Button (nur UI, keine Funktion)  
+
+✅ **Ergebnis-Eingabe:**  
+   - Formular mit Eingabe für Zeit, Wiederholungen, etc.  
+
+✅ **Challenge-Ranking (Leaderboard)**  
+   - Liste der besten Teilnehmer mit Platzierungen  
+
+---
+
+### **4️⃣ Gruppen-Funktion**  
+✅ **Übersicht aller Fitness-Gruppen**  
+   - Nutzer können Gruppen durchsuchen und beitreten  
+✅ **Gruppenseite (Community-Feed für Mitglieder)**  
+   - Postings, Diskussionen, Events  
+
+---
+
+### **5️⃣ Community & Soziale Interaktion**  
+✅ **Like-System (nur UI, kein Backend)**  
+✅ **Kommentar-System (Mock-Daten)**  
+✅ **Teilen-Button (z. B. WhatsApp, Social Media – nur Dummy)**  
+
+---
+
+### **6️⃣ Chat & Benachrichtigungen (nur UI)**  
+✅ **Direktnachrichten-UI mit Dummy-Usern**  
+✅ **Gruppenchat-UI mit Beispielnachrichten**  
+✅ **Benachrichtigungen (z. B. "XY hat deine Challenge geliked")**  
+
+---
+
+### **7️⃣ Profilseite (Instagram-ähnlich)**  
+✅ **Profilbild hochladen & ändern**  
+✅ **Bio & persönliche Infos bearbeiten**  
+✅ **„Stories“-ähnliche Funktion für hochgeladene Updates**  
+✅ **Drei Content-Bereiche (wie Instagram):**  
+   - **Alles:** Alle Inhalte in Rasteransicht  
+   - **Bilder:** Nur hochgeladene Bilder  
+   - **Challenges:** Nur erstellte Challenges  
+
+---
+
+### **8️⃣ Admin-Funktionalitäten**  
+✅ **Admin-Dashboard (Community-Übersicht & Statistiken)**  
+   - Anzahl der Mitglieder, aktive Gruppen, Challenges  
+   - Möglichkeit, einzelne Communities zu verwalten  
+✅ **Marketing-Banner Management**  
+   - Bild hochladen & Banner-Performance auswerten  
+✅ **Moderation von Gruppen & Challenges**  
+
+---
+
+## **🛠️ Technische Anforderungen für das UI-Framework**  
+✅ **React + TypeScript**  
+✅ **TailwindCSS für das Styling**  
+✅ **Mock-Daten mit JSON (keine API)**  
+✅ **Routing mit Wouter oder React Router**  
+
+---
+
+## **🎯 Umsetzungsschritte:**  
+1️⃣ **Navigationsstruktur mit Header & Bottom-Navigation aufbauen**  
+2️⃣ **Startseite mit allen Content-Blöcken & Mock-Daten integrieren**  
+3️⃣ **Profilseite mit Rasteransicht & Bearbeitungsoptionen umsetzen**  
+4️⃣ **Challenge- & Gruppen-Detailseiten erstellen**  
+5️⃣ **Chat-UI & Benachrichtigungen integrieren (nur UI, keine Funktion)**  
+6️⃣ **Admin-Dashboard mit Community-Übersicht & Banner-Management umsetzen**  
+7️⃣ **Finales UI-Testing & Optimierung für mobile Ansicht (Responsive Design)**  
+
+---
+
+📌 **Sobald der UI-Prototyp steht, können wir das Backend später separat hinzufügen.**  
+⚠ **Wichtig:** Die App muss vollständig klickbar und testbar sein, ohne Backend-Abhängigkeiten!  
