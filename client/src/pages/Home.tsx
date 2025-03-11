@@ -5,7 +5,7 @@ import GroupPreview from "@/components/GroupPreview";
 import ChallengeCard from "@/components/ChallengeCard";
 import FeedPost from "@/components/FeedPost";
 import EventSlider from "@/components/EventSlider";
-import { ArrowRight, Crown, Heart, Share2 } from "lucide-react";
+import { ArrowRight, Crown, Heart, Share2, Users } from "lucide-react";
 import { mockGroups, mockChallenges, mockPosts, mockUsers } from "../data/mockData";
 import { useLocation, Link } from "wouter";
 import {
@@ -103,7 +103,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Aktive Challenges - Kompakteres Design */}
+      {/* Aktive Challenges - Kompakteres Design ohne Bilder */}
       <section className="mb-12">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold">Aktive Challenges</h2>
@@ -122,10 +122,10 @@ export default function Home() {
           <CarouselContent>
             {activeChallenges.map(challenge => (
               <CarouselItem key={challenge.id} className="md:basis-1/2 lg:basis-1/2">
-                <Card className="overflow-hidden hover:shadow-lg transition-all">
+                <Card className="overflow-hidden hover:shadow-lg transition-all border-l-4 border-l-primary">
                   <CardContent className="p-4">
-                    {/* Header: Creator Info + Title */}
-                    <div className="flex gap-3 items-start mb-3">
+                    {/* Challenge Info Section */}
+                    <div className="flex items-start gap-3 mb-3">
                       <Avatar className="h-8 w-8">
                         <AvatarImage src={mockUsers[0]?.avatar || undefined} />
                         <AvatarFallback>{mockUsers[0]?.username[0]}</AvatarFallback>
@@ -142,64 +142,47 @@ export default function Home() {
                       </div>
                     </div>
 
-                    {/* Challenge Image */}
-                    {challenge.image && (
-                      <div className="aspect-video rounded-md overflow-hidden mb-3">
-                        <img
-                          src={challenge.image}
-                          alt={challenge.title}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    )}
-
-                    {/* Participants & Actions */}
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <div className="flex -space-x-2">
-                          {mockUsers.slice(0, 3).map((user, i) => (
-                            <Avatar key={i} className="h-6 w-6 border-2 border-background">
-                              <AvatarImage src={user.avatar || undefined} />
-                              <AvatarFallback>{user.username[0]}</AvatarFallback>
-                            </Avatar>
-                          ))}
-                          <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-xs border-2 border-background">
-                            +{mockUsers.length - 3}
-                          </div>
-                        </div>
-                        <span className="text-xs text-muted-foreground">{mockUsers.length} Teilnehmer</span>
-                      </div>
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                          <Heart className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                          <Share2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Compact Ranking */}
-                    <div className="bg-muted/50 rounded-lg p-2 mb-3">
-                      <div className="flex items-center justify-between text-xs mb-1">
-                        <span className="font-medium">Top 3 Ranking</span>
-                      </div>
-                      <div className="space-y-1">
-                        {[1, 2, 3].map(rank => (
-                          <div key={rank} className="flex items-center justify-between">
-                            <div className="flex items-center gap-1.5">
-                              {rank === 1 && <Crown className="h-3 w-3 text-yellow-400" />}
-                              {rank === 2 && <Crown className="h-3 w-3 text-gray-400" />}
-                              {rank === 3 && <Crown className="h-3 w-3 text-amber-700" />}
-                              <Avatar className="h-5 w-5">
-                                <AvatarImage src={mockUsers[rank]?.avatar || undefined} />
-                                <AvatarFallback>{mockUsers[rank]?.username[0]}</AvatarFallback>
+                    {/* Compact Ranking & Participants */}
+                    <div className="bg-muted/50 rounded-lg p-2">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className="flex -space-x-2">
+                            {mockUsers.slice(0, 3).map((user, i) => (
+                              <Avatar key={i} className="h-5 w-5 border-2 border-background">
+                                <AvatarImage src={user.avatar || undefined} />
+                                <AvatarFallback>{user.username[0]}</AvatarFallback>
                               </Avatar>
-                              <span className="text-xs">{mockUsers[rank]?.username}</span>
+                            ))}
+                          </div>
+                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Users className="h-3 w-3" />
+                            {mockUsers.length}
+                          </span>
+                        </div>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                            <Heart className="h-3 w-3" />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                            <Share2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Top 3 in einer Reihe */}
+                      <div className="flex justify-between items-center">
+                        {[1, 2, 3].map(rank => (
+                          <div key={rank} className="flex items-center gap-1">
+                            {rank === 1 && <Crown className="h-3 w-3 text-yellow-400" />}
+                            {rank === 2 && <Crown className="h-3 w-3 text-gray-400" />}
+                            {rank === 3 && <Crown className="h-3 w-3 text-amber-700" />}
+                            <Avatar className="h-5 w-5">
+                              <AvatarImage src={mockUsers[rank]?.avatar || undefined} />
+                              <AvatarFallback>{mockUsers[rank]?.username[0]}</AvatarFallback>
+                            </Avatar>
+                            <div className="text-xs">
+                              <span className="font-medium">{1000 - (rank * 50)}</span>
                             </div>
-                            <span className="text-xs text-muted-foreground">
-                              {1000 - (rank * 50)}
-                            </span>
                           </div>
                         ))}
                       </div>
@@ -207,8 +190,9 @@ export default function Home() {
 
                     {/* Action Button */}
                     <Button 
-                      variant="default" 
-                      className="w-full h-8 text-sm"
+                      variant="default"
+                      size="sm" 
+                      className="w-full mt-3"
                       onClick={() => setLocation(`/challenges/${challenge.id}`)}
                     >
                       Challenge beitreten
