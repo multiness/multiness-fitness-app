@@ -45,7 +45,7 @@ const mockBanners = [
     createdAt: new Date(),
     buttons: [
       {
-        text: "Jetzt teilnehmen",
+        text: "Jetzt mitmachen",
         url: "https://example.com/challenge"
       },
       {

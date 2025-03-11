@@ -41,8 +41,8 @@ export function MarketingBanner({ banner }: MarketingBannerProps) {
                     size="lg"
                     className={
                       index === 1 
-                        ? "bg-white hover:bg-white/90 text-black font-extrabold" 
-                        : ""
+                        ? "bg-white hover:bg-white/90 text-black font-bold" 
+                        : "text-white"
                     }
                     onClick={() => window.open(button.url, '_blank')}
                   >
