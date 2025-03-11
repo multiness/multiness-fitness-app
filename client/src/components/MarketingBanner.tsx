@@ -22,7 +22,7 @@ export function MarketingBanner({ banner }: MarketingBannerProps) {
           alt={banner.name}
           className="object-cover w-full h-full"
         />
-        
+
         {/* Content Overlay */}
         <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-black/30 flex items-center">
           <div className="container px-4 md:px-6">
@@ -37,8 +37,9 @@ export function MarketingBanner({ banner }: MarketingBannerProps) {
                 {banner.buttons.map((button, index) => (
                   <Button
                     key={index}
-                    variant={index === 0 ? "default" : "outline"}
+                    variant={index === 0 ? "default" : "secondary"}
                     size="lg"
+                    className={index === 1 ? "bg-white text-foreground hover:bg-white/90" : ""}
                     onClick={() => window.open(button.url, '_blank')}
                   >
                     {button.text}
