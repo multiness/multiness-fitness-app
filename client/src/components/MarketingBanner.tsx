@@ -13,9 +13,6 @@ interface MarketingBannerProps {
 }
 
 export function MarketingBanner({ banner }: MarketingBannerProps) {
-  // Debug-Log um zu sehen, welche Daten ankommen
-  console.log('Banner Buttons:', banner.buttons);
-
   return (
     <div className="relative w-full">
       {/* Banner Image */}
@@ -49,8 +46,7 @@ export function MarketingBanner({ banner }: MarketingBannerProps) {
                     }`}
                     onClick={() => window.open(button.url, '_blank')}
                   >
-                    {console.log('Rendering button:', button.text)}
-                    {button.text || 'Button Text Fehlt'}
+                    {button.text}
                   </Button>
                 ))}
               </div>
