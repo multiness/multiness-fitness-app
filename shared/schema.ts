@@ -44,6 +44,7 @@ export const groups = pgTable("groups", {
   image: text("image"),
   creatorId: integer("creator_id").references(() => users.id).notNull(),
   isPrivate: boolean("is_private").default(false).notNull(),
+  participantIds: integer("participant_ids").array(), // Add participant IDs array
 });
 
 // Workout-Detail Typen

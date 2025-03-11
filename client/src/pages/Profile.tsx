@@ -8,6 +8,7 @@ import FeedPost from "@/components/FeedPost";
 import { mockUsers, mockPosts, mockChallenges, mockGroups } from "../data/mockData";
 import { format } from 'date-fns';
 import { Badge } from "@/components/ui/badge";
+import type { User, Post, Challenge, Group } from "@shared/schema";
 
 export default function Profile() {
   const { id } = useParams();
@@ -16,14 +17,14 @@ export default function Profile() {
   const userPosts = mockPosts.filter(p => p.userId === userId);
   const userChallenges = mockChallenges.filter(c => c.creatorId === userId);
   const userGroups = mockGroups.filter(g => g.participantIds?.includes(userId));
-  const activeUserChallenges = userChallenges.filter(c => new Date() <= c.endDate);
+  const activeUserChallenges = userChallenges.filter(c => new Date() <= new Date(c.endDate));
 
   const [selectedTab, setSelectedTab] = useState("all");
 
   if (!user) return <div>User not found</div>;
 
   return (
-    <div className="container max-w-2xl mx-auto p-4">
+    <div className="container max-w-4xl mx-auto p-4">
       {/* Profile Header */}
       <div className="relative mb-8">
         {/* Cover Image (optional) */}
@@ -32,25 +33,27 @@ export default function Profile() {
         <div className="flex flex-col items-center -mt-12">
           <Avatar className="h-24 w-24 border-4 border-background">
             <AvatarImage src={user.avatar || undefined} />
-            <AvatarFallback>{user.username[0]}</AvatarFallback>
+            <AvatarFallback>{user.username[0].toUpperCase()}</AvatarFallback>
           </Avatar>
           <h1 className="text-2xl font-bold mt-4">{user.name}</h1>
           <h2 className="text-lg text-muted-foreground">@{user.username}</h2>
 
           {/* Badges */}
-          <div className="flex gap-2 mt-2">
+          <div className="flex flex-wrap gap-2 mt-2 justify-center">
             {user.isAdmin && (
               <Badge variant="default" className="bg-primary">Admin</Badge>
             )}
             {user.isVerified && (
               <Badge variant="secondary">Verifiziert</Badge>
             )}
-            {user.isTeamMember && (
+            {user.isTeamMember && user.teamRole && (
               <Badge variant="outline">{user.teamRole}</Badge>
             )}
           </div>
 
-          <p className="text-center mt-4 max-w-md">{user.bio}</p>
+          {user.bio && (
+            <p className="text-center mt-4 max-w-md text-muted-foreground">{user.bio}</p>
+          )}
 
           {/* Activity Stats */}
           <div className="grid grid-cols-3 gap-8 mt-6 w-full max-w-md">
@@ -68,7 +71,9 @@ export default function Profile() {
             </div>
           </div>
 
-          <Button className="mt-6">Profil bearbeiten</Button>
+          {userId === 1 && ( // Nur anzeigen, wenn es das eigene Profil ist
+            <Button className="mt-6" variant="outline">Profil bearbeiten</Button>
+          )}
         </div>
       </div>
 
@@ -100,7 +105,7 @@ export default function Profile() {
               <h3 className="text-lg font-semibold mb-4">Aktive Challenges</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {activeUserChallenges.map(challenge => (
-                  <div key={challenge.id} className="aspect-video relative rounded-lg overflow-hidden bg-muted">
+                  <div key={challenge.id} className="relative rounded-lg overflow-hidden bg-muted aspect-video group hover:scale-[1.02] transition-transform">
                     <img
                       src={challenge.image || undefined}
                       alt={challenge.title}
@@ -109,7 +114,9 @@ export default function Profile() {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                     <div className="absolute bottom-0 left-0 right-0 p-4">
                       <h4 className="text-white font-semibold">{challenge.title}</h4>
-                      <p className="text-white/80 text-sm">Endet am {format(challenge.endDate, "dd.MM.yyyy")}</p>
+                      <p className="text-white/80 text-sm">
+                        Endet am {format(new Date(challenge.endDate), "dd.MM.yyyy")}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -133,7 +140,7 @@ export default function Profile() {
               <h3 className="text-lg font-semibold mb-4">Gruppen</h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 {userGroups.map(group => (
-                  <div key={group.id} className="aspect-square relative rounded-lg overflow-hidden">
+                  <div key={group.id} className="aspect-square relative rounded-lg overflow-hidden group hover:scale-[1.02] transition-transform">
                     <img
                       src={group.image || undefined}
                       alt={group.name}
@@ -142,6 +149,9 @@ export default function Profile() {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                     <div className="absolute bottom-0 left-0 right-0 p-3">
                       <h4 className="text-white font-medium text-sm">{group.name}</h4>
+                      <p className="text-white/80 text-xs">
+                        {group.participantIds?.length || 0} Mitglieder
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -151,9 +161,9 @@ export default function Profile() {
         </TabsContent>
 
         <TabsContent value="challenges" className="mt-6">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {userChallenges.map(challenge => (
-              <div key={challenge.id} className="aspect-video relative rounded-lg overflow-hidden">
+              <div key={challenge.id} className="relative rounded-lg overflow-hidden aspect-video group hover:scale-[1.02] transition-transform">
                 <img
                   src={challenge.image || undefined}
                   alt={challenge.title}
@@ -163,7 +173,7 @@ export default function Profile() {
                 <div className="absolute bottom-0 left-0 right-0 p-4">
                   <h4 className="text-white font-semibold">{challenge.title}</h4>
                   <p className="text-white/80 text-sm">
-                    {new Date() <= challenge.endDate ? 'Aktiv' : 'Beendet'}
+                    {new Date() <= new Date(challenge.endDate) ? 'Aktiv' : 'Beendet'}
                   </p>
                 </div>
               </div>
@@ -180,9 +190,9 @@ export default function Profile() {
         </TabsContent>
 
         <TabsContent value="groups" className="mt-6">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {userGroups.map(group => (
-              <div key={group.id} className="aspect-square relative rounded-lg overflow-hidden">
+              <div key={group.id} className="aspect-square relative rounded-lg overflow-hidden group hover:scale-[1.02] transition-transform">
                 <img
                   src={group.image || undefined}
                   alt={group.name}
@@ -191,7 +201,9 @@ export default function Profile() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-3">
                   <h4 className="text-white font-medium">{group.name}</h4>
-                  <p className="text-white/80 text-sm">{group.participantIds?.length || 0} Mitglieder</p>
+                  <p className="text-white/80 text-sm">
+                    {group.participantIds?.length || 0} Mitglieder
+                  </p>
                 </div>
               </div>
             ))}
