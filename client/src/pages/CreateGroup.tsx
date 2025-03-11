@@ -5,13 +5,17 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Image, X } from "lucide-react";
+import { Image, Lock, Globe, X, UserPlus } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 export default function CreateGroup() {
   const { toast } = useToast();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [privacy, setPrivacy] = useState<"public" | "private">("public");
+  const [invites, setInvites] = useState<string[]>([]);
+  const [currentInvite, setCurrentInvite] = useState("");
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -34,6 +38,17 @@ export default function CreateGroup() {
 
   const removeImage = () => {
     setImagePreview(null);
+  };
+
+  const handleAddInvite = () => {
+    if (currentInvite.trim() && !invites.includes(currentInvite.trim())) {
+      setInvites([...invites, currentInvite.trim()]);
+      setCurrentInvite("");
+    }
+  };
+
+  const removeInvite = (invite: string) => {
+    setInvites(invites.filter(i => i !== invite));
   };
 
   const handleSubmit = () => {
@@ -80,6 +95,77 @@ export default function CreateGroup() {
               className="min-h-[100px]"
             />
           </div>
+
+          <div className="space-y-2">
+            <Label>Privatsphäre</Label>
+            <RadioGroup defaultValue={privacy} onValueChange={(value: "public" | "private") => setPrivacy(value)} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex items-center space-x-2 rounded-lg border p-4">
+                <RadioGroupItem value="public" id="public" />
+                <Label htmlFor="public" className="flex items-center gap-2 cursor-pointer">
+                  <Globe className="h-4 w-4" />
+                  <div>
+                    <div className="font-medium">Öffentlich</div>
+                    <p className="text-sm text-muted-foreground">
+                      Jeder kann der Gruppe beitreten
+                    </p>
+                  </div>
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2 rounded-lg border p-4">
+                <RadioGroupItem value="private" id="private" />
+                <Label htmlFor="private" className="flex items-center gap-2 cursor-pointer">
+                  <Lock className="h-4 w-4" />
+                  <div>
+                    <div className="font-medium">Privat</div>
+                    <p className="text-sm text-muted-foreground">
+                      Beitritt nur auf Anfrage
+                    </p>
+                  </div>
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+
+          {/* Einladungen - nur bei privaten Gruppen */}
+          {privacy === "private" && (
+            <div className="space-y-2">
+              <Label>Mitglieder einladen</Label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Username oder E-Mail"
+                  value={currentInvite}
+                  onChange={(e) => setCurrentInvite(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleAddInvite()}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={handleAddInvite}
+                >
+                  <UserPlus className="h-4 w-4" />
+                </Button>
+              </div>
+              {invites.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {invites.map((invite, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center gap-1 bg-muted px-2 py-1 rounded-md text-sm"
+                    >
+                      {invite}
+                      <button
+                        onClick={() => removeInvite(invite)}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label>Gruppenbild</Label>
