@@ -8,7 +8,7 @@ interface VerifiedBadgeProps {
 export function VerifiedBadge({ className }: VerifiedBadgeProps) {
   return (
     <div className={cn("bg-background rounded-full p-0.5", className)}>
-      <BadgeCheck className="h-4 w-4 text-sky-400 fill-sky-400" />
+      <BadgeCheck className="h-4 w-4 text-white fill-sky-400" />
     </div>
   );
 }
