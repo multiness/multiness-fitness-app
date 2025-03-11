@@ -18,6 +18,7 @@ import Events from "./pages/Events";
 import Members from "./pages/Members";
 import Chat from "./pages/Chat";
 import Admin from "./pages/Admin";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/not-found";
 
 function Router() {
@@ -38,6 +39,7 @@ function Router() {
         <Route path="/members" component={Members} />
         <Route path="/chat" component={Chat} />
         <Route path="/admin" component={Admin} />
+        <Route path="/settings" component={Settings} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
