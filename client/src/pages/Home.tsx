@@ -38,10 +38,8 @@ export default function Home() {
             alt="Summer Fitness Challenge"
             className="w-full h-full object-cover"
           />
-          {/* Gradient Overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
 
-          {/* Marketing Content */}
           <div className="absolute inset-0 flex flex-col justify-end p-6 text-white">
             <span className="text-sm font-semibold uppercase tracking-wider mb-2">Limitiertes Angebot</span>
             <h1 className="text-3xl font-bold mb-4">Summer Body Challenge 2025</h1>
@@ -105,7 +103,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Aktive Challenges - Neu gestaltet mit Carousel */}
+      {/* Aktive Challenges - Kompakteres Design */}
       <section className="mb-12">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold">Aktive Challenges</h2>
@@ -125,41 +123,38 @@ export default function Home() {
             {activeChallenges.map(challenge => (
               <CarouselItem key={challenge.id} className="md:basis-1/2 lg:basis-1/2">
                 <Card className="overflow-hidden hover:shadow-lg transition-all">
-                  {/* Challenge Image Section */}
-                  {challenge.image && (
-                    <div className="aspect-[16/9] relative">
-                      <img
-                        src={challenge.image}
-                        alt={challenge.title}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  )}
-
                   <CardContent className="p-4">
-                    {/* Creator Info */}
-                    <div className="flex items-center gap-2 mb-4">
+                    {/* Header: Creator Info + Title */}
+                    <div className="flex gap-3 items-start mb-3">
                       <Avatar className="h-8 w-8">
                         <AvatarImage src={mockUsers[0]?.avatar || undefined} />
                         <AvatarFallback>{mockUsers[0]?.username[0]}</AvatarFallback>
                       </Avatar>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">{mockUsers[0]?.username}</p>
-                        <p className="text-xs text-muted-foreground">Challenge Creator</p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium">{mockUsers[0]?.username}</p>
+                          <Badge variant="secondary" className="ml-2">Aktiv</Badge>
+                        </div>
+                        <h3 className="text-base font-bold truncate">{challenge.title}</h3>
+                        <p className="text-xs text-muted-foreground">
+                          Endet am {format(new Date(challenge.endDate), "dd.MM.yyyy")}
+                        </p>
                       </div>
-                      <Badge variant="secondary">Aktiv</Badge>
                     </div>
 
-                    {/* Challenge Title & Info */}
-                    <div className="mb-4">
-                      <h3 className="text-xl font-bold mb-1">{challenge.title}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Endet am {format(new Date(challenge.endDate), "dd.MM.yyyy")}
-                      </p>
-                    </div>
+                    {/* Challenge Image */}
+                    {challenge.image && (
+                      <div className="aspect-video rounded-md overflow-hidden mb-3">
+                        <img
+                          src={challenge.image}
+                          alt={challenge.title}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
 
-                    {/* Participants Preview */}
-                    <div className="flex items-center justify-between mb-4">
+                    {/* Participants & Actions */}
+                    <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <div className="flex -space-x-2">
                           {mockUsers.slice(0, 3).map((user, i) => (
@@ -169,53 +164,52 @@ export default function Home() {
                             </Avatar>
                           ))}
                           <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-xs border-2 border-background">
-                            +{mockUsers.length -3}
+                            +{mockUsers.length - 3}
                           </div>
                         </div>
-                        <span className="text-sm text-muted-foreground">{mockUsers.length} Teilnehmer</span>
+                        <span className="text-xs text-muted-foreground">{mockUsers.length} Teilnehmer</span>
                       </div>
-
-                      {/* Social Actions */}
-                      <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <Heart className={`h-4 w-4`} />
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                          <Heart className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
                           <Share2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
 
-                    {/* Top 3 Ranking - kompakter */}
-                    <div className="space-y-1 mb-4">
-                      <p className="text-sm font-medium mb-2">Top 3 Ranking</p>
-                      {[1, 2, 3].map(rank => (
-                        <div key={rank} className="flex items-center justify-between py-1">
-                          <div className="flex items-center gap-2">
-                            {rank === 1 && <Crown className="h-4 w-4 text-yellow-400" />}
-                            {rank === 2 && <Crown className="h-4 w-4 text-gray-400" />}
-                            {rank === 3 && <Crown className="h-4 w-4 text-amber-700" />}
-                            <Avatar className="h-6 w-6">
-                              <AvatarImage src={mockUsers[rank]?.avatar || undefined} />
-                              <AvatarFallback>{mockUsers[rank]?.username[0]}</AvatarFallback>
-                            </Avatar>
-                            <span className="text-sm font-medium">{mockUsers[rank]?.username}</span>
+                    {/* Compact Ranking */}
+                    <div className="bg-muted/50 rounded-lg p-2 mb-3">
+                      <div className="flex items-center justify-between text-xs mb-1">
+                        <span className="font-medium">Top 3 Ranking</span>
+                      </div>
+                      <div className="space-y-1">
+                        {[1, 2, 3].map(rank => (
+                          <div key={rank} className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                              {rank === 1 && <Crown className="h-3 w-3 text-yellow-400" />}
+                              {rank === 2 && <Crown className="h-3 w-3 text-gray-400" />}
+                              {rank === 3 && <Crown className="h-3 w-3 text-amber-700" />}
+                              <Avatar className="h-5 w-5">
+                                <AvatarImage src={mockUsers[rank]?.avatar || undefined} />
+                                <AvatarFallback>{mockUsers[rank]?.username[0]}</AvatarFallback>
+                              </Avatar>
+                              <span className="text-xs">{mockUsers[rank]?.username}</span>
+                            </div>
+                            <span className="text-xs text-muted-foreground">
+                              {1000 - (rank * 50)}
+                            </span>
                           </div>
-                          <span className="text-sm text-muted-foreground">
-                            {1000 - (rank * 50)} Punkte
-                          </span>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
 
                     {/* Action Button */}
                     <Button 
                       variant="default" 
-                      className="w-full"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setLocation(`/challenges/${challenge.id}`);
-                      }}
+                      className="w-full h-8 text-sm"
+                      onClick={() => setLocation(`/challenges/${challenge.id}`)}
                     >
                       Challenge beitreten
                     </Button>
