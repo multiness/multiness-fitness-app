@@ -11,6 +11,35 @@ interface Event {
   location: string;
 }
 
+interface WorkoutGoal {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export const workoutGoals: WorkoutGoal[] = [
+  {
+    id: "strength",
+    name: "Kraftaufbau",
+    description: "Fokus auf Muskelaufbau und Kraftsteigerung"
+  },
+  {
+    id: "endurance",
+    name: "Ausdauer",
+    description: "Verbesserung der Kondition und Ausdauer"
+  },
+  {
+    id: "hiit",
+    name: "HIIT & Kondition",
+    description: "Intensive Intervalle für maximale Fettverbrennung"
+  },
+  {
+    id: "flexibility",
+    name: "Beweglichkeit",
+    description: "Verbesserung der Mobilität und Flexibilität"
+  }
+];
+
 export const mockUsers: User[] = [
   {
     id: 1,
@@ -309,6 +338,9 @@ export const mockWorkoutTemplates = [
     description: "20-20-20 Intervalle mit Grundübungen",
     creatorId: 1,
     workoutType: "hit",
+    duration: 20, // Minuten
+    difficulty: "mittel",
+    goal: "hiit",
     workoutDetails: {
       intervals: 8,
       workTime: 20,
@@ -327,6 +359,9 @@ export const mockWorkoutTemplates = [
     description: "Kraftbasiertes EMOM für Fortgeschrittene",
     creatorId: 3,
     workoutType: "emom",
+    duration: 30,
+    difficulty: "fortgeschritten",
+    goal: "strength",
     workoutDetails: {
       timePerRound: 60,
       rounds: 10,
@@ -344,11 +379,33 @@ export const mockWorkoutTemplates = [
     description: "Basis-Template für 10k Lauftraining",
     creatorId: 5,
     workoutType: "running",
+    duration: 60,
+    difficulty: "mittel",
+    goal: "endurance",
     workoutDetails: {
       type: "distance",
       target: 10,
       description: "10km Lauf mit Intervallen: 1km warm up, 8km steady state, 1km cool down"
     },
     createdAt: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000)
+  },
+  {
+    id: 4,
+    name: "Mobility Flow",
+    description: "Dynamische Beweglichkeitsübungen",
+    creatorId: 2,
+    workoutType: "custom",
+    duration: 45,
+    difficulty: "anfänger",
+    goal: "flexibility",
+    workoutDetails: {
+      description: "Ganzheitliches Mobility Training",
+      exercises: [
+        { name: "Deep Squat Hold", time: 60, description: "Mit aktiver Haltung" },
+        { name: "World's Greatest Stretch", time: 45, description: "Pro Seite" },
+        { name: "Downward to Upward Dog Flow", time: 30, description: "Fließende Bewegungen" }
+      ]
+    },
+    createdAt: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000)
   }
 ];

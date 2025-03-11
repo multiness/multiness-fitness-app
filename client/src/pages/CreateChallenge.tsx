@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { mockWorkoutTemplates } from "../data/mockData";
+import WorkoutGenerator from "@/components/WorkoutGenerator";
 
 type WorkoutType = "emom" | "amrap" | "hit" | "running" | "custom";
 
@@ -34,14 +35,40 @@ export default function CreateChallenge() {
     }
   };
 
+  const handleWorkoutSelect = (template: any) => {
+    setWorkoutType(template.workoutType as WorkoutType);
+    // Weitere Template-Details laden
+    // Dies würde in einer realen Anwendung alle relevanten Felder setzen
+  };
+
   return (
     <div className="container max-w-2xl mx-auto p-4">
       <h1 className="text-2xl font-bold mb-6">Neue Challenge erstellen</h1>
 
+      {/* Workout Generator */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Workout Generator</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <WorkoutGenerator onSelectWorkout={handleWorkoutSelect} />
+        </CardContent>
+      </Card>
+
+      {/* ODER */}
+      <div className="relative mb-6">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-background px-2 text-muted-foreground">Oder</span>
+        </div>
+      </div>
+
       {/* Template-Auswahl */}
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle>Workout-Template verwenden (optional)</CardTitle>
+          <CardTitle>Fertiges Workout-Template verwenden</CardTitle>
         </CardHeader>
         <CardContent>
           <Select onValueChange={loadTemplate}>
