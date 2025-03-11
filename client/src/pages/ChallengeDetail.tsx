@@ -11,6 +11,18 @@ import { de } from "date-fns/locale";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
+interface WorkoutExercise {
+  name: string;
+  reps: number;
+  description?: string;
+}
+
+interface WorkoutDetails {
+  timePerRound: number;
+  rounds: number;
+  exercises: WorkoutExercise[];
+}
+
 export default function ChallengeDetail() {
   const { id } = useParams();
   const { toast } = useToast();
@@ -25,6 +37,7 @@ export default function ChallengeDetail() {
   if (!challenge || !creator) return <div>Challenge nicht gefunden</div>;
 
   const isActive = new Date() >= challenge.startDate && new Date() <= challenge.endDate;
+  const workoutDetails = challenge.workoutDetails as WorkoutDetails;
 
   const handleJoinChallenge = () => {
     setIsParticipating(true);
@@ -44,7 +57,6 @@ export default function ChallengeDetail() {
       return;
     }
 
-    // Hier würden die Ergebnisse in einer echten App gespeichert werden
     toast({
       title: "Ergebnis gespeichert!",
       description: "Dein Ergebnis wurde erfolgreich eingetragen.",
@@ -88,7 +100,7 @@ export default function ChallengeDetail() {
       <Card className="mb-6">
         <CardContent className="flex items-center gap-4 py-4">
           <Avatar className="h-12 w-12">
-            <AvatarImage src={creator.avatar} />
+            <AvatarImage src={creator.avatar || undefined} />
             <AvatarFallback>{creator.username[0]}</AvatarFallback>
           </Avatar>
           <div>
@@ -162,21 +174,21 @@ export default function ChallengeDetail() {
           <CardTitle>Workout Details</CardTitle>
         </CardHeader>
         <CardContent>
-          {challenge.workoutDetails && (
+          {workoutDetails && (
             <div className="space-y-4">
               <div className="p-4 bg-muted rounded-lg">
                 <h3 className="font-semibold mb-2">Workout Typ: {challenge.workoutType.toUpperCase()}</h3>
                 <p className="text-sm text-muted-foreground mb-2">
-                  {challenge.workoutDetails.timePerRound} Sekunden pro Runde
+                  {workoutDetails.timePerRound} Sekunden pro Runde
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {challenge.workoutDetails.rounds} Runden
+                  {workoutDetails.rounds} Runden
                 </p>
               </div>
               <div>
                 <h4 className="font-semibold mb-2">Übungen:</h4>
                 <ul className="space-y-2">
-                  {challenge.workoutDetails.exercises.map((exercise: any, index: number) => (
+                  {workoutDetails.exercises.map((exercise, index) => (
                     <li key={index} className="p-3 border rounded-lg">
                       <div className="font-medium">{exercise.name}</div>
                       <div className="text-sm text-muted-foreground">
