@@ -30,6 +30,7 @@ import { format } from "date-fns";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { useUsers } from "../contexts/UserContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 
 
 // Erweiterte Mock-Daten mit Button-Konfiguration und archivierten Bannern
@@ -82,7 +83,20 @@ const mockBanners = [
 // Leere Mock-Daten für die Statistik-Karten
 const mockChallenges = [];
 const mockGroups = [];
-const mockPosts = [];
+const mockPosts = [
+  {
+    id: 1,
+    userId: 1,
+    content: "Dies ist ein Beispiel für einen gemeldeten Beitrag.",
+    image: "https://via.placeholder.com/150",
+  },
+  {
+    id: 2,
+    userId: 2,
+    content: "Ein weiterer gemeldeter Beitrag.",
+    image: null,
+  }
+];
 
 // Änderungen im BannerManagement
 function BannerManagement() {
@@ -568,32 +582,80 @@ export default function Admin() {
         <h2 className="text-2xl font-bold mb-6">Content Moderation</h2>
         <Card>
           <CardHeader>
-            <CardTitle>Gemeldete Inhalte</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Gemeldete Inhalte</CardTitle>
+              <div className="flex items-center gap-2">
+                <select className="px-2 py-1 rounded border text-sm">
+                  <option value="all">Alle Meldungen</option>
+                  <option value="pending">Ausstehend</option>
+                  <option value="resolved">Bearbeitet</option>
+                </select>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="mb-4">
-              <Input placeholder="Search reported content..." />
+              <Input placeholder="Gemeldete Inhalte durchsuchen..." />
             </div>
             <ScrollArea className="h-[400px]">
               <div className="space-y-4">
                 {mockPosts.map(post => (
                   <div key={post.id} className="border-b p-4">
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                      <div>
-                        <h3 className="font-semibold">
-                          Post by @{users.find(u => u.id === post.userId)?.username}
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="font-semibold">
+                            Beitrag von @{users.find(u => u.id === post.userId)?.username}
+                          </h3>
+                          <Badge variant="outline" className="text-red-500">
+                            2 Meldungen
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-2">
                           {post.content}
                         </p>
+                        {post.image && (
+                          <img 
+                            src={post.image} 
+                            alt="Reported content" 
+                            className="h-20 w-20 object-cover rounded-md"
+                          />
+                        )}
+                        <div className="mt-2 space-y-2">
+                          <div className="text-sm p-2 bg-muted rounded-md">
+                            <p className="font-medium text-xs text-muted-foreground mb-1">
+                              Grund der Meldung:
+                            </p>
+                            <p>Unangemessener Inhalt - Der Beitrag verstößt gegen die Community-Richtlinien</p>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            Gemeldet von @username • Vor 2 Stunden
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex gap-2 w-full sm:w-auto">
-                        <Button variant="destructive" size="sm" className="flex-1 sm:flex-none">Remove</Button>
-                        <Button variant="outline" size="sm" className="flex-1 sm:flex-none">Approve</Button>
+                      <div className="flex flex-col gap-2 min-w-[120px]">
+                        <Button variant="destructive" size="sm" className="w-full">
+                          Entfernen
+                        </Button>
+                        <Button variant="outline" size="sm" className="w-full">
+                          Ignorieren
+                        </Button>
+                        <Button variant="ghost" size="sm" className="w-full">
+                          Details
+                        </Button>
                       </div>
                     </div>
                   </div>
                 ))}
+
+                {/* Wenn keine gemeldeten Inhalte vorhanden sind */}
+                {mockPosts.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <div className="mb-2">✨</div>
+                    <h4 className="font-medium">Alles klar!</h4>
+                    <p className="text-sm">Keine gemeldeten Inhalte vorhanden.</p>
+                  </div>
+                )}
               </div>
             </ScrollArea>
           </CardContent>
