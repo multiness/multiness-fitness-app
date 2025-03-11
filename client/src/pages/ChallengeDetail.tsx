@@ -36,7 +36,9 @@ export default function ChallengeDetail() {
 
   if (!challenge || !creator) return <div>Challenge nicht gefunden</div>;
 
-  const isActive = new Date() >= challenge.startDate && new Date() <= challenge.endDate;
+  const currentDate = new Date();
+  const isActive = currentDate >= challenge.startDate && currentDate <= challenge.endDate;
+  const isEnded = currentDate > challenge.endDate;
   const workoutDetails = challenge.workoutDetails as WorkoutDetails;
 
   // Simulierte Teilnehmerliste mit Punkten
@@ -45,7 +47,18 @@ export default function ChallengeDetail() {
     points: Math.floor(Math.random() * 1000),
   })).sort((a, b) => b.points - a.points);
 
+  const winners = participants.slice(0, 3); // Top 3 Gewinner
+
   const handleJoinChallenge = () => {
+    if (isEnded) {
+      toast({
+        title: "Challenge beendet",
+        description: "Diese Challenge ist bereits abgeschlossen.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsParticipating(true);
     toast({
       title: "Erfolgreich beigetreten!",
@@ -127,8 +140,59 @@ export default function ChallengeDetail() {
         </CardContent>
       </Card>
 
-      {/* Teilnehmer Status & Ergebnisse */}
-      {isParticipating && (
+      {/* Gewinner Anzeige für beendete Challenges */}
+      {isEnded && (
+        <Card className="mb-6 border-2 border-primary">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Trophy className="h-5 w-5 text-primary" />
+              Challenge Gewinner
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {winners.map((winner, index) => (
+                <div key={winner.id} className="flex items-center justify-between p-3 rounded-lg bg-primary/5">
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      {index === 0 && <Crown className="absolute -top-2 -left-2 h-5 w-5 text-yellow-400" />}
+                      <Avatar className="h-12 w-12 ring-2 ring-primary">
+                        <AvatarImage src={winner.avatar || undefined} />
+                        <AvatarFallback>{winner.username[0]}</AvatarFallback>
+                      </Avatar>
+                    </div>
+                    <div>
+                      <p className="font-bold text-lg">{winner.username}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {index === 0 ? "🥇 Erster Platz" : index === 1 ? "🥈 Zweiter Platz" : "🥉 Dritter Platz"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-lg">{winner.points}</p>
+                    <p className="text-sm text-muted-foreground">Punkte</p>
+                  </div>
+                </div>
+              ))}
+              {winners.length > 0 && (
+                <div className="mt-4 p-4 bg-primary/5 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <Gift className="h-5 w-5 text-primary flex-shrink-0 mt-1" />
+                    <div>
+                      <p className="font-medium">Gewonnener Preis</p>
+                      <p className="text-lg font-bold">{challenge.prize}</p>
+                      <p className="text-sm text-muted-foreground">{challenge.prizeDescription}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Teilnehmer Status & Ergebnisse für aktive Teilnehmer */}
+      {isParticipating && !isEnded && (
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Dein Fortschritt</CardTitle>
@@ -257,7 +321,7 @@ export default function ChallengeDetail() {
         </CardContent>
       </Card>
 
-      {/* Gewinn Details */}
+      {/* Preis Details */}
       <Card className="mb-6">
         <CardHeader className="flex flex-row items-center gap-2">
           <Gift className="h-5 w-5 text-primary" />
@@ -281,20 +345,22 @@ export default function ChallengeDetail() {
       </Card>
 
       {/* Teilnahme Button */}
-      {!isParticipating ? (
-        <Button className="w-full" size="lg" onClick={handleJoinChallenge}>
-          An Challenge teilnehmen
-        </Button>
-      ) : (
-        <Button
-          className="w-full"
-          size="lg"
-          variant="outline"
-          onClick={() => setShowResultForm(true)}
-        >
-          Ergebnis eintragen
-        </Button>
-      )}
+      {!isEnded ? (
+        !isParticipating ? (
+          <Button className="w-full" size="lg" onClick={handleJoinChallenge}>
+            An Challenge teilnehmen
+          </Button>
+        ) : (
+          <Button
+            className="w-full"
+            size="lg"
+            variant="outline"
+            onClick={() => setShowResultForm(true)}
+          >
+            Ergebnis eintragen
+          </Button>
+        )
+      ) : null}
     </div>
   );
 }
