@@ -5,17 +5,21 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Image, Lock, Globe, X, UserPlus } from "lucide-react";
+import { Image, Lock, Globe, X, UserPlus, Pin } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Switch } from "@/components/ui/switch";
+import { useUsers } from "../contexts/UserContext";
 
 export default function CreateGroup() {
   const { toast } = useToast();
+  const { currentUser } = useUsers();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [privacy, setPrivacy] = useState<"public" | "private">("public");
   const [invites, setInvites] = useState<string[]>([]);
   const [currentInvite, setCurrentInvite] = useState("");
+  const [isFeatured, setIsFeatured] = useState(false);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -95,6 +99,26 @@ export default function CreateGroup() {
               className="min-h-[100px]"
             />
           </div>
+
+          {/* Featured Group Option - Nur für Admins sichtbar */}
+          {currentUser?.isAdmin && (
+            <div className="flex items-center justify-between space-x-2 pt-2">
+              <div className="space-y-0.5">
+                <Label className="text-base">Featured Gruppe</Label>
+                <p className="text-sm text-muted-foreground">
+                  Diese Gruppe wird auf der Übersichtsseite hervorgehoben
+                </p>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  checked={isFeatured}
+                  onCheckedChange={setIsFeatured}
+                  aria-label="Toggle featured status"
+                />
+                <Pin className={`h-4 w-4 ${isFeatured ? 'text-primary' : 'text-muted-foreground'}`} />
+              </div>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label>Privatsphäre</Label>
