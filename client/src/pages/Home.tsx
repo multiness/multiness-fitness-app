@@ -6,8 +6,11 @@ import ChallengeCard from "@/components/ChallengeCard";
 import FeedPost from "@/components/FeedPost";
 import EventSlider from "@/components/EventSlider";
 import { mockGroups, mockChallenges, mockPosts } from "../data/mockData";
+import { Link, useLocation } from "wouter";
 
 export default function Home() {
+  const [, setLocation] = useLocation();
+
   return (
     <div className="container max-w-2xl mx-auto p-4">
       {/* Marketing Banner */}
@@ -27,10 +30,20 @@ export default function Home() {
             <h1 className="text-3xl font-bold mb-4">Summer Body Challenge 2025</h1>
             <p className="text-lg mb-6 text-white/90">Starte jetzt deine Fitness-Journey mit unserem 12-Wochen Programm.</p>
             <div className="flex gap-3">
-              <Button size="lg" variant="default" className="bg-primary hover:bg-primary/90">
+              <Button 
+                size="lg" 
+                variant="default" 
+                className="bg-primary hover:bg-primary/90"
+                onClick={() => setLocation("/challenges")}
+              >
                 Jetzt teilnehmen
               </Button>
-              <Button size="lg" variant="outline" className="text-white border-white hover:bg-white/20">
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="text-white border-white hover:bg-white/20"
+                onClick={() => setLocation("/events/1")}
+              >
                 Mehr erfahren
               </Button>
             </div>
