@@ -79,7 +79,7 @@ export default function Admin() {
 
       {/* Main Content Area */}
       <Tabs defaultValue="team">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 gap-2">
           <TabsTrigger value="team">Team Management</TabsTrigger>
           <TabsTrigger value="banner">Marketing Banner</TabsTrigger>
           <TabsTrigger value="moderation">Content Moderation</TabsTrigger>
@@ -95,9 +95,9 @@ export default function Admin() {
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
-                <div className="flex gap-4 items-center">
-                  <Input placeholder="Search users..." className="max-w-sm" />
-                  <Button variant="outline">
+                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                  <Input placeholder="Search users..." className="w-full sm:max-w-sm" />
+                  <Button variant="outline" className="w-full sm:w-auto">
                     <UserCog className="h-4 w-4 mr-2" />
                     Add Team Member
                   </Button>
@@ -105,7 +105,7 @@ export default function Admin() {
 
                 <ScrollArea className="h-[400px]">
                   {mockUsers.map(user => (
-                    <div key={user.id} className="flex items-center justify-between border-b p-4">
+                    <div key={user.id} className="flex flex-col sm:flex-row sm:items-center justify-between border-b p-4 gap-4">
                       <div className="flex items-center gap-3">
                         <img
                           src={user.avatar}
@@ -121,9 +121,9 @@ export default function Admin() {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-6">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm">Verified</span>
+                          <span className="text-sm whitespace-nowrap">Verified</span>
                           <Switch
                             checked={user.isVerified}
                             onCheckedChange={() => {}}
@@ -131,7 +131,7 @@ export default function Admin() {
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <span className="text-sm">Team Role</span>
+                          <span className="text-sm whitespace-nowrap">Team Role</span>
                           <Select defaultValue={user.teamRole || "none"}>
                             <SelectTrigger className="w-[140px]">
                               <SelectValue placeholder="Select role" />
@@ -146,7 +146,7 @@ export default function Admin() {
                           </Select>
                         </div>
 
-                        <Button variant="ghost" size="sm">
+                        <Button variant="ghost" size="sm" className="w-full sm:w-auto">
                           Save
                         </Button>
                       </div>
@@ -207,7 +207,7 @@ export default function Admin() {
               <ScrollArea className="h-[400px]">
                 {mockPosts.map(post => (
                   <div key={post.id} className="border-b p-4">
-                    <div className="flex justify-between items-start mb-2">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                       <div>
                         <h3 className="font-semibold">
                           Post by @{mockUsers.find(u => u.id === post.userId)?.username}
@@ -216,9 +216,9 @@ export default function Admin() {
                           {post.content}
                         </p>
                       </div>
-                      <div className="space-x-2">
-                        <Button variant="destructive" size="sm">Remove</Button>
-                        <Button variant="outline" size="sm">Approve</Button>
+                      <div className="flex gap-2 w-full sm:w-auto">
+                        <Button variant="destructive" size="sm" className="flex-1 sm:flex-none">Remove</Button>
+                        <Button variant="outline" size="sm" className="flex-1 sm:flex-none">Approve</Button>
                       </div>
                     </div>
                   </div>
