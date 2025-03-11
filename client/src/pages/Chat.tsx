@@ -16,6 +16,7 @@ interface Message {
   timestamp: Date;
   isGroupMessage?: boolean;
   groupId?: number;
+  unread?: boolean;
 }
 
 // Mock messages
@@ -28,6 +29,7 @@ const mockMessages: Record<string, Message[]> = {
       receiverId: 1,
       content: "Hey! Wie läuft dein Training? 💪",
       timestamp: new Date(Date.now() - 3600000),
+      unread: true,
     },
     {
       id: 2,
@@ -47,6 +49,7 @@ const mockMessages: Record<string, Message[]> = {
       timestamp: new Date(Date.now() - 7200000),
       isGroupMessage: true,
       groupId: 1,
+      unread: true,
     },
   ],
 };
@@ -58,6 +61,7 @@ interface ChatPreview {
   isGroup: boolean;
   isOnline?: boolean;
   lastMessage?: Message;
+  unreadCount?: number;
 }
 
 export default function Chat() {
@@ -68,21 +72,31 @@ export default function Chat() {
 
   // Kombiniere User und Gruppen für die Chat-Liste
   const chatPreviews: ChatPreview[] = [
-    ...mockUsers.slice(1).map(user => ({
-      id: user.id.toString(),
-      name: user.username,
-      avatar: user.avatar,
-      isGroup: false,
-      isOnline: true,
-      lastMessage: messages[user.id.toString()]?.at(-1),
-    })),
-    ...mockGroups.map(group => ({
-      id: `g${group.id}`,
-      name: group.name,
-      avatar: group.image,
-      isGroup: true,
-      lastMessage: messages[`g${group.id}`]?.at(-1),
-    })),
+    ...mockUsers.slice(1).map(user => {
+      const userMessages = messages[user.id.toString()] || [];
+      const unreadCount = userMessages.filter(m => m.unread && m.senderId !== currentUser.id).length;
+      return {
+        id: user.id.toString(),
+        name: user.username,
+        avatar: user.avatar,
+        isGroup: false,
+        isOnline: true,
+        lastMessage: userMessages.at(-1),
+        unreadCount,
+      };
+    }),
+    ...mockGroups.map(group => {
+      const groupMessages = messages[`g${group.id}`] || [];
+      const unreadCount = groupMessages.filter(m => m.unread && m.senderId !== currentUser.id).length;
+      return {
+        id: `g${group.id}`,
+        name: group.name,
+        avatar: group.image,
+        isGroup: true,
+        lastMessage: groupMessages.at(-1),
+        unreadCount,
+      };
+    }),
   ];
 
   const handleSendMessage = (e: React.FormEvent) => {
@@ -156,6 +170,9 @@ export default function Chat() {
                       <div className="flex items-center justify-between">
                         <p className="font-medium truncate flex items-center gap-2">
                           {chat.name}
+                          {chat.unreadCount ? (
+                            <span className="h-2 w-2 rounded-full bg-blue-500" />
+                          ) : null}
                         </p>
                         {chat.lastMessage && (
                           <span className="text-xs text-muted-foreground">
@@ -164,7 +181,9 @@ export default function Chat() {
                         )}
                       </div>
                       {chat.lastMessage && (
-                        <p className="text-sm text-muted-foreground truncate">
+                        <p className={`text-sm truncate ${
+                          chat.unreadCount ? 'font-semibold text-foreground' : 'text-muted-foreground'
+                        }`}>
                           {chat.lastMessage.senderId === currentUser.id ? 'Du: ' : ''}{chat.lastMessage.content}
                         </p>
                       )}
