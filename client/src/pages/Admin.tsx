@@ -78,9 +78,17 @@ function BannerManagement() {
                   <CardDescription className="mt-1.5">
                     {position.description}
                     <div className="mt-2 p-2 bg-muted rounded-md text-xs">
-                      <div className="font-medium mb-1">Format-Anforderungen:</div>
-                      <div>App: {position.appDimensions.width}x{position.appDimensions.height}px</div>
-                      <div>Web: {position.webDimensions.width}x{position.webDimensions.height}px</div>
+                      <div className="font-medium mb-1 text-destructive">Format-Anforderungen (exakt):</div>
+                      <div className="flex flex-col gap-1">
+                        <div className="p-2 border rounded-md">
+                          <div className="font-medium">App Format (zwingend exakt):</div>
+                          <div className="text-destructive">{position.appDimensions.width} x {position.appDimensions.height}px</div>
+                        </div>
+                        <div className="p-2 border rounded-md">
+                          <div className="font-medium">Web Format (mindestens):</div>
+                          <div>{position.webDimensions.width} x {position.webDimensions.height}px</div>
+                        </div>
+                      </div>
                     </div>
                   </CardDescription>
                 </div>
@@ -196,16 +204,22 @@ function BannerManagement() {
                         Ziehen Sie Bilder hierher oder klicken Sie zum Hochladen
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-lg">
-                        <div className="p-4 bg-muted rounded-lg">
-                          <div className="font-medium mb-2">App Format</div>
-                          <div className="text-xs text-muted-foreground">
+                        <div className="p-4 bg-muted rounded-lg border-2 border-destructive">
+                          <div className="font-medium mb-2">App Format (exakt)</div>
+                          <div className="text-xs text-destructive font-bold">
                             {position.appDimensions.width} x {position.appDimensions.height}px
+                            <div className="mt-1 font-normal">
+                              Bitte exakt diese Größe verwenden
+                            </div>
                           </div>
                         </div>
                         <div className="p-4 bg-muted rounded-lg">
-                          <div className="font-medium mb-2">Web Format</div>
+                          <div className="font-medium mb-2">Web Format (mindestens)</div>
                           <div className="text-xs text-muted-foreground">
                             {position.webDimensions.width} x {position.webDimensions.height}px
+                            <div className="mt-1">
+                              Mindestgröße für optimale Darstellung
+                            </div>
                           </div>
                         </div>
                       </div>
