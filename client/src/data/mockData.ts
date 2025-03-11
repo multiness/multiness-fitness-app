@@ -231,6 +231,74 @@ export const mockChallenges: Challenge[] = [
     prize: "Healthy Kitchen Set",
     prizeDescription: "Hochleistungsmixer + Meal Prep Container Set + Bio-Kochbuch",
     prizeImage: "https://images.unsplash.com/photo-1495546968767-f0573cca821e?w=800&auto=format",
+  },
+  {
+    id: 6,
+    title: "Winter HIIT Challenge 2024",
+    description: "Intensive HIIT-Workouts für maximale Fettverbrennung",
+    image: "https://images.unsplash.com/photo-1434608519344-49d77a699e1d?w=800&auto=format",
+    creatorId: 1,
+    startDate: new Date('2024-12-01'),
+    endDate: new Date('2024-12-31'),
+    prize: "Premium Fitness Set",
+    prizeDescription: "Komplettes Home-Workout-Set mit Kettlebells, Resistance Bands und digitaler Trainingsplan",
+    prizeImage: "https://images.unsplash.com/photo-1593079831268-3381b0db4a77?w=800&auto=format",
+    workoutType: "hiit",
+    workoutDetails: {
+      intervals: 8,
+      workTime: 40,
+      restTime: 20,
+      exercises: [
+        { name: "Burpees", description: "Explosiv mit Push-up" },
+        { name: "Mountain Climbers", description: "Schnelles Tempo" },
+        { name: "Jump Squats", description: "Maximale Höhe" }
+      ]
+    }
+  },
+  {
+    id: 7,
+    title: "Mobility Master Challenge",
+    description: "30 Tage Beweglichkeit und Flexibilität",
+    image: "https://images.unsplash.com/photo-1552196563-55cd4e45efb3?w=800&auto=format",
+    creatorId: 2,
+    startDate: new Date('2024-11-15'),
+    endDate: new Date('2024-12-15'),
+    prize: "Wellness Paket Deluxe",
+    prizeDescription: "Premium Yoga-Set, Massage Gutschein und 3 Monate Online Yoga Mitgliedschaft",
+    prizeImage: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&auto=format",
+    workoutType: "mobility",
+    workoutDetails: {
+      timePerRound: 60,
+      rounds: 5,
+      exercises: [
+        { name: "Deep Squat Hold", reps: 60, description: "Aktive Haltung" },
+        { name: "Hip Opener Flow", reps: 45, description: "Dynamische Bewegungen" },
+        { name: "Shoulder Mobility", reps: 30, description: "Kontrollierte Ausführung" }
+      ]
+    }
+  },
+  {
+    id: 8,
+    title: "Herbst-Marathon Vorbereitung",
+    description: "8-Wochen Lauftraining für Fortgeschrittene",
+    image: "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=800&auto=format",
+    creatorId: 5,
+    startDate: new Date('2024-09-01'),
+    endDate: new Date('2024-10-31'),
+    prize: "Pro Runner Bundle",
+    prizeDescription: "High-End Laufschuhe, GPS-Smartwatch und professionelle Laufanalyse",
+    prizeImage: "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=800&auto=format",
+    workoutType: "running",
+    workoutDetails: {
+      type: "intervals",
+      timePerRound: 300,
+      rounds: 6,
+      exercises: [
+        { name: "Progressive Tempo Run", reps: 1, description: "5km mit steigender Intensität" },
+        { name: "Hill Sprints", reps: 8, description: "30 Sekunden Sprint, 60 Sekunden Erholung" },
+        { name: "Long Distance", reps: 1, description: "15km steady state" }
+      ]
+    }
   }
 ];
 
