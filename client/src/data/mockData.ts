@@ -409,3 +409,60 @@ export const mockWorkoutTemplates = [
     createdAt: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000)
   }
 ];
+
+// Füge Übungsdatenbank hinzu
+export const exerciseDatabase = {
+  emom: [
+    { name: "Burpees", reps: [8, 10, 12], description: "Vollständige Bewegung mit Pushup" },
+    { name: "Kettlebell Swings", reps: [12, 15, 20], description: "Explosiv aus der Hüfte" },
+    { name: "Box Jumps", reps: [10, 12, 15], description: "Stabile Landung" },
+    { name: "Wall Balls", reps: [12, 15, 18], description: "Volle Hocke, explosive Streckung" },
+    { name: "Mountain Climbers", reps: [20, 25, 30], description: "Schnelles Tempo" },
+    { name: "Thrusters", reps: [8, 10, 12], description: "Front Squat to Push Press" }
+  ],
+  amrap: [
+    { name: "Push-ups", reps: [10, 15, 20], description: "Volle Range of Motion" },
+    { name: "Air Squats", reps: [15, 20, 25], description: "Hüfte unter Knie" },
+    { name: "Russian Twists", reps: [20, 25, 30], description: "Kontrollierte Bewegung" },
+    { name: "Pull-ups", reps: [5, 8, 10], description: "Kinn über Stange" },
+    { name: "Lunges", reps: [12, 16, 20], description: "Pro Bein" },
+    { name: "Sit-ups", reps: [15, 20, 25], description: "Vollständige Bewegung" }
+  ],
+  hit: [
+    { name: "Jumping Jacks", description: "Explosiv und rhythmisch" },
+    { name: "High Knees", description: "Knie auf Hüfthöhe" },
+    { name: "Plank Hold", description: "Körper in einer Linie" },
+    { name: "Mountain Climbers", description: "Schnelles Tempo" },
+    { name: "Burpees", description: "Ohne Push-up für schnelles Tempo" },
+    { name: "Jump Squats", description: "Explosiv nach oben" }
+  ],
+  running: [
+    {
+      name: "Intervall-Training",
+      description: "1 min schnell, 1 min langsam",
+      variations: {
+        "15": { intervals: 7, warmup: "5min" },
+        "30": { intervals: 15, warmup: "5min" },
+        "45": { intervals: 20, warmup: "10min" }
+      }
+    },
+    {
+      name: "Tempowechsel-Lauf",
+      description: "Wechsel zwischen mittlerem und schnellem Tempo",
+      variations: {
+        "15": { blocks: 3, duration: "4min" },
+        "30": { blocks: 5, duration: "5min" },
+        "45": { blocks: 7, duration: "5min" }
+      }
+    },
+    {
+      name: "Distanz-Challenge",
+      description: "Gleichmäßiges Tempo über Distanz",
+      variations: {
+        "15": { distance: 2.5, pace: "mittel" },
+        "30": { distance: 5, pace: "mittel" },
+        "45": { distance: 7.5, pace: "mittel" }
+      }
+    }
+  ]
+};

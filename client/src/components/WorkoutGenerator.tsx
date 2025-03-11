@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { mockWorkoutTemplates, workoutGoals } from "../data/mockData";
+import { mockWorkoutTemplates, workoutGoals, exerciseDatabase } from "../data/mockData";
 
 interface WorkoutGeneratorProps {
   onSelectWorkout: (template: any) => void;
@@ -21,25 +21,112 @@ export default function WorkoutGenerator({ onSelectWorkout }: WorkoutGeneratorPr
   const [selectedGoal, setSelectedGoal] = useState<string>("");
   const [duration, setDuration] = useState<string>("30");
   const [difficulty, setDifficulty] = useState<string>("mittel");
-  const [suggestedWorkout, setSuggestedWorkout] = useState<any>(null);
   const [workoutType, setWorkoutType] = useState<string>("emom");
+  const [suggestedWorkout, setSuggestedWorkout] = useState<any>(null);
   const [exercises, setExercises] = useState<any[]>([{ name: "", reps: "", sets: "", description: "" }]);
 
   const generateWorkout = () => {
-    // Filter Workouts basierend auf den Kriterien
-    const matchingWorkouts = mockWorkoutTemplates.filter(workout => {
-      return (
-        workout.goal === selectedGoal &&
-        workout.difficulty === difficulty &&
-        Math.abs(workout.duration - parseInt(duration)) <= 15 // 15 Minuten Toleranz
-      );
-    });
+    let generatedWorkout = {
+      name: "",
+      description: "",
+      workoutType,
+      duration: parseInt(duration),
+      difficulty,
+      goal: selectedGoal,
+      workoutDetails: {}
+    };
 
-    // Zufällig ein passendes Workout auswählen
-    if (matchingWorkouts.length > 0) {
-      const randomIndex = Math.floor(Math.random() * matchingWorkouts.length);
-      setSuggestedWorkout(matchingWorkouts[randomIndex]);
+    const difficultyIndex = {
+      "anfänger": 0,
+      "mittel": 1,
+      "fortgeschritten": 2
+    }[difficulty];
+
+    switch(workoutType) {
+      case "emom":
+        const emomExercises = shuffleArray(exerciseDatabase.emom)
+          .slice(0, 3)
+          .map(exercise => ({
+            name: exercise.name,
+            reps: exercise.reps[difficultyIndex],
+            description: exercise.description
+          }));
+
+        generatedWorkout = {
+          ...generatedWorkout,
+          name: "EMOM Challenge",
+          description: `${duration} Minuten EMOM Workout mit ${emomExercises.length} Übungen`,
+          workoutDetails: {
+            timePerRound: 60,
+            rounds: parseInt(duration),
+            exercises: emomExercises
+          }
+        };
+        break;
+
+      case "amrap":
+        const amrapExercises = shuffleArray(exerciseDatabase.amrap)
+          .slice(0, 4)
+          .map(exercise => ({
+            name: exercise.name,
+            reps: exercise.reps[difficultyIndex],
+            description: exercise.description
+          }));
+
+        generatedWorkout = {
+          ...generatedWorkout,
+          name: "AMRAP Challenge",
+          description: `${duration} Minuten AMRAP mit ${amrapExercises.length} Übungen`,
+          workoutDetails: {
+            totalTime: parseInt(duration) * 60,
+            exercises: amrapExercises
+          }
+        };
+        break;
+
+      case "hit":
+        const hitExercises = shuffleArray(exerciseDatabase.hit)
+          .slice(0, 6);
+
+        const workTime = difficultyIndex === 0 ? 30 : difficultyIndex === 1 ? 40 : 45;
+        const restTime = difficultyIndex === 0 ? 30 : difficultyIndex === 1 ? 20 : 15;
+        const rounds = Math.floor((parseInt(duration) * 60) / (workTime + restTime));
+
+        generatedWorkout = {
+          ...generatedWorkout,
+          name: "HIT Circuit",
+          description: `${duration} Minuten Hochintensives Intervalltraining`,
+          workoutDetails: {
+            intervals: rounds,
+            workTime,
+            restTime,
+            exercises: hitExercises
+          }
+        };
+        break;
+
+      case "running":
+        const runningTemplate = shuffleArray(exerciseDatabase.running)[0];
+        const variation = runningTemplate.variations[duration];
+
+        generatedWorkout = {
+          ...generatedWorkout,
+          name: runningTemplate.name,
+          description: `${duration} Minuten ${runningTemplate.description}`,
+          workoutDetails: {
+            type: "time",
+            target: parseInt(duration),
+            description: `Aufwärmen: ${variation.warmup}\n` +
+                        `${runningTemplate.description}\n` +
+                        (variation.intervals ? `${variation.intervals} Intervalle` :
+                         variation.blocks ? `${variation.blocks} Blöcke je ${variation.duration}` :
+                         `Zieldistanz: ${variation.distance}km`)
+          }
+        };
+        break;
     }
+
+    setSuggestedWorkout(generatedWorkout);
   };
 
   const addExercise = () => {
@@ -50,6 +137,16 @@ export default function WorkoutGenerator({ onSelectWorkout }: WorkoutGeneratorPr
     const newExercises = [...exercises];
     newExercises[index] = { ...newExercises[index], [field]: value };
     setExercises(newExercises);
+  };
+
+  // Hilfsfunktion zum Mischen eines Arrays
+  const shuffleArray = (array: any[]) => {
+    const newArray = [...array];
+    for (let i = newArray.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    }
+    return newArray;
   };
 
   return (
@@ -341,7 +438,7 @@ export default function WorkoutGenerator({ onSelectWorkout }: WorkoutGeneratorPr
                   ))}
                 </ul>
               </div>
-              <Button 
+              <Button
                 onClick={() => onSelectWorkout(suggestedWorkout)}
                 className="w-full"
               >
