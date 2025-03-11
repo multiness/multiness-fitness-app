@@ -95,3 +95,15 @@ export type User = typeof users.$inferSelect;
 export type Post = typeof posts.$inferSelect;
 export type Challenge = typeof challenges.$inferSelect;
 export type Group = typeof groups.$inferSelect;
+
+export const workoutTemplates = pgTable("workout_templates", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  creatorId: integer("creator_id").references(() => users.id).notNull(),
+  workoutType: text("workout_type").notNull(),
+  workoutDetails: jsonb("workout_details").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type WorkoutTemplate = typeof workoutTemplates.$inferSelect;

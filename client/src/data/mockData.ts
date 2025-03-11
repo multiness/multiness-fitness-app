@@ -301,3 +301,54 @@ export const mockEvents: Event[] = [
     location: "Fitness Studio Nord"
   }
 ];
+
+export const mockWorkoutTemplates = [
+  {
+    id: 1,
+    name: "HIIT Klassiker",
+    description: "20-20-20 Intervalle mit Grundübungen",
+    creatorId: 1,
+    workoutType: "hit",
+    workoutDetails: {
+      intervals: 8,
+      workTime: 20,
+      restTime: 20,
+      exercises: [
+        { name: "Burpees", description: "Vollständige Bewegung mit Pushup" },
+        { name: "Mountain Climbers", description: "Schnelles Tempo" },
+        { name: "Jump Squats", description: "Explosiv nach oben" }
+      ]
+    },
+    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+  },
+  {
+    id: 2,
+    name: "EMOM Kraft",
+    description: "Kraftbasiertes EMOM für Fortgeschrittene",
+    creatorId: 3,
+    workoutType: "emom",
+    workoutDetails: {
+      timePerRound: 60,
+      rounds: 10,
+      exercises: [
+        { name: "Kettlebell Swings", reps: 15, description: "24kg / 16kg" },
+        { name: "Push-ups", reps: 10, description: "Volle ROM" },
+        { name: "Box Jumps", reps: 12, description: "60cm Box" }
+      ]
+    },
+    createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000)
+  },
+  {
+    id: 3,
+    name: "10k Vorbereitung",
+    description: "Basis-Template für 10k Lauftraining",
+    creatorId: 5,
+    workoutType: "running",
+    workoutDetails: {
+      type: "distance",
+      target: 10,
+      description: "10km Lauf mit Intervallen: 1km warm up, 8km steady state, 1km cool down"
+    },
+    createdAt: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000)
+  }
+];

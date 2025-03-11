@@ -6,20 +6,58 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Timer, Dumbbell, Trophy, Gift } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { mockWorkoutTemplates } from "../data/mockData";
 
 type WorkoutType = "emom" | "amrap" | "hit" | "running" | "custom";
 
 export default function CreateChallenge() {
   const [workoutType, setWorkoutType] = useState<WorkoutType | null>(null);
   const [exercises, setExercises] = useState<string[]>([""]);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>("");
 
   const addExercise = () => {
     setExercises([...exercises, ""]);
   };
 
+  const loadTemplate = (templateId: string) => {
+    const template = mockWorkoutTemplates.find(t => t.id === parseInt(templateId));
+    if (template) {
+      setWorkoutType(template.workoutType as WorkoutType);
+      // Weitere Template-Details laden...
+    }
+  };
+
   return (
     <div className="container max-w-2xl mx-auto p-4">
       <h1 className="text-2xl font-bold mb-6">Neue Challenge erstellen</h1>
+
+      {/* Template-Auswahl */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Workout-Template verwenden (optional)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Select onValueChange={loadTemplate}>
+            <SelectTrigger>
+              <SelectValue placeholder="Wähle ein Template" />
+            </SelectTrigger>
+            <SelectContent>
+              {mockWorkoutTemplates.map(template => (
+                <SelectItem key={template.id} value={template.id.toString()}>
+                  {template.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </CardContent>
+      </Card>
 
       {/* Workout-Typ Auswahl */}
       <Card className="mb-6">
