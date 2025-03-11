@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Send, Users, Image as ImageIcon, MessageCircle } from "lucide-react";
+import { Send, Users, Image as ImageIcon, MessageCircle, Info } from "lucide-react";
 import { mockGroups, mockUsers } from "../data/mockData";
 import { format } from "date-fns";
 
@@ -61,6 +61,7 @@ export default function GroupDetail() {
   const [activeTab, setActiveTab] = useState("group");
   const [groupMessages, setGroupMessages] = useState(mockGroupMessages);
   const [directMessages, setDirectMessages] = useState(mockDirectMessages);
+  const [showInfo, setShowInfo] = useState(false);
   const currentUser = mockUsers[0]; // Mock current user
 
   if (!group || !creator) return <div>Gruppe nicht gefunden</div>;
@@ -121,92 +122,51 @@ export default function GroupDetail() {
   );
 
   return (
-    <div className="container max-w-6xl mx-auto p-4">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Linke Spalte: Gruppeninfo */}
-        <div className="lg:col-span-1 space-y-6">
-          {/* Group Header */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-start gap-4">
-                <img
-                  src={group.image || "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=800&auto=format"}
-                  alt={group.name}
-                  className="w-24 h-24 rounded-lg object-cover"
-                />
-                <div className="flex-1">
-                  <CardTitle className="text-2xl mb-2">{group.name}</CardTitle>
-                  <p className="text-muted-foreground mb-4">{group.description}</p>
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                      <Avatar className="h-6 w-6">
-                        <AvatarImage src={creator.avatar || undefined} />
-                        <AvatarFallback>{creator.username[0]}</AvatarFallback>
-                      </Avatar>
-                      <span className="text-sm">
-                        Created by <span className="font-medium">{creator.username}</span>
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardHeader>
-          </Card>
-
-          {/* Members Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Mitglieder ({participants.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {participants.map((participant) => (
-                  <div key={participant.id} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Avatar>
-                        <AvatarImage src={participant.avatar || undefined} />
-                        <AvatarFallback>{participant.username[0]}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium">{participant.username}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {participant.id === creator.id ? 'Admin' : 'Mitglied'}
-                        </p>
-                      </div>
-                    </div>
-                    {participant.id !== creator.id && (
-                      <Button variant="ghost" size="sm">
-                        <MessageCircle className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+    <div className="h-screen flex">
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col max-w-[calc(100%-300px)]">
+        {/* Header */}
+        <div className="border-b p-4 flex items-center justify-between bg-background">
+          <div className="flex items-center gap-3">
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={group.image || undefined} />
+              <AvatarFallback>{group.name[0]}</AvatarFallback>
+            </Avatar>
+            <div>
+              <h2 className="font-semibold">{group.name}</h2>
+              <p className="text-sm text-muted-foreground">{participants.length} Mitglieder</p>
+            </div>
+          </div>
+          <Button variant="ghost" size="icon" onClick={() => setShowInfo(!showInfo)}>
+            <Info className="h-5 w-5" />
+          </Button>
         </div>
 
-        {/* Rechte Spalte: Chat */}
-        <div className="lg:col-span-2">
-          <Card className="h-[calc(100vh-2rem)]">
-            <CardHeader>
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="group">Gruppenchat</TabsTrigger>
-                  <TabsTrigger value="direct">Direktnachrichten</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="flex flex-col h-[calc(100vh-12rem)]">
+        {/* Chat Area */}
+        <div className="flex-1 flex">
+          <div className="flex-1 flex flex-col">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+              <TabsList className="justify-start rounded-none border-b p-0 h-12">
+                <TabsTrigger 
+                  value="group" 
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
+                >
+                  Gruppenchat
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="direct"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
+                >
+                  Direktnachrichten
+                </TabsTrigger>
+              </TabsList>
+
+              <div className="flex-1 flex flex-col">
                 <ScrollArea className="flex-1 p-4">
-                  <TabsContent value="group" className="m-0">
+                  <TabsContent value="group" className="m-0 h-full">
                     {renderMessages(groupMessages)}
                   </TabsContent>
-                  <TabsContent value="direct" className="m-0">
+                  <TabsContent value="direct" className="m-0 h-full">
                     {renderMessages(directMessages)}
                   </TabsContent>
                 </ScrollArea>
@@ -228,8 +188,59 @@ export default function GroupDetail() {
                   </div>
                 </form>
               </div>
-            </CardContent>
-          </Card>
+            </Tabs>
+          </div>
+
+          {/* Info Sidebar */}
+          {showInfo && (
+            <div className="w-[300px] border-l bg-background">
+              <div className="p-4">
+                <h3 className="font-semibold mb-4">Über die Gruppe</h3>
+                <p className="text-sm text-muted-foreground mb-6">{group.description}</p>
+
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Avatar className="h-6 w-6">
+                      <AvatarImage src={creator.avatar || undefined} />
+                      <AvatarFallback>{creator.username[0]}</AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm">
+                      Erstellt von <span className="font-medium">{creator.username}</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t">
+                <div className="p-4">
+                  <h3 className="font-semibold mb-4">Mitglieder</h3>
+                  <div className="space-y-3">
+                    {participants.map((participant) => (
+                      <div key={participant.id} className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={participant.avatar || undefined} />
+                            <AvatarFallback>{participant.username[0]}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="text-sm font-medium">{participant.username}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {participant.id === creator.id ? 'Admin' : 'Mitglied'}
+                            </p>
+                          </div>
+                        </div>
+                        {participant.id !== creator.id && (
+                          <Button variant="ghost" size="sm">
+                            <MessageCircle className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
