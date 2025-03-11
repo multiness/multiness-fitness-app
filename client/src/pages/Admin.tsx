@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -12,13 +18,209 @@ import {
   Image as ImageIcon,
   Upload,
   Shield,
-  Search
+  Search,
+  Link as LinkIcon,
+  Copy,
+  BarChart
 } from "lucide-react";
-import { mockChallenges, mockGroups, mockPosts } from "../data/mockData";
+import { DEFAULT_BANNER_POSITIONS } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
+import { format } from "date-fns";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { useUsers } from "../contexts/UserContext";
 
+
+// Simulierte Banner-Daten für den Prototyp
+const mockBanners = [
+  {
+    id: 1,
+    name: "Summer Challenge",
+    positionId: "APP_HEADER",
+    description: "Promotion für die Summer Fitness Challenge",
+    appImage: "https://images.unsplash.com/photo-1517963879433-6ad2b056d712?w=1200&auto=format",
+    webImage: "https://images.unsplash.com/photo-1517963879433-6ad2b056d712?w=1920&auto=format",
+    isActive: true,
+    stats: {
+      views: 1234,
+      clicks: 89,
+      ctr: "7.2%"
+    }
+  }
+];
+
+function BannerManagement() {
+  const { toast } = useToast();
+
+  const copyShortcode = (shortcode: string) => {
+    navigator.clipboard.writeText(`[banner position="${shortcode}"]`);
+    toast({
+      title: "Shortcode kopiert!",
+      description: "Fügen Sie diesen Code an der gewünschten Stelle Ihrer Website ein. Der Banner wird nur angezeigt, wenn er aktiv ist, ansonsten wird der Container automatisch ausgeblendet."
+    });
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Banner Übersicht */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {DEFAULT_BANNER_POSITIONS.map(position => (
+          <Card key={position.shortcode}>
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <div>
+                  <CardTitle>{position.name}</CardTitle>
+                  <CardDescription className="mt-1.5">
+                    {position.description}
+                    <div className="mt-2 p-2 bg-muted rounded-md text-xs">
+                      <div className="font-medium mb-1">Format-Anforderungen:</div>
+                      <div>App: {position.appDimensions.width}x{position.appDimensions.height}px</div>
+                      <div>Web: {position.webDimensions.width}x{position.webDimensions.height}px</div>
+                    </div>
+                  </CardDescription>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                  onClick={() => copyShortcode(position.shortcode)}
+                >
+                  <Copy className="h-4 w-4" />
+                  Shortcode
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {/* Aktuelle Banner */}
+                {mockBanners
+                  .filter(banner => banner.positionId === position.shortcode)
+                  .map(banner => (
+                    <div key={banner.id} className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* App Preview */}
+                        <div className="space-y-2">
+                          <div className="text-sm font-medium text-muted-foreground">App Preview:</div>
+                          <div className="relative aspect-video rounded-lg overflow-hidden bg-muted">
+                            <img
+                              src={banner.appImage}
+                              alt={`${banner.name} (App)`}
+                              className="object-cover w-full h-full"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Web Preview */}
+                        <div className="space-y-2">
+                          <div className="text-sm font-medium text-muted-foreground">Web Preview:</div>
+                          <div className="relative aspect-video rounded-lg overflow-hidden bg-muted">
+                            <img
+                              src={banner.webImage}
+                              alt={`${banner.name} (Web)`}
+                              className="object-cover w-full h-full"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Banner Info & Controls */}
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-lg border bg-card">
+                        <div className="space-y-1">
+                          <h4 className="font-medium">{banner.name}</h4>
+                          <p className="text-sm text-muted-foreground">{banner.description}</p>
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm">Aktiv</span>
+                            <Switch 
+                              checked={banner.isActive}
+                              onCheckedChange={() => {
+                                toast({
+                                  title: banner.isActive ? "Banner deaktiviert" : "Banner aktiviert",
+                                  description: banner.isActive 
+                                    ? "Der Banner wird nicht mehr angezeigt." 
+                                    : "Der Banner wird jetzt auf der Website angezeigt."
+                                });
+                              }}
+                            />
+                          </div>
+                          <Button variant="outline" size="sm" className="flex items-center gap-2">
+                            <LinkIcon className="h-4 w-4" />
+                            Link bearbeiten
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Stats */}
+                      <div className="grid grid-cols-3 gap-4">
+                        <Card>
+                          <CardHeader className="p-4">
+                            <CardTitle className="text-sm font-medium">Views</CardTitle>
+                          </CardHeader>
+                          <CardContent className="p-4 pt-0">
+                            <div className="text-2xl font-bold">{banner.stats.views}</div>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardHeader className="p-4">
+                            <CardTitle className="text-sm font-medium">Clicks</CardTitle>
+                          </CardHeader>
+                          <CardContent className="p-4 pt-0">
+                            <div className="text-2xl font-bold">{banner.stats.clicks}</div>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardHeader className="p-4">
+                            <CardTitle className="text-sm font-medium">CTR</CardTitle>
+                          </CardHeader>
+                          <CardContent className="p-4 pt-0">
+                            <div className="text-2xl font-bold">{banner.stats.ctr}</div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    </div>
+                  ))}
+
+                {/* Upload Bereich */}
+                <div className="border-2 border-dashed rounded-lg p-6">
+                  <div className="text-center space-y-4">
+                    <div className="flex flex-col items-center gap-2">
+                      <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                      <div className="text-sm text-muted-foreground">
+                        Ziehen Sie Bilder hierher oder klicken Sie zum Hochladen
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-lg">
+                        <div className="p-4 bg-muted rounded-lg">
+                          <div className="font-medium mb-2">App Format</div>
+                          <div className="text-xs text-muted-foreground">
+                            {position.appDimensions.width} x {position.appDimensions.height}px
+                          </div>
+                        </div>
+                        <div className="p-4 bg-muted rounded-lg">
+                          <div className="font-medium mb-2">Web Format</div>
+                          <div className="text-xs text-muted-foreground">
+                            {position.webDimensions.width} x {position.webDimensions.height}px
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <Button variant="outline" className="w-full sm:w-auto">
+                      <Upload className="h-4 w-4 mr-2" />
+                      Banner hochladen
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Hauptkomponente bleibt gleich, füge BannerManagement zur TabsContent hinzu
 export default function Admin() {
   const { users, toggleVerification } = useUsers();
   const [searchQuery, setSearchQuery] = useState("");
@@ -93,8 +295,9 @@ export default function Admin() {
 
       {/* Main Content Area */}
       <Tabs defaultValue="verification">
-        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 gap-2">
+        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 gap-2">
           <TabsTrigger value="verification">User Verification</TabsTrigger>
+          <TabsTrigger value="banner">Marketing Banner</TabsTrigger>
           <TabsTrigger value="moderation">Content Moderation</TabsTrigger>
         </TabsList>
 
@@ -158,6 +361,24 @@ export default function Admin() {
                   ))}
                 </ScrollArea>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="banner">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ImageIcon className="h-5 w-5" />
+                Marketing Banner Management
+              </CardTitle>
+              <CardDescription>
+                Verwalten Sie Marketing-Banner für App und Website. Banner werden nur angezeigt,
+                wenn sie aktiv sind.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <BannerManagement />
             </CardContent>
           </Card>
         </TabsContent>

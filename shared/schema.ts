@@ -11,7 +11,7 @@ export const users = pgTable("users", {
   isAdmin: boolean("is_admin").default(false).notNull(),
   isVerified: boolean("is_verified").default(false),
   isTeamMember: boolean("is_team_member").default(false),
-  teamRole: text("team_role"), // z.B. "moderator", "content_manager", etc.
+  teamRole: text("team_role"),
 });
 
 export const posts = pgTable("posts", {
@@ -33,8 +33,8 @@ export const challenges = pgTable("challenges", {
   prize: text("prize").notNull(),
   prizeDescription: text("prize_description").notNull(),
   prizeImage: text("prize_image"),
-  workoutType: text("workout_type").notNull(), // 'emom', 'amrap', 'hit', 'running', 'custom'
-  workoutDetails: jsonb("workout_details").notNull(), // Speichert die spezifischen Workout-Details
+  workoutType: text("workout_type").notNull(),
+  workoutDetails: jsonb("workout_details").notNull(),
 });
 
 export const groups = pgTable("groups", {
@@ -48,7 +48,7 @@ export const groups = pgTable("groups", {
 
 // Workout-Detail Typen
 export interface EmomWorkout {
-  timePerRound: number; // Sekunden
+  timePerRound: number;
   rounds: number;
   exercises: {
     name: string;
@@ -58,7 +58,7 @@ export interface EmomWorkout {
 }
 
 export interface AmrapWorkout {
-  totalTime: number; // Sekunden
+  totalTime: number;
   exercises: {
     name: string;
     reps: number;
@@ -68,8 +68,8 @@ export interface AmrapWorkout {
 
 export interface HitWorkout {
   intervals: number;
-  workTime: number; // Sekunden
-  restTime: number; // Sekunden
+  workTime: number;
+  restTime: number;
   exercises: {
     name: string;
     description?: string;
@@ -78,7 +78,7 @@ export interface HitWorkout {
 
 export interface RunningWorkout {
   type: "distance" | "time";
-  target: number; // Kilometer oder Minuten
+  target: number;
   description: string;
 }
 
@@ -111,3 +111,57 @@ export const workoutTemplates = pgTable("workout_templates", {
 });
 
 export type WorkoutTemplate = typeof workoutTemplates.$inferSelect;
+
+export const bannerPositions = pgTable("banner_positions", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  shortcode: text("shortcode").notNull().unique(),
+  description: text("description"),
+  appDimensions: jsonb("app_dimensions").notNull(),
+  webDimensions: jsonb("web_dimensions").notNull(),
+});
+
+export const marketingBanners = pgTable("marketing_banners", {
+  id: serial("id").primaryKey(),
+  positionId: integer("position_id").references(() => bannerPositions.id).notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  appImage: text("app_image").notNull(),
+  webImage: text("web_image").notNull(),
+  targetUrl: text("target_url"),
+  isActive: boolean("is_active").default(false).notNull(),
+  startDate: timestamp("start_date"),
+  endDate: timestamp("end_date"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const bannerInteractions = pgTable("banner_interactions", {
+  id: serial("id").primaryKey(),
+  bannerId: integer("banner_id").references(() => marketingBanners.id).notNull(),
+  type: text("type").notNull(),
+  source: text("source").notNull(),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  userId: integer("user_id").references(() => users.id),
+});
+
+export type BannerPosition = typeof bannerPositions.$inferSelect;
+export type MarketingBanner = typeof marketingBanners.$inferSelect;
+export type BannerInteraction = typeof bannerInteractions.$inferSelect;
+
+export const DEFAULT_BANNER_POSITIONS = [
+  {
+    name: "App Header",
+    shortcode: "APP_HEADER",
+    description: "Banner im Kopfbereich der App",
+    appDimensions: { width: 1200, height: 300 },
+    webDimensions: { width: 1920, height: 400 }
+  },
+  {
+    name: "Website Hero",
+    shortcode: "WEB_HERO",
+    description: "Hero-Banner auf der Website",
+    appDimensions: { width: 800, height: 400 },
+    webDimensions: { width: 1920, height: 600 }
+  }
+] as const;
