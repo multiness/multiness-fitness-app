@@ -139,7 +139,6 @@ export default function WorkoutGenerator({ onSelectWorkout }: WorkoutGeneratorPr
     setExercises(newExercises);
   };
 
-  // Hilfsfunktion zum Mischen eines Arrays
   const shuffleArray = (array: any[]) => {
     const newArray = [...array];
     for (let i = newArray.length - 1; i > 0; i--) {
@@ -150,8 +149,8 @@ export default function WorkoutGenerator({ onSelectWorkout }: WorkoutGeneratorPr
   };
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-6">
+    <div className="space-y-4 max-w-2xl mx-auto">
+      <div className="space-y-4">
         {/* Ziel-Auswahl */}
         <div className="space-y-2">
           <Label className="text-base">Dein Trainingsziel</Label>
@@ -192,22 +191,22 @@ export default function WorkoutGenerator({ onSelectWorkout }: WorkoutGeneratorPr
         {/* Dauer-Auswahl */}
         <div className="space-y-2">
           <Label className="text-base">Gewünschte Trainingsdauer</Label>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <div>
               <input type="radio" id="15min" name="duration" value="15" className="peer hidden" defaultChecked={duration === "15"} onChange={e => setDuration(e.target.value)} />
-              <label htmlFor="15min" className="flex items-center justify-center p-4 border rounded-lg cursor-pointer hover:bg-accent peer-checked:border-primary peer-checked:text-primary">
+              <label htmlFor="15min" className="flex items-center justify-center p-3 border rounded-lg cursor-pointer hover:bg-accent peer-checked:border-primary peer-checked:text-primary">
                 15 Minuten
               </label>
             </div>
             <div>
               <input type="radio" id="30min" name="duration" value="30" className="peer hidden" defaultChecked={duration === "30"} onChange={e => setDuration(e.target.value)} />
-              <label htmlFor="30min" className="flex items-center justify-center p-4 border rounded-lg cursor-pointer hover:bg-accent peer-checked:border-primary peer-checked:text-primary">
+              <label htmlFor="30min" className="flex items-center justify-center p-3 border rounded-lg cursor-pointer hover:bg-accent peer-checked:border-primary peer-checked:text-primary">
                 30 Minuten
               </label>
             </div>
             <div>
               <input type="radio" id="45min" name="duration" value="45" className="peer hidden" defaultChecked={duration === "45"} onChange={e => setDuration(e.target.value)} />
-              <label htmlFor="45min" className="flex items-center justify-center p-4 border rounded-lg cursor-pointer hover:bg-accent peer-checked:border-primary peer-checked:text-primary">
+              <label htmlFor="45min" className="flex items-center justify-center p-3 border rounded-lg cursor-pointer hover:bg-accent peer-checked:border-primary peer-checked:text-primary">
                 45 Minuten
               </label>
             </div>
@@ -217,22 +216,22 @@ export default function WorkoutGenerator({ onSelectWorkout }: WorkoutGeneratorPr
         {/* Schwierigkeitsgrad */}
         <div className="space-y-2">
           <Label className="text-base">Schwierigkeitsgrad</Label>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <div>
               <input type="radio" id="beginner" name="difficulty" value="anfänger" className="peer hidden" defaultChecked={difficulty === "anfänger"} onChange={e => setDifficulty(e.target.value)} />
-              <label htmlFor="beginner" className="flex items-center justify-center p-4 border rounded-lg cursor-pointer hover:bg-accent peer-checked:border-primary peer-checked:text-primary">
+              <label htmlFor="beginner" className="flex items-center justify-center p-3 border rounded-lg cursor-pointer hover:bg-accent peer-checked:border-primary peer-checked:text-primary">
                 Anfänger
               </label>
             </div>
             <div>
               <input type="radio" id="intermediate" name="difficulty" value="mittel" className="peer hidden" defaultChecked={difficulty === "mittel"} onChange={e => setDifficulty(e.target.value)} />
-              <label htmlFor="intermediate" className="flex items-center justify-center p-4 border rounded-lg cursor-pointer hover:bg-accent peer-checked:border-primary peer-checked:text-primary">
+              <label htmlFor="intermediate" className="flex items-center justify-center p-3 border rounded-lg cursor-pointer hover:bg-accent peer-checked:border-primary peer-checked:text-primary">
                 Mittel
               </label>
             </div>
             <div>
               <input type="radio" id="advanced" name="difficulty" value="fortgeschritten" className="peer hidden" defaultChecked={difficulty === "fortgeschritten"} onChange={e => setDifficulty(e.target.value)} />
-              <label htmlFor="advanced" className="flex items-center justify-center p-4 border rounded-lg cursor-pointer hover:bg-accent peer-checked:border-primary peer-checked:text-primary">
+              <label htmlFor="advanced" className="flex items-center justify-center p-3 border rounded-lg cursor-pointer hover:bg-accent peer-checked:border-primary peer-checked:text-primary">
                 Fortgeschritten
               </label>
             </div>
@@ -398,7 +397,7 @@ export default function WorkoutGenerator({ onSelectWorkout }: WorkoutGeneratorPr
 
       {/* Vorgeschlagenes Workout */}
       {suggestedWorkout && (
-        <Card>
+        <Card className="mt-6">
           <CardHeader>
             <CardTitle>Vorgeschlagenes Workout</CardTitle>
           </CardHeader>
@@ -408,9 +407,9 @@ export default function WorkoutGenerator({ onSelectWorkout }: WorkoutGeneratorPr
                 <h3 className="font-semibold text-lg">{suggestedWorkout.name}</h3>
                 <p className="text-muted-foreground">{suggestedWorkout.description}</p>
               </div>
-              <div className="flex gap-4 text-sm">
-                <span>🕒 {suggestedWorkout.duration} Min</span>
-                <span>💪 {suggestedWorkout.difficulty}</span>
+              <div className="flex flex-wrap gap-2 text-sm">
+                <span className="px-2 py-1 bg-muted rounded-md">🕒 {suggestedWorkout.duration} Min</span>
+                <span className="px-2 py-1 bg-muted rounded-md">💪 {suggestedWorkout.difficulty}</span>
               </div>
               {/* Workout Details */}
               <div className="space-y-2">

@@ -61,7 +61,6 @@ export default function CreateChallenge() {
       creatorId: 1, // In einer echten App würde dies der eingeloggte User sein
     };
 
-    // Hier würde in einer echten App die Challenge erstellt werden
     console.log("Neue Challenge:", challenge);
 
     toast({
@@ -71,7 +70,7 @@ export default function CreateChallenge() {
   };
 
   return (
-    <div className="container max-w-2xl mx-auto p-4">
+    <div className="container py-6 px-4 sm:px-6 max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">Neue Challenge erstellen</h1>
 
       {/* Workout Generator */}
@@ -104,11 +103,12 @@ export default function CreateChallenge() {
               placeholder="Beschreibe deine Challenge"
               value={challengeDescription}
               onChange={(e) => setChallengeDescription(e.target.value)}
+              className="min-h-[100px]"
             />
           </div>
           <div>
             <Label>Zeitraum</Label>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input 
                 type="date" 
                 value={startDate}
@@ -147,6 +147,7 @@ export default function CreateChallenge() {
               placeholder="Beschreibe den Gewinn im Detail"
               value={prizeDescription}
               onChange={(e) => setPrizeDescription(e.target.value)}
+              className="min-h-[100px]"
             />
           </div>
           <div>
