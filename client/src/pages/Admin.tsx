@@ -65,11 +65,11 @@ function BannerManagement() {
   };
 
   return (
-    <div className="space-y-6 min-h-[600px] pb-6">
+    <div className="space-y-6">
       {/* Banner Übersicht */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {DEFAULT_BANNER_POSITIONS.map(position => (
-          <Card key={position.shortcode} className="h-full">
+          <Card key={position.shortcode}>
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div>
@@ -95,129 +95,127 @@ function BannerManagement() {
               </div>
             </CardHeader>
             <CardContent>
-              <ScrollArea className="h-[500px] pr-4">
-                <div className="space-y-6">
-                  {/* Aktuelle Banner */}
-                  {mockBanners
-                    .filter(banner => banner.positionId === position.shortcode)
-                    .map(banner => (
-                      <div key={banner.id} className="space-y-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          {/* App Preview */}
-                          <div className="space-y-2">
-                            <div className="text-sm font-medium text-muted-foreground">App Preview:</div>
-                            <div className="relative aspect-video rounded-lg overflow-hidden bg-muted">
-                              <img
-                                src={banner.appImage}
-                                alt={`${banner.name} (App)`}
-                                className="object-cover w-full h-full"
-                              />
-                            </div>
-                          </div>
-
-                          {/* Web Preview */}
-                          <div className="space-y-2">
-                            <div className="text-sm font-medium text-muted-foreground">Web Preview:</div>
-                            <div className="relative aspect-video rounded-lg overflow-hidden bg-muted">
-                              <img
-                                src={banner.webImage}
-                                alt={`${banner.name} (Web)`}
-                                className="object-cover w-full h-full"
-                              />
-                            </div>
+              <div className="space-y-4">
+                {/* Aktuelle Banner */}
+                {mockBanners
+                  .filter(banner => banner.positionId === position.shortcode)
+                  .map(banner => (
+                    <div key={banner.id} className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* App Preview */}
+                        <div className="space-y-2">
+                          <div className="text-sm font-medium text-muted-foreground">App Preview:</div>
+                          <div className="relative aspect-video rounded-lg overflow-hidden bg-muted">
+                            <img
+                              src={banner.appImage}
+                              alt={`${banner.name} (App)`}
+                              className="object-cover w-full h-full"
+                            />
                           </div>
                         </div>
 
-                        {/* Banner Info & Controls */}
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-lg border bg-card">
-                          <div className="space-y-1">
-                            <h4 className="font-medium">{banner.name}</h4>
-                            <p className="text-sm text-muted-foreground">{banner.description}</p>
-                          </div>
-
-                          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm">Aktiv</span>
-                              <Switch 
-                                checked={banner.isActive}
-                                onCheckedChange={() => {
-                                  toast({
-                                    title: banner.isActive ? "Banner deaktiviert" : "Banner aktiviert",
-                                    description: banner.isActive 
-                                      ? "Der Banner wird nicht mehr angezeigt." 
-                                      : "Der Banner wird jetzt auf der Website angezeigt."
-                                  });
-                                }}
-                              />
-                            </div>
-                            <Button variant="outline" size="sm" className="flex items-center gap-2">
-                              <LinkIcon className="h-4 w-4" />
-                              Link bearbeiten
-                            </Button>
-                          </div>
-                        </div>
-
-                        {/* Stats */}
-                        <div className="grid grid-cols-3 gap-4">
-                          <Card>
-                            <CardHeader className="p-4">
-                              <CardTitle className="text-sm font-medium">Views</CardTitle>
-                            </CardHeader>
-                            <CardContent className="p-4 pt-0">
-                              <div className="text-2xl font-bold">{banner.stats.views}</div>
-                            </CardContent>
-                          </Card>
-                          <Card>
-                            <CardHeader className="p-4">
-                              <CardTitle className="text-sm font-medium">Clicks</CardTitle>
-                            </CardHeader>
-                            <CardContent className="p-4 pt-0">
-                              <div className="text-2xl font-bold">{banner.stats.clicks}</div>
-                            </CardContent>
-                          </Card>
-                          <Card>
-                            <CardHeader className="p-4">
-                              <CardTitle className="text-sm font-medium">CTR</CardTitle>
-                            </CardHeader>
-                            <CardContent className="p-4 pt-0">
-                              <div className="text-2xl font-bold">{banner.stats.ctr}</div>
-                            </CardContent>
-                          </Card>
-                        </div>
-                      </div>
-                    ))}
-
-                  {/* Upload Bereich */}
-                  <div className="border-2 border-dashed rounded-lg p-6">
-                    <div className="text-center space-y-4">
-                      <div className="flex flex-col items-center gap-2">
-                        <ImageIcon className="h-8 w-8 text-muted-foreground" />
-                        <div className="text-sm text-muted-foreground">
-                          Ziehen Sie Bilder hierher oder klicken Sie zum Hochladen
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-lg">
-                          <div className="p-4 bg-muted rounded-lg">
-                            <div className="font-medium mb-2">App Format</div>
-                            <div className="text-xs text-muted-foreground">
-                              {position.appDimensions.width} x {position.appDimensions.height}px
-                            </div>
-                          </div>
-                          <div className="p-4 bg-muted rounded-lg">
-                            <div className="font-medium mb-2">Web Format</div>
-                            <div className="text-xs text-muted-foreground">
-                              {position.webDimensions.width} x {position.webDimensions.height}px
-                            </div>
+                        {/* Web Preview */}
+                        <div className="space-y-2">
+                          <div className="text-sm font-medium text-muted-foreground">Web Preview:</div>
+                          <div className="relative aspect-video rounded-lg overflow-hidden bg-muted">
+                            <img
+                              src={banner.webImage}
+                              alt={`${banner.name} (Web)`}
+                              className="object-cover w-full h-full"
+                            />
                           </div>
                         </div>
                       </div>
-                      <Button variant="outline" className="w-full sm:w-auto">
-                        <Upload className="h-4 w-4 mr-2" />
-                        Banner hochladen
-                      </Button>
+
+                      {/* Banner Info & Controls */}
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-lg border bg-card">
+                        <div className="space-y-1">
+                          <h4 className="font-medium">{banner.name}</h4>
+                          <p className="text-sm text-muted-foreground">{banner.description}</p>
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm">Aktiv</span>
+                            <Switch 
+                              checked={banner.isActive}
+                              onCheckedChange={() => {
+                                toast({
+                                  title: banner.isActive ? "Banner deaktiviert" : "Banner aktiviert",
+                                  description: banner.isActive 
+                                    ? "Der Banner wird nicht mehr angezeigt." 
+                                    : "Der Banner wird jetzt auf der Website angezeigt."
+                                });
+                              }}
+                            />
+                          </div>
+                          <Button variant="outline" size="sm" className="flex items-center gap-2">
+                            <LinkIcon className="h-4 w-4" />
+                            Link bearbeiten
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Stats */}
+                      <div className="grid grid-cols-3 gap-4">
+                        <Card>
+                          <CardHeader className="p-4">
+                            <CardTitle className="text-sm font-medium">Views</CardTitle>
+                          </CardHeader>
+                          <CardContent className="p-4 pt-0">
+                            <div className="text-2xl font-bold">{banner.stats.views}</div>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardHeader className="p-4">
+                            <CardTitle className="text-sm font-medium">Clicks</CardTitle>
+                          </CardHeader>
+                          <CardContent className="p-4 pt-0">
+                            <div className="text-2xl font-bold">{banner.stats.clicks}</div>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardHeader className="p-4">
+                            <CardTitle className="text-sm font-medium">CTR</CardTitle>
+                          </CardHeader>
+                          <CardContent className="p-4 pt-0">
+                            <div className="text-2xl font-bold">{banner.stats.ctr}</div>
+                          </CardContent>
+                        </Card>
+                      </div>
                     </div>
+                  ))}
+
+                {/* Upload Bereich */}
+                <div className="border-2 border-dashed rounded-lg p-6">
+                  <div className="text-center space-y-4">
+                    <div className="flex flex-col items-center gap-2">
+                      <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                      <div className="text-sm text-muted-foreground">
+                        Ziehen Sie Bilder hierher oder klicken Sie zum Hochladen
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-lg">
+                        <div className="p-4 bg-muted rounded-lg">
+                          <div className="font-medium mb-2">App Format</div>
+                          <div className="text-xs text-muted-foreground">
+                            {position.appDimensions.width} x {position.appDimensions.height}px
+                          </div>
+                        </div>
+                        <div className="p-4 bg-muted rounded-lg">
+                          <div className="font-medium mb-2">Web Format</div>
+                          <div className="text-xs text-muted-foreground">
+                            {position.webDimensions.width} x {position.webDimensions.height}px
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <Button variant="outline" className="w-full sm:w-auto">
+                      <Upload className="h-4 w-4 mr-2" />
+                      Banner hochladen
+                    </Button>
                   </div>
                 </div>
-              </ScrollArea>
+              </div>
             </CardContent>
           </Card>
         ))}
@@ -299,135 +297,137 @@ export default function Admin() {
       </div>
 
       {/* Tabs Navigation */}
-      <Tabs defaultValue="verification" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 gap-2">
-          <TabsTrigger value="verification">User Verification</TabsTrigger>
-          <TabsTrigger value="banner">Marketing Banner</TabsTrigger>
-          <TabsTrigger value="moderation">Content Moderation</TabsTrigger>
-        </TabsList>
+      <div className="flex flex-col min-h-[calc(100vh-300px)]">
+        <Tabs defaultValue="verification" className="flex-1">
+          <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 gap-2">
+            <TabsTrigger value="verification">User Verification</TabsTrigger>
+            <TabsTrigger value="banner">Marketing Banner</TabsTrigger>
+            <TabsTrigger value="moderation">Content Moderation</TabsTrigger>
+          </TabsList>
 
-        {/* Verification Tab */}
-        <TabsContent value="verification" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
-                User Verification
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search users..."
-                      className="pl-9 w-full"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
+          {/* Verification Tab */}
+          <TabsContent value="verification" className="mt-6 flex-1">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5" />
+                  User Verification
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search users..."
+                        className="pl-9 w-full"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm whitespace-nowrap">Verified Only</span>
+                      <Switch
+                        checked={showVerifiedOnly}
+                        onCheckedChange={setShowVerifiedOnly}
+                      />
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm whitespace-nowrap">Verified Only</span>
-                    <Switch
-                      checked={showVerifiedOnly}
-                      onCheckedChange={setShowVerifiedOnly}
-                    />
-                  </div>
-                </div>
 
-                <ScrollArea className="h-[400px] w-full">
-                  <div className="space-y-2">
-                    {filteredUsers.map(user => (
-                      <div key={user.id} className="flex flex-col sm:flex-row sm:items-center justify-between border-b p-4 gap-4">
-                        <div className="flex items-center gap-3">
-                          <img
-                            src={user.avatar}
-                            alt={user.username}
-                            className="w-10 h-10 rounded-full object-cover"
-                          />
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium">@{user.username}</span>
-                              {user.isVerified && <VerifiedBadge />}
+                  <ScrollArea className="h-[400px] w-full">
+                    <div className="space-y-2">
+                      {filteredUsers.map(user => (
+                        <div key={user.id} className="flex flex-col sm:flex-row sm:items-center justify-between border-b p-4 gap-4">
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={user.avatar}
+                              alt={user.username}
+                              className="w-10 h-10 rounded-full object-cover"
+                            />
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">@{user.username}</span>
+                                {user.isVerified && <VerifiedBadge />}
+                              </div>
+                              <div className="text-sm text-muted-foreground">{user.name}</div>
                             </div>
-                            <div className="text-sm text-muted-foreground">{user.name}</div>
+                          </div>
+
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm whitespace-nowrap">Verified</span>
+                              <Switch
+                                checked={user.isVerified}
+                                onCheckedChange={() => toggleVerification(user.id)}
+                              />
+                            </div>
                           </div>
                         </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-                        <div className="flex items-center gap-4">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm whitespace-nowrap">Verified</span>
-                            <Switch
-                              checked={user.isVerified}
-                              onCheckedChange={() => toggleVerification(user.id)}
-                            />
+          {/* Marketing Banner Tab */}
+          <TabsContent value="banner" className="mt-6 flex-1">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ImageIcon className="h-5 w-5" />
+                  Marketing Banner Management
+                </CardTitle>
+                <CardDescription>
+                  Verwalten Sie Marketing-Banner für App und Website. Banner werden nur angezeigt,
+                  wenn sie aktiv sind und der Container wird automatisch ausgeblendet.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <BannerManagement />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Content Moderation Tab */}
+          <TabsContent value="moderation" className="mt-6 flex-1">
+            <Card>
+              <CardHeader>
+                <CardTitle>Content Moderation</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="mb-4">
+                  <Input placeholder="Search reported content..." />
+                </div>
+                <ScrollArea className="h-[400px]">
+                  <div className="space-y-4">
+                    {mockPosts.map(post => (
+                      <div key={post.id} className="border-b p-4">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                          <div>
+                            <h3 className="font-semibold">
+                              Post by @{users.find(u => u.id === post.userId)?.username}
+                            </h3>
+                            <p className="text-sm text-muted-foreground">
+                              {post.content}
+                            </p>
+                          </div>
+                          <div className="flex gap-2 w-full sm:w-auto">
+                            <Button variant="destructive" size="sm" className="flex-1 sm:flex-none">Remove</Button>
+                            <Button variant="outline" size="sm" className="flex-1 sm:flex-none">Approve</Button>
                           </div>
                         </div>
                       </div>
                     ))}
                   </div>
                 </ScrollArea>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Marketing Banner Tab */}
-        <TabsContent value="banner" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ImageIcon className="h-5 w-5" />
-                Marketing Banner Management
-              </CardTitle>
-              <CardDescription>
-                Verwalten Sie Marketing-Banner für App und Website. Banner werden nur angezeigt,
-                wenn sie aktiv sind und der Container wird automatisch ausgeblendet.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <BannerManagement />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Content Moderation Tab */}
-        <TabsContent value="moderation" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Content Moderation</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="mb-4">
-                <Input placeholder="Search reported content..." />
-              </div>
-              <ScrollArea className="h-[400px]">
-                <div className="space-y-4">
-                  {mockPosts.map(post => (
-                    <div key={post.id} className="border-b p-4">
-                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                        <div>
-                          <h3 className="font-semibold">
-                            Post by @{users.find(u => u.id === post.userId)?.username}
-                          </h3>
-                          <p className="text-sm text-muted-foreground">
-                            {post.content}
-                          </p>
-                        </div>
-                        <div className="flex gap-2 w-full sm:w-auto">
-                          <Button variant="destructive" size="sm" className="flex-1 sm:flex-none">Remove</Button>
-                          <Button variant="outline" size="sm" className="flex-1 sm:flex-none">Approve</Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 }
