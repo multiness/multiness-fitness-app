@@ -31,7 +31,7 @@ import { useUsers } from "../contexts/UserContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 
-// Simulierte Banner-Daten für den Prototyp
+// Erweiterte Mock-Daten mit archivierten Bannern
 const mockBanners = [
   {
     id: 1,
@@ -41,10 +41,27 @@ const mockBanners = [
     appImage: "https://images.unsplash.com/photo-1517963879433-6ad2b056d712?w=1200&auto=format",
     webImage: "https://images.unsplash.com/photo-1517963879433-6ad2b056d712?w=1920&auto=format",
     isActive: true,
-    targetUrl: "https://example.com", // Added targetUrl
+    targetUrl: "https://example.com",
+    createdAt: new Date(),
     stats: {
       views: 1234,
       clicks: 89,
+      ctr: "7.2%"
+    }
+  },
+  {
+    id: 2,
+    name: "Spring Event 2024",
+    positionId: "APP_HEADER",
+    description: "Frühlings-Fitness-Event",
+    appImage: "https://images.unsplash.com/photo-1517963879433-6ad2b056d712?w=1200&auto=format",
+    webImage: "https://images.unsplash.com/photo-1517963879433-6ad2b056d712?w=1920&auto=format",
+    isActive: false,
+    targetUrl: "https://example.com/spring",
+    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 Tage alt
+    stats: {
+      views: 2500,
+      clicks: 180,
       ctr: "7.2%"
     }
   }
@@ -58,6 +75,7 @@ const mockPosts = [];
 // Änderungen im BannerManagement
 function BannerManagement() {
   const { toast } = useToast();
+  const [editingBanner, setEditingBanner] = useState<number | null>(null);
 
   const copyShortcode = (shortcode: string) => {
     navigator.clipboard.writeText(`[banner position="${shortcode}"]`);
@@ -110,8 +128,9 @@ function BannerManagement() {
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
+                {/* Aktuelle Banner */}
                 {mockBanners
-                  .filter(banner => banner.positionId === position.shortcode)
+                  .filter(banner => banner.positionId === position.shortcode && banner.isActive)
                   .map(banner => (
                     <div key={banner.id} className="space-y-4">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -236,6 +255,64 @@ function BannerManagement() {
                       <Upload className="h-4 w-4 mr-2" />
                       Banner hochladen
                     </Button>
+                  </div>
+                </div>
+
+                {/* Banner Archiv */}
+                <div className="space-y-4 pt-6 border-t">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-lg">Banner-Archiv</h3>
+                    <Button variant="outline" size="sm">
+                      Archiv anzeigen
+                    </Button>
+                  </div>
+
+                  <div className="space-y-4">
+                    {mockBanners
+                      .filter(banner => banner.positionId === position.shortcode && !banner.isActive)
+                      .map(banner => (
+                        <div key={banner.id} className="flex items-center justify-between p-4 border rounded-lg">
+                          <div className="flex items-center gap-4">
+                            <div className="relative w-16 h-16 rounded-lg overflow-hidden">
+                              <img
+                                src={banner.appImage}
+                                alt={banner.name}
+                                className="object-cover w-full h-full"
+                              />
+                            </div>
+                            <div>
+                              <h4 className="font-medium">{banner.name}</h4>
+                              <div className="text-sm text-muted-foreground">
+                                Erstellt am {format(banner.createdAt, "dd.MM.yyyy")}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                {banner.stats.views} Views • {banner.stats.clicks} Clicks • {banner.stats.ctr} CTR
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => setEditingBanner(banner.id)}
+                            >
+                              Bearbeiten
+                            </Button>
+                            <Button 
+                              variant="default" 
+                              size="sm"
+                              onClick={() => {
+                                toast({
+                                  title: "Banner reaktiviert",
+                                  description: "Der Banner wurde erfolgreich reaktiviert und wird jetzt angezeigt."
+                                });
+                              }}
+                            >
+                              Reaktivieren
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
                   </div>
                 </div>
               </div>
