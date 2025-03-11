@@ -1,11 +1,11 @@
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import UserSlider from "@/components/UserSlider";
 import GroupPreview from "@/components/GroupPreview";
 import ChallengeCard from "@/components/ChallengeCard";
 import FeedPost from "@/components/FeedPost";
 import EventSlider from "@/components/EventSlider";
-import { ArrowRight, Crown } from "lucide-react";
+import { ArrowRight, Crown, Heart, Share2 } from "lucide-react";
 import { mockGroups, mockChallenges, mockPosts, mockUsers } from "../data/mockData";
 import { useLocation, Link } from "wouter";
 import {
@@ -115,85 +115,118 @@ export default function Home() {
         </div>
 
         <Carousel
-            opts={{
-              align: "start",
-              loop: true,
-            }}
-            className="w-full"
-          >
-            <CarouselContent>
-              {activeChallenges.map(challenge => (
-                <CarouselItem key={challenge.id} className="md:basis-1/2 lg:basis-1/2">
-                  <Link href={`/challenges/${challenge.id}`}>
-                    <Card className="overflow-hidden hover:shadow-lg transition-all">
-                      {/* Challenge Image Section */}
-                      {challenge.image && (
-                        <div className="aspect-[16/9] relative">
-                          <img
-                            src={challenge.image}
-                            alt={challenge.title}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      )}
+          opts={{
+            align: "start",
+            loop: true,
+          }}
+          className="w-full"
+        >
+          <CarouselContent>
+            {activeChallenges.map(challenge => (
+              <CarouselItem key={challenge.id} className="md:basis-1/2 lg:basis-1/2">
+                <Card className="overflow-hidden hover:shadow-lg transition-all">
+                  {/* Challenge Image Section */}
+                  {challenge.image && (
+                    <div className="aspect-[16/9] relative">
+                      <img
+                        src={challenge.image}
+                        alt={challenge.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
 
-                      {/* Challenge Info Section */}
-                      <div className="p-4">
-                        <div className="flex items-start justify-between mb-3">
-                          <div>
-                            <h3 className="text-xl font-bold">{challenge.title}</h3>
-                            <p className="text-sm text-muted-foreground">
-                              Endet am {format(new Date(challenge.endDate), "dd.MM.yyyy")}
-                            </p>
-                          </div>
-                          <Badge variant="secondary">Aktiv</Badge>
-                        </div>
+                  <CardContent className="p-4">
+                    {/* Creator Info */}
+                    <div className="flex items-center gap-2 mb-4">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={mockUsers[0]?.avatar || undefined} />
+                        <AvatarFallback>{mockUsers[0]?.username[0]}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{mockUsers[0]?.username}</p>
+                        <p className="text-xs text-muted-foreground">Challenge Creator</p>
+                      </div>
+                      <Badge variant="secondary">Aktiv</Badge>
+                    </div>
 
-                        {/* Divider */}
-                        <div className="h-px bg-border my-3" />
+                    {/* Challenge Title & Info */}
+                    <div className="mb-4">
+                      <h3 className="text-xl font-bold mb-1">{challenge.title}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Endet am {format(new Date(challenge.endDate), "dd.MM.yyyy")}
+                      </p>
+                    </div>
 
-                        {/* Ranking Section */}
-                        <div className="space-y-2">
-                          <p className="text-sm font-medium mb-2">Top Teilnehmer</p>
-                          {[1, 2, 3].map(rank => (
-                            <div key={rank} className="flex items-center justify-between bg-muted/50 rounded-lg p-2">
-                              <div className="flex items-center gap-2">
-                                {rank === 1 && <Crown className="h-4 w-4 text-yellow-400" />}
-                                {rank === 2 && <Crown className="h-4 w-4 text-gray-400" />}
-                                {rank === 3 && <Crown className="h-4 w-4 text-amber-700" />}
-                                <Avatar className="h-6 w-6">
-                                  <AvatarImage src={mockUsers[rank]?.avatar || undefined} />
-                                  <AvatarFallback>{mockUsers[rank]?.username[0]}</AvatarFallback>
-                                </Avatar>
-                                <span className="text-sm font-medium">{mockUsers[rank]?.username}</span>
-                              </div>
-                              <span className="text-sm text-muted-foreground">
-                                {1000 - (rank * 50)} Punkte
-                              </span>
-                            </div>
+                    {/* Participants Preview */}
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <div className="flex -space-x-2">
+                          {mockUsers.slice(0, 3).map((user, i) => (
+                            <Avatar key={i} className="h-6 w-6 border-2 border-background">
+                              <AvatarImage src={user.avatar || undefined} />
+                              <AvatarFallback>{user.username[0]}</AvatarFallback>
+                            </Avatar>
                           ))}
+                          <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-xs border-2 border-background">
+                            +{mockUsers.length -3}
+                          </div>
                         </div>
+                        <span className="text-sm text-muted-foreground">{mockUsers.length} Teilnehmer</span>
+                      </div>
 
-                        {/* Action Button */}
-                        <Button 
-                          variant="outline" 
-                          className="w-full mt-4"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setLocation(`/challenges/${challenge.id}`);
-                          }}
-                        >
-                          Details anzeigen
+                      {/* Social Actions */}
+                      <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <Heart className={`h-4 w-4`} />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <Share2 className="h-4 w-4" />
                         </Button>
                       </div>
-                    </Card>
-                  </Link>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <CarouselPrevious className="hidden md:flex" />
-            <CarouselNext className="hidden md:flex" />
-          </Carousel>
+                    </div>
+
+                    {/* Top 3 Ranking - kompakter */}
+                    <div className="space-y-1 mb-4">
+                      <p className="text-sm font-medium mb-2">Top 3 Ranking</p>
+                      {[1, 2, 3].map(rank => (
+                        <div key={rank} className="flex items-center justify-between py-1">
+                          <div className="flex items-center gap-2">
+                            {rank === 1 && <Crown className="h-4 w-4 text-yellow-400" />}
+                            {rank === 2 && <Crown className="h-4 w-4 text-gray-400" />}
+                            {rank === 3 && <Crown className="h-4 w-4 text-amber-700" />}
+                            <Avatar className="h-6 w-6">
+                              <AvatarImage src={mockUsers[rank]?.avatar || undefined} />
+                              <AvatarFallback>{mockUsers[rank]?.username[0]}</AvatarFallback>
+                            </Avatar>
+                            <span className="text-sm font-medium">{mockUsers[rank]?.username}</span>
+                          </div>
+                          <span className="text-sm text-muted-foreground">
+                            {1000 - (rank * 50)} Punkte
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Action Button */}
+                    <Button 
+                      variant="default" 
+                      className="w-full"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setLocation(`/challenges/${challenge.id}`);
+                      }}
+                    >
+                      Challenge beitreten
+                    </Button>
+                  </CardContent>
+                </Card>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          <CarouselPrevious className="hidden md:flex" />
+          <CarouselNext className="hidden md:flex" />
+        </Carousel>
       </section>
 
       {/* Feed */}
