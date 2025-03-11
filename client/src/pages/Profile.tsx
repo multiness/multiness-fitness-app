@@ -1,3 +1,4 @@
+import { VerifiedBadge } from "@/components/VerifiedBadge"; // Use named import
 import { useState } from "react";
 import { useParams } from "wouter";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -42,10 +43,15 @@ export default function Profile() {
         <div className="h-32 bg-gradient-to-r from-primary/20 to-primary/10 rounded-t-lg" />
 
         <div className="flex flex-col items-center -mt-12">
-          <Avatar className="h-24 w-24 border-4 border-background">
-            <AvatarImage src={user.avatar || undefined} />
-            <AvatarFallback>{user.username[0].toUpperCase()}</AvatarFallback>
-          </Avatar>
+          <div className="relative">
+            <Avatar className="h-24 w-24 border-4 border-background">
+              <AvatarImage src={user.avatar || undefined} />
+              <AvatarFallback>{user.username[0].toUpperCase()}</AvatarFallback>
+            </Avatar>
+            {user.isVerified && (
+              <VerifiedBadge className="absolute bottom-0 right-0" />
+            )}
+          </div>
           <h1 className="text-2xl font-bold mt-4">{user.name}</h1>
           <h2 className="text-lg text-muted-foreground">@{user.username}</h2>
 
@@ -83,8 +89,8 @@ export default function Profile() {
           </div>
 
           {userId === 1 && ( // Nur anzeigen, wenn es das eigene Profil ist
-            <Button 
-              className="mt-6" 
+            <Button
+              className="mt-6"
               variant="outline"
               onClick={() => setIsEditDialogOpen(true)}
             >

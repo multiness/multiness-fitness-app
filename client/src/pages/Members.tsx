@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Search, MessageSquare, UserPlus } from "lucide-react";
 import { mockUsers } from "../data/mockData";
 import { Link } from "wouter";
+import { VerifiedBadge } from "@/components/VerifiedBadge"; // Fix import to use named import
+
 
 export default function Members() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -51,10 +53,15 @@ export default function Members() {
             <CardContent className="p-4">
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                 <Link href={`/profile/${user.id}`} className="hover:opacity-80">
-                  <Avatar className="h-16 w-16 sm:h-20 sm:w-20">
-                    <AvatarImage src={user.avatar || undefined} />
-                    <AvatarFallback>{user.username[0]}</AvatarFallback>
-                  </Avatar>
+                  <div className="relative">
+                    <Avatar className="h-16 w-16 sm:h-20 sm:w-20">
+                      <AvatarImage src={user.avatar || undefined} />
+                      <AvatarFallback>{user.username[0]}</AvatarFallback>
+                    </Avatar>
+                    {user.isVerified && (
+                      <VerifiedBadge className="absolute bottom-0 right-0" />
+                    )}
+                  </div>
                 </Link>
                 <div className="flex-1 min-w-0">
                   <Link href={`/profile/${user.id}`}>

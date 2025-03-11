@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,9 +17,17 @@ const profileSchema = z.object({
   name: z.string().min(2, "Name muss mindestens 2 Zeichen lang sein"),
   bio: z.string().optional(),
   avatar: z.string().optional(),
+  teamRole: z.string().optional(),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
+
+const teamRoles = [
+  { value: "Head Trainer", label: "Head Trainer" },
+  { value: "Trainer", label: "Trainer" },
+  { value: "Kursleiter", label: "Kursleiter" },
+  { value: "Community Manager", label: "Community Manager" },
+];
 
 interface EditProfileDialogProps {
   user: User;
@@ -28,14 +37,15 @@ interface EditProfileDialogProps {
 }
 
 export default function EditProfileDialog({ user, open, onOpenChange, onSave }: EditProfileDialogProps) {
-  const [avatarPreview, setAvatarPreview] = useState<string | undefined>(user.avatar);
+  const [avatarPreview, setAvatarPreview] = useState<string | undefined>(user.avatar || undefined);
 
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
       name: user.name,
       bio: user.bio || "",
-      avatar: user.avatar,
+      avatar: user.avatar || undefined,
+      teamRole: user.teamRole || undefined,
     },
   });
 
@@ -121,6 +131,37 @@ export default function EditProfileDialog({ user, open, onOpenChange, onSave }: 
                 </FormItem>
               )}
             />
+
+            {/* Team Role Selection (nur für verifizierte Mitglieder/Admins) */}
+            {(user.isVerified || user.isAdmin || user.isTeamMember) && (
+              <FormField
+                control={form.control}
+                name="teamRole"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Position im Team</FormLabel>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Wähle deine Position" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {teamRoles.map(role => (
+                          <SelectItem key={role.value} value={role.value}>
+                            {role.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <div className="flex justify-end gap-2">
               <Button
