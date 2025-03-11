@@ -6,6 +6,7 @@ import Layout from "./components/Layout";
 import Home from "./pages/Home";
 import Profile from "./pages/Profile";
 import Challenges from "./pages/Challenges";
+import ChallengeDetail from "./pages/ChallengeDetail";
 import Groups from "./pages/Groups";
 import Chat from "./pages/Chat";
 import Admin from "./pages/Admin";
@@ -18,6 +19,7 @@ function Router() {
         <Route path="/" component={Home} />
         <Route path="/profile/:id" component={Profile} />
         <Route path="/challenges" component={Challenges} />
+        <Route path="/challenges/:id" component={ChallengeDetail} />
         <Route path="/groups" component={Groups} />
         <Route path="/chat" component={Chat} />
         <Route path="/admin" component={Admin} />

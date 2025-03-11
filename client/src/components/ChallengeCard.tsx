@@ -3,7 +3,8 @@ import { Badge } from "@/components/ui/badge";
 import { Challenge } from "@shared/schema";
 import { format } from "date-fns";
 import { Link } from "wouter";
-import { Gift } from "lucide-react";
+import { Gift, Trophy } from "lucide-react";
+import { mockUsers } from "../data/mockData";
 
 interface ChallengeCardProps {
   challenge: Challenge;
@@ -11,6 +12,7 @@ interface ChallengeCardProps {
 
 export default function ChallengeCard({ challenge }: ChallengeCardProps) {
   const isActive = new Date() >= challenge.startDate && new Date() <= challenge.endDate;
+  const creator = mockUsers.find(u => u.id === challenge.creatorId);
 
   return (
     <Link href={`/challenges/${challenge.id}`}>
@@ -36,13 +38,18 @@ export default function ChallengeCard({ challenge }: ChallengeCardProps) {
             {format(challenge.startDate, "MMM d")} - {format(challenge.endDate, "MMM d, yyyy")}
           </div>
 
-          {/* Prize Section */}
-          <div className="flex items-start gap-2 p-2 bg-muted rounded-lg">
-            <Gift className="h-5 w-5 text-primary mt-0.5" />
-            <div>
-              <div className="font-medium text-sm">{challenge.prize}</div>
-              <div className="text-xs text-muted-foreground">{challenge.prizeDescription}</div>
-            </div>
+          {/* Prize Preview */}
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Gift className="h-4 w-4 text-primary" />
+            <span>{challenge.prize}</span>
+          </div>
+
+          {/* Creator Info */}
+          <div className="flex items-center gap-2 mt-3 pt-3 border-t">
+            <Trophy className="h-4 w-4 text-primary" />
+            <span className="text-sm">
+              Created by <span className="font-medium">{creator?.username}</span>
+            </span>
           </div>
         </CardContent>
       </Card>
