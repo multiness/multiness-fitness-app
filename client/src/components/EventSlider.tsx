@@ -34,18 +34,24 @@ export default function EventSlider() {
             <CarouselItem key={event.id} className="basis-full md:basis-1/2 lg:basis-1/3 pl-4">
               <Link href={`/events/${event.id}`}>
                 <Card className="overflow-hidden cursor-pointer transition-transform hover:scale-[1.02]">
-                  <CardHeader className="p-0">
+                  <CardHeader className="p-0 relative">
                     <img
                       src={event.image}
                       alt={event.title}
                       className="w-full h-48 object-cover"
                     />
-                    <Badge 
-                      variant={event.type === "event" ? "default" : "secondary"}
-                      className="absolute top-4 right-4"
-                    >
-                      {event.type === "event" ? "Event" : "Kurs"}
-                    </Badge>
+                    <div className="absolute top-4 right-4 flex gap-2">
+                      <Badge 
+                        variant={event.type === "event" ? "default" : "secondary"}
+                      >
+                        {event.type === "event" ? "Event" : "Kurs"}
+                      </Badge>
+                      {event.isHighlight && (
+                        <Badge variant="default" className="bg-primary">
+                          Highlight
+                        </Badge>
+                      )}
+                    </div>
                   </CardHeader>
                   <CardContent className="p-4">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
