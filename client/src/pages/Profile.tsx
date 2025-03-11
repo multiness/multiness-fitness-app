@@ -9,19 +9,30 @@ import { mockUsers, mockPosts, mockChallenges, mockGroups } from "../data/mockDa
 import { format } from 'date-fns';
 import { Badge } from "@/components/ui/badge";
 import type { User, Post, Challenge, Group } from "@shared/schema";
+import EditProfileDialog from "@/components/EditProfileDialog";
 
 export default function Profile() {
   const { id } = useParams();
   const userId = parseInt(id || "1");
-  const user = mockUsers.find(u => u.id === userId);
+  const [user, setUser] = useState(() => mockUsers.find(u => u.id === userId));
   const userPosts = mockPosts.filter(p => p.userId === userId);
   const userChallenges = mockChallenges.filter(c => c.creatorId === userId);
   const userGroups = mockGroups.filter(g => g.participantIds?.includes(userId));
   const activeUserChallenges = userChallenges.filter(c => new Date() <= new Date(c.endDate));
-
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedTab, setSelectedTab] = useState("all");
 
   if (!user) return <div>User not found</div>;
+
+  const handleProfileUpdate = (updatedData: { name: string; bio?: string; avatar?: string }) => {
+    setUser(currentUser => {
+      if (!currentUser) return currentUser;
+      return {
+        ...currentUser,
+        ...updatedData,
+      };
+    });
+  };
 
   return (
     <div className="container max-w-4xl mx-auto p-4">
@@ -72,10 +83,24 @@ export default function Profile() {
           </div>
 
           {userId === 1 && ( // Nur anzeigen, wenn es das eigene Profil ist
-            <Button className="mt-6" variant="outline">Profil bearbeiten</Button>
+            <Button 
+              className="mt-6" 
+              variant="outline"
+              onClick={() => setIsEditDialogOpen(true)}
+            >
+              Profil bearbeiten
+            </Button>
           )}
         </div>
       </div>
+
+      {/* Edit Profile Dialog */}
+      <EditProfileDialog
+        user={user}
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        onSave={handleProfileUpdate}
+      />
 
       {/* Content Tabs */}
       <Tabs value={selectedTab} onValueChange={setSelectedTab}>
