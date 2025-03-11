@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Search, Send, Image as ImageIcon } from "lucide-react";
+import { Search, Send, Image as ImageIcon, ArrowLeft } from "lucide-react";
 import { mockUsers } from "../data/mockData";
 import { format } from "date-fns";
 
@@ -46,14 +46,14 @@ const mockMessages: Record<number, Message[]> = {
 };
 
 export default function Chat() {
-  const [selectedUser, setSelectedUser] = useState(mockUsers[1]);
+  const [selectedUser, setSelectedUser] = useState<typeof mockUsers[0] | null>(null);
   const [messageInput, setMessageInput] = useState("");
   const currentUser = mockUsers[0]; // Using first mock user as current user
   const [messages, setMessages] = useState(mockMessages);
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!messageInput.trim()) return;
+    if (!messageInput.trim() || !selectedUser) return;
 
     const newMessage: Message = {
       id: Date.now(),
@@ -76,66 +76,73 @@ export default function Chat() {
     return userMessages[userMessages.length - 1];
   };
 
-  return (
-    <div className="h-[calc(100vh-4rem)] flex">
-      {/* Contact List */}
-      <div className="w-[320px] border-r flex flex-col bg-background">
-        <div className="p-4 border-b">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              placeholder="Suche nach Nachrichten..."
-              className="pl-9"
-            />
-          </div>
+  const ContactList = () => (
+    <div className="flex-1 flex flex-col bg-background">
+      <div className="p-4 border-b">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input
+            placeholder="Nach Nachrichten suchen..."
+            className="pl-9"
+          />
         </div>
-        <ScrollArea className="flex-1">
-          {mockUsers.slice(1).map(user => {
-            const lastMessage = getLastMessage(user.id);
-            const isSelected = selectedUser.id === user.id;
+      </div>
+      <ScrollArea className="flex-1">
+        {mockUsers.slice(1).map(user => {
+          const lastMessage = getLastMessage(user.id);
 
-            return (
-              <button
-                key={user.id}
-                className={`w-full text-left p-4 hover:bg-muted/50 transition-colors ${
-                  isSelected ? 'bg-muted' : ''
-                }`}
-                onClick={() => setSelectedUser(user)}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <Avatar className="h-12 w-12">
-                      <AvatarImage src={user.avatar || undefined} />
-                      <AvatarFallback>{user.username[0]}</AvatarFallback>
-                    </Avatar>
-                    <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-500 ring-2 ring-background" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <p className="font-medium truncate">{user.username}</p>
-                      {lastMessage && (
-                        <span className="text-xs text-muted-foreground">
-                          {format(lastMessage.timestamp, 'HH:mm')}
-                        </span>
-                      )}
-                    </div>
+          return (
+            <button
+              key={user.id}
+              className="w-full text-left p-4 hover:bg-muted/50 transition-colors"
+              onClick={() => setSelectedUser(user)}
+            >
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <Avatar className="h-12 w-12">
+                    <AvatarImage src={user.avatar || undefined} />
+                    <AvatarFallback>{user.username[0]}</AvatarFallback>
+                  </Avatar>
+                  <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-500 ring-2 ring-background" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium truncate">{user.username}</p>
                     {lastMessage && (
-                      <p className="text-sm text-muted-foreground truncate">
-                        {lastMessage.senderId === currentUser.id ? 'Du: ' : ''}{lastMessage.content}
-                      </p>
+                      <span className="text-xs text-muted-foreground">
+                        {format(lastMessage.timestamp, 'HH:mm')}
+                      </span>
                     )}
                   </div>
+                  {lastMessage && (
+                    <p className="text-sm text-muted-foreground truncate">
+                      {lastMessage.senderId === currentUser.id ? 'Du: ' : ''}{lastMessage.content}
+                    </p>
+                  )}
                 </div>
-              </button>
-            );
-          })}
-        </ScrollArea>
-      </div>
+              </div>
+            </button>
+          );
+        })}
+      </ScrollArea>
+    </div>
+  );
 
-      {/* Chat Area */}
-      <div className="flex-1 flex flex-col bg-background">
+  const ChatView = () => {
+    if (!selectedUser) return null;
+
+    return (
+      <div className="flex-1 flex flex-col bg-background h-full">
         {/* Chat Header */}
         <div className="p-4 border-b flex items-center gap-3">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="md:hidden" 
+            onClick={() => setSelectedUser(null)}
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
           <Avatar className="h-10 w-10">
             <AvatarImage src={selectedUser.avatar || undefined} />
             <AvatarFallback>{selectedUser.username[0]}</AvatarFallback>
@@ -199,6 +206,20 @@ export default function Chat() {
             </Button>
           </div>
         </form>
+      </div>
+    );
+  };
+
+  return (
+    <div className="h-[calc(100vh-4rem)] flex">
+      {/* Contact List - Hidden on mobile when chat is open */}
+      <div className={`w-full md:w-[320px] md:border-r ${selectedUser ? 'hidden md:block' : 'block'}`}>
+        <ContactList />
+      </div>
+
+      {/* Chat Area - Full screen on mobile when open */}
+      <div className={`flex-1 ${!selectedUser ? 'hidden md:block' : 'block'}`}>
+        <ChatView />
       </div>
     </div>
   );
