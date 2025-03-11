@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
@@ -11,9 +12,11 @@ import {
   Trophy,
   MessageSquare,
   UserCheck,
+  UserPlus,
   Users
 } from "lucide-react";
 import { mockUsers } from "../data/mockData";
+import { Link } from "wouter";
 
 export default function Members() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -101,29 +104,43 @@ function MembersList({ users }: { users: typeof mockUsers }) {
               <Card key={user.id}>
                 <CardContent className="p-4">
                   <div className="flex items-center gap-4">
-                    <Avatar className="h-12 w-12">
-                      <AvatarImage src={user.avatar || undefined} />
-                      <AvatarFallback>{user.username[0]}</AvatarFallback>
-                    </Avatar>
+                    <Link href={`/profile/${user.id}`} className="hover:opacity-80">
+                      <Avatar className="h-16 w-16">
+                        <AvatarImage src={user.avatar || undefined} />
+                        <AvatarFallback>{user.username[0]}</AvatarFallback>
+                      </Avatar>
+                    </Link>
                     <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold">{user.username}</h3>
-                        {user.isAdmin && (
-                          <Badge variant="default" className="bg-primary">Admin</Badge>
-                        )}
-                        {user.isVerified && (
-                          <Badge variant="secondary">Verifiziert</Badge>
-                        )}
-                        {user.isTeamMember && (
-                          <Badge variant="outline">{user.teamRole}</Badge>
-                        )}
-                      </div>
+                      <Link href={`/profile/${user.id}`}>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold hover:text-primary">{user.username}</h3>
+                          {user.isAdmin && (
+                            <Badge variant="default" className="bg-primary">Admin</Badge>
+                          )}
+                          {user.isVerified && (
+                            <Badge variant="secondary">Verifiziert</Badge>
+                          )}
+                          {user.isTeamMember && (
+                            <Badge variant="outline">{user.teamRole}</Badge>
+                          )}
+                        </div>
+                      </Link>
                       <p className="text-sm text-muted-foreground">{user.name}</p>
                       {user.bio && (
-                        <p className="text-sm text-muted-foreground mt-1">{user.bio}</p>
+                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{user.bio}</p>
                       )}
+
+                      <div className="flex gap-2 mt-3">
+                        <Button variant="outline" size="sm" className="flex items-center gap-1">
+                          <UserPlus className="h-4 w-4" />
+                          Folgen
+                        </Button>
+                        <Button variant="outline" size="sm" className="flex items-center gap-1">
+                          <MessageSquare className="h-4 w-4" />
+                          Nachricht
+                        </Button>
+                      </div>
                     </div>
-                    <MessageSquare className="h-5 w-5 text-muted-foreground cursor-pointer hover:text-primary" />
                   </div>
                 </CardContent>
               </Card>
