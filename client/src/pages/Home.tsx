@@ -4,6 +4,7 @@ import UserSlider from "@/components/UserSlider";
 import GroupPreview from "@/components/GroupPreview";
 import ChallengeCard from "@/components/ChallengeCard";
 import FeedPost from "@/components/FeedPost";
+import EventSlider from "@/components/EventSlider";
 import { mockGroups, mockChallenges, mockPosts } from "../data/mockData";
 
 export default function Home() {
@@ -34,6 +35,12 @@ export default function Home() {
           </div>
         </div>
       </Card>
+
+      {/* Events & Kurse */}
+      <div>
+        <h2 className="text-lg font-semibold mb-3">Events & Kurse</h2>
+        <EventSlider />
+      </div>
 
       {/* New Members */}
       <div>

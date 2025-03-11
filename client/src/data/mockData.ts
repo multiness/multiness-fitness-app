@@ -1,5 +1,16 @@
 import { User, Post, Challenge, Group } from "@shared/schema";
 
+interface Event {
+  id: number;
+  title: string;
+  description: string;
+  date: Date;
+  image: string;
+  type: "event" | "course";
+  trainer: number; // userId des Trainers
+  location: string;
+}
+
 export const mockUsers: User[] = [
   {
     id: 1,
@@ -229,5 +240,58 @@ export const mockGroups: Group[] = [
     description: "Tipps und Tricks für eine ausgewogene Ernährung 🥗",
     image: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800&auto=format",
     creatorId: 4,
+  }
+];
+
+export const mockEvents: Event[] = [
+  {
+    id: 1,
+    title: "HIIT Masterclass",
+    description: "Intensives Gruppen-Workout mit Intervalltraining",
+    date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // in 2 Tagen
+    image: "https://images.unsplash.com/photo-1534258936925-c58bed479fcb?w=800&auto=format",
+    type: "course",
+    trainer: 1,
+    location: "Fitness Studio Zentrum"
+  },
+  {
+    id: 2,
+    title: "Yoga im Park",
+    description: "Outdoor Yoga Session für alle Level",
+    date: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000),
+    image: "https://images.unsplash.com/photo-1599901860904-17e6ed7083a0?w=800&auto=format",
+    type: "event",
+    trainer: 2,
+    location: "Stadtpark"
+  },
+  {
+    id: 3,
+    title: "Ernährungsworkshop",
+    description: "Gesunde Ernährung im Alltag",
+    date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+    image: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800&auto=format",
+    type: "course",
+    trainer: 4,
+    location: "Community Center"
+  },
+  {
+    id: 4,
+    title: "Lauf-Technik Seminar",
+    description: "Optimiere deinen Laufstil",
+    date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    image: "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=800&auto=format",
+    type: "course",
+    trainer: 5,
+    location: "Sportzentrum"
+  },
+  {
+    id: 5,
+    title: "Kraft & Mobility Workshop",
+    description: "Grundlagen der Beweglichkeit und Krafttraining",
+    date: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000),
+    image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&auto=format",
+    type: "course",
+    trainer: 3,
+    location: "Fitness Studio Nord"
   }
 ];
