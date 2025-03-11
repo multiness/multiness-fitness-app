@@ -13,6 +13,9 @@ interface MarketingBannerProps {
 }
 
 export function MarketingBanner({ banner }: MarketingBannerProps) {
+  // Debug-Log um zu sehen, welche Daten ankommen
+  console.log('Banner Buttons:', banner.buttons);
+
   return (
     <div className="relative w-full">
       {/* Banner Image */}
@@ -39,14 +42,15 @@ export function MarketingBanner({ banner }: MarketingBannerProps) {
                     key={index}
                     variant={index === 0 ? "default" : "secondary"}
                     size="lg"
-                    className={
-                      index === 1 
-                        ? "bg-white hover:bg-white/90 text-black font-bold shadow-sm" 
-                        : "bg-primary hover:bg-primary/90 text-white font-bold shadow-sm"
-                    }
+                    className={`font-bold ${
+                      index === 0 
+                        ? "bg-primary hover:bg-primary/90 text-white" 
+                        : "bg-white hover:bg-white/90 text-black"
+                    }`}
                     onClick={() => window.open(button.url, '_blank')}
                   >
-                    {button.text}
+                    {console.log('Rendering button:', button.text)}
+                    {button.text || 'Button Text Fehlt'}
                   </Button>
                 ))}
               </div>
