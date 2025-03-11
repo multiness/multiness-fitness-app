@@ -134,18 +134,22 @@ export default function Chat() {
                 >
                   <div className="flex items-center gap-3">
                     <div className="relative">
-                      <Avatar className={`h-12 w-12 ${chat.isGroup ? 'border-2 border-primary' : ''}`}>
+                      <Avatar className={`h-12 w-12 ${
+                        chat.isGroup 
+                          ? 'ring-4 ring-green-500/50' 
+                          : 'ring-4 ring-blue-500/50'
+                      }`}>
                         <AvatarImage src={chat.avatar || undefined} />
-                        <AvatarFallback className={chat.isGroup ? 'bg-primary/10' : ''}>
+                        <AvatarFallback className={chat.isGroup ? 'bg-green-50' : 'bg-blue-50'}>
                           {chat.name[0]}
                         </AvatarFallback>
                       </Avatar>
                       {chat.isGroup ? (
-                        <div className="absolute bottom-0 right-0 bg-primary rounded-full p-1">
-                          <Users className="h-3 w-3 text-primary-foreground" />
+                        <div className="absolute bottom-0 right-0 bg-green-500 rounded-full p-1">
+                          <Users className="h-3 w-3 text-white" />
                         </div>
                       ) : chat.isOnline && (
-                        <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-500 ring-2 ring-background" />
+                        <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-blue-500 ring-2 ring-background" />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -187,9 +191,13 @@ export default function Chat() {
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
-              <Avatar className={`h-10 w-10 ${selectedChat.isGroup ? 'border-2 border-primary' : ''}`}>
+              <Avatar className={`h-10 w-10 ${
+                selectedChat.isGroup 
+                  ? 'ring-4 ring-green-500/50' 
+                  : 'ring-4 ring-blue-500/50'
+              }`}>
                 <AvatarImage src={selectedChat.avatar || undefined} />
-                <AvatarFallback className={selectedChat.isGroup ? 'bg-primary/10' : ''}>
+                <AvatarFallback className={selectedChat.isGroup ? 'bg-green-50' : 'bg-blue-50'}>
                   {selectedChat.name[0]}
                 </AvatarFallback>
               </Avatar>
