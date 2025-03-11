@@ -20,7 +20,8 @@ import {
   Search,
   Link as LinkIcon,
   Copy,
-  BarChart
+  BarChart,
+  Bell
 } from "lucide-react";
 import { DEFAULT_BANNER_POSITIONS } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
@@ -589,6 +590,84 @@ export default function Admin() {
                       <div className="flex gap-2 w-full sm:w-auto">
                         <Button variant="destructive" size="sm" className="flex-1 sm:flex-none">Remove</Button>
                         <Button variant="outline" size="sm" className="flex-1 sm:flex-none">Approve</Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* Push Notification History Section */}
+      <section>
+        <h2 className="text-2xl font-bold mb-6">Push Notification History</h2>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Bell className="h-5 w-5" />
+              Versendete Notifications
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="mb-4">
+              <Input placeholder="Search notifications..." />
+            </div>
+            <ScrollArea className="h-[400px]">
+              <div className="space-y-4">
+                {/* Beispiel Notifications */}
+                {[
+                  {
+                    id: 1,
+                    title: "Summer Challenge Start",
+                    message: "Die Summer Challenge beginnt heute!",
+                    sentAt: new Date(),
+                    targetGroup: "all",
+                    stats: {
+                      sent: 1234,
+                      opened: 856,
+                      openRate: "69.4%"
+                    }
+                  },
+                  {
+                    id: 2,
+                    title: "Neue Premium Features",
+                    message: "Entdecke unsere neuen Premium Features!",
+                    sentAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
+                    targetGroup: "premium",
+                    stats: {
+                      sent: 500,
+                      opened: 423,
+                      openRate: "84.6%"
+                    }
+                  }
+                ].map(notification => (
+                  <div key={notification.id} className="border-b p-4">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                      <div>
+                        <h3 className="font-semibold">{notification.title}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {notification.message}
+                        </p>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          Gesendet am {format(notification.sentAt, "dd.MM.yyyy HH:mm")} •
+                          Zielgruppe: {notification.targetGroup === "all" ? "Alle Nutzer" : "Premium Nutzer"}
+                        </div>
+                      </div>
+                      <div className="flex gap-4 text-sm">
+                        <div>
+                          <div className="font-medium">{notification.stats.sent}</div>
+                          <div className="text-xs text-muted-foreground">Gesendet</div>
+                        </div>
+                        <div>
+                          <div className="font-medium">{notification.stats.opened}</div>
+                          <div className="text-xs text-muted-foreground">Geöffnet</div>
+                        </div>
+                        <div>
+                          <div className="font-medium">{notification.stats.openRate}</div>
+                          <div className="text-xs text-muted-foreground">Open Rate</div>
+                        </div>
                       </div>
                     </div>
                   </div>
