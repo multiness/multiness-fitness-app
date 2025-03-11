@@ -69,45 +69,51 @@ export default function WorkoutGenerator({ onSelectWorkout }: WorkoutGeneratorPr
           {/* Dauer-Auswahl */}
           <div className="space-y-2">
             <Label className="text-base">Gewünschte Trainingsdauer</Label>
-            <RadioGroup defaultValue="30" onValueChange={setDuration} className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <RadioGroupItem value="15">
-                <Label className="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-accent">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <input type="radio" id="15min" name="duration" value="15" className="peer hidden" defaultChecked={duration === "15"} onChange={e => setDuration(e.target.value)} />
+                <label htmlFor="15min" className="flex items-center justify-center p-4 border rounded-lg cursor-pointer hover:bg-accent peer-checked:border-primary peer-checked:text-primary">
                   15 Minuten
-                </Label>
-              </RadioGroupItem>
-              <RadioGroupItem value="30">
-                <Label className="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-accent">
+                </label>
+              </div>
+              <div>
+                <input type="radio" id="30min" name="duration" value="30" className="peer hidden" defaultChecked={duration === "30"} onChange={e => setDuration(e.target.value)} />
+                <label htmlFor="30min" className="flex items-center justify-center p-4 border rounded-lg cursor-pointer hover:bg-accent peer-checked:border-primary peer-checked:text-primary">
                   30 Minuten
-                </Label>
-              </RadioGroupItem>
-              <RadioGroupItem value="45">
-                <Label className="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-accent">
+                </label>
+              </div>
+              <div>
+                <input type="radio" id="45min" name="duration" value="45" className="peer hidden" defaultChecked={duration === "45"} onChange={e => setDuration(e.target.value)} />
+                <label htmlFor="45min" className="flex items-center justify-center p-4 border rounded-lg cursor-pointer hover:bg-accent peer-checked:border-primary peer-checked:text-primary">
                   45 Minuten
-                </Label>
-              </RadioGroupItem>
-            </RadioGroup>
+                </label>
+              </div>
+            </div>
           </div>
 
           {/* Schwierigkeitsgrad */}
           <div className="space-y-2">
             <Label className="text-base">Schwierigkeitsgrad</Label>
-            <RadioGroup defaultValue="mittel" onValueChange={setDifficulty} className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <RadioGroupItem value="anfänger">
-                <Label className="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-accent">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <input type="radio" id="beginner" name="difficulty" value="anfänger" className="peer hidden" defaultChecked={difficulty === "anfänger"} onChange={e => setDifficulty(e.target.value)} />
+                <label htmlFor="beginner" className="flex items-center justify-center p-4 border rounded-lg cursor-pointer hover:bg-accent peer-checked:border-primary peer-checked:text-primary">
                   Anfänger
-                </Label>
-              </RadioGroupItem>
-              <RadioGroupItem value="mittel">
-                <Label className="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-accent">
+                </label>
+              </div>
+              <div>
+                <input type="radio" id="intermediate" name="difficulty" value="mittel" className="peer hidden" defaultChecked={difficulty === "mittel"} onChange={e => setDifficulty(e.target.value)} />
+                <label htmlFor="intermediate" className="flex items-center justify-center p-4 border rounded-lg cursor-pointer hover:bg-accent peer-checked:border-primary peer-checked:text-primary">
                   Mittel
-                </Label>
-              </RadioGroupItem>
-              <RadioGroupItem value="fortgeschritten">
-                <Label className="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-accent">
+                </label>
+              </div>
+              <div>
+                <input type="radio" id="advanced" name="difficulty" value="fortgeschritten" className="peer hidden" defaultChecked={difficulty === "fortgeschritten"} onChange={e => setDifficulty(e.target.value)} />
+                <label htmlFor="advanced" className="flex items-center justify-center p-4 border rounded-lg cursor-pointer hover:bg-accent peer-checked:border-primary peer-checked:text-primary">
                   Fortgeschritten
-                </Label>
-              </RadioGroupItem>
-            </RadioGroup>
+                </label>
+              </div>
+            </div>
           </div>
 
           <Button onClick={generateWorkout} className="w-full">
