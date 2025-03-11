@@ -22,6 +22,7 @@ const mockEvents = [
     recurringType: "weekly",
     maxParticipants: 20,
     currentParticipants: 12,
+    image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800"
   },
   {
     id: 2,
@@ -34,6 +35,7 @@ const mockEvents = [
     recurringType: "weekly",
     maxParticipants: 15,
     currentParticipants: 8,
+    image: "https://images.unsplash.com/photo-1549576490-b0b4831ef60a?w=800"
   },
   // Weitere Events hier...
 ];
@@ -41,10 +43,16 @@ const mockEvents = [
 export default function Events() {
   const [date, setDate] = useState<Date | undefined>(new Date());
 
-  // Gruppiere Events nach Datum
-  const upcomingEvents = mockEvents.sort((a, b) => a.date.getTime() - b.date.getTime());
-  
-  // Filter Events für den ausgewählten Tag
+  // Filter Events für verschiedene Ansichten
+  const today = new Date();
+  const todayEvents = mockEvents.filter(event => 
+    format(event.date, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd')
+  );
+
+  const upcomingEvents = mockEvents
+    .filter(event => event.date > today)
+    .sort((a, b) => a.date.getTime() - b.date.getTime());
+
   const selectedDayEvents = date 
     ? mockEvents.filter(event => 
         format(event.date, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
@@ -55,10 +63,70 @@ export default function Events() {
     <div className="container max-w-5xl mx-auto p-4">
       <h1 className="text-3xl font-bold mb-8">Events & Kurse</h1>
 
+      {/* Featured Events Karussell */}
+      <section className="mb-8">
+        <h2 className="text-2xl font-semibold mb-4">Featured Events</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {mockEvents.slice(0, 2).map(event => (
+            <Card key={event.id} className="overflow-hidden">
+              <img
+                src={event.image}
+                alt={event.title}
+                className="w-full h-48 object-cover"
+              />
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className="font-semibold">{event.title}</h3>
+                  <Badge variant="secondary">{event.type}</Badge>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4">{event.description}</p>
+                <div className="flex justify-between items-center">
+                  <div className="text-sm text-muted-foreground">
+                    {format(event.date, "dd. MMMM", { locale: de })}
+                  </div>
+                  <Button>Details</Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      {/* Events Heute */}
+      <section className="mb-8">
+        <h2 className="text-2xl font-semibold mb-4">Heute</h2>
+        {todayEvents.length === 0 ? (
+          <Card>
+            <CardContent className="p-6 text-center text-muted-foreground">
+              Keine Events für heute geplant
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-4">
+            {todayEvents.map(event => (
+              <EventCard key={event.id} event={event} />
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Upcoming Events */}
+      <section className="mb-8">
+        <h2 className="text-2xl font-semibold mb-4">Demnächst</h2>
+        <ScrollArea className="h-[300px]">
+          <div className="space-y-4 pr-4">
+            {upcomingEvents.map(event => (
+              <EventCard key={event.id} event={event} />
+            ))}
+          </div>
+        </ScrollArea>
+      </section>
+
+      {/* Kalender View */}
       <Tabs defaultValue="calendar" className="space-y-6">
         <TabsList>
           <TabsTrigger value="calendar">Kalender</TabsTrigger>
-          <TabsTrigger value="upcoming">Upcoming Events</TabsTrigger>
+          <TabsTrigger value="upcoming">Alle Events</TabsTrigger>
         </TabsList>
 
         <TabsContent value="calendar" className="space-y-6">
@@ -102,7 +170,7 @@ export default function Events() {
         <TabsContent value="upcoming">
           <Card>
             <CardHeader>
-              <CardTitle>Kommende Events</CardTitle>
+              <CardTitle>Alle Events</CardTitle>
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-[600px] pr-4">
