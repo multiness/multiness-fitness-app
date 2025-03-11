@@ -16,7 +16,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-
+import { Badge } from "@/components/ui/badge";
 
 const format = (date: Date, formatStr: string) => {
   return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -115,60 +115,85 @@ export default function Home() {
         </div>
 
         <Carousel
-          opts={{
-            align: "start",
-            loop: true,
-          }}
-          className="w-full"
-        >
-          <CarouselContent>
-            {activeChallenges.map(challenge => (
-              <CarouselItem key={challenge.id} className="md:basis-1/2 lg:basis-1/2">
-                <Link href={`/challenges/${challenge.id}`}>
-                  <Card className="relative overflow-hidden group hover:shadow-lg transition-all">
-                    <div className="relative aspect-[16/9]">
-                      <img
-                        src={challenge.image || undefined}
-                        alt={challenge.title}
-                        className="absolute inset-0 w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
+            opts={{
+              align: "start",
+              loop: true,
+            }}
+            className="w-full"
+          >
+            <CarouselContent>
+              {activeChallenges.map(challenge => (
+                <CarouselItem key={challenge.id} className="md:basis-1/2 lg:basis-1/2">
+                  <Link href={`/challenges/${challenge.id}`}>
+                    <Card className="overflow-hidden hover:shadow-lg transition-all">
+                      {/* Challenge Image Section */}
+                      {challenge.image && (
+                        <div className="aspect-[16/9] relative">
+                          <img
+                            src={challenge.image}
+                            alt={challenge.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
 
-                      {/* Challenge Info */}
-                      <div className="absolute bottom-0 left-0 right-0 p-4">
-                        <h3 className="text-xl font-bold text-white mb-2">{challenge.title}</h3>
-                        <p className="text-white/90 text-sm mb-3">
-                          Endet am {format(new Date(challenge.endDate), "dd.MM.yyyy")}
-                        </p>
+                      {/* Challenge Info Section */}
+                      <div className="p-4">
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <h3 className="text-xl font-bold">{challenge.title}</h3>
+                            <p className="text-sm text-muted-foreground">
+                              Endet am {format(new Date(challenge.endDate), "dd.MM.yyyy")}
+                            </p>
+                          </div>
+                          <Badge variant="secondary">Aktiv</Badge>
+                        </div>
 
-                        {/* Top 3 Ranking */}
+                        {/* Divider */}
+                        <div className="h-px bg-border my-3" />
+
+                        {/* Ranking Section */}
                         <div className="space-y-2">
+                          <p className="text-sm font-medium mb-2">Top Teilnehmer</p>
                           {[1, 2, 3].map(rank => (
-                            <div key={rank} className="flex items-center gap-2">
-                              {rank === 1 && <Crown className="h-4 w-4 text-yellow-400" />}
-                              {rank === 2 && <Crown className="h-4 w-4 text-gray-400" />}
-                              {rank === 3 && <Crown className="h-4 w-4 text-amber-700" />}
+                            <div key={rank} className="flex items-center justify-between bg-muted/50 rounded-lg p-2">
                               <div className="flex items-center gap-2">
+                                {rank === 1 && <Crown className="h-4 w-4 text-yellow-400" />}
+                                {rank === 2 && <Crown className="h-4 w-4 text-gray-400" />}
+                                {rank === 3 && <Crown className="h-4 w-4 text-amber-700" />}
                                 <Avatar className="h-6 w-6">
-                                  <AvatarImage src={mockUsers[rank]?.avatar} />
+                                  <AvatarImage src={mockUsers[rank]?.avatar || undefined} />
                                   <AvatarFallback>{mockUsers[rank]?.username[0]}</AvatarFallback>
                                 </Avatar>
-                                <span className="text-white text-sm">{mockUsers[rank]?.username}</span>
-                                <span className="text-white/60 text-sm">{1000 - (rank * 50)} Punkte</span>
+                                <span className="text-sm font-medium">{mockUsers[rank]?.username}</span>
                               </div>
+                              <span className="text-sm text-muted-foreground">
+                                {1000 - (rank * 50)} Punkte
+                              </span>
                             </div>
                           ))}
                         </div>
+
+                        {/* Action Button */}
+                        <Button 
+                          variant="outline" 
+                          className="w-full mt-4"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setLocation(`/challenges/${challenge.id}`);
+                          }}
+                        >
+                          Details anzeigen
+                        </Button>
                       </div>
-                    </div>
-                  </Card>
-                </Link>
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-          <CarouselPrevious className="hidden md:flex" />
-          <CarouselNext className="hidden md:flex" />
-        </Carousel>
+                    </Card>
+                  </Link>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious className="hidden md:flex" />
+            <CarouselNext className="hidden md:flex" />
+          </Carousel>
       </section>
 
       {/* Feed */}
