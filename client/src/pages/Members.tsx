@@ -17,9 +17,10 @@ export default function Members() {
   );
 
   return (
-    <div className="container max-w-5xl mx-auto p-4">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold">Community Mitglieder</h1>
+    <div className="container mx-auto p-4 md:p-6">
+      {/* Header Section */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+        <h1 className="text-2xl md:text-3xl font-bold">Community Mitglieder</h1>
         <div className="text-sm text-muted-foreground">
           {mockUsers.length} Mitglieder
         </div>
@@ -43,45 +44,48 @@ export default function Members() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-4">
+      {/* Responsive Grid Layout */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4">
         {filteredUsers.map(user => (
-          <Card key={user.id}>
+          <Card key={user.id} className="transition-all hover:shadow-lg">
             <CardContent className="p-4">
-              <div className="flex items-center gap-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                 <Link href={`/profile/${user.id}`} className="hover:opacity-80">
-                  <Avatar className="h-16 w-16">
+                  <Avatar className="h-16 w-16 sm:h-20 sm:w-20">
                     <AvatarImage src={user.avatar || undefined} />
                     <AvatarFallback>{user.username[0]}</AvatarFallback>
                   </Avatar>
                 </Link>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <Link href={`/profile/${user.id}`}>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold hover:text-primary">{user.username}</h3>
-                      {user.isAdmin && (
-                        <Badge variant="default" className="bg-primary">Admin</Badge>
-                      )}
-                      {user.isVerified && (
-                        <Badge variant="secondary">Verifiziert</Badge>
-                      )}
-                      {user.isTeamMember && (
-                        <Badge variant="outline">{user.teamRole}</Badge>
-                      )}
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                      <h3 className="font-semibold hover:text-primary truncate">{user.username}</h3>
+                      <div className="flex flex-wrap gap-1">
+                        {user.isAdmin && (
+                          <Badge variant="default" className="bg-primary">Admin</Badge>
+                        )}
+                        {user.isVerified && (
+                          <Badge variant="secondary">Verifiziert</Badge>
+                        )}
+                        {user.isTeamMember && (
+                          <Badge variant="outline">{user.teamRole}</Badge>
+                        )}
+                      </div>
                     </div>
                   </Link>
-                  <p className="text-sm text-muted-foreground">{user.name}</p>
+                  <p className="text-sm text-muted-foreground truncate">{user.name}</p>
                   {user.bio && (
                     <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{user.bio}</p>
                   )}
 
-                  <div className="flex gap-2 mt-3">
-                    <Button variant="outline" size="sm" className="flex items-center gap-1">
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    <Button variant="outline" size="sm" className="flex items-center gap-1 min-w-[100px]">
                       <UserPlus className="h-4 w-4" />
-                      Folgen
+                      <span className="hidden sm:inline">Folgen</span>
                     </Button>
-                    <Button variant="outline" size="sm" className="flex items-center gap-1">
+                    <Button variant="outline" size="sm" className="flex items-center gap-1 min-w-[100px]">
                       <MessageSquare className="h-4 w-4" />
-                      Nachricht
+                      <span className="hidden sm:inline">Nachricht</span>
                     </Button>
                   </div>
                 </div>
