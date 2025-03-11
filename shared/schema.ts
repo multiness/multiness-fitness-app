@@ -149,19 +149,20 @@ export type BannerPosition = typeof bannerPositions.$inferSelect;
 export type MarketingBanner = typeof marketingBanners.$inferSelect;
 export type BannerInteraction = typeof bannerInteractions.$inferSelect;
 
+// Ändere die DEFAULT_BANNER_POSITIONS
 export const DEFAULT_BANNER_POSITIONS = [
   {
     name: "App Header",
     shortcode: "APP_HEADER",
     description: "Banner im Kopfbereich der App",
-    appDimensions: { width: 1200, height: 300 },
+    appDimensions: { width: 1080, height: 1080 },
     webDimensions: { width: 1920, height: 400 }
   },
   {
     name: "Website Hero",
     shortcode: "WEB_HERO",
     description: "Hero-Banner auf der Website",
-    appDimensions: { width: 800, height: 400 },
+    appDimensions: { width: 1080, height: 1080 },
     webDimensions: { width: 1920, height: 600 }
   }
 ] as const;

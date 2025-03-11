@@ -41,6 +41,7 @@ const mockBanners = [
     appImage: "https://images.unsplash.com/photo-1517963879433-6ad2b056d712?w=1200&auto=format",
     webImage: "https://images.unsplash.com/photo-1517963879433-6ad2b056d712?w=1920&auto=format",
     isActive: true,
+    targetUrl: "https://example.com", // Added targetUrl
     stats: {
       views: 1234,
       clicks: 89,
@@ -54,6 +55,7 @@ const mockChallenges = [];
 const mockGroups = [];
 const mockPosts = [];
 
+// Änderungen im BannerManagement
 function BannerManagement() {
   const { toast } = useToast();
 
@@ -67,7 +69,6 @@ function BannerManagement() {
 
   return (
     <div className="space-y-6">
-      {/* Banner Übersicht */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {DEFAULT_BANNER_POSITIONS.map(position => (
           <Card key={position.shortcode}>
@@ -78,15 +79,19 @@ function BannerManagement() {
                   <CardDescription className="mt-1.5">
                     {position.description}
                     <div className="mt-2 p-2 bg-muted rounded-md text-xs">
-                      <div className="font-medium mb-1 text-destructive">Format-Anforderungen (exakt):</div>
-                      <div className="flex flex-col gap-1">
+                      <div className="font-medium mb-2">Format-Anforderungen:</div>
+                      <div className="grid grid-cols-2 gap-4">
                         <div className="p-2 border rounded-md">
-                          <div className="font-medium">App Format (zwingend exakt):</div>
-                          <div className="text-destructive">{position.appDimensions.width} x {position.appDimensions.height}px</div>
+                          <div className="font-medium">App Format</div>
+                          <div className="text-muted-foreground">
+                            {position.appDimensions.width} x {position.appDimensions.height}px
+                          </div>
                         </div>
                         <div className="p-2 border rounded-md">
-                          <div className="font-medium">Web Format (mindestens):</div>
-                          <div>{position.webDimensions.width} x {position.webDimensions.height}px</div>
+                          <div className="font-medium">Web Format</div>
+                          <div className="text-muted-foreground">
+                            {position.webDimensions.width} x {position.webDimensions.height}px
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -104,8 +109,7 @@ function BannerManagement() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {/* Aktuelle Banner */}
+              <div className="space-y-6">
                 {mockBanners
                   .filter(banner => banner.positionId === position.shortcode)
                   .map(banner => (
@@ -114,7 +118,7 @@ function BannerManagement() {
                         {/* App Preview */}
                         <div className="space-y-2">
                           <div className="text-sm font-medium text-muted-foreground">App Preview:</div>
-                          <div className="relative aspect-video rounded-lg overflow-hidden bg-muted">
+                          <div className="relative aspect-square rounded-lg overflow-hidden bg-muted">
                             <img
                               src={banner.appImage}
                               alt={`${banner.name} (App)`}
@@ -137,13 +141,23 @@ function BannerManagement() {
                       </div>
 
                       {/* Banner Info & Controls */}
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-lg border bg-card">
-                        <div className="space-y-1">
-                          <h4 className="font-medium">{banner.name}</h4>
-                          <p className="text-sm text-muted-foreground">{banner.description}</p>
+                      <div className="space-y-4 p-4 rounded-lg border bg-card">
+                        <div className="grid gap-4">
+                          <div>
+                            <label className="text-sm font-medium">Titel</label>
+                            <Input defaultValue={banner.name} className="mt-1.5" />
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">Beschreibung</label>
+                            <Input defaultValue={banner.description} className="mt-1.5" />
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">Link</label>
+                            <Input defaultValue={banner.targetUrl} className="mt-1.5" placeholder="https://" />
+                          </div>
                         </div>
 
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-4 border-t">
                           <div className="flex items-center gap-2">
                             <span className="text-sm">Aktiv</span>
                             <Switch 
@@ -158,9 +172,8 @@ function BannerManagement() {
                               }}
                             />
                           </div>
-                          <Button variant="outline" size="sm" className="flex items-center gap-2">
-                            <LinkIcon className="h-4 w-4" />
-                            Link bearbeiten
+                          <Button variant="outline" size="sm">
+                            Änderungen speichern
                           </Button>
                         </div>
                       </div>
@@ -204,22 +217,17 @@ function BannerManagement() {
                         Ziehen Sie Bilder hierher oder klicken Sie zum Hochladen
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-lg">
-                        <div className="p-4 bg-muted rounded-lg border-2 border-destructive">
-                          <div className="font-medium mb-2">App Format (exakt)</div>
-                          <div className="text-xs text-destructive font-bold">
-                            {position.appDimensions.width} x {position.appDimensions.height}px
-                            <div className="mt-1 font-normal">
-                              Bitte exakt diese Größe verwenden
-                            </div>
+                        <div className="p-4 bg-muted rounded-lg">
+                          <div className="font-medium mb-2">App Format</div>
+                          <div className="text-xs text-muted-foreground">
+                            Quadratisch: {position.appDimensions.width} x {position.appDimensions.height}px
                           </div>
                         </div>
                         <div className="p-4 bg-muted rounded-lg">
-                          <div className="font-medium mb-2">Web Format (mindestens)</div>
+                          <div className="font-medium mb-2">Web Format</div>
                           <div className="text-xs text-muted-foreground">
                             {position.webDimensions.width} x {position.webDimensions.height}px
-                            <div className="mt-1">
-                              Mindestgröße für optimale Darstellung
-                            </div>
+                            <div className="mt-1">Empfohlene Mindestgröße</div>
                           </div>
                         </div>
                       </div>
