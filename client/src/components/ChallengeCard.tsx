@@ -1,82 +1,130 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Challenge } from "@shared/schema";
 import { format } from "date-fns";
 import { Link } from "wouter";
-import { Gift, Trophy, Users } from "lucide-react";
+import { Crown, Heart, Share2, Users, Trophy } from "lucide-react";
 import { mockUsers } from "../data/mockData";
+import { Button } from "@/components/ui/button";
 
 interface ChallengeCardProps {
   challenge: Challenge;
+  variant?: "compact" | "full";
 }
 
-export default function ChallengeCard({ challenge }: ChallengeCardProps) {
+export default function ChallengeCard({ challenge, variant = "full" }: ChallengeCardProps) {
   const isActive = new Date() >= challenge.startDate && new Date() <= challenge.endDate;
   const creator = mockUsers.find(u => u.id === challenge.creatorId);
-  // Simuliere Teilnehmer (in einer echten App würde dies aus der DB kommen)
   const participants = mockUsers.slice(0, Math.floor(Math.random() * 5) + 3);
 
   return (
-    <Link href={`/challenges/${challenge.id}`}>
-      <Card className="overflow-hidden cursor-pointer transition-transform hover:scale-[1.02]">
-        <CardHeader className="p-0">
-          <img
-            src={challenge.image}
-            alt={challenge.title}
-            className="w-full h-32 object-cover"
-          />
-        </CardHeader>
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-2">
-            <CardTitle className="text-lg">{challenge.title}</CardTitle>
-            <Badge variant={isActive ? "default" : "secondary"}>
-              {isActive ? "Aktiv" : "Beendet"}
-            </Badge>
+    <Card className="overflow-hidden hover:shadow-lg transition-all border-l-4 border-l-primary bg-gradient-to-br from-primary/5 to-transparent">
+      <CardContent className="p-4">
+        {/* Challenge Info Section */}
+        <div className="flex items-start gap-3 mb-4">
+          <Avatar className="h-10 w-10 ring-2 ring-primary/20">
+            <AvatarImage src={creator?.avatar || undefined} />
+            <AvatarFallback>{creator?.username[0]}</AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium">{creator?.username}</p>
+              <Badge variant="secondary" className="ml-2 bg-primary/10 text-primary hover:bg-primary/20">
+                {isActive ? "Aktiv" : "Beendet"}
+              </Badge>
+            </div>
+            <h3 className="text-lg font-bold truncate">{challenge.title}</h3>
+            <p className="text-sm text-muted-foreground">
+              Endet am {format(challenge.endDate, "dd.MM.yyyy")}
+            </p>
           </div>
-          <p className="text-sm text-muted-foreground mb-2">
-            {challenge.description}
-          </p>
-          <div className="text-xs text-muted-foreground mb-3">
-            {format(challenge.startDate, "MMM d")} - {format(challenge.endDate, "MMM d, yyyy")}
-          </div>
+        </div>
 
-          {/* Prize Preview */}
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Gift className="h-4 w-4 text-primary" />
-            <span>{challenge.prize}</span>
+        {/* Optional Challenge Image */}
+        {variant === "full" && challenge.image && (
+          <div className="aspect-video rounded-lg overflow-hidden mb-4">
+            <img
+              src={challenge.image}
+              alt={challenge.title}
+              className="w-full h-full object-cover"
+            />
           </div>
+        )}
 
-          {/* Creator Info */}
-          <div className="flex items-center gap-2 mt-3 pt-3 border-t">
-            <Trophy className="h-4 w-4 text-primary" />
-            <span className="text-sm">
-              Created by <span className="font-medium">{creator?.username}</span>
-            </span>
-          </div>
-
-          {/* Participants Preview */}
-          <div className="flex items-center gap-2 mt-3 pt-3 border-t">
-            <div className="flex -space-x-2">
-              {participants.slice(0, 3).map((user, i) => (
-                <Avatar key={i} className="h-6 w-6 border-2 border-background">
-                  <AvatarImage src={user.avatar} />
-                  <AvatarFallback>{user.username[0]}</AvatarFallback>
-                </Avatar>
-              ))}
-              {participants.length > 3 && (
-                <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-xs border-2 border-background">
+        {/* Participants & Stats */}
+        <div className="bg-muted/30 rounded-lg p-3 backdrop-blur-sm">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className="flex -space-x-2">
+                {participants.slice(0, 3).map((user, i) => (
+                  <Avatar key={i} className="h-6 w-6 border-2 border-background">
+                    <AvatarImage src={user.avatar || undefined} />
+                    <AvatarFallback>{user.username[0]}</AvatarFallback>
+                  </Avatar>
+                ))}
+                <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-xs border-2 border-background text-primary font-medium">
                   +{participants.length - 3}
                 </div>
-              )}
+              </div>
+              <span className="text-sm text-muted-foreground flex items-center gap-1">
+                <Users className="h-4 w-4" />
+                {participants.length} Teilnehmer
+              </span>
             </div>
-            <span className="text-sm text-muted-foreground flex items-center gap-1">
-              <Users className="h-4 w-4" />
-              {participants.length} Teilnehmer
-            </span>
+            <div className="flex gap-1">
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <Heart className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <Share2 className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
-        </CardContent>
-      </Card>
-    </Link>
+
+          {/* Top 3 Ranking */}
+          <div className="grid grid-cols-3 gap-2">
+            {[1, 2, 3].map(rank => (
+              <div key={rank} className="flex items-center gap-2 bg-background/50 rounded-md p-2">
+                <div className="relative">
+                  {rank === 1 && <Crown className="absolute -top-2 -left-2 h-4 w-4 text-yellow-400" />}
+                  {rank === 2 && <Crown className="absolute -top-2 -left-2 h-4 w-4 text-gray-400" />}
+                  {rank === 3 && <Crown className="absolute -top-2 -left-2 h-4 w-4 text-amber-700" />}
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={mockUsers[rank]?.avatar || undefined} />
+                    <AvatarFallback>{mockUsers[rank]?.username[0]}</AvatarFallback>
+                  </Avatar>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate">{mockUsers[rank]?.username}</p>
+                  <p className="text-xs text-muted-foreground">{1000 - (rank * 50)} Punkte</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Image Placeholder for Full Variant */}
+        {variant === "full" && !challenge.image && (
+          <div className="aspect-video rounded-lg overflow-hidden mb-4 bg-muted/50 flex items-center justify-center">
+            <div className="text-center">
+              <Trophy className="h-12 w-12 text-muted-foreground/50 mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">Kein Bild verfügbar</p>
+            </div>
+          </div>
+        )}
+
+        {/* Action Button */}
+        <Button 
+          variant="default"
+          className="w-full mt-4"
+          asChild
+        >
+          <Link href={`/challenges/${challenge.id}`}>
+            Challenge beitreten
+          </Link>
+        </Button>
+      </CardContent>
+    </Card>
   );
 }

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search } from "lucide-react";
+import { Search, Trophy } from "lucide-react";
 import ChallengeCard from "@/components/ChallengeCard";
 import { mockChallenges, mockUsers } from "../data/mockData";
 
@@ -29,51 +29,41 @@ export default function Challenges() {
   );
 
   return (
-    <div className="container max-w-2xl mx-auto p-4">
+    <div className="container max-w-4xl mx-auto p-4">
       <div className="flex items-center gap-4 mb-6">
+        <div className="flex items-center gap-2">
+          <Trophy className="h-6 w-6 text-primary" />
+          <h1 className="text-2xl font-bold">Challenges</h1>
+        </div>
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
-            placeholder="Search challenges..."
+            placeholder="Suche nach Challenges..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
           />
         </div>
+        <Button onClick={() => window.location.href = "/create/challenge"}>
+          Challenge erstellen
+        </Button>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="active">Active Challenges</TabsTrigger>
-          <TabsTrigger value="past">Past Challenges</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 mb-6">
+          <TabsTrigger value="active">Aktive Challenges</TabsTrigger>
+          <TabsTrigger value="past">Vergangene Challenges</TabsTrigger>
         </TabsList>
 
         <TabsContent value="active">
           <ScrollArea className="h-[calc(100vh-200px)]">
-            <div className="grid gap-4">
+            <div className="grid gap-6">
               {filteredActiveChallenges.map(challenge => (
-                <div key={challenge.id}>
-                  <ChallengeCard challenge={challenge} />
-                  {/* Leaderboard Preview */}
-                  <Card className="mt-2">
-                    <CardHeader>
-                      <CardTitle className="text-sm">Top Participants</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        {mockUsers.slice(0, 3).map((user, index) => (
-                          <div key={user.id} className="flex items-center gap-2">
-                            <span className="font-bold">{index + 1}</span>
-                            <span>{user.username}</span>
-                            <span className="ml-auto text-muted-foreground">
-                              {Math.floor(Math.random() * 1000)} points
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
+                <ChallengeCard 
+                  key={challenge.id} 
+                  challenge={challenge}
+                  variant="full"
+                />
               ))}
             </div>
           </ScrollArea>
@@ -81,9 +71,13 @@ export default function Challenges() {
 
         <TabsContent value="past">
           <ScrollArea className="h-[calc(100vh-200px)]">
-            <div className="grid gap-4">
+            <div className="grid gap-6">
               {filteredPastChallenges.map(challenge => (
-                <ChallengeCard key={challenge.id} challenge={challenge} />
+                <ChallengeCard 
+                  key={challenge.id} 
+                  challenge={challenge}
+                  variant="full"
+                />
               ))}
             </div>
           </ScrollArea>
