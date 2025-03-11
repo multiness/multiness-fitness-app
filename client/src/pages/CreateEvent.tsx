@@ -18,6 +18,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CalendarDays, Clock, Image as ImageIcon, X } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"; // Import RadioGroup
+
 
 // Validierungsschema für das Formular
 const eventSchema = z.object({
@@ -28,7 +30,10 @@ const eventSchema = z.object({
   isRecurring: z.boolean().default(false),
   recurringType: z.enum(["daily", "weekly", "monthly"]).optional(),
   image: z.string().optional(),
-  isHighlight: z.boolean().default(false), // Neues Feld für Highlight-Events
+  isHighlight: z.boolean().default(false),
+  type: z.enum(["event", "course"], {
+    required_error: "Bitte wähle einen Typ aus",
+  }), // Neues Feld für Event-Typ
 });
 
 type EventFormData = z.infer<typeof eventSchema>;
@@ -43,7 +48,8 @@ export default function CreateEvent() {
     defaultValues: {
       isRecurring: false,
       recurringType: "weekly",
-      isHighlight: false, // Default: kein Highlight
+      isHighlight: false,
+      type: "event", // Default: Event
     },
   });
 
@@ -95,6 +101,27 @@ export default function CreateEvent() {
             <CardTitle>Event Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Event-Typ Auswahl */}
+            <div className="space-y-2">
+              <Label>Event-Typ</Label>
+              <RadioGroup
+                defaultValue={form.getValues("type")}
+                onValueChange={(value) => form.setValue("type", value as "event" | "course")}
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="event" id="event" />
+                  <Label htmlFor="event">Event</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="course" id="course" />
+                  <Label htmlFor="course">Kurs</Label>
+                </div>
+              </RadioGroup>
+              {form.formState.errors.type && (
+                <p className="text-sm text-destructive">{form.formState.errors.type.message}</p>
+              )}
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="title">Event Titel</Label>
               <Input

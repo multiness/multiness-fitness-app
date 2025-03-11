@@ -208,8 +208,11 @@ function EventCard({ event }: { event: typeof mockEvents[0] }) {
                 </Badge>
               )}
               <Badge variant="secondary" className="text-xs">
-                {event.type}
+                {event.type === "course" ? "Kurs" : "Event"}
               </Badge>
+              {event.isHighlight && (
+                <Badge variant="default" className="bg-primary">Highlight</Badge>
+              )}
             </div>
             <p className="text-sm text-muted-foreground">
               {event.description}
