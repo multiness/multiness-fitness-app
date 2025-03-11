@@ -189,7 +189,7 @@ function BannerManagement() {
                               <label className="text-sm font-medium">Button Konfiguration</label>
                               <div className="flex items-center gap-2">
                                 <span className="text-sm">Zweiter Button</span>
-                                <Switch 
+                                <Switch
                                   checked={showSecondButton}
                                   onCheckedChange={setShowSecondButton}
                                 />
@@ -200,12 +200,12 @@ function BannerManagement() {
                             <div className="space-y-2">
                               <label className="text-sm font-medium">Button 1</label>
                               <div className="grid gap-2">
-                                <Input 
-                                  placeholder="Button Text" 
+                                <Input
+                                  placeholder="Button Text"
                                   defaultValue={banner.buttons[0]?.text}
                                 />
-                                <Input 
-                                  placeholder="Button Link (https://...)" 
+                                <Input
+                                  placeholder="Button Link (https://...)"
                                   defaultValue={banner.buttons[0]?.url}
                                 />
                               </div>
@@ -216,12 +216,12 @@ function BannerManagement() {
                               <div className="space-y-2">
                                 <label className="text-sm font-medium">Button 2</label>
                                 <div className="grid gap-2">
-                                  <Input 
-                                    placeholder="Button Text" 
+                                  <Input
+                                    placeholder="Button Text"
                                     defaultValue={banner.buttons[1]?.text}
                                   />
-                                  <Input 
-                                    placeholder="Button Link (https://...)" 
+                                  <Input
+                                    placeholder="Button Link (https://...)"
                                     defaultValue={banner.buttons[1]?.url}
                                   />
                                 </div>
@@ -233,21 +233,21 @@ function BannerManagement() {
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-4 border-t">
                           <div className="flex items-center gap-2">
                             <span className="text-sm">Aktiv</span>
-                            <Switch 
+                            <Switch
                               checked={banner.isActive}
                               onCheckedChange={() => {
                                 toast({
                                   title: banner.isActive ? "Banner deaktiviert" : "Banner aktiviert",
-                                  description: banner.isActive 
-                                    ? "Der Banner wird nicht mehr angezeigt." 
+                                  description: banner.isActive
+                                    ? "Der Banner wird nicht mehr angezeigt."
                                     : "Der Banner wird jetzt auf der Website angezeigt."
                                 });
                               }}
                             />
                           </div>
                           <div className="flex gap-2">
-                            <Button 
-                              variant="outline" 
+                            <Button
+                              variant="outline"
                               size="sm"
                               onClick={() => {
                                 toast({
@@ -258,8 +258,8 @@ function BannerManagement() {
                             >
                               Vorschau
                             </Button>
-                            <Button 
-                              variant="default" 
+                            <Button
+                              variant="default"
                               size="sm"
                               onClick={() => {
                                 toast({
@@ -372,16 +372,16 @@ function BannerManagement() {
                             </div>
                           </div>
                           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                            <Button 
-                              variant="outline" 
+                            <Button
+                              variant="outline"
                               size="sm"
                               className="w-full sm:w-auto"
                               onClick={() => setEditingBanner(banner.id)}
                             >
                               Bearbeiten
                             </Button>
-                            <Button 
-                              variant="default" 
+                            <Button
+                              variant="default"
                               size="sm"
                               className="w-full sm:w-auto"
                               onClick={() => {
