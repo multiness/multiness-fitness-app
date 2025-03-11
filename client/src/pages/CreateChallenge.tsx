@@ -3,24 +3,54 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Timer, Dumbbell, Trophy, Gift } from "lucide-react";
+import { Gift } from "lucide-react";
 import WorkoutGenerator from "@/components/WorkoutGenerator";
+import { useToast } from "@/hooks/use-toast";
+import { format, addDays } from "date-fns";
 
 type WorkoutType = "emom" | "amrap" | "hit" | "running" | "custom";
 
 export default function CreateChallenge() {
-  const [workoutType, setWorkoutType] = useState<WorkoutType | null>(null);
-  const [exercises, setExercises] = useState<string[]>([""]);
-
-  const addExercise = () => {
-    setExercises([...exercises, ""]);
-  };
+  const { toast } = useToast();
+  const [selectedWorkout, setSelectedWorkout] = useState<any>(null);
+  const [challengeTitle, setChallengeTitle] = useState("");
+  const [challengeDescription, setChallengeDescription] = useState("");
+  const [startDate, setStartDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [endDate, setEndDate] = useState(format(addDays(new Date(), 30), "yyyy-MM-dd"));
+  const [prize, setPrize] = useState("");
+  const [prizeDescription, setPrizeDescription] = useState("");
 
   const handleWorkoutSelect = (template: any) => {
-    setWorkoutType(template.workoutType as WorkoutType);
-    // Dies würde in einer realen Anwendung alle relevanten Felder setzen
+    setSelectedWorkout(template);
+    setChallengeTitle(`${template.name} Challenge`);
+    setChallengeDescription(template.description);
+  };
+
+  const handleCreateChallenge = () => {
+    if (!selectedWorkout) {
+      toast({
+        title: "Kein Workout ausgewählt",
+        description: "Bitte generiere zuerst ein Workout für deine Challenge.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!challengeTitle || !challengeDescription || !prize || !prizeDescription) {
+      toast({
+        title: "Fehlende Informationen",
+        description: "Bitte fülle alle Pflichtfelder aus.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Hier würde in einer echten App die Challenge erstellt werden
+    toast({
+      title: "Challenge erstellt!",
+      description: "Deine Challenge wurde erfolgreich erstellt.",
+    });
   };
 
   return (
@@ -45,17 +75,33 @@ export default function CreateChallenge() {
         <CardContent className="space-y-4">
           <div>
             <Label>Titel</Label>
-            <Input placeholder="Gib einen Titel für deine Challenge ein" />
+            <Input 
+              placeholder="Gib einen Titel für deine Challenge ein"
+              value={challengeTitle}
+              onChange={(e) => setChallengeTitle(e.target.value)}
+            />
           </div>
           <div>
             <Label>Beschreibung</Label>
-            <Textarea placeholder="Beschreibe deine Challenge" />
+            <Textarea 
+              placeholder="Beschreibe deine Challenge"
+              value={challengeDescription}
+              onChange={(e) => setChallengeDescription(e.target.value)}
+            />
           </div>
           <div>
             <Label>Zeitraum</Label>
             <div className="grid grid-cols-2 gap-4">
-              <Input type="date" placeholder="Startdatum" />
-              <Input type="date" placeholder="Enddatum" />
+              <Input 
+                type="date" 
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+              />
+              <Input 
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+              />
             </div>
           </div>
         </CardContent>
@@ -72,11 +118,19 @@ export default function CreateChallenge() {
         <CardContent className="space-y-4">
           <div>
             <Label>Gewinn-Titel</Label>
-            <Input placeholder="z.B. Premium Protein Paket" />
+            <Input 
+              placeholder="z.B. Premium Protein Paket"
+              value={prize}
+              onChange={(e) => setPrize(e.target.value)}
+            />
           </div>
           <div>
             <Label>Gewinn-Beschreibung</Label>
-            <Textarea placeholder="Beschreibe den Gewinn im Detail" />
+            <Textarea 
+              placeholder="Beschreibe den Gewinn im Detail"
+              value={prizeDescription}
+              onChange={(e) => setPrizeDescription(e.target.value)}
+            />
           </div>
           <div>
             <Label>Gewinn-Bild</Label>
@@ -87,7 +141,9 @@ export default function CreateChallenge() {
         </CardContent>
       </Card>
 
-      <Button className="w-full">Challenge erstellen</Button>
+      <Button className="w-full" onClick={handleCreateChallenge}>
+        Challenge erstellen
+      </Button>
     </div>
   );
 }
