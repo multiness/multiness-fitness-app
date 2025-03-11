@@ -5,26 +5,8 @@ import GroupPreview from "@/components/GroupPreview";
 import ChallengeCard from "@/components/ChallengeCard";
 import FeedPost from "@/components/FeedPost";
 import EventSlider from "@/components/EventSlider";
-import { MarketingBanner } from "@/components/MarketingBanner";
 import { mockGroups, mockChallenges, mockPosts } from "../data/mockData";
 import { useLocation } from "wouter";
-
-// Mock Banner Data
-const mockBanner = {
-  name: "Summer Body Challenge 2025",
-  description: "Starte jetzt deine Fitness-Journey mit unserem 12-Wochen Programm.",
-  webImage: "https://images.unsplash.com/photo-1517963879433-6ad2b056d712?w=1200&auto=format",
-  buttons: [
-    {
-      text: "Jetzt teilnehmen",
-      url: "/challenges"
-    },
-    {
-      text: "Mehr erfahren",
-      url: "/events/1"
-    }
-  ]
-};
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -33,7 +15,40 @@ export default function Home() {
     <div className="container max-w-2xl mx-auto p-4">
       {/* Marketing Banner */}
       <section className="mb-12">
-        <MarketingBanner banner={mockBanner} />
+        <Card className="relative aspect-square overflow-hidden">
+          <img
+            src="https://images.unsplash.com/photo-1517963879433-6ad2b056d712?w=1200&auto=format"
+            alt="Summer Fitness Challenge"
+            className="w-full h-full object-cover"
+          />
+          {/* Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
+
+          {/* Marketing Content */}
+          <div className="absolute inset-0 flex flex-col justify-end p-6 text-white">
+            <span className="text-sm font-semibold uppercase tracking-wider mb-2">Limitiertes Angebot</span>
+            <h1 className="text-3xl font-bold mb-4">Summer Body Challenge 2025</h1>
+            <p className="text-lg mb-6 text-white/90">Starte jetzt deine Fitness-Journey mit unserem 12-Wochen Programm.</p>
+            <div className="flex gap-3">
+              <Button 
+                size="lg" 
+                variant="default" 
+                className="bg-primary hover:bg-primary/90 text-white"
+                onClick={() => setLocation("/challenges")}
+              >
+                Jetzt teilnehmen
+              </Button>
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="bg-white hover:bg-white/90 text-black border-white"
+                onClick={() => setLocation("/events/1")}
+              >
+                Mehr erfahren
+              </Button>
+            </div>
+          </div>
+        </Card>
       </section>
 
       {/* Events & Kurse */}
