@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Gift, Trophy, Timer, Users, Calendar } from "lucide-react";
+import { Gift, Trophy, Timer, Users, Calendar, Crown } from "lucide-react";
 import { format } from "date-fns";
 import { mockChallenges, mockUsers } from "../data/mockData";
 import { de } from "date-fns/locale";
@@ -38,6 +38,12 @@ export default function ChallengeDetail() {
 
   const isActive = new Date() >= challenge.startDate && new Date() <= challenge.endDate;
   const workoutDetails = challenge.workoutDetails as WorkoutDetails;
+
+  // Simulierte Teilnehmerliste mit Punkten
+  const participants = mockUsers.map(user => ({
+    ...user,
+    points: Math.floor(Math.random() * 1000),
+  })).sort((a, b) => b.points - a.points);
 
   const handleJoinChallenge = () => {
     setIsParticipating(true);
@@ -168,6 +174,49 @@ export default function ChallengeDetail() {
         </Card>
       )}
 
+      {/* Rangliste */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Trophy className="h-5 w-5 text-primary" />
+            Top Teilnehmer
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {participants.slice(0, 5).map((participant, index) => (
+              <div key={participant.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50 hover:bg-muted/70 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    {index === 0 && <Crown className="absolute -top-2 -left-2 h-4 w-4 text-yellow-400" />}
+                    {index === 1 && <Crown className="absolute -top-2 -left-2 h-4 w-4 text-gray-400" />}
+                    {index === 2 && <Crown className="absolute -top-2 -left-2 h-4 w-4 text-amber-700" />}
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={participant.avatar || undefined} />
+                      <AvatarFallback>{participant.username[0]}</AvatarFallback>
+                    </Avatar>
+                  </div>
+                  <div>
+                    <p className="font-medium">{participant.username}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {index === 0 ? "🥇 " : index === 1 ? "🥈 " : index === 2 ? "🥉 " : `${index + 1}. `}
+                      Platz
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="font-bold">{participant.points}</p>
+                  <p className="text-sm text-muted-foreground">Punkte</p>
+                </div>
+              </div>
+            ))}
+            <div className="text-center pt-2 text-sm text-muted-foreground">
+              Insgesamt {participants.length} aktive Teilnehmer in dieser Challenge
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Workout Details */}
       <Card className="mb-6">
         <CardHeader>
@@ -237,9 +286,9 @@ export default function ChallengeDetail() {
           An Challenge teilnehmen
         </Button>
       ) : (
-        <Button 
-          className="w-full" 
-          size="lg" 
+        <Button
+          className="w-full"
+          size="lg"
           variant="outline"
           onClick={() => setShowResultForm(true)}
         >
