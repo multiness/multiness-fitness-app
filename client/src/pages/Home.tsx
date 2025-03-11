@@ -9,72 +9,76 @@ import { mockGroups, mockChallenges, mockPosts } from "../data/mockData";
 
 export default function Home() {
   return (
-    <div className="container max-w-2xl mx-auto p-4 space-y-6">
+    <div className="container max-w-2xl mx-auto p-4">
       {/* Marketing Banner */}
-      <Card className="relative aspect-square overflow-hidden">
-        <img
-          src="https://images.unsplash.com/photo-1517963879433-6ad2b056d712?w=1200&auto=format"
-          alt="Summer Fitness Challenge"
-          className="w-full h-full object-cover"
-        />
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
+      <section className="mb-12">
+        <Card className="relative aspect-square overflow-hidden">
+          <img
+            src="https://images.unsplash.com/photo-1517963879433-6ad2b056d712?w=1200&auto=format"
+            alt="Summer Fitness Challenge"
+            className="w-full h-full object-cover"
+          />
+          {/* Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
 
-        {/* Marketing Content */}
-        <div className="absolute inset-0 flex flex-col justify-end p-6 text-white">
-          <span className="text-sm font-semibold uppercase tracking-wider mb-2">Limitiertes Angebot</span>
-          <h1 className="text-3xl font-bold mb-4">Summer Body Challenge 2025</h1>
-          <p className="text-lg mb-6 text-white/90">Starte jetzt deine Fitness-Journey mit unserem 12-Wochen Programm.</p>
-          <div className="flex gap-3">
-            <Button size="lg" variant="default" className="bg-primary hover:bg-primary/90">
-              Jetzt teilnehmen
-            </Button>
-            <Button size="lg" variant="outline" className="text-white border-white hover:bg-white/20">
-              Mehr erfahren
-            </Button>
+          {/* Marketing Content */}
+          <div className="absolute inset-0 flex flex-col justify-end p-6 text-white">
+            <span className="text-sm font-semibold uppercase tracking-wider mb-2">Limitiertes Angebot</span>
+            <h1 className="text-3xl font-bold mb-4">Summer Body Challenge 2025</h1>
+            <p className="text-lg mb-6 text-white/90">Starte jetzt deine Fitness-Journey mit unserem 12-Wochen Programm.</p>
+            <div className="flex gap-3">
+              <Button size="lg" variant="default" className="bg-primary hover:bg-primary/90">
+                Jetzt teilnehmen
+              </Button>
+              <Button size="lg" variant="outline" className="text-white border-white hover:bg-white/20">
+                Mehr erfahren
+              </Button>
+            </div>
           </div>
-        </div>
-      </Card>
+        </Card>
+      </section>
 
       {/* Events & Kurse */}
-      <div>
-        <h2 className="text-lg font-semibold mb-3">Events & Kurse</h2>
+      <section className="mb-12">
+        <h2 className="text-2xl font-bold mb-6">Events & Kurse</h2>
         <EventSlider />
-      </div>
+      </section>
 
-      {/* New Members */}
-      <div>
-        <h2 className="text-lg font-semibold mb-3">Neue Mitglieder</h2>
+      {/* Neue Mitglieder */}
+      <section className="mb-12">
+        <h2 className="text-2xl font-bold mb-6">Neue Mitglieder</h2>
         <UserSlider />
-      </div>
+      </section>
 
-      {/* Groups Preview */}
-      <div>
-        <h2 className="text-lg font-semibold mb-3">Beliebte Gruppen</h2>
+      {/* Beliebte Gruppen */}
+      <section className="mb-12">
+        <h2 className="text-2xl font-bold mb-6">Beliebte Gruppen</h2>
         <div className="grid grid-cols-2 gap-4">
           {mockGroups.slice(0, 4).map(group => (
             <GroupPreview key={group.id} group={group} />
           ))}
         </div>
-      </div>
+      </section>
 
-      {/* Challenges Preview */}
-      <div>
-        <h2 className="text-lg font-semibold mb-3">Aktive Challenges</h2>
+      {/* Aktive Challenges */}
+      <section className="mb-12">
+        <h2 className="text-2xl font-bold mb-6">Aktive Challenges</h2>
         <div className="grid grid-cols-2 gap-4">
           {mockChallenges.slice(0, 4).map(challenge => (
             <ChallengeCard key={challenge.id} challenge={challenge} />
           ))}
         </div>
-      </div>
+      </section>
 
       {/* Feed */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-semibold">Neueste Beiträge</h2>
-        {mockPosts.map(post => (
-          <FeedPost key={post.id} post={post} />
-        ))}
-      </div>
+      <section>
+        <h2 className="text-2xl font-bold mb-6">Neueste Beiträge</h2>
+        <div className="space-y-6">
+          {mockPosts.map(post => (
+            <FeedPost key={post.id} post={post} />
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
