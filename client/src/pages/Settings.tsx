@@ -19,8 +19,10 @@ import {
   Dumbbell,
   Languages,
 } from "lucide-react";
+import { useTheme } from "../contexts/ThemeProvider";
 
 export default function Settings() {
+  const { theme, setTheme } = useTheme();
   const [notifications, setNotifications] = useState({
     challenges: true,
     messages: true,
@@ -66,7 +68,10 @@ export default function Settings() {
                 Dunkles Erscheinungsbild aktivieren
               </div>
             </div>
-            <Switch defaultChecked />
+            <Switch
+              checked={theme === "dark"}
+              onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
+            />
           </div>
         </CardContent>
       </Card>
