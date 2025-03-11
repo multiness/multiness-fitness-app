@@ -6,7 +6,6 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +28,8 @@ import { Switch } from "@/components/ui/switch";
 import { format } from "date-fns";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { useUsers } from "../contexts/UserContext";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 
 // Simulierte Banner-Daten für den Prototyp
 const mockBanners = [
@@ -228,6 +229,7 @@ export default function Admin() {
   const { users, toggleVerification } = useUsers();
   const [searchQuery, setSearchQuery] = useState("");
   const [showVerifiedOnly, setShowVerifiedOnly] = useState(true);
+  const { toast } = useToast();
 
   // Filtere Benutzer basierend auf Suche und Verifizierungsstatus
   const filteredUsers = users.filter(user => {
@@ -239,10 +241,18 @@ export default function Admin() {
     return matchesSearch;
   });
 
+  const copyShortcode = (shortcode: string) => {
+    navigator.clipboard.writeText(`[banner position="${shortcode}"]`);
+    toast({
+      title: "Shortcode kopiert!",
+      description: "Fügen Sie diesen Code an der gewünschten Stelle Ihrer Website ein. Der Banner wird nur angezeigt, wenn er aktiv ist, ansonsten wird der Container automatisch ausgeblendet."
+    });
+  };
+
   return (
-    <div className="container max-w-7xl mx-auto p-4 pb-8">
-      {/* Insights Cards in kompaktem Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+    <div className="container max-w-7xl mx-auto p-4 pb-8 space-y-8">
+      {/* Insights Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <Card className="col-span-1">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Users</CardTitle>
@@ -296,138 +306,116 @@ export default function Admin() {
         </Card>
       </div>
 
-      {/* Tabs Navigation */}
-      <div className="flex flex-col min-h-[calc(100vh-300px)]">
-        <Tabs defaultValue="verification" className="flex-1">
-          <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 gap-2">
-            <TabsTrigger value="verification">User Verification</TabsTrigger>
-            <TabsTrigger value="banner">Marketing Banner</TabsTrigger>
-            <TabsTrigger value="moderation">Content Moderation</TabsTrigger>
-          </TabsList>
+      {/* Marketing Banner Section */}
+      <section>
+        <h2 className="text-2xl font-bold mb-6">Marketing Banner Management</h2>
+        <BannerManagement />
+      </section>
 
-          {/* Verification Tab */}
-          <TabsContent value="verification" className="mt-6 flex-1">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="h-5 w-5" />
-                  User Verification
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                    <div className="relative flex-1">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Search users..."
-                        className="pl-9 w-full"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                      />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm whitespace-nowrap">Verified Only</span>
-                      <Switch
-                        checked={showVerifiedOnly}
-                        onCheckedChange={setShowVerifiedOnly}
-                      />
-                    </div>
-                  </div>
-
-                  <ScrollArea className="h-[400px] w-full">
-                    <div className="space-y-2">
-                      {filteredUsers.map(user => (
-                        <div key={user.id} className="flex flex-col sm:flex-row sm:items-center justify-between border-b p-4 gap-4">
-                          <div className="flex items-center gap-3">
-                            <img
-                              src={user.avatar}
-                              alt={user.username}
-                              className="w-10 h-10 rounded-full object-cover"
-                            />
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium">@{user.username}</span>
-                                {user.isVerified && <VerifiedBadge />}
-                              </div>
-                              <div className="text-sm text-muted-foreground">{user.name}</div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm whitespace-nowrap">Verified</span>
-                              <Switch
-                                checked={user.isVerified}
-                                onCheckedChange={() => toggleVerification(user.id)}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
+      {/* User Verification Section */}
+      <section>
+        <h2 className="text-2xl font-bold mb-6">User Verification</h2>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              Benutzer verwalten
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search users..."
+                    className="pl-9 w-full"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Marketing Banner Tab */}
-          <TabsContent value="banner" className="mt-6 flex-1">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ImageIcon className="h-5 w-5" />
-                  Marketing Banner Management
-                </CardTitle>
-                <CardDescription>
-                  Verwalten Sie Marketing-Banner für App und Website. Banner werden nur angezeigt,
-                  wenn sie aktiv sind und der Container wird automatisch ausgeblendet.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <BannerManagement />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Content Moderation Tab */}
-          <TabsContent value="moderation" className="mt-6 flex-1">
-            <Card>
-              <CardHeader>
-                <CardTitle>Content Moderation</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="mb-4">
-                  <Input placeholder="Search reported content..." />
+                <div className="flex items-center gap-2">
+                  <span className="text-sm whitespace-nowrap">Verified Only</span>
+                  <Switch
+                    checked={showVerifiedOnly}
+                    onCheckedChange={setShowVerifiedOnly}
+                  />
                 </div>
-                <ScrollArea className="h-[400px]">
-                  <div className="space-y-4">
-                    {mockPosts.map(post => (
-                      <div key={post.id} className="border-b p-4">
-                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                          <div>
-                            <h3 className="font-semibold">
-                              Post by @{users.find(u => u.id === post.userId)?.username}
-                            </h3>
-                            <p className="text-sm text-muted-foreground">
-                              {post.content}
-                            </p>
+              </div>
+
+              <ScrollArea className="h-[400px] w-full">
+                <div className="space-y-2">
+                  {filteredUsers.map(user => (
+                    <div key={user.id} className="flex flex-col sm:flex-row sm:items-center justify-between border-b p-4 gap-4">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={user.avatar}
+                          alt={user.username}
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">@{user.username}</span>
+                            {user.isVerified && <VerifiedBadge />}
                           </div>
-                          <div className="flex gap-2 w-full sm:w-auto">
-                            <Button variant="destructive" size="sm" className="flex-1 sm:flex-none">Remove</Button>
-                            <Button variant="outline" size="sm" className="flex-1 sm:flex-none">Approve</Button>
-                          </div>
+                          <div className="text-sm text-muted-foreground">{user.name}</div>
                         </div>
                       </div>
-                    ))}
+
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm whitespace-nowrap">Verified</span>
+                          <Switch
+                            checked={user.isVerified}
+                            onCheckedChange={() => toggleVerification(user.id)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* Content Moderation Section */}
+      <section>
+        <h2 className="text-2xl font-bold mb-6">Content Moderation</h2>
+        <Card>
+          <CardHeader>
+            <CardTitle>Gemeldete Inhalte</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="mb-4">
+              <Input placeholder="Search reported content..." />
+            </div>
+            <ScrollArea className="h-[400px]">
+              <div className="space-y-4">
+                {mockPosts.map(post => (
+                  <div key={post.id} className="border-b p-4">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                      <div>
+                        <h3 className="font-semibold">
+                          Post by @{users.find(u => u.id === post.userId)?.username}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          {post.content}
+                        </p>
+                      </div>
+                      <div className="flex gap-2 w-full sm:w-auto">
+                        <Button variant="destructive" size="sm" className="flex-1 sm:flex-none">Remove</Button>
+                        <Button variant="outline" size="sm" className="flex-1 sm:flex-none">Approve</Button>
+                      </div>
+                    </div>
                   </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      </section>
     </div>
   );
 }
