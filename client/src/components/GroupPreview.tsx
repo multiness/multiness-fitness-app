@@ -19,7 +19,7 @@ export default function GroupPreview({ group }: GroupPreviewProps) {
       <Card className="overflow-hidden cursor-pointer transition-transform hover:scale-[1.02]">
         <CardHeader className="p-0">
           <img
-            src={group.image}
+            src={group.image || undefined}
             alt={group.name}
             className="w-full h-32 object-cover"
           />
@@ -33,7 +33,7 @@ export default function GroupPreview({ group }: GroupPreviewProps) {
           {/* Creator Info */}
           <div className="flex items-center gap-2 mb-3">
             <Avatar className="h-6 w-6">
-              <AvatarImage src={creator?.avatar} />
+              <AvatarImage src={creator?.avatar || undefined} />
               <AvatarFallback>{creator?.username[0]}</AvatarFallback>
             </Avatar>
             <span className="text-sm text-muted-foreground">
@@ -46,7 +46,7 @@ export default function GroupPreview({ group }: GroupPreviewProps) {
             <div className="flex -space-x-2">
               {participants.slice(0, 3).map((user, i) => (
                 <Avatar key={i} className="h-6 w-6 border-2 border-background">
-                  <AvatarImage src={user.avatar} />
+                  <AvatarImage src={user.avatar || undefined} />
                   <AvatarFallback>{user.username[0]}</AvatarFallback>
                 </Avatar>
               ))}
