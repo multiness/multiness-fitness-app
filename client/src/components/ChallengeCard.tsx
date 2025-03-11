@@ -19,18 +19,18 @@ export default function ChallengeCard({ challenge, variant = "full" }: Challenge
   const participants = mockUsers.slice(0, Math.floor(Math.random() * 5) + 3);
 
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-all border-l-4 border-l-primary bg-gradient-to-br from-primary/5 to-transparent">
+    <Card className="overflow-hidden hover:shadow-lg transition-all">
       <CardContent className="p-4">
         {/* Challenge Info Section */}
         <div className="flex items-start gap-3 mb-4">
-          <Avatar className="h-10 w-10 ring-2 ring-primary/20">
+          <Avatar className="h-10 w-10">
             <AvatarImage src={creator?.avatar || undefined} />
             <AvatarFallback>{creator?.username[0]}</AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium">{creator?.username}</p>
-              <Badge variant="secondary" className="ml-2 bg-primary/10 text-primary hover:bg-primary/20">
+              <Badge variant={isActive ? "default" : "secondary"}>
                 {isActive ? "Aktiv" : "Beendet"}
               </Badge>
             </div>
@@ -53,7 +53,7 @@ export default function ChallengeCard({ challenge, variant = "full" }: Challenge
         )}
 
         {/* Participants & Stats */}
-        <div className="bg-muted/30 rounded-lg p-3 backdrop-blur-sm">
+        <div className="bg-card rounded-lg p-3">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <div className="flex -space-x-2">
@@ -63,7 +63,7 @@ export default function ChallengeCard({ challenge, variant = "full" }: Challenge
                     <AvatarFallback>{user.username[0]}</AvatarFallback>
                   </Avatar>
                 ))}
-                <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-xs border-2 border-background text-primary font-medium">
+                <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-xs border-2 border-background">
                   +{participants.length - 3}
                 </div>
               </div>
@@ -85,7 +85,7 @@ export default function ChallengeCard({ challenge, variant = "full" }: Challenge
           {/* Top 3 Ranking */}
           <div className="grid grid-cols-3 gap-2">
             {[1, 2, 3].map(rank => (
-              <div key={rank} className="flex items-center gap-2 bg-background/50 rounded-md p-2">
+              <div key={rank} className="flex items-center gap-2 bg-muted rounded-md p-2">
                 <div className="relative">
                   {rank === 1 && <Crown className="absolute -top-2 -left-2 h-4 w-4 text-yellow-400" />}
                   {rank === 2 && <Crown className="absolute -top-2 -left-2 h-4 w-4 text-gray-400" />}
@@ -106,9 +106,9 @@ export default function ChallengeCard({ challenge, variant = "full" }: Challenge
 
         {/* Image Placeholder for Full Variant */}
         {variant === "full" && !challenge.image && (
-          <div className="aspect-video rounded-lg overflow-hidden mb-4 bg-muted/50 flex items-center justify-center">
+          <div className="aspect-video rounded-lg overflow-hidden mb-4 bg-muted flex items-center justify-center">
             <div className="text-center">
-              <Trophy className="h-12 w-12 text-muted-foreground/50 mx-auto mb-2" />
+              <Trophy className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
               <p className="text-sm text-muted-foreground">Kein Bild verfügbar</p>
             </div>
           </div>
