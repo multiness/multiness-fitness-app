@@ -48,6 +48,9 @@ export const mockUsers: User[] = [
     bio: "Zertifizierte Fitness Trainerin & Ernährungsberaterin 🏋️‍♀️",
     avatar: "https://images.unsplash.com/photo-1594381898411-846e7d193883?w=400&auto=format",
     isAdmin: true,
+    isVerified: true,
+    isTeamMember: true,
+    teamRole: "head_trainer",
   },
   {
     id: 2,
@@ -56,6 +59,9 @@ export const mockUsers: User[] = [
     bio: "Yoga Instruktorin • Mindfulness Coach • Ganzheitliche Gesundheit 🧘‍♀️",
     avatar: "https://images.unsplash.com/photo-1548690312-e3b507d8c110?w=400&auto=format",
     isAdmin: false,
+    isVerified: true,
+    isTeamMember: true,
+    teamRole: "wellness_expert",
   },
   {
     id: 3,
@@ -64,6 +70,9 @@ export const mockUsers: User[] = [
     bio: "Kraftsport Coach • Personal Trainer • Wettkampfvorbereitung 💪",
     avatar: "https://images.unsplash.com/photo-1583468982228-19f19164aee2?w=400&auto=format",
     isAdmin: false,
+    isVerified: false,
+    isTeamMember: false,
+    teamRole: null,
   },
   {
     id: 4,
@@ -72,6 +81,9 @@ export const mockUsers: User[] = [
     bio: "Ernährungswissenschaftlerin • Gesunde Rezepte • Lifestyle Coach 🥗",
     avatar: "https://images.unsplash.com/photo-1499952127939-9bbf5af6c51c?w=400&auto=format",
     isAdmin: false,
+    isVerified: false,
+    isTeamMember: false,
+    teamRole: null,
   },
   {
     id: 5,
@@ -80,6 +92,9 @@ export const mockUsers: User[] = [
     bio: "Marathonläufer • Laufgruppen Coach • Outdoor Enthusiast 🏃‍♂️",
     avatar: "https://images.unsplash.com/photo-1583468982468-4827785076ab?w=400&auto=format",
     isAdmin: false,
+    isVerified: false,
+    isTeamMember: false,
+    teamRole: null,
   }
 ];
 

@@ -9,6 +9,9 @@ export const users = pgTable("users", {
   bio: text("bio"),
   avatar: text("avatar"),
   isAdmin: boolean("is_admin").default(false).notNull(),
+  isVerified: boolean("is_verified").default(false),
+  isTeamMember: boolean("is_team_member").default(false),
+  teamRole: text("team_role"), // z.B. "moderator", "content_manager", etc.
 });
 
 export const posts = pgTable("posts", {

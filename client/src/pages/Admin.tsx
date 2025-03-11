@@ -9,9 +9,15 @@ import {
   Users2,
   TrendingUp,
   Image as ImageIcon,
-  Upload
+  Upload,
+  Shield,
+  CheckCircle,
+  UserCog
 } from "lucide-react";
 import { mockUsers, mockChallenges, mockGroups, mockPosts } from "../data/mockData";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 
 export default function Admin() {
   return (
@@ -72,11 +78,85 @@ export default function Admin() {
       </div>
 
       {/* Main Content Area */}
-      <Tabs defaultValue="banner">
-        <TabsList className="grid w-full grid-cols-2">
+      <Tabs defaultValue="team">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="team">Team Management</TabsTrigger>
           <TabsTrigger value="banner">Marketing Banner</TabsTrigger>
           <TabsTrigger value="moderation">Content Moderation</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="team">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5" />
+                Team & Verification Management
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                <div className="flex gap-4 items-center">
+                  <Input placeholder="Search users..." className="max-w-sm" />
+                  <Button variant="outline">
+                    <UserCog className="h-4 w-4 mr-2" />
+                    Add Team Member
+                  </Button>
+                </div>
+
+                <ScrollArea className="h-[400px]">
+                  {mockUsers.map(user => (
+                    <div key={user.id} className="flex items-center justify-between border-b p-4">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={user.avatar}
+                          alt={user.username}
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">@{user.username}</span>
+                            {user.isVerified && <VerifiedBadge />}
+                          </div>
+                          <div className="text-sm text-muted-foreground">{user.name}</div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-6">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">Verified</span>
+                          <Switch
+                            checked={user.isVerified}
+                            onCheckedChange={() => {}}
+                          />
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">Team Role</span>
+                          <Select defaultValue={user.teamRole || "none"}>
+                            <SelectTrigger className="w-[140px]">
+                              <SelectValue placeholder="Select role" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">No Role</SelectItem>
+                              <SelectItem value="moderator">Moderator</SelectItem>
+                              <SelectItem value="content_manager">Content Manager</SelectItem>
+                              <SelectItem value="support">Support</SelectItem>
+                              <SelectItem value="trainer">Trainer</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <Button variant="ghost" size="sm">
+                          Save
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </ScrollArea>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="banner">
           <Card>
