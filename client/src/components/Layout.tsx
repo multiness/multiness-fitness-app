@@ -54,7 +54,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="flex items-center justify-between px-4 h-full">
           <Link href="/" className="flex items-center">
             <img 
-              src="/attached_assets/Multiness Logo transparent .png" 
+              src="/assets/logo.png" 
               alt="Multiness Logo" 
               className="h-8 w-auto object-contain hover:opacity-80 transition-opacity"
             />
