@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Users } from "lucide-react";
 import { Group } from "@shared/schema";
 import { mockUsers } from "../data/mockData";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -17,6 +17,7 @@ export default function GroupPreview({ group }: GroupPreviewProps) {
   const participants = mockUsers.slice(0, Math.floor(Math.random() * 5) + 3);
   const [isJoined, setIsJoined] = useState(false);
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   const handleJoin = (e: React.MouseEvent) => {
     e.preventDefault(); // Prevent navigation
@@ -27,6 +28,11 @@ export default function GroupPreview({ group }: GroupPreviewProps) {
         ? "Du hast die Gruppe erfolgreich verlassen."
         : "Du bist der Gruppe erfolgreich beigetreten.",
     });
+
+    // Wenn der Benutzer beitritt, direkt zum Gruppen-Chat navigieren
+    if (!isJoined) {
+      setLocation(`/groups/${group.id}`);
+    }
   };
 
   return (

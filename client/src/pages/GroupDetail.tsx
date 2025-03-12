@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -58,11 +58,15 @@ export default function GroupDetail() {
   const group = mockGroups.find(g => g.id === parseInt(id || ""));
   const creator = group ? mockUsers.find(u => u.id === group.creatorId) : null;
   const [newMessage, setNewMessage] = useState("");
-  const [activeTab, setActiveTab] = useState("group");
+  const [activeTab, setActiveTab] = useState("group"); // Added here
   const [groupMessages, setGroupMessages] = useState(mockGroupMessages);
   const [directMessages, setDirectMessages] = useState(mockDirectMessages);
   const [showInfo, setShowInfo] = useState(false);
   const currentUser = mockUsers[0]; // Mock current user
+
+  useEffect(() => {
+    setShowInfo(true);
+  }, []); // Added useEffect hook here
 
   if (!group || !creator) return <div>Gruppe nicht gefunden</div>;
 
@@ -105,8 +109,8 @@ export default function GroupDetail() {
             </Avatar>
             <div className={`flex flex-col ${isCurrentUser ? 'items-end' : ''} max-w-[70%]`}>
               <div className={`rounded-lg p-3 break-words ${
-                isCurrentUser 
-                  ? 'bg-primary text-primary-foreground' 
+                isCurrentUser
+                  ? 'bg-primary text-primary-foreground'
                   : 'bg-muted'
               }`}>
                 {message.content}
@@ -147,13 +151,13 @@ export default function GroupDetail() {
           <div className="flex-1 flex flex-col">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
               <TabsList className="justify-start rounded-none border-b p-0 h-12">
-                <TabsTrigger 
-                  value="group" 
+                <TabsTrigger
+                  value="group"
                   className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
                 >
                   Gruppenchat
                 </TabsTrigger>
-                <TabsTrigger 
+                <TabsTrigger
                   value="direct"
                   className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
                 >
