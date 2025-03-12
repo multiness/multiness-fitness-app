@@ -52,7 +52,7 @@ export default function Settings() {
           <div className="space-y-2">
             <Label>Sprache</Label>
             <Select defaultValue="de">
-              <SelectTrigger>
+              <SelectTrigger className="dark:bg-background dark:border-border">
                 <SelectValue placeholder="Wähle deine Sprache" />
               </SelectTrigger>
               <SelectContent>
@@ -63,7 +63,7 @@ export default function Settings() {
           </div>
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label>Dark Mode</Label>
+              <Label className="text-foreground">Dark Mode</Label>
               <div className="text-sm text-muted-foreground">
                 Dunkles Erscheinungsbild aktivieren
               </div>
@@ -71,6 +71,7 @@ export default function Settings() {
             <Switch
               checked={theme === "dark"}
               onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
+              className="dark:bg-primary-foreground"
             />
           </div>
         </CardContent>
@@ -87,7 +88,7 @@ export default function Settings() {
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label>Challenge Updates</Label>
+              <Label className="text-foreground">Challenge Updates</Label>
               <div className="text-sm text-muted-foreground">
                 Updates zu deinen aktiven Challenges
               </div>
@@ -97,11 +98,12 @@ export default function Settings() {
               onCheckedChange={(checked) =>
                 setNotifications({ ...notifications, challenges: checked })
               }
+              className="dark:bg-primary-foreground"
             />
           </div>
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label>Nachrichten</Label>
+              <Label className="text-foreground">Nachrichten</Label>
               <div className="text-sm text-muted-foreground">
                 Private Nachrichten und Mentions
               </div>
@@ -111,11 +113,12 @@ export default function Settings() {
               onCheckedChange={(checked) =>
                 setNotifications({ ...notifications, messages: checked })
               }
+              className="dark:bg-primary-foreground"
             />
           </div>
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label>Gruppen Updates</Label>
+              <Label className="text-foreground">Gruppen Updates</Label>
               <div className="text-sm text-muted-foreground">
                 Aktivitäten in deinen Gruppen
               </div>
@@ -125,11 +128,12 @@ export default function Settings() {
               onCheckedChange={(checked) =>
                 setNotifications({ ...notifications, groupUpdates: checked })
               }
+              className="dark:bg-primary-foreground"
             />
           </div>
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label>Workout Erinnerungen</Label>
+              <Label className="text-foreground">Workout Erinnerungen</Label>
               <div className="text-sm text-muted-foreground">
                 Erinnerungen an geplante Workouts
               </div>
@@ -139,6 +143,7 @@ export default function Settings() {
               onCheckedChange={(checked) =>
                 setNotifications({ ...notifications, workoutReminders: checked })
               }
+              className="dark:bg-primary-foreground"
             />
           </div>
         </CardContent>
@@ -155,7 +160,7 @@ export default function Settings() {
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label>Öffentliches Profil</Label>
+              <Label className="text-foreground">Öffentliches Profil</Label>
               <div className="text-sm text-muted-foreground">
                 Dein Profil ist für alle sichtbar
               </div>
@@ -165,11 +170,12 @@ export default function Settings() {
               onCheckedChange={(checked) =>
                 setPrivacy({ ...privacy, publicProfile: checked })
               }
+              className="dark:bg-primary-foreground"
             />
           </div>
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label>Workouts anzeigen</Label>
+              <Label className="text-foreground">Workouts anzeigen</Label>
               <div className="text-sm text-muted-foreground">
                 Deine Workouts sind für andere sichtbar
               </div>
@@ -179,11 +185,12 @@ export default function Settings() {
               onCheckedChange={(checked) =>
                 setPrivacy({ ...privacy, showWorkouts: checked })
               }
+              className="dark:bg-primary-foreground"
             />
           </div>
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label>Gruppen anzeigen</Label>
+              <Label className="text-foreground">Gruppen anzeigen</Label>
               <div className="text-sm text-muted-foreground">
                 Deine Gruppenmitgliedschaften sind sichtbar
               </div>
@@ -193,6 +200,7 @@ export default function Settings() {
               onCheckedChange={(checked) =>
                 setPrivacy({ ...privacy, showGroups: checked })
               }
+              className="dark:bg-primary-foreground"
             />
           </div>
         </CardContent>
@@ -210,7 +218,7 @@ export default function Settings() {
           <div className="space-y-2">
             <Label>Standard Workout-Typ</Label>
             <Select defaultValue="emom">
-              <SelectTrigger>
+              <SelectTrigger className="dark:bg-background dark:border-border">
                 <SelectValue placeholder="Wähle deinen bevorzugten Workout-Typ" />
               </SelectTrigger>
               <SelectContent>
@@ -224,7 +232,7 @@ export default function Settings() {
           <div className="space-y-2">
             <Label>Bevorzugte Workout-Dauer</Label>
             <Select defaultValue="30">
-              <SelectTrigger>
+              <SelectTrigger className="dark:bg-background dark:border-border">
                 <SelectValue placeholder="Wähle deine bevorzugte Dauer" />
               </SelectTrigger>
               <SelectContent>
@@ -239,10 +247,10 @@ export default function Settings() {
       </Card>
 
       <div className="flex justify-end">
-            <Button className="dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/90">
-              Einstellungen speichern
-            </Button>
-          </div>
+        <Button className="dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/90">
+          Einstellungen speichern
+        </Button>
+      </div>
     </div>
   );
 }
