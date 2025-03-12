@@ -37,9 +37,9 @@ export default function GroupCarousel({ groups }: GroupCarouselProps) {
     }
   };
 
-  // Gruppen in Dreiergruppen aufteilen
+  // Gruppen in Zweiergruppen aufteilen für bessere mobile Darstellung
   const groupChunks = groups.reduce((acc, curr, i) => {
-    if (i % 3 === 0) acc.push([]);
+    if (i % 2 === 0) acc.push([]);
     acc[acc.length - 1].push(curr);
     return acc;
   }, [] as Group[][]);
@@ -50,7 +50,7 @@ export default function GroupCarousel({ groups }: GroupCarouselProps) {
         {groupChunks.map((chunk, chunkIndex) => (
           <div 
             key={chunkIndex}
-            className="flex gap-2 shrink-0 snap-start w-[calc(100vw-2rem)]"
+            className="flex gap-4 shrink-0 snap-start w-[calc(100vw-2rem)]"
           >
             {chunk.map(group => {
               const creator = mockUsers.find(u => u.id === group.creatorId);
@@ -59,7 +59,7 @@ export default function GroupCarousel({ groups }: GroupCarouselProps) {
               return (
                 <Card 
                   key={group.id}
-                  className="flex-1 overflow-hidden cursor-pointer bg-card hover:bg-accent/5 transition-colors"
+                  className="flex-1 overflow-hidden cursor-pointer bg-card hover:bg-accent/5 transition-colors min-w-[150px]"
                   onClick={() => setLocation(`/groups/${group.id}`)}
                 >
                   {/* Gruppenbild */}
@@ -72,25 +72,25 @@ export default function GroupCarousel({ groups }: GroupCarouselProps) {
                   </div>
 
                   {/* Gruppen-Info */}
-                  <div className="p-2">
+                  <div className="p-3 space-y-2">
                     {/* Header mit Gruppen-Name */}
-                    <h3 className="font-semibold text-base truncate mb-1">
-                      {group.name}
-                    </h3>
-
-                    {/* Creator-Info */}
-                    <div className="flex items-center gap-1.5 mb-2">
-                      <Avatar className="h-5 w-5">
-                        <AvatarImage src={creator?.avatar} />
-                        <AvatarFallback>{creator?.username[0]}</AvatarFallback>
-                      </Avatar>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {creator?.username}
-                      </p>
+                    <div className="space-y-1">
+                      <h3 className="font-semibold text-sm leading-tight">
+                        {group.name}
+                      </h3>
+                      <div className="flex items-center gap-1.5">
+                        <Avatar className="h-4 w-4">
+                          <AvatarImage src={creator?.avatar} />
+                          <AvatarFallback>{creator?.username[0]}</AvatarFallback>
+                        </Avatar>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {creator?.username}
+                        </p>
+                      </div>
                     </div>
 
-                    {/* Action Button und Mitglieder */}
-                    <div className="flex items-center justify-between">
+                    {/* Mitglieder und Beitritts-Button */}
+                    <div className="flex items-center justify-between pt-1">
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Users className="h-3 w-3" />
                         <span>{Math.floor(Math.random() * 50) + 10}</span>
@@ -99,7 +99,7 @@ export default function GroupCarousel({ groups }: GroupCarouselProps) {
                         variant={isJoined ? "outline" : "default"}
                         size="sm"
                         onClick={(e) => handleJoin(e, group)}
-                        className={`px-3 h-7 text-xs ${isJoined ? "border-primary/20" : ""}`}
+                        className="h-7 px-2 text-xs"
                       >
                         {isJoined ? "Beigetreten" : "Beitreten"}
                       </Button>
