@@ -56,7 +56,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <img 
               src="/assets/logo.png" 
               alt="Multiness Logo" 
-              className="h-12 w-auto object-contain hover:opacity-80 transition-opacity py-1.5"
+              className="h-12 w-auto object-contain hover:opacity-80 transition-opacity py-1.5 dark:invert dark:brightness-200 dark:contrast-200"
             />
           </Link>
 
