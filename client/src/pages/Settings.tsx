@@ -239,8 +239,10 @@ export default function Settings() {
       </Card>
 
       <div className="flex justify-end">
-        <Button>Einstellungen speichern</Button>
-      </div>
+            <Button className="dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/90">
+              Einstellungen speichern
+            </Button>
+          </div>
     </div>
   );
 }
