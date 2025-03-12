@@ -5,7 +5,7 @@ import { Users } from "lucide-react";
 import { Group } from "@shared/schema";
 import { mockUsers } from "../data/mockData";
 import { Link, useLocation } from "wouter";
-import { useState } from "react";
+import { useGroupStore } from "../lib/groupStore";
 import { useToast } from "@/hooks/use-toast";
 
 interface GroupPreviewProps {
@@ -15,22 +15,26 @@ interface GroupPreviewProps {
 export default function GroupPreview({ group }: GroupPreviewProps) {
   const creator = mockUsers.find(u => u.id === group.creatorId);
   const participants = mockUsers.slice(0, Math.floor(Math.random() * 5) + 3);
-  const [isJoined, setIsJoined] = useState(false);
+  const { isGroupMember, joinGroup, leaveGroup } = useGroupStore();
+  const isJoined = isGroupMember(group.id);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
   const handleJoin = (e: React.MouseEvent) => {
     e.preventDefault(); // Prevent navigation
-    setIsJoined(!isJoined);
-    toast({
-      title: isJoined ? "Gruppe verlassen" : "Gruppe beigetreten",
-      description: isJoined 
-        ? "Du hast die Gruppe erfolgreich verlassen."
-        : "Du bist der Gruppe erfolgreich beigetreten.",
-    });
 
-    // Wenn der Benutzer beitritt, direkt zur Gruppenseite navigieren
-    if (!isJoined) {
+    if (isJoined) {
+      leaveGroup(group.id);
+      toast({
+        title: "Gruppe verlassen",
+        description: "Du hast die Gruppe erfolgreich verlassen.",
+      });
+    } else {
+      joinGroup(group.id);
+      toast({
+        title: "Gruppe beigetreten",
+        description: "Du bist der Gruppe erfolgreich beigetreten.",
+      });
       setLocation(`/groups/${group.id}`);
     }
   };
@@ -89,7 +93,7 @@ export default function GroupPreview({ group }: GroupPreviewProps) {
               onClick={handleJoin}
               className="ml-2"
             >
-              {isJoined ? "Verlassen" : "Beitreten"}
+              {isJoined ? "Beigetreten" : "Beitreten"}
             </Button>
           </div>
         </CardContent>

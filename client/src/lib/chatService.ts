@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 export type Message = {
   id: number;
@@ -15,20 +16,27 @@ type ChatStore = {
   getMessages: (chatId: string) => Message[];
 };
 
-export const useChatStore = create<ChatStore>((set, get) => ({
-  messages: {},
-  addMessage: (chatId, message) => {
-    set((state) => ({
-      messages: {
-        ...state.messages,
-        [chatId]: [...(state.messages[chatId] || []), message],
+export const useChatStore = create<ChatStore>()(
+  persist(
+    (set, get) => ({
+      messages: {},
+      addMessage: (chatId, message) => {
+        set((state) => ({
+          messages: {
+            ...state.messages,
+            [chatId]: [...(state.messages[chatId] || []), message],
+          },
+        }));
       },
-    }));
-  },
-  getMessages: (chatId) => {
-    return get().messages[chatId] || [];
-  },
-}));
+      getMessages: (chatId) => {
+        return get().messages[chatId] || [];
+      },
+    }),
+    {
+      name: 'chat-storage'
+    }
+  )
+);
 
 // Helper Funktion um Chat-ID zu generieren
 export const getChatId = (groupId?: number) => {
