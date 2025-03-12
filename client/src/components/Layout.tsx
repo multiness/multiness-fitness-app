@@ -52,11 +52,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Top Header */}
       <header className="fixed top-0 left-0 right-0 h-14 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
         <div className="flex items-center justify-between px-4 h-full">
-          <Link href="/">
+          <Link href="/" className="flex items-center">
             <img 
               src="/attached_assets/Multiness Logo transparent .png" 
               alt="Multiness Logo" 
-              className="h-8 w-auto object-contain"
+              className="h-8 w-auto object-contain hover:opacity-80 transition-opacity"
             />
           </Link>
 
