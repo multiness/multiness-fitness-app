@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/carousel";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import GroupCarousel from "@/components/GroupCarousel"; // Assuming this component exists
 
 const format = (date: Date, formatStr: string) => {
   return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -96,7 +97,12 @@ export default function Home() {
             Alle Gruppen <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        {/* Mobile: Karussell-Layout */}
+        <div className="block md:hidden">
+          <GroupCarousel groups={mockGroups.slice(0, 6)} />
+        </div>
+        {/* Desktop: Grid-Layout */}
+        <div className="hidden md:grid grid-cols-2 gap-4">
           {mockGroups.slice(0, 4).map(group => (
             <GroupPreview key={group.id} group={group} />
           ))}
@@ -198,7 +204,7 @@ export default function Home() {
                     </div>
 
                     {/* Action Button */}
-                    <Button 
+                    <Button
                       variant="default"
                       className="w-full mt-4"
                       onClick={() => setLocation(`/challenges/${challenge.id}`)}
