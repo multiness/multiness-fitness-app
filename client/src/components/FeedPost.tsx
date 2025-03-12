@@ -10,7 +10,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -35,7 +34,7 @@ interface FeedPostProps {
 export default function FeedPost({ post }: FeedPostProps) {
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   const [reportReason, setReportReason] = useState("");
-  const [showComments, setShowComments] = useState(false);
+  const [showAllComments, setShowAllComments] = useState(false);
   const [newComment, setNewComment] = useState("");
   const { toast } = useToast();
   const { currentUser } = useUsers();
@@ -71,12 +70,14 @@ export default function FeedPost({ post }: FeedPostProps) {
   };
 
   const handleShare = () => {
-    // In einer echten App würde hier der Sharing-Dialog geöffnet
     toast({
       title: "Link kopiert",
       description: "Der Link zum Post wurde in die Zwischenablage kopiert.",
     });
   };
+
+  // Nehme die letzten 2 Kommentare für die Vorschau
+  const previewComments = comments.slice(-2);
 
   return (
     <Card>
@@ -119,76 +120,128 @@ export default function FeedPost({ post }: FeedPostProps) {
         </CardContent>
       )}
 
-      <CardContent className="p-4">
-        <p>{post.content}</p>
-      </CardContent>
-
-      <CardFooter className="p-4 pt-0 flex flex-col gap-4">
-        <div className="flex gap-4 items-center">
+      <CardContent className="p-4 space-y-4">
+        {/* Interaktions-Buttons */}
+        <div className="flex gap-4 items-center -ml-2">
           <Button
             variant="ghost"
             size="sm"
             className={isLiked ? "text-red-500 hover:text-red-600" : ""}
             onClick={handleLike}
           >
-            <Heart className={`h-5 w-5 mr-1 ${isLiked ? "fill-current" : ""}`} />
-            {likes.length > 0 && likes.length}
+            <Heart className={`h-6 w-6 transition-transform hover:scale-110 ${isLiked ? "fill-current" : ""}`} />
           </Button>
 
           <Button 
             variant="ghost" 
             size="sm"
-            onClick={() => setShowComments(!showComments)}
+            onClick={() => setShowAllComments(true)}
           >
-            <MessageCircle className="h-5 w-5 mr-1" />
-            {comments.length > 0 && comments.length}
+            <MessageCircle className="h-6 w-6" />
           </Button>
 
           <Button variant="ghost" size="sm" onClick={handleShare}>
-            <Share2 className="h-5 w-5 mr-1" />
+            <Share2 className="h-6 w-6" />
           </Button>
         </div>
 
-        {/* Kommentarbereich */}
-        {showComments && (
-          <div className="w-full space-y-4">
-            <ScrollArea className="h-[200px] w-full rounded-md border p-4">
+        {/* Likes Anzeige */}
+        {likes.length > 0 && (
+          <p className="font-semibold text-sm">
+            {likes.length} {likes.length === 1 ? "Like" : "Likes"}
+          </p>
+        )}
+
+        {/* Post Inhalt */}
+        <div className="space-y-1">
+          <p>
+            <span className="font-semibold mr-2">{user?.username}</span>
+            {post.content}
+          </p>
+        </div>
+
+        {/* Kommentar Vorschau */}
+        {comments.length > 0 && (
+          <div className="space-y-2">
+            {comments.length > 2 && (
+              <button 
+                className="text-muted-foreground text-sm"
+                onClick={() => setShowAllComments(true)}
+              >
+                Alle {comments.length} Kommentare anzeigen
+              </button>
+            )}
+            {previewComments.map(comment => {
+              const commentUser = mockUsers.find(u => u.id === comment.userId);
+              return (
+                <p key={comment.id} className="text-sm">
+                  <span className="font-semibold mr-2">{commentUser?.username}</span>
+                  {comment.content}
+                </p>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Kommentar Input */}
+        <form onSubmit={handleComment} className="flex gap-2 pt-2">
+          <Input
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+            placeholder="Kommentieren..."
+            className="flex-1"
+          />
+          <Button type="submit" size="icon" variant="ghost">
+            <Send className="h-4 w-4" />
+          </Button>
+        </form>
+      </CardContent>
+
+      {/* Alle Kommentare Dialog */}
+      <Dialog open={showAllComments} onOpenChange={setShowAllComments}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Kommentare</DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="h-[400px] pr-4">
+            <div className="space-y-4">
               {comments.map(comment => {
                 const commentUser = mockUsers.find(u => u.id === comment.userId);
                 return (
-                  <div key={comment.id} className="flex gap-2 mb-4">
+                  <div key={comment.id} className="flex gap-3">
                     <Avatar className="h-8 w-8">
                       <AvatarImage src={commentUser?.avatar || undefined} />
                       <AvatarFallback>{commentUser?.username[0]}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
-                      <div className="bg-muted rounded-lg px-3 py-2">
-                        <p className="font-medium text-sm">{commentUser?.username}</p>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-sm">{commentUser?.username}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {format(new Date(comment.timestamp), "dd. MMM")}
+                          </span>
+                        </div>
                         <p className="text-sm">{comment.content}</p>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {format(new Date(comment.timestamp), "dd. MMM yyyy HH:mm")}
-                      </p>
                     </div>
                   </div>
                 );
               })}
-            </ScrollArea>
-
-            <form onSubmit={handleComment} className="flex gap-2">
-              <Input
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                placeholder="Schreibe einen Kommentar..."
-                className="flex-1"
-              />
-              <Button type="submit" size="icon">
-                <Send className="h-4 w-4" />
-              </Button>
-            </form>
+            </div>
+          </ScrollArea>
+          <div className="flex gap-2 pt-2 border-t">
+            <Input
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              placeholder="Kommentieren..."
+              className="flex-1"
+            />
+            <Button onClick={handleComment} size="icon" variant="ghost">
+              <Send className="h-4 w-4" />
+            </Button>
           </div>
-        )}
-      </CardFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Report Dialog */}
       <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
