@@ -37,7 +37,7 @@ function Router() {
         <Route path="/create/event" component={CreateEvent} />
         <Route path="/create/notification" component={CreateNotification} />
         <Route path="/groups" component={Groups} />
-        <Route path="/group/:id" component={GroupPage} />
+        <Route path="/groups/:id" component={GroupPage} />
         <Route path="/events" component={Events} />
         <Route path="/members" component={Members} />
         <Route path="/chat" component={Chat} />

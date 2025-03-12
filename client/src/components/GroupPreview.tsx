@@ -29,7 +29,7 @@ export default function GroupPreview({ group }: GroupPreviewProps) {
         : "Du bist der Gruppe erfolgreich beigetreten.",
     });
 
-    // Wenn der Benutzer beitritt, direkt zum Gruppen-Chat navigieren
+    // Wenn der Benutzer beitritt, direkt zur Gruppenseite navigieren
     if (!isJoined) {
       setLocation(`/groups/${group.id}`);
     }
