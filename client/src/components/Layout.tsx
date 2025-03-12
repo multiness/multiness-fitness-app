@@ -3,6 +3,7 @@ import Navigation from "./Navigation";
 import CreateModal from "./CreateModal";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Link } from "wouter";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -51,7 +52,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Top Header */}
       <header className="fixed top-0 left-0 right-0 h-14 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
         <div className="flex items-center justify-between px-4 h-full">
-          <h1 className="text-xl font-bold">Multiness</h1>
+          <Link href="/">
+            <img 
+              src="/attached_assets/Multiness Logo transparent .png" 
+              alt="Multiness Logo" 
+              className="h-8 w-auto object-contain"
+            />
+          </Link>
 
           <div className="flex items-center gap-2">
             {/* Notifications */}
