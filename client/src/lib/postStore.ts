@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { Post } from '@shared/schema';
 
 export type Comment = {
   id: number;
@@ -25,7 +26,7 @@ export const usePostStore = create<PostStore>()(
     (set, get) => ({
       likes: {},
       comments: {},
-      addLike: (postId, userId) => 
+      addLike: (postId, userId) =>
         set((state) => ({
           likes: {
             ...state.likes,
@@ -36,7 +37,7 @@ export const usePostStore = create<PostStore>()(
         set((state) => ({
           likes: {
             ...state.likes,
-            [postId]: (state.likes[postId] || []).filter(id => id !== userId)
+            [postId]: (state.likes[postId] || []).filter((id) => id !== userId)
           }
         })),
       hasLiked: (postId, userId) =>
@@ -63,6 +64,30 @@ export const usePostStore = create<PostStore>()(
     }),
     {
       name: 'post-interaction-storage'
+    }
+  )
+);
+
+
+interface PostStore2 {
+  posts: Post[];
+  addPost: (post: Post) => void;
+  getPosts: () => Post[];
+}
+
+export const usePostStore2 = create<PostStore2>()(
+  persist(
+    (set, get) => ({
+      posts: [],
+      addPost: (post) => {
+        set((state) => ({
+          posts: [post, ...state.posts]
+        }));
+      },
+      getPosts: () => get().posts,
+    }),
+    {
+      name: 'post-storage'
     }
   )
 );

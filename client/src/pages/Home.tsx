@@ -8,6 +8,7 @@ import EventSlider from "@/components/EventSlider";
 import { ArrowRight, Crown, Heart, Share2, Users, Trophy } from "lucide-react";
 import { mockGroups, mockChallenges, mockPosts, mockUsers } from "../data/mockData";
 import { useLocation, Link } from "wouter";
+import { usePostStore2 } from "../lib/postStore";
 import {
   Carousel,
   CarouselContent,
@@ -17,7 +18,7 @@ import {
 } from "@/components/ui/carousel";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import GroupCarousel from "@/components/GroupCarousel"; // Assuming this component exists
+import GroupCarousel from "@/components/GroupCarousel";
 
 const format = (date: Date, formatStr: string) => {
   return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -25,12 +26,18 @@ const format = (date: Date, formatStr: string) => {
 
 export default function Home() {
   const [, setLocation] = useLocation();
+  const { posts: userPosts } = usePostStore2();
   const activeChallenges = mockChallenges.filter(
     challenge => new Date() <= new Date(challenge.endDate)
   );
 
+  // Kombiniere gespeicherte Posts mit Mock-Posts und sortiere sie nach Datum
+  const allPosts = [...userPosts, ...mockPosts].sort((a, b) => 
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+
   return (
-    <div className="container max-w-2xl mx-auto p-4">
+    <div className="w-full max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* Marketing Banner */}
       <section className="mb-12">
         <Card className="relative aspect-square overflow-hidden">
@@ -224,9 +231,11 @@ export default function Home() {
       {/* Feed */}
       <section>
         <h2 className="text-2xl font-bold mb-6">Neueste Beiträge</h2>
-        <div className="space-y-6">
-          {mockPosts.map(post => (
-            <FeedPost key={post.id} post={post} />
+        <div className="space-y-6 w-full">
+          {allPosts.map(post => (
+            <div key={post.id} className="w-full max-w-xl mx-auto">
+              <FeedPost post={post} />
+            </div>
           ))}
         </div>
       </section>

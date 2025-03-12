@@ -4,19 +4,25 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Image, Video, X } from "lucide-react";
+import { usePostStore2 } from "../lib/postStore";
+import { useLocation } from "wouter";
+import { useUsers } from "../contexts/UserContext";
 
 export default function CreatePost() {
   const { toast } = useToast();
   const [content, setContent] = useState("");
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<"image" | "video" | null>(null);
+  const { currentUser } = useUsers();
+  const { addPost } = usePostStore2();
+  const [, setLocation] = useLocation();
 
   const handleMediaUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       const isImage = file.type.startsWith('image/');
       const isVideo = file.type.startsWith('video/');
-      
+
       if (isImage || isVideo) {
         const reader = new FileReader();
         reader.onloadend = () => {
@@ -49,11 +55,26 @@ export default function CreatePost() {
       return;
     }
 
-    // Hier würde der Post in einer echten App gespeichert werden
+    // Neuen Post erstellen
+    const newPost = {
+      id: Date.now(),
+      userId: currentUser?.id || 1,
+      content: content.trim(),
+      image: mediaPreview,
+      createdAt: new Date(),
+    };
+
+    // Post zum Store hinzufügen
+    addPost(newPost);
+
+    // Erfolgsmeldung anzeigen
     toast({
       title: "Beitrag erstellt!",
       description: "Dein Beitrag wurde erfolgreich veröffentlicht.",
     });
+
+    // Zur Startseite navigieren
+    setLocation("/");
   };
 
   return (
