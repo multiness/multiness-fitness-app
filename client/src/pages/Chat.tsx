@@ -7,93 +7,41 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Search, Send, Image as ImageIcon, ArrowLeft, Users } from "lucide-react";
 import { mockUsers, mockGroups } from "../data/mockData";
 import { format } from "date-fns";
-
-interface Message {
-  id: number;
-  senderId: number;
-  receiverId: number;
-  content: string;
-  timestamp: Date;
-  isGroupMessage?: boolean;
-  groupId?: number;
-  unread?: boolean;
-}
-
-// Mock messages
-const mockMessages: Record<string, Message[]> = {
-  // Direkte Nachrichten (userId als Key)
-  "2": [
-    {
-      id: 1,
-      senderId: 2,
-      receiverId: 1,
-      content: "Hey! Wie läuft dein Training? 💪",
-      timestamp: new Date(Date.now() - 3600000),
-      unread: true,
-    },
-    {
-      id: 2,
-      senderId: 1,
-      receiverId: 2,
-      content: "Super! Hab heute mein Ziel erreicht! 🎯",
-      timestamp: new Date(Date.now() - 3000000),
-    },
-  ],
-  // Gruppen-Nachrichten (groupId als Key mit "g" Prefix)
-  "g1": [
-    {
-      id: 3,
-      senderId: 3,
-      receiverId: 0,
-      content: "Willkommen in der Fitness-Gruppe! 🏋️‍♂️",
-      timestamp: new Date(Date.now() - 7200000),
-      isGroupMessage: true,
-      groupId: 1,
-      unread: true,
-    },
-  ],
-};
-
-interface ChatPreview {
-  id: string;
-  name: string;
-  avatar?: string;
-  isGroup: boolean;
-  isOnline?: boolean;
-  lastMessage?: Message;
-  unreadCount?: number;
-}
+import { useChatStore, getChatId } from "../lib/chatService";
 
 export default function Chat() {
   const [selectedChat, setSelectedChat] = useState<ChatPreview | null>(null);
   const [messageInput, setMessageInput] = useState("");
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const currentUser = mockUsers[0]; // Using first mock user as current user
-  const [messages, setMessages] = useState(mockMessages);
+  const chatStore = useChatStore();
 
   // Kombiniere User und Gruppen für die Chat-Liste
   const chatPreviews: ChatPreview[] = [
     ...mockUsers.slice(1).map(user => {
-      const userMessages = messages[user.id.toString()] || [];
-      const unreadCount = userMessages.filter(m => m.unread && m.senderId !== currentUser.id).length;
+      const chatId = user.id.toString();
+      const messages = chatStore.getMessages(chatId);
+      const unreadCount = messages.filter(m => m.userId !== currentUser.id).length;
       return {
-        id: user.id.toString(),
+        id: chatId,
         name: user.username,
         avatar: user.avatar,
         isGroup: false,
         isOnline: true,
-        lastMessage: userMessages.at(-1),
+        lastMessage: messages[messages.length - 1],
         unreadCount,
       };
     }),
     ...mockGroups.map(group => {
-      const groupMessages = messages[`g${group.id}`] || [];
-      const unreadCount = groupMessages.filter(m => m.unread && m.senderId !== currentUser.id).length;
+      const chatId = getChatId(group.id);
+      const messages = chatStore.getMessages(chatId);
+      const unreadCount = messages.filter(m => m.userId !== currentUser.id).length;
       return {
-        id: `g${group.id}`,
+        id: chatId,
         name: group.name,
         avatar: group.image,
         isGroup: true,
-        lastMessage: groupMessages.at(-1),
+        lastMessage: messages[messages.length - 1],
         unreadCount,
       };
     }),
@@ -101,23 +49,26 @@ export default function Chat() {
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!messageInput.trim() || !selectedChat) return;
+    if (!messageInput.trim() && !selectedImage || !selectedChat) return;
 
-    const newMessage: Message = {
+    const message = {
       id: Date.now(),
-      senderId: currentUser.id,
-      receiverId: parseInt(selectedChat.id),
+      userId: currentUser.id,
       content: messageInput,
-      timestamp: new Date(),
-      isGroupMessage: selectedChat.isGroup,
+      timestamp: new Date().toISOString(),
+      imageUrl: selectedImage ? URL.createObjectURL(selectedImage) : undefined,
       groupId: selectedChat.isGroup ? parseInt(selectedChat.id.substring(1)) : undefined,
     };
 
-    setMessages(prev => ({
-      ...prev,
-      [selectedChat.id]: [...(prev[selectedChat.id] || []), newMessage],
-    }));
+    chatStore.addMessage(selectedChat.id, message);
     setMessageInput("");
+    setSelectedImage(null);
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedImage(e.target.files[0]);
+    }
   };
 
   return (
@@ -137,6 +88,8 @@ export default function Chat() {
           <ScrollArea className="flex-1">
             {chatPreviews.map(chat => {
               const isSelected = selectedChat?.id === chat.id;
+              const messages = chatStore.getMessages(chat.id);
+              const lastMessage = messages[messages.length - 1];
 
               return (
                 <button
@@ -170,21 +123,21 @@ export default function Chat() {
                       <div className="flex items-center justify-between">
                         <p className="font-medium truncate flex items-center gap-2">
                           {chat.name}
-                          {chat.unreadCount ? (
+                          {chat.unreadCount > 0 && (
                             <span className="h-2 w-2 rounded-full bg-blue-500" />
-                          ) : null}
+                          )}
                         </p>
-                        {chat.lastMessage && (
+                        {lastMessage && (
                           <span className="text-xs text-muted-foreground">
-                            {format(chat.lastMessage.timestamp, 'HH:mm')}
+                            {format(new Date(lastMessage.timestamp), 'HH:mm')}
                           </span>
                         )}
                       </div>
-                      {chat.lastMessage && (
+                      {lastMessage && (
                         <p className={`text-sm truncate ${
-                          chat.unreadCount ? 'font-semibold text-foreground' : 'text-muted-foreground'
+                          chat.unreadCount > 0 ? 'font-semibold text-foreground' : 'text-muted-foreground'
                         }`}>
-                          {chat.lastMessage.senderId === currentUser.id ? 'Du: ' : ''}{chat.lastMessage.content}
+                          {lastMessage.userId === currentUser.id ? 'Du: ' : ''}{lastMessage.content}
                         </p>
                       )}
                     </div>
@@ -231,8 +184,9 @@ export default function Chat() {
             {/* Messages */}
             <ScrollArea className="flex-1 p-4">
               <div className="space-y-4">
-                {(messages[selectedChat.id] || []).map(message => {
-                  const isCurrentUser = message.senderId === currentUser.id;
+                {chatStore.getMessages(selectedChat.id).map(message => {
+                  const isCurrentUser = message.userId === currentUser.id;
+                  const sender = mockUsers.find(u => u.id === message.userId);
                   return (
                     <div
                       key={message.id}
@@ -241,20 +195,27 @@ export default function Chat() {
                       <div className={`flex gap-2 max-w-[70%] ${isCurrentUser ? 'flex-row-reverse' : ''}`}>
                         {!isCurrentUser && (
                           <Avatar className="h-8 w-8">
-                            <AvatarImage src={selectedChat.avatar || undefined} />
-                            <AvatarFallback>{selectedChat.name[0]}</AvatarFallback>
+                            <AvatarImage src={sender?.avatar || undefined} />
+                            <AvatarFallback>{sender?.username[0]}</AvatarFallback>
                           </Avatar>
                         )}
                         <div>
                           <div className={`rounded-lg px-4 py-2 ${
                             isCurrentUser ? 'bg-primary text-primary-foreground' : 'bg-muted'
                           }`}>
+                            {message.imageUrl && (
+                              <img 
+                                src={message.imageUrl} 
+                                alt="Shared" 
+                                className="rounded-md mb-2 max-w-full"
+                              />
+                            )}
                             <p className="break-words">{message.content}</p>
                           </div>
                           <p className={`text-xs text-muted-foreground mt-1 ${
                             isCurrentUser ? 'text-right' : ''
                           }`}>
-                            {format(message.timestamp, 'HH:mm')}
+                            {format(new Date(message.timestamp), 'HH:mm')}
                           </p>
                         </div>
                       </div>
@@ -268,18 +229,42 @@ export default function Chat() {
             <form onSubmit={handleSendMessage} className="p-4 border-t">
               <div className="flex gap-2">
                 <Input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  id="image-upload"
+                  onChange={handleImageSelect}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => document.getElementById('image-upload')?.click()}
+                >
+                  <ImageIcon className="h-4 w-4" />
+                </Button>
+                <Input
                   value={messageInput}
                   onChange={(e) => setMessageInput(e.target.value)}
                   placeholder="Schreibe eine Nachricht..."
                   className="flex-1"
                 />
-                <Button type="button" variant="outline" size="icon">
-                  <ImageIcon className="h-4 w-4" />
-                </Button>
                 <Button type="submit" size="icon">
                   <Send className="h-4 w-4" />
                 </Button>
               </div>
+              {selectedImage && (
+                <div className="mt-2 p-2 bg-muted rounded-md flex items-center gap-2">
+                  <span className="text-sm">{selectedImage.name}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedImage(null)}
+                  >
+                    Entfernen
+                  </Button>
+                </div>
+              )}
             </form>
           </div>
         ) : (
@@ -290,4 +275,23 @@ export default function Chat() {
       </div>
     </div>
   );
+}
+
+interface Message {
+  id: number;
+  userId: number;
+  content: string;
+  timestamp: string;
+  imageUrl?: string;
+  groupId?: number;
+}
+
+interface ChatPreview {
+  id: string;
+  name: string;
+  avatar?: string;
+  isGroup: boolean;
+  isOnline?: boolean;
+  lastMessage?: Message;
+  unreadCount?: number;
 }

@@ -6,46 +6,43 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { mockGroups, mockUsers } from "../data/mockData";
 import { format } from "date-fns";
-import { Send } from "lucide-react";
-
-// Mock messages for demonstration
-const mockMessages = [
-  {
-    id: 1,
-    userId: 1,
-    content: "Willkommen in der Gruppe!",
-    timestamp: new Date().toISOString(),
-  },
-  {
-    id: 2,
-    userId: 2,
-    content: "Danke! Freue mich dabei zu sein.",
-    timestamp: new Date().toISOString(),
-  },
-];
+import { Send, ImagePlus } from "lucide-react";
+import { useChatStore, getChatId } from "../lib/chatService";
 
 export default function GroupPage() {
   const { id } = useParams();
   const group = mockGroups.find(g => g.id === parseInt(id || ""));
-  const [messages, setMessages] = useState(mockMessages);
   const [newMessage, setNewMessage] = useState("");
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const currentUser = mockUsers[0]; // Mock current user
+  const chatStore = useChatStore();
+  const chatId = getChatId(parseInt(id || ""));
+  const messages = chatStore.getMessages(chatId);
 
   if (!group) return <div>Gruppe nicht gefunden</div>;
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() && !selectedImage) return;
 
     const message = {
       id: messages.length + 1,
       userId: currentUser.id,
       content: newMessage,
       timestamp: new Date().toISOString(),
+      imageUrl: selectedImage ? URL.createObjectURL(selectedImage) : undefined,
+      groupId: parseInt(id || ""),
     };
 
-    setMessages([...messages, message]);
+    chatStore.addMessage(chatId, message);
     setNewMessage("");
+    setSelectedImage(null);
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedImage(e.target.files[0]);
+    }
   };
 
   return (
@@ -86,6 +83,13 @@ export default function GroupPage() {
                     <div className={`rounded-lg p-3 break-words ${
                       isCurrentUser ? 'bg-primary text-primary-foreground' : 'bg-muted'
                     }`}>
+                      {message.imageUrl && (
+                        <img 
+                          src={message.imageUrl} 
+                          alt="Shared" 
+                          className="rounded-md mb-2 max-w-full"
+                        />
+                      )}
                       {message.content}
                     </div>
                     <span className="text-xs text-muted-foreground mt-1">
@@ -100,6 +104,22 @@ export default function GroupPage() {
           {/* Message Input */}
           <form onSubmit={handleSendMessage} className="flex gap-2">
             <Input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              id="image-upload"
+              onChange={handleImageSelect}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="shrink-0"
+              onClick={() => document.getElementById('image-upload')?.click()}
+            >
+              <ImagePlus className="h-4 w-4" />
+            </Button>
+            <Input
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               placeholder="Schreibe eine Nachricht..."
@@ -109,6 +129,18 @@ export default function GroupPage() {
               <Send className="h-4 w-4" />
             </Button>
           </form>
+          {selectedImage && (
+            <div className="mt-2 p-2 bg-muted rounded-md flex items-center gap-2">
+              <span className="text-sm">{selectedImage.name}</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedImage(null)}
+              >
+                Entfernen
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
