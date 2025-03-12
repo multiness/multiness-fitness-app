@@ -63,7 +63,7 @@ export default function GroupCarousel({ groups }: GroupCarouselProps) {
                   onClick={() => setLocation(`/groups/${group.id}`)}
                 >
                   {/* Gruppenbild */}
-                  <div className="aspect-[16/9] relative overflow-hidden">
+                  <div className="aspect-[3/2] relative overflow-hidden bg-muted">
                     <img
                       src={group.image || "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=800&auto=format"}
                       alt={group.name}
@@ -72,39 +72,34 @@ export default function GroupCarousel({ groups }: GroupCarouselProps) {
                   </div>
 
                   {/* Gruppen-Info */}
-                  <div className="p-3 space-y-3">
-                    {/* Header mit Creator-Info */}
-                    <div className="flex items-center gap-2">
-                      <Avatar className="h-8 w-8 ring-2 ring-background">
+                  <div className="p-2">
+                    {/* Header mit Gruppen-Name */}
+                    <h3 className="font-semibold text-base truncate mb-1">
+                      {group.name}
+                    </h3>
+
+                    {/* Creator-Info */}
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <Avatar className="h-5 w-5">
                         <AvatarImage src={creator?.avatar} />
                         <AvatarFallback>{creator?.username[0]}</AvatarFallback>
                       </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-base truncate">
-                          {group.name}
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                          {creator?.username}
-                        </p>
-                      </div>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {creator?.username}
+                      </p>
                     </div>
 
-                    {/* Beschreibung */}
-                    <p className="text-sm text-foreground/90 line-clamp-2">
-                      {group.description}
-                    </p>
-
-                    {/* Mitglieder-Info und Action Button */}
-                    <div className="flex items-center justify-between pt-2">
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Users className="h-4 w-4" />
-                        <span>{Math.floor(Math.random() * 50) + 10} Mitglieder</span>
+                    {/* Action Button und Mitglieder */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Users className="h-3 w-3" />
+                        <span>{Math.floor(Math.random() * 50) + 10}</span>
                       </div>
                       <Button
                         variant={isJoined ? "outline" : "default"}
                         size="sm"
                         onClick={(e) => handleJoin(e, group)}
-                        className={isJoined ? "border-primary/20" : ""}
+                        className={`px-3 h-7 text-xs ${isJoined ? "border-primary/20" : ""}`}
                       >
                         {isJoined ? "Beigetreten" : "Beitreten"}
                       </Button>
