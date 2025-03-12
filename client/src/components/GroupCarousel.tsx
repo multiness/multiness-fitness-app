@@ -62,27 +62,42 @@ export default function GroupCarousel({ groups }: GroupCarouselProps) {
                   className="flex-1 overflow-hidden cursor-pointer"
                   onClick={() => setLocation(`/groups/${group.id}`)}
                 >
-                  <div className="aspect-square relative">
-                    <img
-                      src={group.image || "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=800&auto=format"}
-                      alt={group.name}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                    <div className="absolute bottom-0 left-0 right-0 p-3">
-                      <h3 className="text-white font-medium text-sm mb-1">{group.name}</h3>
-                      <div className="flex items-center gap-2 text-white/80 text-xs">
-                        <Avatar className="h-5 w-5">
+                  <div className="relative">
+                    {/* Bild und Overlay */}
+                    <div className="aspect-[4/5] relative">
+                      <img
+                        src={group.image || "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=800&auto=format"}
+                        alt={group.name}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
+                    </div>
+
+                    {/* Content Container */}
+                    <div className="absolute inset-x-0 bottom-0 p-3 space-y-3">
+                      {/* Gruppen Info */}
+                      <div>
+                        <h3 className="text-white font-semibold text-lg mb-1">{group.name}</h3>
+                        <p className="text-white/80 text-sm line-clamp-2 mb-2">
+                          {group.description}
+                        </p>
+                      </div>
+
+                      {/* Creator Info */}
+                      <div className="flex items-center gap-2 text-white/90">
+                        <Avatar className="h-6 w-6 border border-white/20">
                           <AvatarImage src={creator?.avatar} />
                           <AvatarFallback>{creator?.username[0]}</AvatarFallback>
                         </Avatar>
-                        <span>{creator?.username}</span>
+                        <span className="text-sm">{creator?.username}</span>
                       </div>
+
+                      {/* Action Button */}
                       <Button
                         variant={isJoined ? "outline" : "default"}
                         size="sm"
                         onClick={(e) => handleJoin(e, group)}
-                        className="mt-2 w-full bg-white/10 hover:bg-white/20 border-white/20"
+                        className="w-full bg-white/10 hover:bg-white/20 border-white/20 text-white"
                       >
                         <Users className="h-4 w-4 mr-2" />
                         {isJoined ? "Beigetreten" : "Beitreten"}
