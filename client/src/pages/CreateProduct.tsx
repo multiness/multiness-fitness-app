@@ -327,8 +327,7 @@ export default function CreateProduct() {
               <Label htmlFor="validUntil">Gültig bis (optional)</Label>
               <Input
                 id="validUntil"
-                type="text" // Changed from date to text
-                placeholder="YYYY-MM-DD"
+                type="datetime-local"
                 {...form.register("validUntil")}
               />
             </div>
@@ -349,11 +348,7 @@ export default function CreateProduct() {
 
             <Button 
               className="w-full mt-6" 
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                form.handleSubmit(handleSubmit)(e);
-              }}
+              type="submit" // Added type="submit" to the button
             >
               <Package className="h-4 w-4 mr-2" />
               Produkt erstellen
