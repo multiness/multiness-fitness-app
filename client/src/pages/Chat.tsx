@@ -343,40 +343,56 @@ export default function Chat() {
                   const isCurrentUser = message.userId === currentUser.id;
                   const sender = mockUsers.find(u => u.id === message.userId);
                   return (
-                    <div
-                      key={message.id}
-                      className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div className={`flex gap-2 max-w-[70%] ${isCurrentUser ? 'flex-row-reverse' : ''}`}>
-                        {!isCurrentUser && sender && (
-                          <UserAvatar
-                            userId={message.userId}
-                            avatar={sender.avatar}
-                            username={sender.username}
+                    message.content.startsWith('🎉 Großartig!') ? (
+                      <div className={`flex justify-center my-4`}>
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-6 py-4 max-w-[80%]">
+                          <p className="text-center font-medium text-yellow-800">{message.content}</p>
+                          <Button
+                            variant="outline"
                             size="sm"
-                          />
-                        )}
-                        <div>
-                          <div className={`rounded-lg px-4 py-2 ${
-                            isCurrentUser ? 'bg-primary text-primary-foreground' : 'bg-muted'
-                          }`}>
-                            {message.imageUrl && (
-                              <img
-                                src={message.imageUrl}
-                                alt="Shared"
-                                className="rounded-md mb-2 max-w-full"
-                              />
-                            )}
-                            <p className="break-words">{message.content}</p>
-                          </div>
-                          <p className={`text-xs text-muted-foreground mt-1 ${
-                            isCurrentUser ? 'text-right' : ''
-                          }`}>
-                            {format(new Date(message.timestamp), 'HH:mm')}
-                          </p>
+                            className="mt-2 w-full border-yellow-200 text-yellow-700 hover:bg-yellow-100"
+                            onClick={() => setIsPerformanceBoardOpen(true)}
+                          >
+                            👥 Performance Board anzeigen
+                          </Button>
                         </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div
+                        key={message.id}
+                        className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div className={`flex gap-2 max-w-[70%] ${isCurrentUser ? 'flex-row-reverse' : ''}`}>
+                          {!isCurrentUser && sender && (
+                            <UserAvatar
+                              userId={message.userId}
+                              avatar={sender.avatar}
+                              username={sender.username}
+                              size="sm"
+                            />
+                          )}
+                          <div>
+                            <div className={`rounded-lg px-4 py-2 ${
+                              isCurrentUser ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                            }`}>
+                              {message.imageUrl && (
+                                <img
+                                  src={message.imageUrl}
+                                  alt="Shared"
+                                  className="rounded-md mb-2 max-w-full"
+                                />
+                              )}
+                              <p className="break-words">{message.content}</p>
+                            </div>
+                            <p className={`text-xs text-muted-foreground mt-1 ${
+                              isCurrentUser ? 'text-right' : ''
+                            }`}>
+                              {format(new Date(message.timestamp), 'HH:mm')}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )
                   );
                 })}
               </div>

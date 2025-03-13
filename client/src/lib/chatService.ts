@@ -93,7 +93,13 @@ export const useChatStore = create<ChatStore>()(
             const message = {
               id: Date.now(),
               userId: contribution.userId,
-              content: `🎉 Großartig! Das Gruppenziel "${currentGoal.title}" wurde erreicht! Herzlichen Glückwunsch an alle Teilnehmer!`,
+              content: `🎉 Großartig! Das Gruppenziel "${currentGoal.title}" wurde erreicht! Herzlichen Glückwunsch an alle Teilnehmer!
+
+Ziel: ${currentGoal.title}
+${currentGoal.description ? `Beschreibung: ${currentGoal.description}\n` : ''}
+Erreicht am: ${new Date().toLocaleDateString('de-DE')}
+
+Klicke unten, um die Beiträge aller Teilnehmer zu sehen!`,
               timestamp: new Date().toISOString(),
               groupId: parseInt(chatId.substring(6)),
             };
