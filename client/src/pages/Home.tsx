@@ -175,10 +175,10 @@ export default function Home() {
                                 avatar={user.avatar}
                                 username={user.username}
                                 size="sm"
-                                className="border-2 border-background"
+                                className="-ml-2 first:ml-0"
                               />
                             ))}
-                            <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-xs border-2 border-background text-primary font-medium">
+                            <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-xs text-primary font-medium">
                               +{mockUsers.length - 3}
                             </div>
                           </div>
