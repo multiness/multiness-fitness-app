@@ -53,8 +53,8 @@ export default function CreateProduct() {
   });
 
   const handleImageSelect = (e: React.MouseEvent<HTMLDivElement>) => {
-    e.preventDefault(); // Prevent form submission
-    e.stopPropagation(); // Stop event bubbling
+    e.preventDefault();
+    e.stopPropagation();
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
@@ -67,7 +67,7 @@ export default function CreateProduct() {
     input.click();
   };
 
-  const onSubmit = async (data: InsertProduct) => {
+  const handleSubmit = async (data: InsertProduct) => {
     try {
       // Create new product object
       const newProduct = {
@@ -97,42 +97,18 @@ export default function CreateProduct() {
     <div className="container max-w-2xl mx-auto p-4 pb-24">
       <h1 className="text-2xl font-bold mb-6">Produkt erstellen</h1>
 
-      <form onSubmit={form.handleSubmit(onSubmit)} noValidate>
-        <Card className="mb-20">
-          <CardHeader>
-            <CardTitle>Produktdetails</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Produktbild */}
-            <div className="space-y-2">
-              <Label>Produktbild</Label>
-              <div
-                className="border-2 border-dashed rounded-lg p-4 hover:bg-accent/5 transition-colors cursor-pointer"
-                onClick={handleImageSelect}
-                role="button"
-                tabIndex={0}
-              >
-                {selectedImage ? (
-                  <div className="aspect-video relative overflow-hidden rounded-md">
-                    <img
-                      src={URL.createObjectURL(selectedImage)}
-                      alt="Vorschau"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ) : (
-                  <div className="aspect-video flex items-center justify-center">
-                    <div className="text-center">
-                      <ImageIcon className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground">
-                        Klicken um ein Bild hochzuladen
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
+      <Card className="mb-20">
+        <CardHeader>
+          <CardTitle>Produktdetails</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              form.handleSubmit(handleSubmit)(e);
+            }}
+            className="space-y-4"
+          >
             {/* Produktname */}
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
@@ -160,6 +136,23 @@ export default function CreateProduct() {
               {form.formState.errors.description && (
                 <p className="text-sm text-destructive">
                   {form.formState.errors.description.message}
+                </p>
+              )}
+            </div>
+
+            {/* Preis */}
+            <div className="space-y-2">
+              <Label htmlFor="price">Preis (€)</Label>
+              <Input
+                id="price"
+                type="number"
+                step="0.01"
+                {...form.register("price", { valueAsNumber: true })}
+                placeholder="49.99"
+              />
+              {form.formState.errors.price && (
+                <p className="text-sm text-destructive">
+                  {form.formState.errors.price.message}
                 </p>
               )}
             </div>
@@ -218,23 +211,6 @@ export default function CreateProduct() {
                   <SelectItem value="custom">Individuell</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-
-            {/* Preis */}
-            <div className="space-y-2">
-              <Label htmlFor="price">Preis (€)</Label>
-              <Input
-                id="price"
-                type="number"
-                step="0.01"
-                {...form.register("price", { valueAsNumber: true })}
-                placeholder="49.99"
-              />
-              {form.formState.errors.price && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.price.message}
-                </p>
-              )}
             </div>
 
             {/* Bestandsverwaltung */}
@@ -339,13 +315,16 @@ export default function CreateProduct() {
               />
             </div>
 
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full" onClick={(e) => {
+              e.preventDefault();
+              form.handleSubmit(handleSubmit)(e);
+            }}>
               <Package className="h-4 w-4 mr-2" />
               Produkt erstellen
             </Button>
-          </CardContent>
-        </Card>
-      </form>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }
