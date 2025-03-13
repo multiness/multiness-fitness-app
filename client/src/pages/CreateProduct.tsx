@@ -91,15 +91,38 @@ export default function CreateProduct() {
   };
 
   return (
-    <div className="container max-w-2xl mx-auto p-4 pb-24">
+    <form 
+      className="container max-w-2xl mx-auto p-4 pb-24"
+      onSubmit={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        form.handleSubmit(onSubmit)(e);
+      }}
+    >
       <h1 className="text-2xl font-bold mb-6">Produkt erstellen</h1>
 
       <Card className="mb-20">
         <CardHeader>
           <CardTitle>Produktdetails</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div role="button" onClick={handleImageSelect} className="border-2 border-dashed rounded-lg p-4 hover:bg-accent/5 transition-colors cursor-pointer mb-6">
+        <CardContent className="space-y-6">
+          <div 
+            role="button" 
+            tabIndex={0}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleImageSelect();
+            }} 
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                e.stopPropagation();
+                handleImageSelect();
+              }
+            }}
+            className="border-2 border-dashed rounded-lg p-4 hover:bg-accent/5 transition-colors cursor-pointer"
+          >
             {selectedImage ? (
               <div className="aspect-video relative overflow-hidden rounded-md">
                 <img
@@ -120,175 +143,185 @@ export default function CreateProduct() {
             )}
           </div>
 
-          <div className="grid gap-6">
-            <div className="space-y-2">
-              <Label>Name</Label>
-              <Input {...form.register("name")} placeholder="z.B. Premium Fitness Coaching" />
-              {form.formState.errors.name && (
-                <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>
-              )}
-            </div>
+          <div className="space-y-2">
+            <Label>Name</Label>
+            <Input {...form.register("name")} placeholder="z.B. Premium Fitness Coaching" />
+            {form.formState.errors.name && (
+              <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>
+            )}
+          </div>
 
-            <div className="space-y-2">
-              <Label>Beschreibung</Label>
-              <Textarea {...form.register("description")} placeholder="Beschreibe dein Produkt..." className="min-h-[100px]" />
-              {form.formState.errors.description && (
-                <p className="text-sm text-destructive">{form.formState.errors.description.message}</p>
-              )}
-            </div>
+          <div className="space-y-2">
+            <Label>Beschreibung</Label>
+            <Textarea {...form.register("description")} placeholder="Beschreibe dein Produkt..." className="min-h-[100px]" />
+            {form.formState.errors.description && (
+              <p className="text-sm text-destructive">{form.formState.errors.description.message}</p>
+            )}
+          </div>
 
-            <div className="space-y-2">
-              <Label>Preis (€)</Label>
-              <Input 
-                type="number" 
-                step="0.01" 
-                {...form.register("price", { valueAsNumber: true })} 
-                placeholder="49.99" 
+          <div className="space-y-2">
+            <Label>Preis (€)</Label>
+            <Input 
+              type="number" 
+              step="0.01" 
+              {...form.register("price", { valueAsNumber: true })} 
+              placeholder="49.99" 
+            />
+            {form.formState.errors.price && (
+              <p className="text-sm text-destructive">{form.formState.errors.price.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label>Produkttyp</Label>
+            <Select
+              value={productType}
+              onValueChange={(value: "training" | "coaching" | "supplement" | "custom") => {
+                setProductType(value);
+                form.setValue("type", value);
+                switch (value) {
+                  case "training":
+                    form.setValue("metadata", {
+                      type: "training",
+                      duration: 4,
+                      sessions: 12,
+                      includes: [],
+                    });
+                    break;
+                  case "coaching":
+                    form.setValue("metadata", {
+                      type: "coaching",
+                      duration: 1,
+                      callsPerMonth: 4,
+                      includes: [],
+                    });
+                    break;
+                  case "supplement":
+                    form.setValue("metadata", {
+                      type: "supplement",
+                      weight: 1000,
+                      servings: 30,
+                      nutritionFacts: {},
+                    });
+                    break;
+                  case "custom":
+                    form.setValue("metadata", {
+                      type: "custom",
+                      specifications: {},
+                      includes: [],
+                    });
+                    break;
+                }
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Wähle einen Produkttyp" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="training">Training</SelectItem>
+                <SelectItem value="coaching">Coaching</SelectItem>
+                <SelectItem value="supplement">Supplement</SelectItem>
+                <SelectItem value="custom">Individuell</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Bestandsverwaltung</Label>
+            <div className="flex items-center space-x-2">
+              <Switch
+                checked={stockEnabled}
+                onCheckedChange={setStockEnabled}
               />
-              {form.formState.errors.price && (
-                <p className="text-sm text-destructive">{form.formState.errors.price.message}</p>
-              )}
+              <Label>Bestand verwalten</Label>
             </div>
+            {stockEnabled && (
+              <Input
+                type="number"
+                placeholder="Verfügbare Menge"
+                {...form.register("stock", { valueAsNumber: true })}
+              />
+            )}
+          </div>
 
-            <div className="space-y-2">
-              <Label>Produkttyp</Label>
-              <Select
-                value={productType}
-                onValueChange={(value: "training" | "coaching" | "supplement" | "custom") => {
-                  setProductType(value);
-                  form.setValue("type", value);
-                  switch (value) {
-                    case "training":
-                      form.setValue("metadata", {
-                        type: "training",
-                        duration: 4,
-                        sessions: 12,
-                        includes: [],
-                      });
-                      break;
-                    case "coaching":
-                      form.setValue("metadata", {
-                        type: "coaching",
-                        duration: 1,
-                        callsPerMonth: 4,
-                        includes: [],
-                      });
-                      break;
-                    case "supplement":
-                      form.setValue("metadata", {
-                        type: "supplement",
-                        weight: 1000,
-                        servings: 30,
-                        nutritionFacts: {},
-                      });
-                      break;
-                    case "custom":
-                      form.setValue("metadata", {
-                        type: "custom",
-                        specifications: {},
-                        includes: [],
-                      });
-                      break;
-                  }
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Wähle einen Produkttyp" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="training">Training</SelectItem>
-                  <SelectItem value="coaching">Coaching</SelectItem>
-                  <SelectItem value="supplement">Supplement</SelectItem>
-                  <SelectItem value="custom">Individuell</SelectItem>
-                </SelectContent>
-              </Select>
+          <div className="space-y-2">
+            <Label>Sonderangebot</Label>
+            <div className="flex items-center space-x-2">
+              <Switch
+                checked={onSale}
+                onCheckedChange={setOnSale}
+              />
+              <Label>Sonderpreis aktivieren</Label>
             </div>
-
-            <div className="space-y-2">
-              <Label>Bestandsverwaltung</Label>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  checked={stockEnabled}
-                  onCheckedChange={setStockEnabled}
-                />
-                <Label>Bestand verwalten</Label>
-              </div>
-              {stockEnabled && (
+            {onSale && (
+              <div className="space-y-2">
                 <Input
                   type="number"
-                  placeholder="Verfügbare Menge"
-                  {...form.register("stock", { valueAsNumber: true })}
+                  step="0.01"
+                  placeholder="Sonderpreis"
+                  {...form.register("salePrice", { valueAsNumber: true })}
                 />
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label>Sonderangebot</Label>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  checked={onSale}
-                  onCheckedChange={setOnSale}
-                />
-                <Label>Sonderpreis aktivieren</Label>
+                <Select
+                  value={form.watch("saleType")}
+                  onValueChange={(value: "Sale" | "Budget" | "Angebot") => form.setValue("saleType", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Art des Angebots" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Sale">Sale</SelectItem>
+                    <SelectItem value="Budget">Budget</SelectItem>
+                    <SelectItem value="Angebot">Angebot</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              {onSale && (
-                <div className="space-y-2">
-                  <Input
-                    type="number"
-                    step="0.01"
-                    placeholder="Sonderpreis"
-                    {...form.register("salePrice", { valueAsNumber: true })}
-                  />
-                  <Select
-                    value={form.watch("saleType")}
-                    onValueChange={(value: "Sale" | "Budget" | "Angebot") => form.setValue("saleType", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Art des Angebots" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Sale">Sale</SelectItem>
-                      <SelectItem value="Budget">Budget</SelectItem>
-                      <SelectItem value="Angebot">Angebot</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-            </div>
+            )}
+          </div>
 
-            <div className="space-y-2">
-              <Label>Gültig bis (optional)</Label>
-              <input 
-                type="date"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                {...form.register("validUntil")}
-              />
-            </div>
-
-            <div className="flex items-center justify-between border-t pt-4">
-              <div>
-                <Label>Produktstatus</Label>
-                <p className="text-sm text-muted-foreground">Produkt im Shop anzeigen</p>
-              </div>
-              <Switch
-                checked={form.watch("isActive")}
-                onCheckedChange={(checked) => form.setValue("isActive", checked)}
-              />
-            </div>
-
-            <Button 
+          <div className="space-y-2">
+            <Label>Gültig bis (optional)</Label>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full justify-start text-left font-normal"
               onClick={(e) => {
                 e.preventDefault();
-                form.handleSubmit(onSubmit)(e);
+                e.stopPropagation();
+                const dateInput = document.createElement('input');
+                dateInput.type = 'date';
+                dateInput.onchange = (e) => {
+                  const date = (e.target as HTMLInputElement).value;
+                  if (date) {
+                    form.setValue("validUntil", date);
+                  }
+                };
+                dateInput.click();
               }}
-              className="w-full"
             >
-              <Package className="h-4 w-4 mr-2" />
-              Produkt erstellen
+              {form.watch("validUntil") || "Datum auswählen"}
             </Button>
           </div>
+
+          <div className="flex items-center justify-between border-t pt-4">
+            <div>
+              <Label>Produktstatus</Label>
+              <p className="text-sm text-muted-foreground">Produkt im Shop anzeigen</p>
+            </div>
+            <Switch
+              checked={form.watch("isActive")}
+              onCheckedChange={(checked) => form.setValue("isActive", checked)}
+            />
+          </div>
+
+          <Button 
+            type="submit"
+            className="w-full"
+          >
+            <Package className="h-4 w-4 mr-2" />
+            Produkt erstellen
+          </Button>
         </CardContent>
       </Card>
-    </div>
+    </form>
   );
 }
