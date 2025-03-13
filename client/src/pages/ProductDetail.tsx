@@ -16,7 +16,7 @@ export default function ProductDetail({ id }: ProductDetailProps) {
   const params = useParams();
   const productId = id || params.id;
   const { toast } = useToast();
-  
+
   const [product, setProduct] = useState(mockProducts[0]);
   const [paypalLoaded, setPaypalLoaded] = useState(false);
 
@@ -29,7 +29,7 @@ export default function ProductDetail({ id }: ProductDetailProps) {
 
   useEffect(() => {
     loadScript({
-      "client-id": "YOUR_PAYPAL_CLIENT_ID",
+      clientId: "YOUR_PAYPAL_CLIENT_ID",
       currency: "EUR",
     }).then(() => setPaypalLoaded(true))
     .catch(err => {
@@ -117,7 +117,7 @@ export default function ProductDetail({ id }: ProductDetailProps) {
               <p className="text-muted-foreground">{product.description}</p>
 
               <div className="text-2xl font-bold">
-                €{product.price.toFixed(2)}
+                €{Number(product.price).toFixed(2)}
               </div>
 
               {/* Product Details */}
@@ -138,7 +138,7 @@ export default function ProductDetail({ id }: ProductDetailProps) {
                 <div className="space-y-2">
                   <p className="font-medium">Enthaltene Leistungen:</p>
                   <ul className="list-disc list-inside space-y-1 text-sm">
-                    {product.metadata.includes.map((item, index) => (
+                    {product.metadata.includes.map((item: string, index: number) => (
                       <li key={index}>{item}</li>
                     ))}
                   </ul>

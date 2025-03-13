@@ -52,9 +52,7 @@ export default function ProductSlider({ products }: ProductSliderProps) {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1 font-semibold">
                       <Euro className="h-4 w-4" />
-                      {typeof product.price === 'number' 
-                        ? product.price.toFixed(2) 
-                        : Number(product.price).toFixed(2)}
+                      {Number(product.price).toFixed(2)}
                     </div>
                     <Button size="sm">
                       Jetzt kaufen
