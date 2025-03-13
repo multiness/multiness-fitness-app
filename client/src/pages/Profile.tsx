@@ -8,7 +8,6 @@ import { Grid3X3, Trophy, Users2, Image } from "lucide-react";
 import FeedPost from "@/components/FeedPost";
 import { mockUsers, mockPosts, mockChallenges, mockGroups } from "../data/mockData";
 import { Badge } from "@/components/ui/badge";
-import type { User, Post, Challenge, Group } from "@shared/schema";
 import EditProfileDialog from "@/components/EditProfileDialog";
 import { usePostStore } from "../lib/postStore";
 import DailyGoalDisplay from "@/components/DailyGoalDisplay";
@@ -68,7 +67,7 @@ export default function Profile() {
 
         <div className="flex flex-col items-center -mt-12">
           <div className="relative">
-            <Avatar className="h-24 w-24 border-4 border-background" userId={user.id}>
+            <Avatar className="h-24 w-24 ring-4 ring-background">
               <AvatarImage src={user.avatar || undefined} />
               <AvatarFallback>{user.username[0].toUpperCase()}</AvatarFallback>
             </Avatar>

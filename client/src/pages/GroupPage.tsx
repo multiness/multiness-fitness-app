@@ -84,9 +84,9 @@ export default function GroupPage() {
                       isCurrentUser ? 'bg-primary text-primary-foreground' : 'bg-muted'
                     }`}>
                       {message.imageUrl && (
-                        <img 
-                          src={message.imageUrl} 
-                          alt="Shared" 
+                        <img
+                          src={message.imageUrl}
+                          alt="Shared"
                           className="rounded-md mb-2 max-w-full"
                         />
                       )}
