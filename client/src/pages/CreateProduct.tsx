@@ -28,6 +28,7 @@ export default function CreateProduct() {
   const [productType, setProductType] = useState<"training" | "coaching" | "supplement" | "custom">("training");
   const [stockEnabled, setStockEnabled] = useState(false);
   const [onSale, setOnSale] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string>("");
 
   const form = useForm<InsertProduct>({
     resolver: zodResolver(insertProductSchema),
@@ -37,7 +38,6 @@ export default function CreateProduct() {
       type: "training",
       price: 0,
       isActive: true,
-      isArchived: false,
       metadata: {
         type: "training",
         duration: 4,
@@ -65,21 +65,30 @@ export default function CreateProduct() {
     input.click();
   };
 
-  const onSubmit = form.handleSubmit(async (data) => {
-    console.log("Form submitted with data:", data);
+  const handleDateSelect = () => {
+    const input = document.createElement('input');
+    input.type = 'date';
+    input.onchange = (e) => {
+      const date = (e.target as HTMLInputElement).value;
+      if (date) {
+        setSelectedDate(date);
+      }
+    };
+    input.click();
+  };
 
+  const onSubmit = async (formData: InsertProduct) => {
     try {
       const newProduct = {
-        ...data,
+        ...formData,
         image: selectedImage ? URL.createObjectURL(selectedImage) : "",
         createdAt: new Date().toISOString(),
         isActive: true,
         isArchived: false,
+        validUntil: selectedDate,
       };
 
-      console.log("Creating new product:", newProduct);
       addProduct(newProduct);
-
       toast({
         title: "Produkt erstellt!",
         description: "Das Produkt wurde erfolgreich erstellt.",
@@ -93,43 +102,42 @@ export default function CreateProduct() {
         variant: "destructive",
       });
     }
-  });
+  };
 
   return (
     <div className="container max-w-2xl mx-auto p-4 pb-24">
       <h1 className="text-2xl font-bold mb-6">Produkt erstellen</h1>
 
-      <form onSubmit={onSubmit}>
-        <Card className="mb-20">
-          <CardHeader>
-            <CardTitle>Produktdetails</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Image Upload */}
-            <div 
-              onClick={handleImageSelect}
-              className="border-2 border-dashed rounded-lg p-4 hover:bg-accent/5 transition-colors cursor-pointer"
-            >
-              {selectedImage ? (
-                <div className="aspect-video relative overflow-hidden rounded-md">
-                  <img
-                    src={URL.createObjectURL(selectedImage)}
-                    alt="Vorschau"
-                    className="w-full h-full object-cover"
-                  />
+      <Card className="mb-20">
+        <CardHeader>
+          <CardTitle>Produktdetails</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div 
+            onClick={handleImageSelect}
+            className="border-2 border-dashed rounded-lg p-4 hover:bg-accent/5 transition-colors cursor-pointer"
+          >
+            {selectedImage ? (
+              <div className="aspect-video relative overflow-hidden rounded-md">
+                <img
+                  src={URL.createObjectURL(selectedImage)}
+                  alt="Vorschau"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ) : (
+              <div className="aspect-video flex items-center justify-center">
+                <div className="text-center">
+                  <ImageIcon className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">
+                    Klicken um ein Bild hochzuladen
+                  </p>
                 </div>
-              ) : (
-                <div className="aspect-video flex items-center justify-center">
-                  <div className="text-center">
-                    <ImageIcon className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">
-                      Klicken um ein Bild hochzuladen
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
+              </div>
+            )}
+          </div>
 
+          <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
             <div className="space-y-2">
               <Label>Name</Label>
               <Input {...form.register("name")} placeholder="z.B. Premium Fitness Coaching" />
@@ -267,15 +275,14 @@ export default function CreateProduct() {
 
             <div className="space-y-2">
               <Label>Gültig bis (optional)</Label>
-              <div className="relative">
-                <Input 
-                  type="text" 
-                  onFocus={(e) => e.target.type = 'date'}
-                  onBlur={(e) => e.target.type = 'text'}
-                  placeholder="Datum auswählen"
-                  {...form.register("validUntil", { required: false })}
-                />
-              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full justify-start text-left font-normal"
+                onClick={handleDateSelect}
+              >
+                {selectedDate || "Datum auswählen"}
+              </Button>
             </div>
 
             <div className="flex items-center justify-between border-t pt-4">
@@ -289,13 +296,16 @@ export default function CreateProduct() {
               />
             </div>
 
-            <Button type="submit" className="w-full">
+            <Button 
+              type="submit"
+              className="w-full"
+            >
               <Package className="h-4 w-4 mr-2" />
               Produkt erstellen
             </Button>
-          </CardContent>
-        </Card>
-      </form>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }
