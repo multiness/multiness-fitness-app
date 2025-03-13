@@ -26,6 +26,7 @@ export default function Profile() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedTab, setSelectedTab] = useState("all");
   const postStore = usePostStore();
+  const activeGoal = postStore.getDailyGoal(userId);
 
   if (!user) return <div>User not found</div>;
 
@@ -43,7 +44,7 @@ export default function Profile() {
     <div className="container max-w-4xl mx-auto p-4">
       {/* Profile Header */}
       <div className="relative mb-8">
-        {/* Cover Image (optional) */}
+        {/* Cover Image */}
         <div className="h-32 bg-gradient-to-r from-primary/20 to-primary/10 rounded-t-lg" />
 
         <div className="flex flex-col items-center -mt-12">
@@ -72,15 +73,16 @@ export default function Profile() {
             )}
           </div>
 
+          {/* Biographie */}
           {user.bio && (
             <p className="text-center mt-4 max-w-md text-muted-foreground">{user.bio}</p>
           )}
 
           {/* Tagesziel Anzeige */}
-          {postStore.getDailyGoal(userId) && (
-            <div className="mt-4 max-w-md w-full">
+          {activeGoal && (
+            <div className="w-full max-w-md mt-4">
               <DailyGoalDisplay 
-                goal={postStore.getDailyGoal(userId)!} 
+                goal={activeGoal}
                 userId={userId}
                 variant="profile"
               />
@@ -103,7 +105,8 @@ export default function Profile() {
             </div>
           </div>
 
-          {userId === 1 && ( // Nur anzeigen, wenn es das eigene Profil ist
+          {/* Edit Profile Button */}
+          {userId === 1 && (
             <Button
               className="mt-6"
               variant="outline"
