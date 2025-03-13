@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp, boolean, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, boolean, jsonb, numeric } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -167,3 +167,57 @@ export const DEFAULT_BANNER_POSITIONS = [
     webDimensions: { width: 1920, height: 600 }
   }
 ] as const;
+
+export const products = pgTable("products", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  type: text("type").notNull(), // 'training', 'coaching', 'supplement'
+  price: numeric("price").notNull(),
+  image: text("image"),
+  creatorId: integer("creator_id").references(() => users.id).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  metadata: jsonb("metadata"), // Zusätzliche Informationen je nach Produkttyp
+});
+
+export const orders = pgTable("orders", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  productId: integer("product_id").references(() => products.id).notNull(),
+  status: text("status").notNull(), // 'pending', 'completed', 'cancelled'
+  paypalOrderId: text("paypal_order_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at"),
+});
+
+export type Product = typeof products.$inferSelect;
+export type Order = typeof orders.$inferSelect;
+
+export const productMetadataSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("training"),
+    duration: z.number(), // Dauer in Wochen
+    sessions: z.number(), // Anzahl der Trainingseinheiten
+    includes: z.array(z.string()), // Liste der Leistungen
+  }),
+  z.object({
+    type: z.literal("coaching"),
+    duration: z.number(), // Dauer in Monaten
+    callsPerMonth: z.number(), // Anzahl der Coaching-Calls pro Monat
+    includes: z.array(z.string()), // Liste der Leistungen
+  }),
+  z.object({
+    type: z.literal("supplement"),
+    weight: z.number(), // Gewicht in Gramm
+    servings: z.number(), // Anzahl der Portionen
+    nutritionFacts: z.record(z.string(), z.string()), // Nährwertangaben
+  }),
+]);
+
+export const insertProductSchema = createInsertSchema(products)
+  .extend({
+    metadata: productMetadataSchema,
+  });
+
+export type InsertProduct = z.infer<typeof insertProductSchema>;

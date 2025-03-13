@@ -14,6 +14,8 @@ import CreatePost from "./pages/CreatePost";
 import CreateGroup from "./pages/CreateGroup";
 import CreateEvent from "./pages/CreateEvent";
 import CreateNotification from "./pages/CreateNotification";
+import CreateProduct from "./pages/CreateProduct";
+import ProductDetail from "./pages/ProductDetail";
 import Groups from "./pages/Groups";
 import GroupPage from "./pages/GroupPage";
 import Events from "./pages/Events";
@@ -22,25 +24,8 @@ import Chat from "./pages/Chat";
 import Admin from "./pages/Admin";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/not-found";
-import { useEffect } from "react";
-import { usePostStore } from "./lib/postStore";
 
 function Router() {
-  const { checkExpiredGoals } = usePostStore();
-
-  // Prüfe alle 5 Minuten auf abgelaufene Ziele
-  useEffect(() => {
-    // Initial check
-    checkExpiredGoals();
-
-    // Setup interval
-    const interval = setInterval(() => {
-      checkExpiredGoals();
-    }, 5 * 60 * 1000); // 5 Minuten
-
-    return () => clearInterval(interval);
-  }, [checkExpiredGoals]);
-
   return (
     <Layout>
       <Switch>
@@ -53,6 +38,8 @@ function Router() {
         <Route path="/create/group" component={CreateGroup} />
         <Route path="/create/event" component={CreateEvent} />
         <Route path="/create/notification" component={CreateNotification} />
+        <Route path="/create/product" component={CreateProduct} />
+        <Route path="/products/:id" component={ProductDetail} />
         <Route path="/groups" component={Groups} />
         <Route path="/groups/:id" component={GroupPage} />
         <Route path="/events" component={Events} />

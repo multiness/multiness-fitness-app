@@ -5,7 +5,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Plus, Trophy, Users, Image, CalendarDays, Bell } from "lucide-react";
+import { Plus, Trophy, Users, Image, CalendarDays, Bell, Package } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +44,11 @@ export default function CreateModal({ open, onClose }: CreateModalProps) {
   const handleCreateNotification = () => {
     onClose();
     setLocation("/create/notification");
+  };
+
+  const handleCreateProduct = () => {
+    onClose();
+    setLocation("/create/product");
   };
 
   return (
@@ -88,6 +93,16 @@ export default function CreateModal({ open, onClose }: CreateModalProps) {
                   Admin Functions
                 </span>
               </div>
+
+              <Button
+                variant="outline"
+                className="flex items-center justify-start gap-2"
+                onClick={handleCreateProduct}
+              >
+                <Package className="h-5 w-5" />
+                <span className="flex-1 text-left">Produkt einstellen</span>
+                <Badge variant="outline" className="ml-2">Admin</Badge>
+              </Button>
 
               <Button
                 variant="outline"

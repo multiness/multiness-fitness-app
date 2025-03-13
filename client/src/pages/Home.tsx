@@ -5,11 +5,11 @@ import GroupPreview from "@/components/GroupPreview";
 import ChallengeCard from "@/components/ChallengeCard";
 import FeedPost from "@/components/FeedPost";
 import EventSlider from "@/components/EventSlider";
-import { ArrowRight, Crown, Heart, Share2, Users, Trophy } from "lucide-react";
-import { mockGroups, mockChallenges, mockPosts, mockUsers } from "../data/mockData";
+import { ArrowRight, Crown, Heart, Share2, Users, Trophy, Package } from "lucide-react"; // Added Package import
+import { mockGroups, mockChallenges, mockPosts, mockUsers, mockProducts } from "../data/mockData"; // Added mockProducts import
 import { useLocation, Link } from "wouter";
 import { usePostStore } from "../lib/postStore";
-import { getChatId } from "../lib/chatService";  // Add this import
+import { getChatId } from "../lib/chatService";
 import {
   Carousel,
   CarouselContent,
@@ -21,6 +21,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import GroupCarousel from "@/components/GroupCarousel";
 import { UserAvatar } from "@/components/UserAvatar";
+import ProductSlider from "@/components/ProductSlider"; // Added ProductSlider import
+
 
 const format = (date: Date, formatStr: string) => {
   return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -126,6 +128,20 @@ export default function Home() {
             );
           })}
         </div>
+      </section>
+
+      {/* Products Section */}
+      <section className="mb-12">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <Package className="h-6 w-6 text-primary" />
+            <h2 className="text-2xl font-bold">Shop</h2>
+          </div>
+          <Link href="/products" className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1">
+            Alle Produkte <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+        <ProductSlider products={mockProducts} />
       </section>
 
       {/* Aktive Challenges - Hervorgehobenes Design */}

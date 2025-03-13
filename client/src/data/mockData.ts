@@ -549,3 +549,87 @@ export const exerciseDatabase = {
     }
   ]
 };
+
+interface Product {
+  id: number;
+  name: string;
+  description: string;
+  type: "supplement" | "training" | "coaching";
+  price: number;
+  image: string;
+  creatorId: number;
+  isActive: boolean;
+  createdAt: Date;
+  metadata: {
+    type: "supplement" | "training" | "coaching";
+    [key: string]: any;
+  };
+}
+
+export const mockProducts: Product[] = [
+  {
+    id: 1,
+    name: "Premium Protein Shake",
+    description: "Hochwertiges Whey Protein für optimale Regeneration. Mit BCAAs und EAAs.",
+    type: "supplement",
+    price: 29.99,
+    image: "https://images.unsplash.com/photo-1579722821273-0f6c7d44362f?w=800&auto=format",
+    creatorId: 1,
+    isActive: true,
+    createdAt: new Date(),
+    metadata: {
+      type: "supplement",
+      weight: 1000,
+      servings: 33,
+      nutritionFacts: {
+        "Protein pro Portion": "30g",
+        "Kohlenhydrate": "3g",
+        "Fett": "1.5g",
+      }
+    }
+  },
+  {
+    id: 2,
+    name: "12-Wochen Transformations-Programm",
+    description: "Individueller Trainingsplan, Ernährungsberatung und wöchentliche Check-ins.",
+    type: "training",
+    price: 199.99,
+    image: "https://images.unsplash.com/photo-1549576490-b0b4831ef60a?w=800&auto=format",
+    creatorId: 1,
+    isActive: true,
+    createdAt: new Date(),
+    metadata: {
+      type: "training",
+      duration: 12,
+      sessions: 48,
+      includes: [
+        "Individueller Trainingsplan",
+        "Ernährungsberatung",
+        "Wöchentliche Check-ins",
+        "Video-Anleitungen"
+      ]
+    }
+  },
+  {
+    id: 3,
+    name: "Personal Coaching Paket",
+    description: "1-zu-1 Betreuung für maximalen Erfolg. Inkl. Videoanalyse und 24/7 Support.",
+    type: "coaching",
+    price: 299.99,
+    image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&auto=format",
+    creatorId: 2,
+    isActive: true,
+    createdAt: new Date(),
+    metadata: {
+      type: "coaching",
+      duration: 3,
+      callsPerMonth: 4,
+      includes: [
+        "Wöchentliche 1:1 Calls",
+        "Technik-Analyse",
+        "24/7 WhatsApp Support",
+        "Personalisierte Pläne"
+      ]
+    }
+  }
+];
