@@ -49,13 +49,11 @@ export default function CreateProduct() {
       onSale: false,
       salePrice: 0,
       saleType: "Sale",
-      validUntil: undefined,
+      validUntil: undefined, // Retained from original
     },
   });
 
-  const handleImageSelect = (e: React.MouseEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleImageSelect = () => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
@@ -68,16 +66,15 @@ export default function CreateProduct() {
     input.click();
   };
 
-  const handleSubmit = async (data: InsertProduct) => {
+  const onSubmit = async (data: InsertProduct) => {
     try {
-      // Create new product object
       const newProduct = {
         ...data,
         image: selectedImage ? URL.createObjectURL(selectedImage) : "",
         createdAt: new Date().toISOString(),
+        isActive: true, //Retained from original
       };
 
-      // Add the new product to context
       addProduct(newProduct);
 
       toast({
@@ -103,95 +100,62 @@ export default function CreateProduct() {
           <CardTitle>Produktdetails</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="space-y-6">
             {/* Produktbild */}
-            <div className="space-y-2">
-              <Label>Produktbild</Label>
-              <div
-                className="border-2 border-dashed rounded-lg p-4 hover:bg-accent/5 transition-colors cursor-pointer"
-                onClick={handleImageSelect}
-                role="button"
-                tabIndex={0}
-              >
-                {selectedImage ? (
-                  <div className="aspect-video relative overflow-hidden rounded-md">
-                    <img
-                      src={URL.createObjectURL(selectedImage)}
-                      alt="Vorschau"
-                      className="w-full h-full object-cover"
-                    />
+            <div role="button" onClick={handleImageSelect} className="border-2 border-dashed rounded-lg p-4 hover:bg-accent/5 transition-colors cursor-pointer">
+              {selectedImage ? (
+                <div className="aspect-video relative overflow-hidden rounded-md">
+                  <img
+                    src={URL.createObjectURL(selectedImage)}
+                    alt="Vorschau"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ) : (
+                <div className="aspect-video flex items-center justify-center">
+                  <div className="text-center">
+                    <ImageIcon className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">
+                      Klicken um ein Bild hochzuladen
+                    </p>
                   </div>
-                ) : (
-                  <div className="aspect-video flex items-center justify-center">
-                    <div className="text-center">
-                      <ImageIcon className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground">
-                        Klicken um ein Bild hochzuladen
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
 
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-              {/* Produktname */}
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  {...form.register("name")}
-                  placeholder="z.B. Premium Fitness Coaching"
-                />
+                <Label>Name</Label>
+                <Input {...form.register("name")} placeholder="z.B. Premium Fitness Coaching" />
                 {form.formState.errors.name && (
-                  <p className="text-sm text-destructive">
-                    {form.formState.errors.name.message}
-                  </p>
+                  <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>
                 )}
               </div>
 
-              {/* Produktbeschreibung */}
               <div className="space-y-2">
-                <Label htmlFor="description">Beschreibung</Label>
-                <Textarea
-                  id="description"
-                  {...form.register("description")}
-                  placeholder="Beschreibe dein Produkt..."
-                  className="min-h-[100px]"
-                />
+                <Label>Beschreibung</Label>
+                <Textarea {...form.register("description")} placeholder="Beschreibe dein Produkt..." className="min-h-[100px]" />
                 {form.formState.errors.description && (
-                  <p className="text-sm text-destructive">
-                    {form.formState.errors.description.message}
-                  </p>
+                  <p className="text-sm text-destructive">{form.formState.errors.description.message}</p>
                 )}
               </div>
 
-              {/* Preis */}
               <div className="space-y-2">
-                <Label htmlFor="price">Preis (€)</Label>
-                <Input
-                  id="price"
-                  type="number"
-                  step="0.01"
-                  {...form.register("price", { valueAsNumber: true })}
-                  placeholder="49.99"
-                />
+                <Label>Preis (€)</Label>
+                <Input type="number" step="0.01" {...form.register("price", { valueAsNumber: true })} placeholder="49.99" />
                 {form.formState.errors.price && (
-                  <p className="text-sm text-destructive">
-                    {form.formState.errors.price.message}
-                  </p>
+                  <p className="text-sm text-destructive">{form.formState.errors.price.message}</p>
                 )}
               </div>
 
-              {/* Produkttyp */}
               <div className="space-y-2">
-                <Label htmlFor="type">Produkttyp</Label>
+                <Label>Produkttyp</Label>
                 <Select
                   value={productType}
                   onValueChange={(value: "training" | "coaching" | "supplement" | "custom") => {
                     setProductType(value);
                     form.setValue("type", value);
-                    // Reset metadata based on type
+                    // Reset metadata based on type - Retained from original
                     switch (value) {
                       case "training":
                         form.setValue("metadata", {
@@ -239,102 +203,75 @@ export default function CreateProduct() {
                 </Select>
               </div>
 
-              {/* Bestandsverwaltung */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Bestandsverwaltung</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Bestand für dieses Produkt verwalten
-                    </p>
-                  </div>
+              <div className="space-y-2">
+                <Label>Bestandsverwaltung</Label>
+                <div className="flex items-center space-x-2">
                   <Switch
+                    id="stockEnabled"
                     checked={stockEnabled}
-                    onCheckedChange={(checked) => {
-                      setStockEnabled(checked);
-                      form.setValue("stockEnabled", checked);
-                    }}
+                    onCheckedChange={setStockEnabled}
                   />
+                  <Label htmlFor="stockEnabled">Bestand verwalten</Label>
                 </div>
-
                 {stockEnabled && (
+                  <Input
+                    type="number"
+                    placeholder="Verfügbare Menge"
+                    {...form.register("stock", { valueAsNumber: true })}
+                  />
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label>Sonderangebot</Label>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="onSale"
+                    checked={onSale}
+                    onCheckedChange={setOnSale}
+                  />
+                  <Label htmlFor="onSale">Sonderpreis aktivieren</Label>
+                </div>
+                {onSale && (
                   <div className="space-y-2">
-                    <Label>Verfügbare Menge</Label>
                     <Input
                       type="number"
-                      min="0"
-                      {...form.register("stock", { valueAsNumber: true })}
+                      step="0.01"
+                      placeholder="Sonderpreis"
+                      {...form.register("salePrice", { valueAsNumber: true })}
                     />
+                    <Select
+                      value={form.watch("saleType")}
+                      onValueChange={(value: "Sale" | "Budget" | "Angebot") => form.setValue("saleType", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Art des Angebots" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Sale">Sale</SelectItem>
+                        <SelectItem value="Budget">Budget</SelectItem>
+                        <SelectItem value="Angebot">Angebot</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 )}
               </div>
 
-              {/* Sonderangebot */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Sonderangebot</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Sonderpreis für dieses Produkt aktivieren
-                    </p>
-                  </div>
-                  <Switch
-                    checked={onSale}
-                    onCheckedChange={(checked) => {
-                      setOnSale(checked);
-                      form.setValue("onSale", checked);
-                    }}
+              <div className="space-y-2">
+                <Label>Gültig bis (optional)</Label>
+                <div className="relative">
+                  <input 
+                    type="datetime-local"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    {...form.register("validUntil")}
                   />
                 </div>
-
-                {onSale && (
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Angebotspreis (€)</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        {...form.register("salePrice", { valueAsNumber: true })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Art des Angebots</Label>
-                      <Select
-                        value={form.watch("saleType")}
-                        onValueChange={(value: "Sale" | "Budget" | "Angebot") => form.setValue("saleType", value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Wähle die Art des Angebots" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Sale">Sale</SelectItem>
-                          <SelectItem value="Budget">Budget</SelectItem>
-                          <SelectItem value="Angebot">Angebot</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                )}
               </div>
 
-              {/* Ablaufdatum (optional) */}
-              <div className="space-y-2">
-                <Label htmlFor="validUntil">Gültig bis (optional)</Label>
-                <input 
-                  type="datetime-local"
-                  id="validUntil"
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  {...form.register("validUntil", { required: false })}
-                />
-              </div>
-
-              {/* Aktiv/Inaktiv */}
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Aktiv</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Produkt im Shop anzeigen
-                  </p>
+              <div className="flex items-center justify-between border-t pt-4 mt-4">
+                <div>
+                  <Label>Produktstatus</Label>
+                  <p className="text-sm text-muted-foreground">Produkt im Shop anzeigen</p>
                 </div>
                 <Switch
                   checked={form.watch("isActive")}
@@ -342,10 +279,7 @@ export default function CreateProduct() {
                 />
               </div>
 
-              <Button 
-                className="w-full mt-6" 
-                type="submit"
-              >
+              <Button type="submit" className="w-full mt-6">
                 <Package className="h-4 w-4 mr-2" />
                 Produkt erstellen
               </Button>
