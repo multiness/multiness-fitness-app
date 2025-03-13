@@ -106,17 +106,16 @@ export default function Chat() {
                 >
                   <div className="flex items-center gap-3">
                     <div className="relative">
-                      <Avatar className={`h-12 w-12 ${
-                        chat.isGroup 
-                          ? 'ring-4 ring-green-500/50' 
+                      <Avatar
+                        className={chat.isGroup 
+                          ? 'h-12 w-12 ring-4 ring-green-500/50'
                           : hasActiveGoal(userId)
-                            ? 'ring-4 ring-blue-500/50'
-                            : ''
-                      }`}>
+                            ? 'h-12 w-12 ring-4 ring-blue-500/50'
+                            : 'h-12 w-12'
+                        }
+                      >
                         <AvatarImage src={chat.avatar || undefined} />
-                        <AvatarFallback>
-                          {chat.name[0]}
-                        </AvatarFallback>
+                        <AvatarFallback>{chat.name[0]}</AvatarFallback>
                       </Avatar>
                       {chat.isGroup ? (
                         <div className="absolute bottom-0 right-0 bg-green-500 rounded-full p-1">
@@ -168,15 +167,14 @@ export default function Chat() {
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
-              <Avatar className={`h-10 w-10 ${
-                selectedChat.isGroup 
-                  ? 'ring-4 ring-green-500/50' 
-                  : 'ring-4 ring-blue-500/50'
-              }`}>
+              <Avatar
+                className={selectedChat.isGroup 
+                  ? 'h-10 w-10 ring-4 ring-green-500/50'
+                  : 'h-10 w-10 ring-4 ring-blue-500/50'
+                }
+              >
                 <AvatarImage src={selectedChat.avatar || undefined} />
-                <AvatarFallback>
-                  {selectedChat.name[0]}
-                </AvatarFallback>
+                <AvatarFallback>{selectedChat.name[0]}</AvatarFallback>
               </Avatar>
               <div>
                 <h2 className="font-semibold">{selectedChat.name}</h2>
