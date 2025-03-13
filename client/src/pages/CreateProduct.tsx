@@ -30,7 +30,10 @@ export default function CreateProduct() {
   const form = useForm<InsertProduct>({
     resolver: zodResolver(insertProductSchema),
     defaultValues: {
+      name: "",
+      description: "",
       type: "training",
+      price: 0,
       isActive: true,
       isArchived: false,
       metadata: {
@@ -115,94 +118,6 @@ export default function CreateProduct() {
               </div>
             </div>
 
-            {/* Produktstatus */}
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Aktiv</Label>
-                <p className="text-sm text-muted-foreground">
-                  Produkt im Shop anzeigen
-                </p>
-              </div>
-              <Switch
-                checked={form.watch("isActive")}
-                onCheckedChange={(checked) => form.setValue("isActive", checked)}
-              />
-            </div>
-
-            {/* Bestandsverwaltung */}
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Bestandsverwaltung</Label>
-                <p className="text-sm text-muted-foreground">
-                  Bestand für dieses Produkt verwalten
-                </p>
-              </div>
-              <Switch
-                checked={stockEnabled}
-                onCheckedChange={(checked) => {
-                  setStockEnabled(checked);
-                  form.setValue("stockEnabled", checked);
-                }}
-              />
-            </div>
-
-            {stockEnabled && (
-              <div className="space-y-2">
-                <Label>Verfügbare Menge</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  {...form.register("stock", { valueAsNumber: true })}
-                />
-              </div>
-            )}
-
-            {/* Sonderangebot */}
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Sonderangebot</Label>
-                <p className="text-sm text-muted-foreground">
-                  Sonderpreis für dieses Produkt aktivieren
-                </p>
-              </div>
-              <Switch
-                checked={onSale}
-                onCheckedChange={(checked) => {
-                  setOnSale(checked);
-                  form.setValue("onSale", checked);
-                }}
-              />
-            </div>
-
-            {onSale && (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Angebotspreis (€)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    {...form.register("salePrice", { valueAsNumber: true })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Art des Angebots</Label>
-                  <Select
-                    value={form.watch("saleType")}
-                    onValueChange={(value: "Sale" | "Budget" | "Angebot") => form.setValue("saleType", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Wähle die Art des Angebots" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Sale">Sale</SelectItem>
-                      <SelectItem value="Budget">Budget</SelectItem>
-                      <SelectItem value="Angebot">Angebot</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            )}
-
             {/* Produktname */}
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
@@ -232,33 +147,6 @@ export default function CreateProduct() {
                   {form.formState.errors.description.message}
                 </p>
               )}
-            </div>
-
-            {/* Preis */}
-            <div className="space-y-2">
-              <Label htmlFor="price">Preis (€)</Label>
-              <Input
-                id="price"
-                type="number"
-                step="0.01"
-                {...form.register("price", { valueAsNumber: true })}
-                placeholder="49.99"
-              />
-              {form.formState.errors.price && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.price.message}
-                </p>
-              )}
-            </div>
-
-            {/* Ablaufdatum (optional) */}
-            <div className="space-y-2">
-              <Label htmlFor="validUntil">Gültig bis (optional)</Label>
-              <Input
-                id="validUntil"
-                type="datetime-local"
-                {...form.register("validUntil")}
-              />
             </div>
 
             {/* Produkttyp */}
@@ -317,110 +205,124 @@ export default function CreateProduct() {
               </Select>
             </div>
 
-            {/* Dynamische Metadaten basierend auf Produkttyp */}
-            {productType === "training" && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="duration">Dauer (Wochen)</Label>
-                    <Input
-                      id="duration"
-                      type="number"
-                      {...form.register("metadata.duration", { valueAsNumber: true })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="sessions">Trainingseinheiten</Label>
-                    <Input
-                      id="sessions"
-                      type="number"
-                      {...form.register("metadata.sessions", { valueAsNumber: true })}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* Preis */}
+            <div className="space-y-2">
+              <Label htmlFor="price">Preis (€)</Label>
+              <Input
+                id="price"
+                type="number"
+                step="0.01"
+                {...form.register("price", { valueAsNumber: true })}
+                placeholder="49.99"
+              />
+              {form.formState.errors.price && (
+                <p className="text-sm text-destructive">
+                  {form.formState.errors.price.message}
+                </p>
+              )}
+            </div>
 
-            {productType === "coaching" && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="duration">Dauer (Monate)</Label>
-                    <Input
-                      id="duration"
-                      type="number"
-                      {...form.register("metadata.duration", { valueAsNumber: true })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="callsPerMonth">Calls pro Monat</Label>
-                    <Input
-                      id="callsPerMonth"
-                      type="number"
-                      {...form.register("metadata.callsPerMonth", { valueAsNumber: true })}
-                    />
-                  </div>
+            {/* Bestandsverwaltung */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Bestandsverwaltung</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Bestand für dieses Produkt verwalten
+                  </p>
                 </div>
+                <Switch
+                  checked={stockEnabled}
+                  onCheckedChange={(checked) => {
+                    setStockEnabled(checked);
+                    form.setValue("stockEnabled", checked);
+                  }}
+                />
               </div>
-            )}
 
-            {productType === "supplement" && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="weight">Gewicht (g)</Label>
-                    <Input
-                      id="weight"
-                      type="number"
-                      {...form.register("metadata.weight", { valueAsNumber: true })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="servings">Portionen</Label>
-                    <Input
-                      id="servings"
-                      type="number"
-                      {...form.register("metadata.servings", { valueAsNumber: true })}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {productType === "custom" && (
-              <div className="space-y-4">
+              {stockEnabled && (
                 <div className="space-y-2">
-                  <Label>Spezifikationen</Label>
+                  <Label>Verfügbare Menge</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    {...form.register("stock", { valueAsNumber: true })}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Sonderangebot */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Sonderangebot</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Sonderpreis für dieses Produkt aktivieren
+                  </p>
+                </div>
+                <Switch
+                  checked={onSale}
+                  onCheckedChange={(checked) => {
+                    setOnSale(checked);
+                    form.setValue("onSale", checked);
+                  }}
+                />
+              </div>
+
+              {onSale && (
+                <div className="space-y-4">
                   <div className="space-y-2">
-                    <div className="grid grid-cols-2 gap-2">
-                      <Input
-                        placeholder="Bezeichnung"
-                        onChange={(e) => {
-                          const specs = form.watch("metadata.specifications") || {};
-                          form.setValue("metadata.specifications", {
-                            ...specs,
-                            [e.target.value]: "",
-                          });
-                        }}
-                      />
-                      <Input
-                        placeholder="Wert"
-                        onChange={(e) => {
-                          const specs = form.watch("metadata.specifications") || {};
-                          const key = Object.keys(specs)[Object.keys(specs).length - 1];
-                          if (key) {
-                            form.setValue("metadata.specifications", {
-                              ...specs,
-                              [key]: e.target.value,
-                            });
-                          }
-                        }}
-                      />
-                    </div>
+                    <Label>Angebotspreis (€)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      {...form.register("salePrice", { valueAsNumber: true })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Art des Angebots</Label>
+                    <Select
+                      value={form.watch("saleType")}
+                      onValueChange={(value: "Sale" | "Budget" | "Angebot") => form.setValue("saleType", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Wähle die Art des Angebots" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Sale">Sale</SelectItem>
+                        <SelectItem value="Budget">Budget</SelectItem>
+                        <SelectItem value="Angebot">Angebot</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
+              )}
+            </div>
+
+            {/* Ablaufdatum (optional) */}
+            <div className="space-y-2">
+              <Label htmlFor="validUntil">Gültig bis (optional)</Label>
+              <Input
+                id="validUntil"
+                type="datetime-local"
+                {...form.register("validUntil")}
+              />
+            </div>
+
+            {/* Aktiv/Inaktiv */}
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Aktiv</Label>
+                <p className="text-sm text-muted-foreground">
+                  Produkt im Shop anzeigen
+                </p>
               </div>
-            )}
+              <Switch
+                checked={form.watch("isActive")}
+                onCheckedChange={(checked) => form.setValue("isActive", checked)}
+              />
+            </div>
 
             <Button type="submit" className="w-full">
               <Package className="h-4 w-4 mr-2" />

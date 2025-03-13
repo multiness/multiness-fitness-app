@@ -177,10 +177,15 @@ export const products = pgTable("products", {
   image: text("image"),
   creatorId: integer("creator_id").references(() => users.id).notNull(),
   isActive: boolean("is_active").default(true).notNull(),
-  validUntil: timestamp("valid_until"),
   isArchived: boolean("is_archived").default(false).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  validUntil: timestamp("valid_until"),
+  stockEnabled: boolean("stock_enabled").default(false),
+  stock: integer("stock"),
+  onSale: boolean("on_sale").default(false),
+  salePrice: numeric("sale_price"),
+  saleType: text("sale_type"), // 'Sale', 'Budget', 'Angebot'
   metadata: jsonb("metadata"), // Zusätzliche Informationen je nach Produkttyp
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const orders = pgTable("orders", {
@@ -225,6 +230,11 @@ export const productMetadataSchema = z.discriminatedUnion("type", [
 export const insertProductSchema = createInsertSchema(products)
   .extend({
     metadata: productMetadataSchema,
+    stockEnabled: z.boolean().optional(),
+    stock: z.number().optional(),
+    onSale: z.boolean().optional(),
+    salePrice: z.number().optional(),
+    saleType: z.enum(['Sale', 'Budget', 'Angebot']).optional(),
   });
 
 export type InsertProduct = z.infer<typeof insertProductSchema>;
