@@ -10,6 +10,12 @@ export type Message = {
   groupId?: number;
 };
 
+export type Contribution = {
+  userId: number;
+  progress: number;
+  timestamp: string;
+};
+
 export type GroupGoal = {
   id: number;
   groupId: string;
@@ -19,6 +25,7 @@ export type GroupGoal = {
   progress: number;
   createdAt: string;
   createdBy: number;
+  contributions: Contribution[];
 };
 
 type ChatStore = {
@@ -28,7 +35,7 @@ type ChatStore = {
   getMessages: (chatId: string) => Message[];
   setGroupGoal: (chatId: string, goal: GroupGoal) => void;
   getGroupGoal: (chatId: string) => GroupGoal | undefined;
-  updateGroupGoalProgress: (chatId: string, progress: number) => void;
+  updateGroupGoalProgress: (chatId: string, contribution: Contribution) => void;
 };
 
 export const useChatStore = create<ChatStore>()(
@@ -51,22 +58,35 @@ export const useChatStore = create<ChatStore>()(
         set((state) => ({
           groupGoals: {
             ...state.groupGoals,
-            [chatId]: goal,
+            [chatId]: {
+              ...goal,
+              contributions: [],
+            },
           },
         }));
       },
       getGroupGoal: (chatId) => {
         return get().groupGoals[chatId];
       },
-      updateGroupGoalProgress: (chatId, progress) => {
-        set((state) => ({
-          groupGoals: {
-            ...state.groupGoals,
-            [chatId]: state.groupGoals[chatId]
-              ? { ...state.groupGoals[chatId], progress }
-              : undefined,
-          },
-        }));
+      updateGroupGoalProgress: (chatId, contribution) => {
+        set((state) => {
+          const currentGoal = state.groupGoals[chatId];
+          if (!currentGoal) return state;
+
+          const newContributions = [...currentGoal.contributions, contribution];
+          const totalProgress = newContributions.reduce((sum, c) => sum + c.progress, 0);
+
+          return {
+            groupGoals: {
+              ...state.groupGoals,
+              [chatId]: {
+                ...currentGoal,
+                progress: Math.min(100, totalProgress),
+                contributions: newContributions,
+              },
+            },
+          };
+        });
       },
     }),
     {
@@ -75,7 +95,6 @@ export const useChatStore = create<ChatStore>()(
   )
 );
 
-// Helper Funktion um Chat-ID zu generieren
 export const getChatId = (groupId?: number) => {
   return groupId ? `group-${groupId}` : 'direct';
 };

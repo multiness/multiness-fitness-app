@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import AddGroupGoalModal from "@/components/AddGroupGoalModal";
 import AddGroupProgress from "@/components/AddGroupProgress";
+import PerformanceBoard from "@/components/PerformanceBoard"; // Import the PerformanceBoard component
+
 
 interface Message {
   id: number;
@@ -49,6 +51,7 @@ export default function Chat() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [isGroupGoalModalOpen, setIsGroupGoalModalOpen] = useState(false);
   const [isAddProgressModalOpen, setIsAddProgressModalOpen] = useState(false);
+  const [isPerformanceBoardOpen, setIsPerformanceBoardOpen] = useState(false); // Add state for Performance Board
 
   const chatPreviews: ChatPreview[] = [
     ...mockUsers.slice(1).map(user => {
@@ -150,7 +153,7 @@ export default function Chat() {
       userId: currentUser.id,
       content: `🎯 Neues Gruppenziel erstellt: ${data.title}`,
       timestamp: new Date().toISOString(),
-      groupId: parseInt(selectedChat.id.substring(6)), 
+      groupId: parseInt(selectedChat.id.substring(6)),
     };
 
     chatStore.addMessage(selectedChat.id, message);
@@ -159,13 +162,18 @@ export default function Chat() {
   const handleAddGroupProgress = (progress: number) => {
     if (!selectedChat?.isGroup || !currentGroupGoal) return;
 
-    const newProgress = Math.min(100, currentGroupGoal.progress + progress);
-    chatStore.updateGroupGoalProgress(selectedChat.id, newProgress);
+    const contribution = {
+      userId: currentUser.id,
+      progress,
+      timestamp: new Date().toISOString(),
+    };
+
+    chatStore.updateGroupGoalProgress(selectedChat.id, contribution);
 
     const message = {
       id: Date.now(),
       userId: currentUser.id,
-      content: `📈 Fortschritt aktualisiert: +${progress}% (Gesamt: ${newProgress}%)`,
+      content: `📈 Hat ${progress}% zum Gruppenziel "${currentGroupGoal.title}" beigetragen!`,
       timestamp: new Date().toISOString(),
       groupId: parseInt(selectedChat.id.substring(6)),
     };
@@ -288,15 +296,25 @@ export default function Chat() {
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">{currentGroupGoal.progress}%</span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-7"
-                        onClick={() => setIsAddProgressModalOpen(true)}
-                      >
-                        <Plus className="h-3 w-3 mr-1" />
-                        Fortschritt
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7"
+                          onClick={() => setIsPerformanceBoardOpen(true)}
+                        >
+                          👥 Performance
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7"
+                          onClick={() => setIsAddProgressModalOpen(true)}
+                        >
+                          <Plus className="h-3 w-3 mr-1" />
+                          Fortschritt
+                        </Button>
+                      </div>
                     </div>
                     <Progress value={currentGroupGoal.progress} className="h-1.5" />
                   </div>
@@ -414,7 +432,7 @@ export default function Chat() {
         )}
       </div>
 
-      {selectedChat?.isGroup && (
+      {selectedChat?.isGroup && currentGroupGoal && (
         <>
           <AddGroupGoalModal
             open={isGroupGoalModalOpen}
@@ -425,8 +443,13 @@ export default function Chat() {
             open={isAddProgressModalOpen}
             onOpenChange={setIsAddProgressModalOpen}
             onSave={handleAddGroupProgress}
-            currentProgress={currentGroupGoal?.progress ?? 0}
-            goalTitle={currentGroupGoal?.title ?? ''}
+            currentProgress={currentGroupGoal.progress}
+            goalTitle={currentGroupGoal.title}
+          />
+          <PerformanceBoard
+            open={isPerformanceBoardOpen}
+            onOpenChange={setIsPerformanceBoardOpen}
+            goal={currentGroupGoal}
           />
         </>
       )}
