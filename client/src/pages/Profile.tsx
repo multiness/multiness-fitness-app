@@ -29,8 +29,18 @@ export default function Profile() {
   const [selectedTab, setSelectedTab] = useState("all");
   const postStore = usePostStore();
 
+  // Debug logging
+  console.log('Profile page renders:', {
+    paramId: id,
+    userId,
+    currentUser,
+    user,
+    mockUsers
+  });
+
   // Get the active goal for the current profile's user
   const activeGoal = postStore.getDailyGoal(userId);
+  console.log('Active goal for user:', userId, activeGoal);
 
   useEffect(() => {
     console.log('Profile page - userId:', userId);
@@ -90,7 +100,7 @@ export default function Profile() {
 
           {/* Tagesziel Anzeige */}
           {activeGoal && (
-            <div className="w-full max-w-md mt-4">
+            <div className="w-full max-w-md mt-4" style={{ border: '1px solid red' }}>
               <DailyGoalDisplay 
                 goal={activeGoal} 
                 userId={userId}

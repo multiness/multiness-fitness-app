@@ -24,6 +24,7 @@ export default function DailyGoalDisplay({
   variant = "full",
   onProgressUpdate
 }: DailyGoalDisplayProps) {
+  console.log('DailyGoalDisplay rendering with:', { goal, userId, variant });
   const [showProgressInput, setShowProgressInput] = useState(false);
   const [progressInput, setProgressInput] = useState("");
   const progress = (goal.progress / goal.target) * 100;
@@ -117,7 +118,7 @@ export default function DailyGoalDisplay({
   // Profilseiten-Variante
   if (variant === "profile") {
     return (
-      <div className="space-y-2 py-4 border-t border-b">
+      <div className="space-y-2 py-4 border-t border-b bg-background">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Icon className="h-5 w-5 text-primary" />
