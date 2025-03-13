@@ -1,4 +1,4 @@
-import { VerifiedBadge } from "@/components/VerifiedBadge"; // Use named import
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { useState } from "react";
 import { useParams } from "wouter";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -7,7 +7,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Grid3X3, Trophy, Users2, Image } from "lucide-react";
 import FeedPost from "@/components/FeedPost";
 import { mockUsers, mockPosts, mockChallenges, mockGroups } from "../data/mockData";
-import { format } from 'date-fns';
 import { Badge } from "@/components/ui/badge";
 import type { User, Post, Challenge, Group } from "@shared/schema";
 import EditProfileDialog from "@/components/EditProfileDialog";
@@ -76,11 +75,13 @@ export default function Profile() {
           )}
 
           {/* Tagesziel Anzeige */}
-          {user.id === userId && (
+          {postStore.getDailyGoal(userId) && (
             <div className="mt-4 max-w-md w-full">
-              {postStore.getDailyGoal(userId) && (
-                <DailyGoalDisplay goal={postStore.getDailyGoal(userId)!} />
-              )}
+              <DailyGoalDisplay 
+                goal={postStore.getDailyGoal(userId)!} 
+                userId={userId}
+                variant="profile"
+              />
             </div>
           )}
 

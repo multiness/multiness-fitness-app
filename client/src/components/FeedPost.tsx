@@ -164,7 +164,11 @@ export default function FeedPost({ post }: FeedPostProps) {
         {/* Tagesziel Anzeige wenn vorhanden */}
         {post.dailyGoal && (
           <div className="mt-4">
-            <DailyGoalDisplay goal={post.dailyGoal} variant="compact" />
+            <DailyGoalDisplay 
+              goal={post.dailyGoal} 
+              userId={post.userId}
+              variant="compact" 
+            />
           </div>
         )}
 
