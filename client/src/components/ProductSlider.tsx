@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,13 +11,16 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import { Product } from "@shared/schema";
+import { useProducts } from "@/contexts/ProductContext";
 
-interface ProductSliderProps {
-  products: Product[];
-}
+export default function ProductSlider() {
+  const { products } = useProducts();
+  const activeProducts = products.filter(p => p.isActive && !p.isArchived);
 
-export default function ProductSlider({ products }: ProductSliderProps) {
+  useEffect(() => {
+    console.log('ProductSlider received updated products:', products); // Debug log
+  }, [products]);
+
   return (
     <Carousel
       opts={{
@@ -26,7 +30,7 @@ export default function ProductSlider({ products }: ProductSliderProps) {
       className="w-full"
     >
       <CarouselContent>
-        {products.map((product) => (
+        {activeProducts.map((product) => (
           <CarouselItem key={product.id} className="basis-full md:basis-1/2 lg:basis-1/3 pl-4">
             <Link href={`/products/${product.id}`}>
               <Card className="overflow-hidden cursor-pointer transition-transform hover:scale-[1.02]">
@@ -41,6 +45,7 @@ export default function ProductSlider({ products }: ProductSliderProps) {
                       {product.type === "training" && "Training"}
                       {product.type === "coaching" && "Coaching"}
                       {product.type === "supplement" && "Supplement"}
+                      {product.type === "custom" && "Individuell"}
                     </Badge>
                   </div>
                 </CardHeader>
