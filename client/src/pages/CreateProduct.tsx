@@ -54,6 +54,7 @@ export default function CreateProduct() {
 
   const handleImageSelect = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault(); // Prevent form submission
+    e.stopPropagation(); // Stop event bubbling
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
@@ -96,7 +97,7 @@ export default function CreateProduct() {
     <div className="container max-w-2xl mx-auto p-4 pb-24">
       <h1 className="text-2xl font-bold mb-6">Produkt erstellen</h1>
 
-      <form onSubmit={form.handleSubmit(onSubmit)}>
+      <form onSubmit={form.handleSubmit(onSubmit)} noValidate>
         <Card className="mb-20">
           <CardHeader>
             <CardTitle>Produktdetails</CardTitle>
@@ -108,6 +109,8 @@ export default function CreateProduct() {
               <div
                 className="border-2 border-dashed rounded-lg p-4 hover:bg-accent/5 transition-colors cursor-pointer"
                 onClick={handleImageSelect}
+                role="button"
+                tabIndex={0}
               >
                 {selectedImage ? (
                   <div className="aspect-video relative overflow-hidden rounded-md">
