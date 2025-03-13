@@ -132,7 +132,13 @@ export default function Chat() {
     input.click();
   };
 
-  const handleAddGroupGoal = (data: { title: string; description?: string; targetDate: string }) => {
+  const handleAddGroupGoal = (data: { 
+    title: string; 
+    description?: string; 
+    targetDate: string;
+    targetValue: number;
+    unit: string;
+  }) => {
     if (!selectedChat?.isGroup) return;
 
     const goal = {
@@ -141,10 +147,12 @@ export default function Chat() {
       title: data.title,
       description: data.description,
       targetDate: data.targetDate,
+      targetValue: data.targetValue,
+      unit: data.unit,
       progress: 0,
       createdAt: new Date().toISOString(),
       createdBy: currentUser.id,
-      contributions: [], // Initialize empty contributions array
+      contributions: [],
     };
 
     chatStore.setGroupGoal(selectedChat.id, goal);
@@ -152,7 +160,7 @@ export default function Chat() {
     const message = {
       id: Date.now(),
       userId: currentUser.id,
-      content: `🎯 Neues Gruppenziel erstellt: ${data.title}`,
+      content: `🎯 Neues Gruppenziel erstellt: ${data.title} (${data.targetValue} ${data.unit})`,
       timestamp: new Date().toISOString(),
       groupId: parseInt(selectedChat.id.substring(6)),
     };
@@ -160,12 +168,15 @@ export default function Chat() {
     chatStore.addMessage(selectedChat.id, message);
   };
 
-  const handleAddGroupProgress = (progress: number) => {
+  const handleAddGroupProgress = (value: number) => {
     if (!selectedChat?.isGroup || !currentGroupGoal) return;
+
+    const progress = (value / currentGroupGoal.targetValue) * 100;
 
     const contribution = {
       userId: currentUser.id,
-      progress,
+      value: value,
+      progress: progress,
       timestamp: new Date().toISOString(),
     };
 
@@ -174,7 +185,7 @@ export default function Chat() {
     const message = {
       id: Date.now(),
       userId: currentUser.id,
-      content: `📈 Hat ${progress}% zum Gruppenziel "${currentGroupGoal.title}" beigetragen!`,
+      content: `📈 Hat ${value} ${currentGroupGoal.unit} zum Gruppenziel "${currentGroupGoal.title}" beigetragen!`,
       timestamp: new Date().toISOString(),
       groupId: parseInt(selectedChat.id.substring(6)),
     };
@@ -297,7 +308,11 @@ export default function Chat() {
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">{currentGroupGoal.progress}%</span>
+                        <span className="text-sm font-medium">
+                          {(currentGroupGoal.contributions || []).reduce((sum, c) => sum + c.value, 0).toFixed(1)} {currentGroupGoal.unit}
+                          von {currentGroupGoal.targetValue} {currentGroupGoal.unit}
+                          ({currentGroupGoal.progress}%)
+                        </span>
                         {currentGroupGoal.progress >= 100 && (
                           <span className="text-yellow-500">
                             🎉 Ziel erreicht!
@@ -476,6 +491,9 @@ export default function Chat() {
             onSave={handleAddGroupProgress}
             currentProgress={currentGroupGoal.progress}
             goalTitle={currentGroupGoal.title}
+            targetValue={currentGroupGoal.targetValue}
+            unit={currentGroupGoal.unit}
+            currentValue={(currentGroupGoal.contributions || []).reduce((sum, c) => sum + c.value, 0)}
           />
           <PerformanceBoard
             open={isPerformanceBoardOpen}

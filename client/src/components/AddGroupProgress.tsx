@@ -12,9 +12,12 @@ import {
 interface AddGroupProgressProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (progress: number) => void;
+  onSave: (value: number) => void;
   currentProgress: number;
   goalTitle: string;
+  targetValue: number;
+  unit: string;
+  currentValue: number;
 }
 
 export default function AddGroupProgress({
@@ -23,14 +26,17 @@ export default function AddGroupProgress({
   onSave,
   currentProgress,
   goalTitle,
+  targetValue,
+  unit,
+  currentValue,
 }: AddGroupProgressProps) {
-  const [progress, setProgress] = useState<number>(0);
+  const [value, setValue] = useState<number>(0);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(progress);
+    onSave(value);
     onOpenChange(false);
-    setProgress(0);
+    setValue(0);
   };
 
   return (
@@ -40,19 +46,24 @@ export default function AddGroupProgress({
           <DialogTitle>Fortschritt hinzufügen</DialogTitle>
           <DialogDescription>
             Füge deinen Beitrag zum Gruppenziel "{goalTitle}" hinzu.
-            Aktueller Fortschritt: {currentProgress}%
+            Aktueller Stand: {currentValue.toFixed(1)} von {targetValue} {unit} ({currentProgress}%)
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 pt-4">
           <div className="grid gap-2">
-            <Input
-              type="number"
-              min={0}
-              max={100}
-              value={progress}
-              onChange={(e) => setProgress(Number(e.target.value))}
-              placeholder="Fortschritt in %"
-            />
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                step="0.1"
+                min={0}
+                value={value}
+                onChange={(e) => setValue(Number(e.target.value))}
+                placeholder={`Wert in ${unit}`}
+              />
+              <span className="flex items-center text-sm text-muted-foreground min-w-[3rem]">
+                {unit}
+              </span>
+            </div>
           </div>
           <div className="flex justify-end gap-3">
             <Button

@@ -12,6 +12,8 @@ const groupGoalSchema = z.object({
   title: z.string().min(2, "Titel muss mindestens 2 Zeichen lang sein"),
   description: z.string().optional(),
   targetDate: z.string(),
+  targetValue: z.number().min(0.1, "Zielwert muss größer als 0 sein"),
+  unit: z.string().min(1, "Bitte geben Sie eine Einheit an"),
 });
 
 type GroupGoalFormData = z.infer<typeof groupGoalSchema>;
@@ -29,6 +31,8 @@ export default function AddGroupGoalModal({ open, onOpenChange, onSave }: AddGro
       title: "",
       description: "",
       targetDate: new Date().toISOString().split('T')[0],
+      targetValue: 0,
+      unit: "",
     },
   });
 
@@ -53,7 +57,7 @@ export default function AddGroupGoalModal({ open, onOpenChange, onSave }: AddGro
                 <FormItem>
                   <FormLabel>Titel</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="z.B. 100km gemeinsam laufen" />
+                    <Input {...field} placeholder="z.B. Gemeinsam Laufen" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -78,6 +82,42 @@ export default function AddGroupGoalModal({ open, onOpenChange, onSave }: AddGro
                 </FormItem>
               )}
             />
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="targetValue"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Zielwert</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="number"
+                        step="0.1"
+                        onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                        placeholder="z.B. 100"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="unit"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Einheit</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="z.B. km" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <FormField
               control={form.control}

@@ -12,7 +12,8 @@ export type Message = {
 
 export type Contribution = {
   userId: number;
-  progress: number;
+  value: number; // Konkreter Wert (z.B. 5 km)
+  progress: number; // Berechneter prozentualer Anteil
   timestamp: string;
 };
 
@@ -22,6 +23,8 @@ export type GroupGoal = {
   title: string;
   description?: string;
   targetDate: string;
+  targetValue: number; // Zielwert (z.B. 100 km)
+  unit: string; // Einheit (z.B. "km", "Pakete", etc.)
   progress: number;
   createdAt: string;
   createdBy: number;
@@ -80,10 +83,13 @@ export const useChatStore = create<ChatStore>()(
           // Neuen Beitrag hinzufügen
           const newContributions = [...existingContributions, contribution];
 
-          // Gesamtfortschritt berechnen (Summe aller Beiträge)
+          // Gesamtwert berechnen (Summe aller Beiträge)
+          const totalValue = newContributions.reduce((sum, c) => sum + c.value, 0);
+
+          // Prozentualen Fortschritt berechnen
           const totalProgress = Math.min(
             100,
-            newContributions.reduce((sum, c) => sum + c.progress, 0)
+            (totalValue / currentGoal.targetValue) * 100
           );
 
           // Prüfen ob das Ziel gerade erreicht wurde
@@ -98,6 +104,9 @@ export const useChatStore = create<ChatStore>()(
 Ziel: ${currentGoal.title}
 ${currentGoal.description ? `Beschreibung: ${currentGoal.description}\n` : ''}
 Erreicht am: ${new Date().toLocaleDateString('de-DE')}
+
+Gesamtziel: ${currentGoal.targetValue} ${currentGoal.unit}
+Erreicht: ${totalValue.toFixed(1)} ${currentGoal.unit}
 
 Klicke unten, um die Beiträge aller Teilnehmer zu sehen!`,
               timestamp: new Date().toISOString(),
