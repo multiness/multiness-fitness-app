@@ -13,7 +13,7 @@ import DailyGoalDisplay from "@/components/DailyGoalDisplay";
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { useUsers } from "../contexts/UserContext";
-import { UserAvatar } from "@/components/UserAvatar"; // Fix: Use named import
+import { UserAvatar } from "@/components/UserAvatar";
 
 export default function Profile() {
   const { id } = useParams();
@@ -27,15 +27,7 @@ export default function Profile() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedTab, setSelectedTab] = useState("all");
   const postStore = usePostStore();
-
-  // Get the active goal for the current profile's user
   const activeGoal = postStore.getDailyGoal(userId);
-  console.log('Active goal for user:', userId, activeGoal);
-
-  useEffect(() => {
-    console.log('Profile page - userId:', userId);
-    console.log('Profile page - activeGoal:', activeGoal);
-  }, [userId, activeGoal]);
 
   if (!user) return <div>User not found</div>;
 
@@ -73,10 +65,138 @@ export default function Profile() {
           <h1 className="text-2xl font-bold mt-4">{user.name}</h1>
           <h2 className="text-lg text-muted-foreground">@{user.username}</h2>
 
-          {/* Rest of the component remains unchanged */}
+          {/* Bio */}
+          {user.bio && (
+            <p className="text-center mt-2 max-w-md text-muted-foreground">{user.bio}</p>
+          )}
+
+          {/* Stats */}
+          <div className="flex gap-4 mt-4">
+            <div className="text-center">
+              <span className="text-lg font-semibold">{userPosts.length}</span>
+              <p className="text-sm text-muted-foreground">Posts</p>
+            </div>
+            <div className="text-center">
+              <span className="text-lg font-semibold">{activeUserChallenges.length}</span>
+              <p className="text-sm text-muted-foreground">Aktive Challenges</p>
+            </div>
+            <div className="text-center">
+              <span className="text-lg font-semibold">{userGroups.length}</span>
+              <p className="text-sm text-muted-foreground">Gruppen</p>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-2 mt-4">
+            {currentUser?.id === userId ? (
+              <Button onClick={() => setIsEditDialogOpen(true)}>Profil bearbeiten</Button>
+            ) : (
+              <Button>Folgen</Button>
+            )}
+          </div>
         </div>
       </div>
-      {/* Rest of the component remains unchanged */}
+
+      {/* Active Goal Display */}
+      {activeGoal && (
+        <div className="mb-6">
+          <DailyGoalDisplay
+            goal={activeGoal}
+            userId={userId}
+            variant="profile"
+          />
+        </div>
+      )}
+
+      {/* Content Tabs */}
+      <Tabs value={selectedTab} onValueChange={setSelectedTab} className="mt-6">
+        <TabsList className="grid w-full grid-cols-4 mb-4">
+          <TabsTrigger value="all" className="flex items-center gap-2">
+            <Grid3X3 className="h-4 w-4" />
+            Alle
+          </TabsTrigger>
+          <TabsTrigger value="challenges" className="flex items-center gap-2">
+            <Trophy className="h-4 w-4" />
+            Challenges
+          </TabsTrigger>
+          <TabsTrigger value="groups" className="flex items-center gap-2">
+            <Users2 className="h-4 w-4" />
+            Gruppen
+          </TabsTrigger>
+          <TabsTrigger value="media" className="flex items-center gap-2">
+            <Image className="h-4 w-4" />
+            Medien
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Tab Content */}
+        <TabsContent value="all" className="space-y-4">
+          {userPosts.map(post => (
+            <FeedPost key={post.id} post={post} />
+          ))}
+        </TabsContent>
+
+        <TabsContent value="challenges" className="space-y-4">
+          {userChallenges.length > 0 ? (
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+              {userChallenges.map(challenge => (
+                <div key={challenge.id} className="bg-card rounded-lg p-4">
+                  <h3 className="font-semibold">{challenge.title}</h3>
+                  <p className="text-sm text-muted-foreground">{challenge.description}</p>
+                  <div className="flex gap-2 mt-2">
+                    {challenge.tags?.map(tag => (
+                      <Badge key={tag} variant="secondary">{tag}</Badge>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-center text-muted-foreground">Keine Challenges gefunden</p>
+          )}
+        </TabsContent>
+
+        <TabsContent value="groups" className="space-y-4">
+          {userGroups.length > 0 ? (
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+              {userGroups.map(group => (
+                <div key={group.id} className="bg-card rounded-lg p-4">
+                  <h3 className="font-semibold">{group.name}</h3>
+                  <p className="text-sm text-muted-foreground">{group.description}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-center text-muted-foreground">Keine Gruppen gefunden</p>
+          )}
+        </TabsContent>
+
+        <TabsContent value="media" className="space-y-4">
+          {userPosts.filter(post => post.image).length > 0 ? (
+            <div className="grid gap-4 grid-cols-3">
+              {userPosts
+                .filter(post => post.image)
+                .map(post => (
+                  <img
+                    key={post.id}
+                    src={post.image || ''}
+                    alt=""
+                    className="w-full aspect-square object-cover rounded-lg"
+                  />
+                ))}
+            </div>
+          ) : (
+            <p className="text-center text-muted-foreground">Keine Medien gefunden</p>
+          )}
+        </TabsContent>
+      </Tabs>
+
+      <EditProfileDialog
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        user={user}
+        onUpdate={handleProfileUpdate}
+      />
     </div>
   );
 }
