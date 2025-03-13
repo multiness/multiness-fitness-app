@@ -114,7 +114,7 @@ export default function Chat() {
                             : ''
                       }`}>
                         <AvatarImage src={chat.avatar || undefined} />
-                        <AvatarFallback className={chat.isGroup ? 'bg-green-50' : 'bg-blue-50'}>
+                        <AvatarFallback>
                           {chat.name[0]}
                         </AvatarFallback>
                       </Avatar>
@@ -170,11 +170,11 @@ export default function Chat() {
               </Button>
               <Avatar className={`h-10 w-10 ${
                 selectedChat.isGroup 
-                  ? 'bg-green-50' 
-                  : 'bg-blue-50'
+                  ? 'ring-4 ring-green-500/50' 
+                  : 'ring-4 ring-blue-500/50'
               }`}>
                 <AvatarImage src={selectedChat.avatar || undefined} />
-                <AvatarFallback className={selectedChat.isGroup ? 'bg-green-50' : 'bg-blue-50'}>
+                <AvatarFallback>
                   {selectedChat.name[0]}
                 </AvatarFallback>
               </Avatar>
