@@ -29,14 +29,18 @@ export default function CreatePost() {
 
   // Tagesziel-States
   const [includeDailyGoal, setIncludeDailyGoal] = useState(false);
-  const [goalType, setGoalType] = useState<'water' | 'steps' | 'distance'>('water');
+  const [goalType, setGoalType] = useState<'water' | 'steps' | 'distance' | 'custom'>('water');
   const [goalTarget, setGoalTarget] = useState("");
 
   const goalUnits = {
     water: 'Liter',
     steps: 'Schritte',
-    distance: 'Kilometer'
+    distance: 'Kilometer',
+    custom: ''
   };
+
+  const [customGoalName, setCustomGoalName] = useState("");
+  const [customGoalUnit, setCustomGoalUnit] = useState("");
 
   const handleMediaUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -76,7 +80,7 @@ export default function CreatePost() {
       return;
     }
 
-    if (includeDailyGoal && (!goalType || !goalTarget)) {
+    if (includeDailyGoal && (!goalType || !goalTarget || (goalType === 'custom' && (!customGoalName || !customGoalUnit)))) {
       toast({
         title: "Unvollständiges Tagesziel",
         description: "Bitte gib einen Typ und Zielwert an.",
@@ -91,9 +95,10 @@ export default function CreatePost() {
       dailyGoal = {
         type: goalType,
         target: Number(goalTarget),
-        unit: goalUnits[goalType],
+        unit: goalType === 'custom' ? customGoalUnit : goalUnits[goalType],
         progress: 0,
-        completed: false
+        completed: false,
+        customName: goalType === 'custom' ? customGoalName : undefined
       };
     }
 
@@ -151,7 +156,7 @@ export default function CreatePost() {
             <div className="space-y-4 p-4 bg-muted rounded-lg">
               <div className="space-y-2">
                 <Label>Art des Ziels</Label>
-                <Select value={goalType} onValueChange={(value: 'water' | 'steps' | 'distance') => setGoalType(value)}>
+                <Select value={goalType} onValueChange={(value: 'water' | 'steps' | 'distance' | 'custom') => setGoalType(value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Wähle ein Ziel" />
                   </SelectTrigger>
@@ -159,19 +164,41 @@ export default function CreatePost() {
                     <SelectItem value="water">Wasser trinken</SelectItem>
                     <SelectItem value="steps">Schritte gehen</SelectItem>
                     <SelectItem value="distance">Strecke laufen</SelectItem>
+                    <SelectItem value="custom">Eigenes Ziel</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label>Zielwert ({goalUnits[goalType]})</Label>
+                <Label>Zielwert ({goalType === 'custom' ? customGoalUnit : goalUnits[goalType]})</Label>
                 <Input
                   type="number"
-                  placeholder={`Zielwert in ${goalUnits[goalType]}`}
+                  placeholder={`Zielwert in ${goalType === 'custom' ? customGoalUnit : goalUnits[goalType]}`}
                   value={goalTarget}
                   onChange={(e) => setGoalTarget(e.target.value)}
                 />
               </div>
+
+              {goalType === 'custom' && (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Name des Ziels</Label>
+                    <Input
+                      placeholder="z.B. Liegestütze"
+                      value={customGoalName}
+                      onChange={(e) => setCustomGoalName(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Einheit</Label>
+                    <Input
+                      placeholder="z.B. Wiederholungen"
+                      value={customGoalUnit}
+                      onChange={(e) => setCustomGoalUnit(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

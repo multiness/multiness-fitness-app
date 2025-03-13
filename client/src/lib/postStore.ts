@@ -3,11 +3,13 @@ import { persist } from 'zustand/middleware';
 import { Post } from '@shared/schema';
 
 export type DailyGoal = {
-  type: 'water' | 'steps' | 'distance';
+  type: 'water' | 'steps' | 'distance' | 'custom';
   target: number;
   unit: string;
   progress: number;
   completed: boolean;
+  customName?: string; // Für individuelle Ziele
+  participants?: number[]; // Array von User IDs die mitmachen
 };
 
 export type Comment = {
@@ -22,6 +24,7 @@ type PostStore = {
   likes: Record<number, number[]>; // postId -> array of userIds who liked
   comments: Record<number, Comment[]>; // postId -> array of comments
   dailyGoals: Record<number, DailyGoal>; // userId -> active daily goal
+  goalParticipants: Record<number, number[]>; // userId -> array of participant userIds
   addLike: (postId: number, userId: number) => void;
   removeLike: (postId: number, userId: number) => void;
   hasLiked: (postId: number, userId: number) => boolean;
@@ -31,6 +34,9 @@ type PostStore = {
   setDailyGoal: (userId: number, goal: DailyGoal) => void;
   getDailyGoal: (userId: number) => DailyGoal | undefined;
   updateDailyGoalProgress: (userId: number, progress: number) => void;
+  joinDailyGoal: (targetUserId: number, participantId: number) => void;
+  leaveDailyGoal: (targetUserId: number, participantId: number) => void;
+  getGoalParticipants: (userId: number) => number[];
 };
 
 export const usePostStore = create<PostStore>()(
@@ -39,6 +45,7 @@ export const usePostStore = create<PostStore>()(
       likes: {},
       comments: {},
       dailyGoals: {},
+      goalParticipants: {},
       addLike: (postId, userId) =>
         set((state) => ({
           likes: {
@@ -98,7 +105,23 @@ export const usePostStore = create<PostStore>()(
               }
             }
           };
-        })
+        }),
+      joinDailyGoal: (targetUserId, participantId) =>
+        set((state) => ({
+          goalParticipants: {
+            ...state.goalParticipants,
+            [targetUserId]: [...(state.goalParticipants[targetUserId] || []), participantId]
+          }
+        })),
+      leaveDailyGoal: (targetUserId, participantId) =>
+        set((state) => ({
+          goalParticipants: {
+            ...state.goalParticipants,
+            [targetUserId]: (state.goalParticipants[targetUserId] || []).filter(id => id !== participantId)
+          }
+        })),
+      getGoalParticipants: (userId) =>
+        get().goalParticipants[userId] || []
     }),
     {
       name: 'post-interaction-storage'
