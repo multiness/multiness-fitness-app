@@ -267,10 +267,15 @@ export default function CreateProduct() {
 
             <div className="space-y-2">
               <Label>Gültig bis (optional)</Label>
-              <Input 
-                type="date"
-                {...form.register("validUntil")}
-              />
+              <div className="relative">
+                <Input 
+                  type="text" 
+                  onFocus={(e) => e.target.type = 'date'}
+                  onBlur={(e) => e.target.type = 'text'}
+                  placeholder="Datum auswählen"
+                  {...form.register("validUntil", { required: false })}
+                />
+              </div>
             </div>
 
             <div className="flex items-center justify-between border-t pt-4">
