@@ -230,6 +230,7 @@ export const productMetadataSchema = z.discriminatedUnion("type", [
 export const insertProductSchema = createInsertSchema(products)
   .extend({
     metadata: productMetadataSchema,
+    price: z.number(), 
     stockEnabled: z.boolean().optional(),
     stock: z.number().optional(),
     onSale: z.boolean().optional(),

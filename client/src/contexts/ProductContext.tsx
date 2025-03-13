@@ -22,12 +22,14 @@ interface Product {
 interface ProductContextType {
   products: Product[];
   updateProduct: (updatedProduct: Product) => void;
+  addProduct: (newProduct: Omit<Product, "id">) => void;
   decreaseStock: (productId: number) => void;
 }
 
 const ProductContext = createContext<ProductContextType>({
   products: mockProducts,
   updateProduct: () => {},
+  addProduct: () => {},
   decreaseStock: () => {},
 });
 
@@ -38,6 +40,16 @@ export function ProductProvider({ children }: { children: ReactNode }) {
     setProducts(currentProducts => currentProducts.map(product => 
       product.id === updatedProduct.id ? updatedProduct : product
     ));
+  };
+
+  const addProduct = (newProduct: Omit<Product, "id">) => {
+    setProducts(currentProducts => [
+      ...currentProducts,
+      {
+        ...newProduct,
+        id: Math.max(...currentProducts.map(p => p.id)) + 1
+      }
+    ]);
   };
 
   const decreaseStock = (productId: number) => {
@@ -56,7 +68,7 @@ export function ProductProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <ProductContext.Provider value={{ products, updateProduct, decreaseStock }}>
+    <ProductContext.Provider value={{ products, updateProduct, addProduct, decreaseStock }}>
       {children}
     </ProductContext.Provider>
   );

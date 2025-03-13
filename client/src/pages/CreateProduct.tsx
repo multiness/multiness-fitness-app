@@ -18,10 +18,12 @@ import { useForm } from "react-hook-form";
 import { insertProductSchema, type InsertProduct } from "@shared/schema";
 import { Package, Image as ImageIcon } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { useProducts } from "@/contexts/ProductContext";
 
 export default function CreateProduct() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const { addProduct } = useProducts();
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [productType, setProductType] = useState<"training" | "coaching" | "supplement" | "custom">("training");
   const [stockEnabled, setStockEnabled] = useState(false);
@@ -65,7 +67,16 @@ export default function CreateProduct() {
 
   const onSubmit = async (data: InsertProduct) => {
     try {
-      // TODO: Implement file upload and product creation
+      // Create new product object
+      const newProduct = {
+        ...data,
+        image: selectedImage ? URL.createObjectURL(selectedImage) : "",
+        createdAt: new Date().toISOString(),
+      };
+
+      // Add the new product to context
+      addProduct(newProduct);
+
       toast({
         title: "Produkt erstellt!",
         description: "Das Produkt wurde erfolgreich erstellt.",
@@ -93,7 +104,7 @@ export default function CreateProduct() {
             {/* Produktbild */}
             <div className="space-y-2">
               <Label>Produktbild</Label>
-              <div 
+              <div
                 className="border-2 border-dashed rounded-lg p-4 hover:bg-accent/5 transition-colors cursor-pointer"
                 onClick={handleImageSelect}
               >
