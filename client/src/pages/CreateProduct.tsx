@@ -52,7 +52,8 @@ export default function CreateProduct() {
     },
   });
 
-  const handleImageSelect = () => {
+  const handleImageSelect = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault(); // Prevent form submission
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';

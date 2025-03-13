@@ -44,6 +44,7 @@ export default function Navigation({ onCreateClick }: NavigationProps) {
             <Button
               variant="outline"
               size="icon"
+              type="button"
               className="absolute left-1/2 -translate-x-1/2 -translate-y-1/3 w-14 h-14 rounded-full bg-background border-2 hover:bg-muted"
               onClick={onCreateClick}
             >
