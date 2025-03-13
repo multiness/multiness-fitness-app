@@ -29,6 +29,11 @@ export default function Profile() {
   const postStore = usePostStore();
   const activeGoal = postStore.getDailyGoal(userId);
 
+  useEffect(() => {
+    // Scroll to top when profile loads or changes
+    window.scrollTo(0, 0);
+  }, [userId]);
+
   if (!user) return <div>User not found</div>;
 
   const handleProfileUpdate = (updatedData: { name: string; bio?: string; avatar?: string }) => {
@@ -195,7 +200,7 @@ export default function Profile() {
         open={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
         user={user}
-        onUpdate={handleProfileUpdate}
+        onSave={handleProfileUpdate}
       />
     </div>
   );

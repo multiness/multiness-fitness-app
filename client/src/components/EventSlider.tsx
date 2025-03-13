@@ -12,11 +12,11 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, MapPin } from "lucide-react";
 import { mockEvents, mockUsers } from "../data/mockData";
 import { Link } from "wouter";
+import { UserAvatar } from "./UserAvatar";
 
 export default function EventSlider() {
   return (
@@ -46,11 +46,6 @@ export default function EventSlider() {
                       >
                         {event.type === "event" ? "Event" : "Kurs"}
                       </Badge>
-                      {event.isHighlight && (
-                        <Badge variant="default" className="bg-primary">
-                          Highlight
-                        </Badge>
-                      )}
                     </div>
                   </CardHeader>
                   <CardContent className="p-4">
@@ -68,10 +63,12 @@ export default function EventSlider() {
 
                     {trainer && (
                       <div className="flex items-center gap-2 mt-4 pt-4 border-t">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={trainer.avatar} />
-                          <AvatarFallback>{trainer.username[0]}</AvatarFallback>
-                        </Avatar>
+                        <UserAvatar
+                          userId={trainer.id}
+                          avatar={trainer.avatar}
+                          username={trainer.username}
+                          size="sm"
+                        />
                         <div>
                           <div className="text-sm font-medium">{trainer.name}</div>
                           <div className="text-xs text-muted-foreground">{trainer.username}</div>

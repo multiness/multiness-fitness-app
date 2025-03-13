@@ -96,10 +96,10 @@ export default function ChallengeCard({ challenge, variant = "full" }: Challenge
                       avatar={user.avatar}
                       username={user.username}
                       size="sm"
-                      className="border-2 border-background"
+                      className="-ml-2 first:ml-0"
                     />
                   ))}
-                  <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-xs border-2 border-background">
+                  <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-xs">
                     +{participants.length - 3}
                   </div>
                 </div>
