@@ -3,7 +3,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Search, Send, Image as ImageIcon, ArrowLeft, Users } from "lucide-react";
 import { mockUsers, mockGroups } from "../data/mockData";
 import { format } from "date-fns";
@@ -106,21 +105,23 @@ export default function Chat() {
                   onClick={() => setSelectedChat(chat)}
                 >
                   <div className="flex items-center gap-3">
-                    <UserAvatar
-                      userId={parseInt(chat.id)}
-                      avatar={chat.avatar}
-                      username={chat.name}
-                      size="md"
-                      isGroup={chat.isGroup}
-                    />
-                    {chat.isGroup && (
-                      <span className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-1">
-                        <Users className="h-3 w-3 text-white" />
-                      </span>
-                    )}
-                    {chat.isOnline && !chat.isGroup && (
-                      <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-blue-500 ring-2 ring-background" />
-                    )}
+                    <div className="relative">
+                      <UserAvatar
+                        userId={parseInt(chat.id)}
+                        avatar={chat.avatar}
+                        username={chat.name}
+                        size="md"
+                        isGroup={chat.isGroup}
+                      />
+                      {chat.isGroup && (
+                        <span className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-1">
+                          <Users className="h-3 w-3 text-white" />
+                        </span>
+                      )}
+                      {!chat.isGroup && chat.isOnline && (
+                        <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-blue-500 ring-2 ring-background" />
+                      )}
+                    </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <p className="font-medium truncate flex items-center gap-2">
@@ -163,13 +164,15 @@ export default function Chat() {
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
-              <UserAvatar
-                userId={parseInt(selectedChat.id)}
-                avatar={selectedChat.avatar}
-                username={selectedChat.name}
-                size="sm"
-                isGroup={selectedChat.isGroup}
-              />
+              <div className="relative">
+                <UserAvatar
+                  userId={parseInt(selectedChat.id)}
+                  avatar={selectedChat.avatar}
+                  username={selectedChat.name}
+                  size="sm"
+                  isGroup={selectedChat.isGroup}
+                />
+              </div>
               <div>
                 <h2 className="font-semibold">{selectedChat.name}</h2>
                 <p className="text-sm text-muted-foreground">
@@ -190,10 +193,12 @@ export default function Chat() {
                     >
                       <div className={`flex gap-2 max-w-[70%] ${isCurrentUser ? 'flex-row-reverse' : ''}`}>
                         {!isCurrentUser && (
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src={sender?.avatar || undefined} />
-                            <AvatarFallback>{sender?.username[0]}</AvatarFallback>
-                          </Avatar>
+                          <UserAvatar
+                            userId={message.userId}
+                            avatar={sender?.avatar}
+                            username={sender?.username || ''}
+                            size="sm"
+                          />
                         )}
                         <div>
                           <div className={`rounded-lg px-4 py-2 ${
