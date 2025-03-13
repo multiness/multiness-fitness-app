@@ -34,8 +34,9 @@ export default function GroupCarousel({ groups }: GroupCarouselProps) {
         title: "Gruppe beigetreten",
         description: "Du bist der Gruppe erfolgreich beigetreten.",
       });
-      // Redirect to chat after joining
-      setLocation(`/chat`);
+      // Redirect to specific group chat after joining
+      const chatId = getChatId(group.id);
+      setLocation(`/chat/${chatId}`);
     }
   };
 
@@ -57,12 +58,13 @@ export default function GroupCarousel({ groups }: GroupCarouselProps) {
             {chunk.map(group => {
               const creator = mockUsers.find(u => u.id === group.creatorId);
               const isJoined = isGroupMember(group.id);
+              const chatId = getChatId(group.id);
 
               return (
                 <Card 
                   key={group.id}
                   className="flex-1 overflow-hidden cursor-pointer bg-card hover:bg-accent/5 transition-colors min-w-[150px]"
-                  onClick={() => setLocation(`/chat`)}
+                  onClick={() => setLocation(`/chat/${chatId}`)}
                 >
                   {/* Gruppenbild */}
                   <div className="aspect-[3/2] relative overflow-hidden bg-muted">

@@ -36,13 +36,14 @@ export default function GroupPreview({ group }: GroupPreviewProps) {
         title: "Gruppe beigetreten",
         description: "Du bist der Gruppe erfolgreich beigetreten.",
       });
-      // Redirect to chat after joining
-      setLocation(`/chat`);
+      // Redirect to specific group chat after joining
+      const chatId = getChatId(group.id);
+      setLocation(`/chat/${chatId}`);
     }
   };
 
   // Generate chat URL for groups
-  const chatUrl = `/chat`;
+  const chatUrl = `/chat/${getChatId(group.id)}`;
 
   return (
     <Link href={chatUrl}>

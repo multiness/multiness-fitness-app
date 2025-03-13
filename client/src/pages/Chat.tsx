@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { useChatStore, getChatId } from "../lib/chatService";
 import { usePostStore } from "../lib/postStore";
 import { UserAvatar } from "@/components/UserAvatar";
 import { Progress } from "@/components/ui/progress";
+import { useLocation, useParams } from "wouter";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +20,7 @@ import {
 import AddGroupGoalModal from "@/components/AddGroupGoalModal";
 
 export default function Chat() {
+  const { id } = useParams();
   const [selectedChat, setSelectedChat] = useState<ChatPreview | null>(null);
   const [messageInput, setMessageInput] = useState("");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
@@ -26,6 +28,15 @@ export default function Chat() {
   const currentUser = mockUsers[0];
   const chatStore = useChatStore();
   const postStore = usePostStore();
+
+  useEffect(() => {
+    if (id) {
+      const chat = chatPreviews.find(c => c.id === id);
+      if (chat) {
+        setSelectedChat(chat);
+      }
+    }
+  }, [id, chatPreviews]);
 
   const chatPreviews: ChatPreview[] = [
     ...mockUsers.slice(1).map(user => {
@@ -78,8 +89,8 @@ export default function Chat() {
   const handleFileSelect = (type: 'image' | 'file' | 'video') => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = type === 'image' ? 'image/*' : 
-                   type === 'video' ? 'video/*' : 
+    input.accept = type === 'image' ? 'image/*' :
+                   type === 'video' ? 'video/*' :
                    '*/*';
     input.onchange = (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
@@ -125,7 +136,6 @@ export default function Chat() {
 
   return (
     <div className="h-[calc(100vh-4rem)] flex">
-      {/* Linke Spalte - Chat-Liste */}
       <div className={`w-full md:w-[320px] md:border-r ${selectedChat ? 'hidden md:block' : 'block'}`}>
         <div className="flex-1 flex flex-col bg-background">
           <div className="p-4 border-b">
@@ -189,7 +199,6 @@ export default function Chat() {
         </div>
       </div>
 
-      {/* Rechte Spalte - Chat */}
       <div className={`flex-1 ${!selectedChat ? 'hidden md:block' : 'block'}`}>
         {selectedChat ? (
           <div className="flex-1 flex flex-col bg-background h-full">
@@ -221,7 +230,6 @@ export default function Chat() {
                 </div>
               </div>
 
-              {/* Gruppenziel Anzeige */}
               {selectedChat.isGroup && currentGroupGoal && (
                 <div className="bg-muted/30 rounded-lg p-3 space-y-2">
                   <div className="flex items-center justify-between">
