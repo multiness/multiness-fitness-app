@@ -19,25 +19,37 @@ import {
 } from "@/components/ui/dropdown-menu";
 import AddGroupGoalModal from "@/components/AddGroupGoalModal";
 
+interface Message {
+  id: number;
+  userId: number;
+  content: string;
+  timestamp: string;
+  imageUrl?: string;
+  groupId?: number;
+}
+
+interface ChatPreview {
+  id: string;
+  name: string;
+  avatar?: string;
+  isGroup: boolean;
+  isOnline?: boolean;
+  lastMessage?: Message;
+  unreadCount?: number;
+}
+
 export default function Chat() {
   const { id } = useParams();
-  const [selectedChat, setSelectedChat] = useState<ChatPreview | null>(null);
+  const chatStore = useChatStore();
+  const postStore = usePostStore();
+  const currentUser = mockUsers[0];
+
+  // Initialize state
   const [messageInput, setMessageInput] = useState("");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [isGroupGoalModalOpen, setIsGroupGoalModalOpen] = useState(false);
-  const currentUser = mockUsers[0];
-  const chatStore = useChatStore();
-  const postStore = usePostStore();
 
-  useEffect(() => {
-    if (id) {
-      const chat = chatPreviews.find(c => c.id === id);
-      if (chat) {
-        setSelectedChat(chat);
-      }
-    }
-  }, [id, chatPreviews]);
-
+  // Create chat previews
   const chatPreviews: ChatPreview[] = [
     ...mockUsers.slice(1).map(user => {
       const chatId = user.id.toString();
@@ -68,6 +80,21 @@ export default function Chat() {
     }),
   ];
 
+  // Initialize selected chat state
+  const [selectedChat, setSelectedChat] = useState<ChatPreview | null>(
+    id ? chatPreviews.find(c => c.id === id) || null : null
+  );
+
+  // Update selected chat when URL changes
+  useEffect(() => {
+    if (id && (!selectedChat || selectedChat.id !== id)) {
+      const chat = chatPreviews.find(c => c.id === id);
+      if (chat) {
+        setSelectedChat(chat);
+      }
+    }
+  }, [id]);
+
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if ((!messageInput.trim() && !selectedImage) || !selectedChat) return;
@@ -78,7 +105,7 @@ export default function Chat() {
       content: messageInput,
       timestamp: new Date().toISOString(),
       imageUrl: selectedImage ? URL.createObjectURL(selectedImage) : undefined,
-      groupId: selectedChat.isGroup ? parseInt(selectedChat.id.substring(1)) : undefined,
+      groupId: selectedChat.isGroup ? parseInt(selectedChat.id.substring(6)) : undefined,
     };
 
     chatStore.addMessage(selectedChat.id, message);
@@ -136,6 +163,7 @@ export default function Chat() {
 
   return (
     <div className="h-[calc(100vh-4rem)] flex">
+      {/* Chat List */}
       <div className={`w-full md:w-[320px] md:border-r ${selectedChat ? 'hidden md:block' : 'block'}`}>
         <div className="flex-1 flex flex-col bg-background">
           <div className="p-4 border-b">
@@ -199,6 +227,7 @@ export default function Chat() {
         </div>
       </div>
 
+      {/* Chat Area */}
       <div className={`flex-1 ${!selectedChat ? 'hidden md:block' : 'block'}`}>
         {selectedChat ? (
           <div className="flex-1 flex flex-col bg-background h-full">
@@ -368,23 +397,4 @@ export default function Chat() {
       )}
     </div>
   );
-}
-
-interface Message {
-  id: number;
-  userId: number;
-  content: string;
-  timestamp: string;
-  imageUrl?: string;
-  groupId?: number;
-}
-
-interface ChatPreview {
-  id: string;
-  name: string;
-  avatar?: string;
-  isGroup: boolean;
-  isOnline?: boolean;
-  lastMessage?: Message;
-  unreadCount?: number;
 }
