@@ -12,6 +12,8 @@ import type { User, Post, Challenge, Group } from "@shared/schema";
 import EditProfileDialog from "@/components/EditProfileDialog";
 import { usePostStore } from "../lib/postStore";
 import DailyGoalDisplay from "@/components/DailyGoalDisplay";
+import { format } from 'date-fns';
+import { de } from 'date-fns/locale';
 
 export default function Profile() {
   const { id } = useParams();
@@ -159,7 +161,7 @@ export default function Profile() {
                     <div className="absolute bottom-0 left-0 right-0 p-4">
                       <h4 className="text-white font-semibold">{challenge.title}</h4>
                       <p className="text-white/80 text-sm">
-                        Endet am {format(new Date(challenge.endDate), "dd.MM.yyyy")}
+                        Endet am {format(new Date(challenge.endDate), "dd.MM.yyyy", { locale: de })}
                       </p>
                     </div>
                   </div>
