@@ -18,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import AddGroupGoalModal from "@/components/AddGroupGoalModal";
+import AddGroupProgress from "@/components/AddGroupProgress";
 
 interface Message {
   id: number;
@@ -44,12 +45,11 @@ export default function Chat() {
   const postStore = usePostStore();
   const currentUser = mockUsers[0];
 
-  // Initialize state
   const [messageInput, setMessageInput] = useState("");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [isGroupGoalModalOpen, setIsGroupGoalModalOpen] = useState(false);
+  const [isAddProgressModalOpen, setIsAddProgressModalOpen] = useState(false);
 
-  // Create chat previews
   const chatPreviews: ChatPreview[] = [
     ...mockUsers.slice(1).map(user => {
       const chatId = user.id.toString();
@@ -80,12 +80,10 @@ export default function Chat() {
     }),
   ];
 
-  // Initialize selected chat state
   const [selectedChat, setSelectedChat] = useState<ChatPreview | null>(
     id ? chatPreviews.find(c => c.id === id) || null : null
   );
 
-  // Update selected chat when URL changes
   useEffect(() => {
     if (id && (!selectedChat || selectedChat.id !== id)) {
       const chat = chatPreviews.find(c => c.id === id);
@@ -147,13 +145,29 @@ export default function Chat() {
 
     chatStore.setGroupGoal(selectedChat.id, goal);
 
-    // Nachricht über das neue Gruppenziel senden
     const message = {
       id: Date.now(),
       userId: currentUser.id,
       content: `🎯 Neues Gruppenziel erstellt: ${data.title}`,
       timestamp: new Date().toISOString(),
-      groupId: parseInt(selectedChat.id.substring(6)), // Entferne "group-" Prefix
+      groupId: parseInt(selectedChat.id.substring(6)), 
+    };
+
+    chatStore.addMessage(selectedChat.id, message);
+  };
+
+  const handleAddGroupProgress = (progress: number) => {
+    if (!selectedChat?.isGroup || !currentGroupGoal) return;
+
+    const newProgress = Math.min(100, currentGroupGoal.progress + progress);
+    chatStore.updateGroupGoalProgress(selectedChat.id, newProgress);
+
+    const message = {
+      id: Date.now(),
+      userId: currentUser.id,
+      content: `📈 Fortschritt aktualisiert: +${progress}% (Gesamt: ${newProgress}%)`,
+      timestamp: new Date().toISOString(),
+      groupId: parseInt(selectedChat.id.substring(6)),
     };
 
     chatStore.addMessage(selectedChat.id, message);
@@ -163,7 +177,6 @@ export default function Chat() {
 
   return (
     <div className="h-[calc(100vh-4rem)] flex">
-      {/* Chat List */}
       <div className={`w-full md:w-[320px] md:border-r ${selectedChat ? 'hidden md:block' : 'block'}`}>
         <div className="flex-1 flex flex-col bg-background">
           <div className="p-4 border-b">
@@ -227,7 +240,6 @@ export default function Chat() {
         </div>
       </div>
 
-      {/* Chat Area */}
       <div className={`flex-1 ${!selectedChat ? 'hidden md:block' : 'block'}`}>
         {selectedChat ? (
           <div className="flex-1 flex flex-col bg-background h-full">
@@ -273,7 +285,21 @@ export default function Chat() {
                   {currentGroupGoal.description && (
                     <p className="text-xs text-muted-foreground">{currentGroupGoal.description}</p>
                   )}
-                  <Progress value={currentGroupGoal.progress} className="h-1.5" />
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">{currentGroupGoal.progress}%</span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7"
+                        onClick={() => setIsAddProgressModalOpen(true)}
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        Fortschritt
+                      </Button>
+                    </div>
+                    <Progress value={currentGroupGoal.progress} className="h-1.5" />
+                  </div>
                 </div>
               )}
             </div>
@@ -389,11 +415,20 @@ export default function Chat() {
       </div>
 
       {selectedChat?.isGroup && (
-        <AddGroupGoalModal
-          open={isGroupGoalModalOpen}
-          onOpenChange={setIsGroupGoalModalOpen}
-          onSave={handleAddGroupGoal}
-        />
+        <>
+          <AddGroupGoalModal
+            open={isGroupGoalModalOpen}
+            onOpenChange={setIsGroupGoalModalOpen}
+            onSave={handleAddGroupGoal}
+          />
+          <AddGroupProgress
+            open={isAddProgressModalOpen}
+            onOpenChange={setIsAddProgressModalOpen}
+            onSave={handleAddGroupProgress}
+            currentProgress={currentGroupGoal?.progress ?? 0}
+            goalTitle={currentGroupGoal?.title ?? ''}
+          />
+        </>
       )}
     </div>
   );

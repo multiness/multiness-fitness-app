@@ -7,7 +7,6 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Calendar } from "lucide-react";
-import type { GroupGoal } from "../lib/chatService";
 
 const groupGoalSchema = z.object({
   title: z.string().min(2, "Titel muss mindestens 2 Zeichen lang sein"),
@@ -88,12 +87,12 @@ export default function AddGroupGoalModal({ open, onOpenChange, onSave }: AddGro
                   <FormLabel>Zieldatum</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
                         {...field}
                         type="date"
-                        className="pl-10"
+                        min={new Date().toISOString().split('T')[0]}
                       />
+                      <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                     </div>
                   </FormControl>
                   <FormMessage />
