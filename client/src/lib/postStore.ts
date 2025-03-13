@@ -8,9 +8,8 @@ export type DailyGoal = {
   unit: string;
   progress: number;
   completed: boolean;
-  customName?: string; // Für individuelle Ziele
-  participants?: number[]; // Array von User IDs die mitmachen
-  createdAt: Date; // Neu: Zeitpunkt der Erstellung
+  customName?: string;
+  createdAt: Date;
 };
 
 export type Comment = {
@@ -22,23 +21,24 @@ export type Comment = {
 };
 
 type PostStore = {
-  likes: Record<number, number[]>; // postId -> array of userIds who liked
-  comments: Record<number, Comment[]>; // postId -> array of comments
-  dailyGoals: Record<number, DailyGoal>; // userId -> active daily goal
-  goalParticipants: Record<number, number[]>; // userId -> array of participant userIds
+  likes: Record<number, number[]>;
+  comments: Record<number, Comment[]>;
+  dailyGoals: Record<number, DailyGoal>;
+  goalParticipants: Record<number, number[]>;
   addLike: (postId: number, userId: number) => void;
   removeLike: (postId: number, userId: number) => void;
   hasLiked: (postId: number, userId: number) => boolean;
   getLikes: (postId: number) => number[];
   addComment: (postId: number, userId: number, content: string) => void;
   getComments: (postId: number) => Comment[];
-  setDailyGoal: (userId: number, goal: DailyGoal) => void;
+  setDailyGoal: (userId: number, goal: DailyGoal) => { hasExistingGoal: boolean };
   getDailyGoal: (userId: number) => DailyGoal | undefined;
   updateDailyGoalProgress: (userId: number, progress: number) => void;
   joinDailyGoal: (targetUserId: number, participantId: number) => void;
   leaveDailyGoal: (targetUserId: number, participantId: number) => void;
   getGoalParticipants: (userId: number) => number[];
-  checkExpiredGoals: () => void; // Neue Funktion zum Prüfen abgelaufener Ziele
+  checkExpiredGoals: () => void;
+  hasActiveGoal: (userId: number) => boolean;
 };
 
 export const usePostStore = create<PostStore>()(
@@ -83,24 +83,28 @@ export const usePostStore = create<PostStore>()(
       },
       getComments: (postId) =>
         get().comments[postId] || [],
-      setDailyGoal: (userId, goal) =>
+      setDailyGoal: (userId, goal) => {
+        const existingGoal = get().getDailyGoal(userId);
+        const hasExistingGoal = Boolean(existingGoal);
+
         set((state) => ({
           dailyGoals: {
             ...state.dailyGoals,
             [userId]: goal
           }
-        })),
+        }));
+
+        return { hasExistingGoal };
+      },
       getDailyGoal: (userId) => {
         const goal = get().dailyGoals[userId];
         if (!goal) return undefined;
 
-        // Prüfe, ob das Ziel abgelaufen ist (älter als 24h)
         const now = new Date();
         const goalAge = now.getTime() - new Date(goal.createdAt).getTime();
-        const isExpired = goalAge > 24 * 60 * 60 * 1000; // 24 Stunden in Millisekunden
+        const isExpired = goalAge > 24 * 60 * 60 * 1000;
 
         if (isExpired) {
-          // Lösche abgelaufenes Ziel
           set((state) => ({
             dailyGoals: {
               ...state.dailyGoals,
@@ -115,6 +119,9 @@ export const usePostStore = create<PostStore>()(
         }
 
         return goal;
+      },
+      hasActiveGoal: (userId) => {
+        return Boolean(get().getDailyGoal(userId));
       },
       updateDailyGoalProgress: (userId, progress) =>
         set((state) => {
@@ -152,13 +159,11 @@ export const usePostStore = create<PostStore>()(
         const now = new Date();
         const goals = get().dailyGoals;
 
-        // Prüfe alle Ziele auf Ablauf
         Object.entries(goals).forEach(([userId, goal]) => {
           if (!goal) return;
 
           const goalAge = now.getTime() - new Date(goal.createdAt).getTime();
           if (goalAge > 24 * 60 * 60 * 1000) {
-            // Lösche abgelaufenes Ziel
             set((state) => ({
               dailyGoals: {
                 ...state.dailyGoals,
@@ -175,29 +180,6 @@ export const usePostStore = create<PostStore>()(
     }),
     {
       name: 'post-interaction-storage'
-    }
-  )
-);
-
-interface PostStore2 {
-  posts: (Post & { dailyGoal?: DailyGoal })[];
-  addPost: (post: Post & { dailyGoal?: DailyGoal }) => void;
-  getPosts: () => (Post & { dailyGoal?: DailyGoal })[];
-}
-
-export const usePostStore2 = create<PostStore2>()(
-  persist(
-    (set, get) => ({
-      posts: [],
-      addPost: (post) => {
-        set((state) => ({
-          posts: [post, ...state.posts]
-        }));
-      },
-      getPosts: () => get().posts,
-    }),
-    {
-      name: 'post-storage'
     }
   )
 );

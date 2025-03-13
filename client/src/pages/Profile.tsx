@@ -28,7 +28,9 @@ export default function Profile() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedTab, setSelectedTab] = useState("all");
   const postStore = usePostStore();
-  const activeGoal = postStore.getDailyGoal(userId); 
+
+  // Get the active goal for the current profile's user
+  const activeGoal = postStore.getDailyGoal(userId);
 
   if (!user) return <div>User not found</div>;
 
@@ -59,6 +61,7 @@ export default function Profile() {
               <VerifiedBadge className="absolute bottom-0 right-0" />
             )}
           </div>
+
           <h1 className="text-2xl font-bold mt-4">{user.name}</h1>
           <h2 className="text-lg text-muted-foreground">@{user.username}</h2>
 
@@ -85,7 +88,7 @@ export default function Profile() {
             <div className="w-full max-w-md mt-4">
               <DailyGoalDisplay 
                 goal={activeGoal}
-                userId={userId} 
+                userId={userId}
                 variant="profile"
               />
             </div>
@@ -119,14 +122,6 @@ export default function Profile() {
           )}
         </div>
       </div>
-
-      {/* Edit Profile Dialog */}
-      <EditProfileDialog
-        user={user}
-        open={isEditDialogOpen}
-        onOpenChange={setIsEditDialogOpen}
-        onSave={handleProfileUpdate}
-      />
 
       {/* Content Tabs */}
       <Tabs value={selectedTab} onValueChange={setSelectedTab}>

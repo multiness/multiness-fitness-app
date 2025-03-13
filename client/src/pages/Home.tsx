@@ -8,7 +8,7 @@ import EventSlider from "@/components/EventSlider";
 import { ArrowRight, Crown, Heart, Share2, Users, Trophy } from "lucide-react";
 import { mockGroups, mockChallenges, mockPosts, mockUsers } from "../data/mockData";
 import { useLocation, Link } from "wouter";
-import { usePostStore2 } from "../lib/postStore";
+import { usePostStore } from "../lib/postStore";
 import {
   Carousel,
   CarouselContent,
@@ -26,13 +26,13 @@ const format = (date: Date, formatStr: string) => {
 
 export default function Home() {
   const [, setLocation] = useLocation();
-  const { posts: userPosts } = usePostStore2();
+  const postStore = usePostStore();
   const activeChallenges = mockChallenges.filter(
     challenge => new Date() <= new Date(challenge.endDate)
   );
 
-  // Kombiniere gespeicherte Posts mit Mock-Posts und sortiere sie nach Datum
-  const allPosts = [...userPosts, ...mockPosts].sort((a, b) => 
+  // Kombiniere Mock-Posts und sortiere sie nach Datum
+  const allPosts = [...mockPosts].sort((a, b) => 
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 

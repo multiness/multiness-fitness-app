@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Image, Video, X, Target, Timer } from "lucide-react";
-import { usePostStore2, DailyGoal } from "../lib/postStore";
+import { usePostStore, type DailyGoal } from "../lib/postStore";
 import { useLocation } from "wouter";
 import { useUsers } from "../contexts/UserContext";
 import {
@@ -24,13 +24,15 @@ export default function CreatePost() {
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<"image" | "video" | null>(null);
   const { currentUser } = useUsers();
-  const { addPost } = usePostStore2();
+  const postStore = usePostStore();
   const [, setLocation] = useLocation();
 
   // Tagesziel-States
   const [includeDailyGoal, setIncludeDailyGoal] = useState(false);
   const [goalType, setGoalType] = useState<'water' | 'steps' | 'distance' | 'custom'>('water');
   const [goalTarget, setGoalTarget] = useState("");
+  const [customGoalName, setCustomGoalName] = useState("");
+  const [customGoalUnit, setCustomGoalUnit] = useState("");
 
   const goalUnits = {
     water: 'Liter',
@@ -39,8 +41,79 @@ export default function CreatePost() {
     custom: ''
   };
 
-  const [customGoalName, setCustomGoalName] = useState("");
-  const [customGoalUnit, setCustomGoalUnit] = useState("");
+  const handleSubmit = () => {
+    if (!currentUser) {
+      toast({
+        title: "Nicht angemeldet",
+        description: "Bitte melde dich an, um einen Beitrag zu erstellen.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!content.trim() && !mediaPreview && !includeDailyGoal) {
+      toast({
+        title: "Leerer Beitrag",
+        description: "Bitte füge Text, Medien oder ein Tagesziel hinzu.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (includeDailyGoal && (!goalType || !goalTarget || (goalType === 'custom' && (!customGoalName || !customGoalUnit)))) {
+      toast({
+        title: "Unvollständiges Tagesziel",
+        description: "Bitte gib einen Typ und Zielwert an.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check for existing active goal
+    if (includeDailyGoal && postStore.hasActiveGoal(currentUser.id)) {
+      const confirmReplace = window.confirm(
+        "Du hast bereits ein aktives Tagesziel. Möchtest du es durch dieses neue Ziel ersetzen?"
+      );
+      if (!confirmReplace) {
+        return;
+      }
+    }
+
+    // Create daily goal if enabled
+    let dailyGoal: DailyGoal | undefined;
+    if (includeDailyGoal) {
+      dailyGoal = {
+        type: goalType,
+        target: Number(goalTarget),
+        unit: goalType === 'custom' ? customGoalUnit : goalUnits[goalType],
+        progress: 0,
+        completed: false,
+        customName: goalType === 'custom' ? customGoalName : undefined,
+        createdAt: new Date()
+      };
+
+      postStore.setDailyGoal(currentUser.id, dailyGoal);
+    }
+
+    // Create new post
+    const newPost = {
+      id: Date.now(),
+      userId: currentUser.id,
+      content: content.trim(),
+      image: mediaPreview,
+      createdAt: new Date(),
+      dailyGoal
+    };
+
+    // Add post to posts array
+    toast({
+      title: "Beitrag erstellt!",
+      description: "Dein Beitrag wurde erfolgreich veröffentlicht.",
+    });
+
+    // Navigate to home page
+    setLocation("/");
+  };
 
   const handleMediaUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -68,62 +141,6 @@ export default function CreatePost() {
   const removeMedia = () => {
     setMediaPreview(null);
     setMediaType(null);
-  };
-
-  const handleSubmit = () => {
-    if (!content.trim() && !mediaPreview && !includeDailyGoal) {
-      toast({
-        title: "Leerer Beitrag",
-        description: "Bitte füge Text, Medien oder ein Tagesziel hinzu.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (includeDailyGoal && (!goalType || !goalTarget || (goalType === 'custom' && (!customGoalName || !customGoalUnit)))) {
-      toast({
-        title: "Unvollständiges Tagesziel",
-        description: "Bitte gib einen Typ und Zielwert an.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Tagesziel erstellen wenn aktiviert
-    let dailyGoal: DailyGoal | undefined;
-    if (includeDailyGoal) {
-      dailyGoal = {
-        type: goalType,
-        target: Number(goalTarget),
-        unit: goalType === 'custom' ? customGoalUnit : goalUnits[goalType],
-        progress: 0,
-        completed: false,
-        customName: goalType === 'custom' ? customGoalName : undefined,
-        createdAt: new Date() // Neu: Zeitstempel hinzufügen
-      };
-    }
-
-    // Neuen Post erstellen
-    const newPost = {
-      id: Date.now(),
-      userId: currentUser?.id || 1,
-      content: content.trim(),
-      image: mediaPreview,
-      createdAt: new Date(),
-      dailyGoal
-    };
-
-    // Post zum Store hinzufügen
-    addPost(newPost);
-
-    // Erfolgsmeldung anzeigen
-    toast({
-      title: "Beitrag erstellt!",
-      description: "Dein Beitrag wurde erfolgreich veröffentlicht.",
-    });
-
-    // Zur Startseite navigieren
-    setLocation("/");
   };
 
   return (
