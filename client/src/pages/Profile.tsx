@@ -100,7 +100,7 @@ export default function Profile() {
 
           {/* Tagesziel Anzeige */}
           {activeGoal && (
-            <div className="w-full max-w-md mt-4" style={{ border: '1px solid red' }}>
+            <div className="w-full max-w-md mt-4 bg-card rounded-lg shadow-sm">
               <DailyGoalDisplay 
                 goal={activeGoal} 
                 userId={userId}
