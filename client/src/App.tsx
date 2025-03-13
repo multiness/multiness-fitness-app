@@ -3,6 +3,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { UserProvider } from "./contexts/UserContext";
+import { AdminProvider } from "./contexts/AdminContext";
 import { ThemeProvider } from "./contexts/ThemeProvider";
 import Layout from "./components/Layout";
 import Home from "./pages/Home";
@@ -61,8 +62,10 @@ function App() {
     <ThemeProvider defaultTheme="light">
       <QueryClientProvider client={queryClient}>
         <UserProvider>
-          <Router />
-          <Toaster />
+          <AdminProvider>
+            <Router />
+            <Toaster />
+          </AdminProvider>
         </UserProvider>
       </QueryClientProvider>
     </ThemeProvider>
