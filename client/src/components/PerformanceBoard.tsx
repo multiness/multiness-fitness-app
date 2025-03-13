@@ -16,7 +16,7 @@ export default function PerformanceBoard({
   goal,
 }: PerformanceBoardProps) {
   // Gruppiere Beiträge nach Benutzer
-  const contributionsByUser = goal.contributions.reduce((acc, contribution) => {
+  const contributionsByUser = (goal.contributions || []).reduce((acc, contribution) => {
     if (!acc[contribution.userId]) {
       acc[contribution.userId] = {
         totalProgress: 0,

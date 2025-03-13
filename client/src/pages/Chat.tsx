@@ -144,6 +144,7 @@ export default function Chat() {
       progress: 0,
       createdAt: new Date().toISOString(),
       createdBy: currentUser.id,
+      contributions: [], // Initialize empty contributions array
     };
 
     chatStore.setGroupGoal(selectedChat.id, goal);
