@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Heart, MessageCircle, Share2, MoreHorizontal, AlertTriangle, Send } from "lucide-react";
 import { Post } from "@shared/schema";
@@ -26,7 +25,8 @@ import { useUsers } from "../contexts/UserContext";
 import { usePostStore } from "../lib/postStore";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
-import DailyGoalDisplay from './DailyGoalDisplay'; // Assuming this component exists
+import { UserAvatar } from "@/components/UserAvatar";
+import DailyGoalDisplay from './DailyGoalDisplay';
 
 interface FeedPostProps {
   post: Post;
@@ -84,10 +84,14 @@ export default function FeedPost({ post }: FeedPostProps) {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between p-4">
         <div className="flex items-center gap-3">
-          <Avatar userId={user?.id}>
-            <AvatarImage src={user?.avatar || undefined} />
-            <AvatarFallback>{user?.username[0]}</AvatarFallback>
-          </Avatar>
+          {user && (
+            <UserAvatar
+              userId={user.id}
+              avatar={user.avatar}
+              username={user.username}
+              size="sm"
+            />
+          )}
           <div>
             <h3 className="font-semibold">{user?.username}</h3>
             <p className="text-sm text-muted-foreground">
@@ -221,10 +225,14 @@ export default function FeedPost({ post }: FeedPostProps) {
                 const commentUser = mockUsers.find(u => u.id === comment.userId);
                 return (
                   <div key={comment.id} className="flex gap-3">
-                    <Avatar className="h-8 w-8" userId={commentUser?.id}>
-                      <AvatarImage src={commentUser?.avatar || undefined} />
-                      <AvatarFallback>{commentUser?.username[0]}</AvatarFallback>
-                    </Avatar>
+                    {commentUser && (
+                      <UserAvatar
+                        userId={commentUser.id}
+                        avatar={commentUser.avatar}
+                        username={commentUser.username}
+                        size="sm"
+                      />
+                    )}
                     <div className="flex-1">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
