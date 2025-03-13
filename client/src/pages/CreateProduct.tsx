@@ -81,11 +81,11 @@ export default function CreateProduct() {
   };
 
   return (
-    <div className="container max-w-2xl mx-auto p-4">
+    <div className="container max-w-2xl mx-auto p-4 pb-24">
       <h1 className="text-2xl font-bold mb-6">Produkt erstellen</h1>
 
       <form onSubmit={form.handleSubmit(onSubmit)}>
-        <Card>
+        <Card className="mb-20">
           <CardHeader>
             <CardTitle>Produktdetails</CardTitle>
           </CardHeader>
