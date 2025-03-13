@@ -172,11 +172,13 @@ export const products = pgTable("products", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description").notNull(),
-  type: text("type").notNull(), // 'training', 'coaching', 'supplement'
+  type: text("type").notNull(), // 'training', 'coaching', 'supplement', 'custom'
   price: numeric("price").notNull(),
   image: text("image"),
   creatorId: integer("creator_id").references(() => users.id).notNull(),
   isActive: boolean("is_active").default(true).notNull(),
+  validUntil: timestamp("valid_until"),
+  isArchived: boolean("is_archived").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   metadata: jsonb("metadata"), // Zusätzliche Informationen je nach Produkttyp
 });
@@ -212,6 +214,11 @@ export const productMetadataSchema = z.discriminatedUnion("type", [
     weight: z.number(), // Gewicht in Gramm
     servings: z.number(), // Anzahl der Portionen
     nutritionFacts: z.record(z.string(), z.string()), // Nährwertangaben
+  }),
+  z.object({
+    type: z.literal("custom"),
+    specifications: z.record(z.string(), z.string()), // Beliebige Spezifikationen
+    includes: z.array(z.string()), // Liste der Leistungen
   }),
 ]);
 

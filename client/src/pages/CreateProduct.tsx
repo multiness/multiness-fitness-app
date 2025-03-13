@@ -16,19 +16,21 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { insertProductSchema, type InsertProduct } from "@shared/schema";
-import { Package, Image as ImageIcon } from "lucide-react";
+import { Package, Image as ImageIcon, Calendar } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 export default function CreateProduct() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [productType, setProductType] = useState<"training" | "coaching" | "supplement">("training");
+  const [productType, setProductType] = useState<"training" | "coaching" | "supplement" | "custom">("training");
 
   const form = useForm<InsertProduct>({
     resolver: zodResolver(insertProductSchema),
     defaultValues: {
       type: "training",
       isActive: true,
+      isArchived: false,
       metadata: {
         type: "training",
         duration: 4,
@@ -106,6 +108,33 @@ export default function CreateProduct() {
               </div>
             </div>
 
+            {/* Produktstatus */}
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Aktiv</Label>
+                <p className="text-sm text-muted-foreground">
+                  Produkt im Shop anzeigen
+                </p>
+              </div>
+              <Switch
+                checked={form.watch("isActive")}
+                onCheckedChange={(checked) => form.setValue("isActive", checked)}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Archiviert</Label>
+                <p className="text-sm text-muted-foreground">
+                  Produkt im Admin-Katalog archivieren
+                </p>
+              </div>
+              <Switch
+                checked={form.watch("isArchived")}
+                onCheckedChange={(checked) => form.setValue("isArchived", checked)}
+              />
+            </div>
+
             {/* Produktname */}
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
@@ -137,12 +166,22 @@ export default function CreateProduct() {
               )}
             </div>
 
+            {/* Ablaufdatum */}
+            <div className="space-y-2">
+              <Label htmlFor="validUntil">Gültig bis (optional)</Label>
+              <Input
+                id="validUntil"
+                type="datetime-local"
+                {...form.register("validUntil")}
+              />
+            </div>
+
             {/* Produkttyp */}
             <div className="space-y-2">
               <Label htmlFor="type">Produkttyp</Label>
               <Select
                 value={productType}
-                onValueChange={(value: "training" | "coaching" | "supplement") => {
+                onValueChange={(value: "training" | "coaching" | "supplement" | "custom") => {
                   setProductType(value);
                   form.setValue("type", value);
                   // Reset metadata based on type
@@ -171,6 +210,13 @@ export default function CreateProduct() {
                         nutritionFacts: {},
                       });
                       break;
+                    case "custom":
+                      form.setValue("metadata", {
+                        type: "custom",
+                        specifications: {},
+                        includes: [],
+                      });
+                      break;
                   }
                 }}
               >
@@ -181,6 +227,7 @@ export default function CreateProduct() {
                   <SelectItem value="training">Training</SelectItem>
                   <SelectItem value="coaching">Coaching</SelectItem>
                   <SelectItem value="supplement">Supplement</SelectItem>
+                  <SelectItem value="custom">Individuell</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -267,6 +314,41 @@ export default function CreateProduct() {
                       type="number"
                       {...form.register("metadata.servings", { valueAsNumber: true })}
                     />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {productType === "custom" && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Spezifikationen</Label>
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input
+                        placeholder="Bezeichnung"
+                        onChange={(e) => {
+                          const specs = form.watch("metadata.specifications") || {};
+                          form.setValue("metadata.specifications", {
+                            ...specs,
+                            [e.target.value]: "",
+                          });
+                        }}
+                      />
+                      <Input
+                        placeholder="Wert"
+                        onChange={(e) => {
+                          const specs = form.watch("metadata.specifications") || {};
+                          const key = Object.keys(specs)[Object.keys(specs).length - 1];
+                          if (key) {
+                            form.setValue("metadata.specifications", {
+                              ...specs,
+                              [key]: e.target.value,
+                            });
+                          }
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
