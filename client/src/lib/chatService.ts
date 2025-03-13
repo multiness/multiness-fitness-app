@@ -86,6 +86,20 @@ export const useChatStore = create<ChatStore>()(
             newContributions.reduce((sum, c) => sum + c.progress, 0)
           );
 
+          // Prüfen ob das Ziel gerade erreicht wurde
+          const wasGoalReached = currentGoal.progress < 100 && totalProgress >= 100;
+          if (wasGoalReached) {
+            // Erfolgsnachricht zum Chat hinzufügen
+            const message = {
+              id: Date.now(),
+              userId: contribution.userId,
+              content: `🎉 Großartig! Das Gruppenziel "${currentGoal.title}" wurde erreicht! Herzlichen Glückwunsch an alle Teilnehmer!`,
+              timestamp: new Date().toISOString(),
+              groupId: parseInt(chatId.substring(6)),
+            };
+            get().addMessage(chatId, message);
+          }
+
           return {
             groupGoals: {
               ...state.groupGoals,

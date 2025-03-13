@@ -296,7 +296,14 @@ export default function Chat() {
                   )}
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">{currentGroupGoal.progress}%</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">{currentGroupGoal.progress}%</span>
+                        {currentGroupGoal.progress >= 100 && (
+                          <span className="text-yellow-500">
+                            🎉 Ziel erreicht!
+                          </span>
+                        )}
+                      </div>
                       <div className="flex gap-2">
                         <Button
                           variant="outline"
@@ -317,7 +324,14 @@ export default function Chat() {
                         </Button>
                       </div>
                     </div>
-                    <Progress value={currentGroupGoal.progress} className="h-1.5" />
+                    <Progress 
+                      value={currentGroupGoal.progress} 
+                      className={`h-1.5 ${
+                        currentGroupGoal.progress >= 100 
+                          ? "bg-yellow-500" 
+                          : ""
+                      }`}
+                    />
                   </div>
                 </div>
               )}
