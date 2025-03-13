@@ -8,6 +8,8 @@ import { usePostStore } from "../lib/postStore";
 import { useUsers } from "../contexts/UserContext";
 import { useToast } from "@/hooks/use-toast";
 import { mockUsers } from "../data/mockData";
+import { format, formatDistanceToNow } from 'date-fns';
+import { de } from 'date-fns/locale';
 
 interface DailyGoalDisplayProps {
   goal: DailyGoal;
@@ -16,11 +18,11 @@ interface DailyGoalDisplayProps {
   onProgressUpdate?: (progress: number) => void;
 }
 
-export default function DailyGoalDisplay({ 
-  goal, 
-  userId, 
+export default function DailyGoalDisplay({
+  goal,
+  userId,
   variant = "full",
-  onProgressUpdate 
+  onProgressUpdate
 }: DailyGoalDisplayProps) {
   const [showProgressInput, setShowProgressInput] = useState(false);
   const [progressInput, setProgressInput] = useState("");
@@ -92,6 +94,19 @@ export default function DailyGoalDisplay({
     }
   };
 
+  const getTimeLeft = (createdAt: Date) => {
+    const now = new Date();
+    const endTime = new Date(createdAt);
+    endTime.setHours(endTime.getHours() + 24);
+
+    if (now > endTime) return null;
+
+    return formatDistanceToNow(endTime, { locale: de });
+  };
+
+  const timeLeft = getTimeLeft(new Date(goal.createdAt));
+
+
   // Profilseiten-Variante
   if (variant === "profile") {
     return (
@@ -115,7 +130,7 @@ export default function DailyGoalDisplay({
         </div>
 
         <div className="relative h-2 overflow-hidden rounded-full bg-primary/10">
-          <div 
+          <div
             className="h-full bg-primary transition-all duration-500 ease-in-out"
             style={{ width: `${progress}%` }}
           />
@@ -172,7 +187,7 @@ export default function DailyGoalDisplay({
         </div>
 
         <div className="relative h-2 overflow-hidden rounded-full bg-primary/10">
-          <div 
+          <div
             className="h-full bg-primary transition-all duration-500 ease-in-out"
             style={{ width: `${progress}%` }}
           />
@@ -183,12 +198,19 @@ export default function DailyGoalDisplay({
             {goal.progress} von {goal.target} {goal.unit}
             {goal.completed && " ✓"}
           </span>
-          {participants.length > 0 && (
-            <span className="text-muted-foreground flex items-center gap-1">
-              <Users className="h-3 w-3" />
-              {participants.length}
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            {timeLeft && (
+              <span className="text-muted-foreground">
+                Noch {timeLeft}
+              </span>
+            )}
+            {participants.length > 0 && (
+              <span className="text-muted-foreground flex items-center gap-1">
+                <Users className="h-3 w-3" />
+                {participants.length}
+              </span>
+            )}
+          </div>
         </div>
 
         {showProgressInput && (
@@ -242,7 +264,7 @@ export default function DailyGoalDisplay({
       </div>
 
       <div className="relative h-2.5 overflow-hidden rounded-full bg-primary/10">
-        <div 
+        <div
           className="h-full bg-primary transition-all duration-500 ease-in-out"
           style={{ width: `${progress}%` }}
         />
@@ -255,12 +277,19 @@ export default function DailyGoalDisplay({
             <span className="ml-2 text-primary">✓ Geschafft!</span>
           )}
         </span>
-        {participants.length > 0 && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Users className="h-4 w-4" />
-            <span>{participants.length} {participants.length === 1 ? "Teilnehmer" : "Teilnehmer"}</span>
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          {timeLeft && (
+            <span className="text-sm text-muted-foreground">
+              Noch {timeLeft}
+            </span>
+          )}
+          {participants.length > 0 && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Users className="h-4 w-4" />
+              <span>{participants.length} {participants.length === 1 ? "Teilnehmer" : "Teilnehmer"}</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {showProgressInput && (

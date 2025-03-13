@@ -22,8 +22,25 @@ import Chat from "./pages/Chat";
 import Admin from "./pages/Admin";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/not-found";
+import { useEffect } from "react";
+import { usePostStore } from "./lib/postStore";
 
 function Router() {
+  const { checkExpiredGoals } = usePostStore();
+
+  // Prüfe alle 5 Minuten auf abgelaufene Ziele
+  useEffect(() => {
+    // Initial check
+    checkExpiredGoals();
+
+    // Setup interval
+    const interval = setInterval(() => {
+      checkExpiredGoals();
+    }, 5 * 60 * 1000); // 5 Minuten
+
+    return () => clearInterval(interval);
+  }, [checkExpiredGoals]);
+
   return (
     <Layout>
       <Switch>

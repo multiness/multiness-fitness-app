@@ -10,6 +10,7 @@ export type DailyGoal = {
   completed: boolean;
   customName?: string; // Für individuelle Ziele
   participants?: number[]; // Array von User IDs die mitmachen
+  createdAt: Date; // Neu: Zeitpunkt der Erstellung
 };
 
 export type Comment = {
@@ -37,6 +38,7 @@ type PostStore = {
   joinDailyGoal: (targetUserId: number, participantId: number) => void;
   leaveDailyGoal: (targetUserId: number, participantId: number) => void;
   getGoalParticipants: (userId: number) => number[];
+  checkExpiredGoals: () => void; // Neue Funktion zum Prüfen abgelaufener Ziele
 };
 
 export const usePostStore = create<PostStore>()(
@@ -88,8 +90,32 @@ export const usePostStore = create<PostStore>()(
             [userId]: goal
           }
         })),
-      getDailyGoal: (userId) =>
-        get().dailyGoals[userId],
+      getDailyGoal: (userId) => {
+        const goal = get().dailyGoals[userId];
+        if (!goal) return undefined;
+
+        // Prüfe, ob das Ziel abgelaufen ist (älter als 24h)
+        const now = new Date();
+        const goalAge = now.getTime() - new Date(goal.createdAt).getTime();
+        const isExpired = goalAge > 24 * 60 * 60 * 1000; // 24 Stunden in Millisekunden
+
+        if (isExpired) {
+          // Lösche abgelaufenes Ziel
+          set((state) => ({
+            dailyGoals: {
+              ...state.dailyGoals,
+              [userId]: undefined
+            },
+            goalParticipants: {
+              ...state.goalParticipants,
+              [userId]: []
+            }
+          }));
+          return undefined;
+        }
+
+        return goal;
+      },
       updateDailyGoalProgress: (userId, progress) =>
         set((state) => {
           const currentGoal = state.dailyGoals[userId];
@@ -121,7 +147,31 @@ export const usePostStore = create<PostStore>()(
           }
         })),
       getGoalParticipants: (userId) =>
-        get().goalParticipants[userId] || []
+        get().goalParticipants[userId] || [],
+      checkExpiredGoals: () => {
+        const now = new Date();
+        const goals = get().dailyGoals;
+
+        // Prüfe alle Ziele auf Ablauf
+        Object.entries(goals).forEach(([userId, goal]) => {
+          if (!goal) return;
+
+          const goalAge = now.getTime() - new Date(goal.createdAt).getTime();
+          if (goalAge > 24 * 60 * 60 * 1000) {
+            // Lösche abgelaufenes Ziel
+            set((state) => ({
+              dailyGoals: {
+                ...state.dailyGoals,
+                [userId]: undefined
+              },
+              goalParticipants: {
+                ...state.goalParticipants,
+                [userId]: []
+              }
+            }));
+          }
+        });
+      }
     }),
     {
       name: 'post-interaction-storage'

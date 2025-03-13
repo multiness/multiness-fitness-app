@@ -98,7 +98,8 @@ export default function CreatePost() {
         unit: goalType === 'custom' ? customGoalUnit : goalUnits[goalType],
         progress: 0,
         completed: false,
-        customName: goalType === 'custom' ? customGoalName : undefined
+        customName: goalType === 'custom' ? customGoalName : undefined,
+        createdAt: new Date() // Neu: Zeitstempel hinzufügen
       };
     }
 
