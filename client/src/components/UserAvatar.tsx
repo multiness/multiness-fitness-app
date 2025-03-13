@@ -1,4 +1,4 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AvatarImage } from "@/components/ui/avatar";
 import { usePostStore } from "../lib/postStore";
 import { cn } from "@/lib/utils";
 
@@ -31,7 +31,9 @@ export function UserAvatar({
   };
 
   return (
-    <Avatar
+    <AvatarImage
+      src={avatar || undefined}
+      alt={username}
       className={cn(
         sizeClasses[size],
         isGroup
@@ -42,9 +44,7 @@ export function UserAvatar({
         "rounded-full",
         className
       )}
-    >
-      <AvatarImage src={avatar || undefined} />
-      <AvatarFallback>{username[0].toUpperCase()}</AvatarFallback>
-    </Avatar>
+      fallback={username[0].toUpperCase()}
+    />
   );
 }
