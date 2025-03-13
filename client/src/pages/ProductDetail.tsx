@@ -24,14 +24,14 @@ export default function ProductDetail({ id }: ProductDetailProps) {
   const { products, updateProduct } = useProducts();
   const [isEditing, setIsEditing] = useState(false);
   const [product, setProduct] = useState(products[0]);
-  const [editedProduct, setEditedProduct] = useState(product);
+  const [editedProduct, setEditedProduct] = useState({...product, stockEnabled: false, onSale: false, salePrice: product.price, saleType: 'Sale', stock: product.stock || 0}); // Initialize new properties
   const [paypalLoaded, setPaypalLoaded] = useState(false);
 
   useEffect(() => {
     const prod = products.find(p => p.id === Number(productId));
     if (prod) {
       setProduct(prod);
-      setEditedProduct(prod);
+      setEditedProduct({...prod, stockEnabled: false, onSale: false, salePrice: prod.price, saleType: 'Sale', stock: prod.stock || 0}); // Initialize new properties
     }
   }, [productId, products]);
 
@@ -61,7 +61,7 @@ export default function ProductDetail({ id }: ProductDetailProps) {
   };
 
   const handleCancel = () => {
-    setEditedProduct(product);
+    setEditedProduct({...product, stockEnabled: false, onSale: false, salePrice: product.price, saleType: 'Sale', stock: product.stock || 0}); // Initialize new properties
     setIsEditing(false);
   };
 
@@ -158,6 +158,63 @@ export default function ProductDetail({ id }: ProductDetailProps) {
                       onChange={(e) => setEditedProduct({...editedProduct, price: Number(e.target.value)})}
                     />
                   </div>
+                  {/* Added Stock Management */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium">Bestandsverwaltung aktivieren</label>
+                      <Switch
+                        checked={editedProduct.stockEnabled}
+                        onCheckedChange={(checked) => setEditedProduct({...editedProduct, stockEnabled: checked})}
+                      />
+                    </div>
+                    {editedProduct.stockEnabled && (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Verfügbare Menge</label>
+                        <Input
+                          type="number"
+                          min="0"
+                          value={editedProduct.stock || 0}
+                          onChange={(e) => setEditedProduct({...editedProduct, stock: Number(e.target.value)})}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Added Special Offer */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium">Sonderangebot aktivieren</label>
+                      <Switch
+                        checked={editedProduct.onSale}
+                        onCheckedChange={(checked) => setEditedProduct({...editedProduct, onSale: checked})}
+                      />
+                    </div>
+                    {editedProduct.onSale && (
+                      <div className="space-y-4">
+                        <div>
+                          <label className="text-sm font-medium">Angebotspreis (€)</label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={editedProduct.salePrice || editedProduct.price}
+                            onChange={(e) => setEditedProduct({...editedProduct, salePrice: Number(e.target.value)})}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Art des Angebots</label>
+                          <select
+                            className="w-full mt-1 rounded-md border border-input bg-background px-3 py-2"
+                            value={editedProduct.saleType || 'Sale'}
+                            onChange={(e) => setEditedProduct({...editedProduct, saleType: e.target.value as 'Sale' | 'Budget' | 'Angebot'})}
+                          >
+                            <option value="Sale">Sale</option>
+                            <option value="Budget">Budget</option>
+                            <option value="Angebot">Angebot</option>
+                          </select>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm">Aktiv</span>
                     <Switch
@@ -170,9 +227,29 @@ export default function ProductDetail({ id }: ProductDetailProps) {
                 <>
                   <h1 className="text-3xl font-bold">{product.name}</h1>
                   <p className="text-muted-foreground">{product.description}</p>
+                  {/* Updated Price Display */}
                   <div className="text-2xl font-bold">
-                    €{Number(product.price).toFixed(2)}
+                    {product.onSale ? (
+                      <div className="flex items-center gap-4">
+                        <span className="text-red-500">€{Number(product.salePrice).toFixed(2)}</span>
+                        <span className="text-lg line-through text-muted-foreground">
+                          €{Number(product.price).toFixed(2)}
+                        </span>
+                        <Badge variant="secondary">{product.saleType}</Badge>
+                      </div>
+                    ) : (
+                      <span>€{Number(product.price).toFixed(2)}</span>
+                    )}
                   </div>
+                  {product.stockEnabled && (
+                    <div className="text-sm text-muted-foreground">
+                      {product.stock === 0 ? (
+                        <span className="text-red-500 font-medium">Ausverkauft</span>
+                      ) : (
+                        <span>Noch {product.stock} verfügbar</span>
+                      )}
+                    </div>
+                  )}
                 </>
               )}
 

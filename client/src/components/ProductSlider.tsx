@@ -51,12 +51,29 @@ export default function ProductSlider() {
                   </p>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1 font-semibold">
-                      <Euro className="h-4 w-4" />
-                      {Number(product.price).toFixed(2)}
+                      {product.onSale ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-red-500">€{Number(product.salePrice).toFixed(2)}</span>
+                          <span className="text-sm line-through text-muted-foreground">
+                            €{Number(product.price).toFixed(2)}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1">
+                          <Euro className="h-4 w-4" />
+                          {Number(product.price).toFixed(2)}
+                        </div>
+                      )}
                     </div>
-                    <Button size="sm">
-                      Jetzt kaufen
-                    </Button>
+                    {product.stockEnabled && product.stock === 0 ? (
+                      <Badge variant="outline" className="text-red-500">
+                        Ausverkauft
+                      </Badge>
+                    ) : (
+                      <Button size="sm" disabled={product.stockEnabled && product.stock === 0}>
+                        {product.stockEnabled && product.stock === 0 ? "Ausverkauft" : "Jetzt kaufen"}
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
