@@ -9,6 +9,7 @@ import { ArrowRight, Crown, Heart, Share2, Users, Trophy } from "lucide-react";
 import { mockGroups, mockChallenges, mockPosts, mockUsers } from "../data/mockData";
 import { useLocation, Link } from "wouter";
 import { usePostStore } from "../lib/postStore";
+import { getChatId } from "../lib/chatService";  // Add this import
 import {
   Carousel,
   CarouselContent,
@@ -19,7 +20,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import GroupCarousel from "@/components/GroupCarousel";
-import { UserAvatar } from "@/components/UserAvatar"; // Import UserAvatar component
+import { UserAvatar } from "@/components/UserAvatar";
 
 const format = (date: Date, formatStr: string) => {
   return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -36,6 +37,11 @@ export default function Home() {
   const allPosts = [...mockPosts].sort((a, b) =>
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
+
+  const navigateToGroupChat = (groupId: number) => {
+    const chatId = getChatId(groupId);
+    setLocation(`/chat/${chatId}`);
+  };
 
   return (
     <div className="w-full max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -111,9 +117,14 @@ export default function Home() {
         </div>
         {/* Desktop: Grid-Layout */}
         <div className="hidden md:grid grid-cols-2 gap-4">
-          {mockGroups.slice(0, 4).map(group => (
-            <GroupPreview key={group.id} group={group} />
-          ))}
+          {mockGroups.slice(0, 4).map(group => {
+            const chatId = getChatId(group.id);
+            return (
+              <div key={group.id} className="cursor-pointer" onClick={() => navigateToGroupChat(group.id)}>
+                <GroupPreview group={group} />
+              </div>
+            );
+          })}
         </div>
       </section>
 

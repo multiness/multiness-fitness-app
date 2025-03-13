@@ -62,7 +62,7 @@ export const useChatStore = create<ChatStore>()(
         set((state) => ({
           groupGoals: {
             ...state.groupGoals,
-            [chatId]: state.groupGoals[chatId] 
+            [chatId]: state.groupGoals[chatId]
               ? { ...state.groupGoals[chatId], progress }
               : undefined,
           },

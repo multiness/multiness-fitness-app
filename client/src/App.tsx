@@ -58,6 +58,7 @@ function Router() {
         <Route path="/events" component={Events} />
         <Route path="/members" component={Members} />
         <Route path="/chat" component={Chat} />
+        <Route path="/chat/:id" component={Chat} />
         <Route path="/admin" component={Admin} />
         <Route path="/settings" component={Settings} />
         <Route component={NotFound} />
