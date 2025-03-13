@@ -5,10 +5,10 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { VerifiedBadge } from "./VerifiedBadge";
 import { useUsers } from "../contexts/UserContext";
+import { UserAvatar } from "./UserAvatar";
 
 export default function UserSlider() {
   const { users, toggleVerification } = useUsers();
@@ -26,10 +26,12 @@ export default function UserSlider() {
           <CarouselItem key={user.id} className="basis-1/5 md:basis-1/6 lg:basis-1/8">
             <div className="flex flex-col items-center gap-1">
               <div className="relative">
-                <Avatar className="h-16 w-16">
-                  <AvatarImage src={user.avatar} alt={user.username} />
-                  <AvatarFallback>{user.username[0]}</AvatarFallback>
-                </Avatar>
+                <UserAvatar
+                  userId={user.id}
+                  avatar={user.avatar}
+                  username={user.username}
+                  size="md"
+                />
                 {user.isVerified && (
                   <div className="absolute -bottom-1 -right-1">
                     <VerifiedBadge />

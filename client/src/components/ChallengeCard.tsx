@@ -1,12 +1,12 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Challenge } from "@shared/schema";
 import { format } from "date-fns";
 import { Link } from "wouter";
 import { Crown, Heart, Share2, Users, Trophy, Gift } from "lucide-react";
 import { mockUsers } from "../data/mockData";
 import { Button } from "@/components/ui/button";
+import { UserAvatar } from "@/components/UserAvatar";
 
 interface ChallengeCardProps {
   challenge: Challenge;
@@ -28,10 +28,14 @@ export default function ChallengeCard({ challenge, variant = "full" }: Challenge
       <CardContent className="p-4">
         {/* Challenge Info Section */}
         <div className="flex items-start gap-3 mb-4">
-          <Avatar className="h-10 w-10">
-            <AvatarImage src={creator?.avatar || undefined} />
-            <AvatarFallback>{creator?.username[0]}</AvatarFallback>
-          </Avatar>
+          {creator && (
+            <UserAvatar
+              userId={creator.id}
+              avatar={creator.avatar}
+              username={creator.username}
+              size="sm"
+            />
+          )}
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium">{creator?.username}</p>
@@ -59,10 +63,12 @@ export default function ChallengeCard({ challenge, variant = "full" }: Challenge
                 <div key={index} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     {index === 0 && <Crown className="h-4 w-4 text-yellow-400" />}
-                    <Avatar className="h-6 w-6">
-                      <AvatarImage src={winner.avatar || undefined} />
-                      <AvatarFallback>{winner.username[0]}</AvatarFallback>
-                    </Avatar>
+                    <UserAvatar
+                      userId={winner.id}
+                      avatar={winner.avatar}
+                      username={winner.username}
+                      size="sm"
+                    />
                     <span className="text-sm font-medium">{winner.username}</span>
                   </div>
                   <div className="flex items-center gap-1 text-sm">
@@ -84,10 +90,14 @@ export default function ChallengeCard({ challenge, variant = "full" }: Challenge
               <div className="flex items-center gap-2">
                 <div className="flex -space-x-2">
                   {participants.slice(0, 3).map((user, i) => (
-                    <Avatar key={i} className="h-6 w-6 border-2 border-background">
-                      <AvatarImage src={user.avatar || undefined} />
-                      <AvatarFallback>{user.username[0]}</AvatarFallback>
-                    </Avatar>
+                    <UserAvatar
+                      key={i}
+                      userId={user.id}
+                      avatar={user.avatar}
+                      username={user.username}
+                      size="sm"
+                      className="border-2 border-background"
+                    />
                   ))}
                   <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-xs border-2 border-background">
                     +{participants.length - 3}
@@ -108,7 +118,7 @@ export default function ChallengeCard({ challenge, variant = "full" }: Challenge
               </div>
             </div>
 
-            {/* Top 3 Ranking for active challenges */}
+            {/* Top 3 Ranking */}
             <div className="grid grid-cols-3 gap-2">
               {[1, 2, 3].map(rank => (
                 <div key={rank} className="flex items-center gap-2 bg-muted rounded-md p-2">
@@ -116,10 +126,12 @@ export default function ChallengeCard({ challenge, variant = "full" }: Challenge
                     {rank === 1 && <Crown className="absolute -top-2 -left-2 h-4 w-4 text-yellow-400" />}
                     {rank === 2 && <Crown className="absolute -top-2 -left-2 h-4 w-4 text-gray-400" />}
                     {rank === 3 && <Crown className="absolute -top-2 -left-2 h-4 w-4 text-amber-700" />}
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={mockUsers[rank]?.avatar || undefined} />
-                      <AvatarFallback>{mockUsers[rank]?.username[0]}</AvatarFallback>
-                    </Avatar>
+                    <UserAvatar
+                      userId={mockUsers[rank]?.id || 0}
+                      avatar={mockUsers[rank]?.avatar}
+                      username={mockUsers[rank]?.username || ''}
+                      size="sm"
+                    />
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">{mockUsers[rank]?.username}</p>

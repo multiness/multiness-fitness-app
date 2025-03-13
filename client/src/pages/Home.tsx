@@ -19,6 +19,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import GroupCarousel from "@/components/GroupCarousel";
+import { UserAvatar } from "@/components/UserAvatar"; // Import UserAvatar component
 
 const format = (date: Date, formatStr: string) => {
   return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -32,7 +33,7 @@ export default function Home() {
   );
 
   // Kombiniere Mock-Posts und sortiere sie nach Datum
-  const allPosts = [...mockPosts].sort((a, b) => 
+  const allPosts = [...mockPosts].sort((a, b) =>
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
@@ -142,10 +143,14 @@ export default function Home() {
                   <CardContent className="p-4">
                     {/* Challenge Info Section */}
                     <div className="flex items-start gap-3 mb-4">
-                      <Avatar className="h-10 w-10 ring-2 ring-primary/20">
-                        <AvatarImage src={mockUsers[0]?.avatar || undefined} />
-                        <AvatarFallback>{mockUsers[0]?.username[0]}</AvatarFallback>
-                      </Avatar>
+                      {mockUsers[0] && (
+                        <UserAvatar
+                          userId={mockUsers[0].id}
+                          avatar={mockUsers[0].avatar}
+                          username={mockUsers[0].username}
+                          size="sm"
+                        />
+                      )}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
                           <p className="text-sm font-medium">{mockUsers[0]?.username}</p>
@@ -164,10 +169,14 @@ export default function Home() {
                         <div className="flex items-center gap-2">
                           <div className="flex -space-x-2">
                             {mockUsers.slice(0, 3).map((user, i) => (
-                              <Avatar key={i} className="h-6 w-6 border-2 border-background">
-                                <AvatarImage src={user.avatar || undefined} />
-                                <AvatarFallback>{user.username[0]}</AvatarFallback>
-                              </Avatar>
+                              <UserAvatar
+                                key={i}
+                                userId={user.id}
+                                avatar={user.avatar}
+                                username={user.username}
+                                size="sm"
+                                className="border-2 border-background"
+                              />
                             ))}
                             <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-xs border-2 border-background text-primary font-medium">
                               +{mockUsers.length - 3}
@@ -196,10 +205,12 @@ export default function Home() {
                               {rank === 1 && <Crown className="absolute -top-2 -left-2 h-4 w-4 text-yellow-400" />}
                               {rank === 2 && <Crown className="absolute -top-2 -left-2 h-4 w-4 text-gray-400" />}
                               {rank === 3 && <Crown className="absolute -top-2 -left-2 h-4 w-4 text-amber-700" />}
-                              <Avatar className="h-8 w-8">
-                                <AvatarImage src={mockUsers[rank]?.avatar || undefined} />
-                                <AvatarFallback>{mockUsers[rank]?.username[0]}</AvatarFallback>
-                              </Avatar>
+                              <UserAvatar
+                                userId={mockUsers[rank]?.id || 0}
+                                avatar={mockUsers[rank]?.avatar}
+                                username={mockUsers[rank]?.username || ''}
+                                size="sm"
+                              />
                             </div>
                             <div className="min-w-0">
                               <p className="text-sm font-medium truncate">{mockUsers[rank]?.username}</p>
