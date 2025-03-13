@@ -61,6 +61,7 @@ export const useChatStore = create<ChatStore>()(
             [chatId]: {
               ...goal,
               contributions: goal.contributions || [],
+              progress: 0, // Initialer Fortschritt ist 0
             },
           },
         }));
@@ -73,16 +74,24 @@ export const useChatStore = create<ChatStore>()(
           const currentGoal = state.groupGoals[chatId];
           if (!currentGoal) return state;
 
+          // Bestehende Beiträge abrufen oder leeres Array initialisieren
           const existingContributions = currentGoal.contributions || [];
+
+          // Neuen Beitrag hinzufügen
           const newContributions = [...existingContributions, contribution];
-          const totalProgress = newContributions.reduce((sum, c) => sum + c.progress, 0);
+
+          // Gesamtfortschritt berechnen (Summe aller Beiträge)
+          const totalProgress = Math.min(
+            100,
+            newContributions.reduce((sum, c) => sum + c.progress, 0)
+          );
 
           return {
             groupGoals: {
               ...state.groupGoals,
               [chatId]: {
                 ...currentGoal,
-                progress: Math.min(100, totalProgress),
+                progress: totalProgress,
                 contributions: newContributions,
               },
             },
