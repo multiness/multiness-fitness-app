@@ -3,24 +3,29 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, Send, Image as ImageIcon, ArrowLeft, Users } from "lucide-react";
+import { Search, Send, Image as ImageIcon, ArrowLeft, Users, Plus, FileText, Video, Target } from "lucide-react";
 import { mockUsers, mockGroups } from "../data/mockData";
 import { format } from "date-fns";
 import { useChatStore, getChatId } from "../lib/chatService";
 import { usePostStore } from "../lib/postStore";
 import { UserAvatar } from "@/components/UserAvatar";
+import { Progress } from "@/components/ui/progress";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import AddGroupGoalModal from "@/components/AddGroupGoalModal";
 
 export default function Chat() {
   const [selectedChat, setSelectedChat] = useState<ChatPreview | null>(null);
   const [messageInput, setMessageInput] = useState("");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [isGroupGoalModalOpen, setIsGroupGoalModalOpen] = useState(false);
   const currentUser = mockUsers[0];
   const chatStore = useChatStore();
   const postStore = usePostStore();
-
-  const hasActiveGoal = (userId: number) => {
-    return Boolean(postStore.getDailyGoal(userId));
-  };
 
   const chatPreviews: ChatPreview[] = [
     ...mockUsers.slice(1).map(user => {
@@ -70,14 +75,57 @@ export default function Chat() {
     setSelectedImage(null);
   };
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setSelectedImage(e.target.files[0]);
-    }
+  const handleFileSelect = (type: 'image' | 'file' | 'video') => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = type === 'image' ? 'image/*' : 
+                   type === 'video' ? 'video/*' : 
+                   '*/*';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        if (type === 'image') {
+          setSelectedImage(file);
+        }
+        // Hier können weitere Datei-Typ-Handler hinzugefügt werden
+      }
+    };
+    input.click();
   };
+
+  const handleAddGroupGoal = (data: { title: string; description?: string; targetDate: string }) => {
+    if (!selectedChat?.isGroup) return;
+
+    const goal = {
+      id: Date.now(),
+      groupId: selectedChat.id,
+      title: data.title,
+      description: data.description,
+      targetDate: data.targetDate,
+      progress: 0,
+      createdAt: new Date().toISOString(),
+      createdBy: currentUser.id,
+    };
+
+    chatStore.setGroupGoal(selectedChat.id, goal);
+
+    // Nachricht über das neue Gruppenziel senden
+    const message = {
+      id: Date.now(),
+      userId: currentUser.id,
+      content: `🎯 Neues Gruppenziel erstellt: ${data.title}`,
+      timestamp: new Date().toISOString(),
+      groupId: parseInt(selectedChat.id.substring(6)), // Entferne "group-" Prefix
+    };
+
+    chatStore.addMessage(selectedChat.id, message);
+  };
+
+  const currentGroupGoal = selectedChat?.isGroup ? chatStore.getGroupGoal(selectedChat.id) : undefined;
 
   return (
     <div className="h-[calc(100vh-4rem)] flex">
+      {/* Linke Spalte - Chat-Liste */}
       <div className={`w-full md:w-[320px] md:border-r ${selectedChat ? 'hidden md:block' : 'block'}`}>
         <div className="flex-1 flex flex-col bg-background">
           <div className="p-4 border-b">
@@ -90,97 +138,107 @@ export default function Chat() {
             </div>
           </div>
           <ScrollArea className="flex-1">
-            {chatPreviews.map(chat => {
-              const isSelected = selectedChat?.id === chat.id;
-              const messages = chatStore.getMessages(chat.id);
-              const lastMessage = messages[messages.length - 1];
-              const userId = parseInt(chat.id);
-
-              return (
-                <button
-                  key={chat.id}
-                  className={`w-full text-left p-4 hover:bg-muted/50 transition-colors ${
-                    isSelected ? 'bg-muted' : ''
-                  }`}
-                  onClick={() => setSelectedChat(chat)}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="relative">
-                      <UserAvatar
-                        userId={parseInt(chat.id)}
-                        avatar={chat.avatar}
-                        username={chat.name}
-                        size="md"
-                        isGroup={chat.isGroup}
-                        clickable={!chat.isGroup}
-                      />
-                      {chat.isGroup && (
-                        <span className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-1">
-                          <Users className="h-3 w-3 text-white" />
+            {chatPreviews.map(chat => (
+              <button
+                key={chat.id}
+                className={`w-full text-left p-4 hover:bg-muted/50 transition-colors ${
+                  selectedChat?.id === chat.id ? 'bg-muted' : ''
+                }`}
+                onClick={() => setSelectedChat(chat)}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <UserAvatar
+                      userId={parseInt(chat.id)}
+                      avatar={chat.avatar}
+                      username={chat.name}
+                      size="md"
+                      isGroup={chat.isGroup}
+                      clickable={!chat.isGroup}
+                    />
+                    {chat.isGroup && (
+                      <span className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-1">
+                        <Users className="h-3 w-3 text-white" />
+                      </span>
+                    )}
+                    {!chat.isGroup && chat.isOnline && (
+                      <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-blue-500 ring-2 ring-background" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium truncate">{chat.name}</p>
+                      {chat.lastMessage && (
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(chat.lastMessage.timestamp), 'HH:mm')}
                         </span>
                       )}
-                      {!chat.isGroup && chat.isOnline && (
-                        <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-blue-500 ring-2 ring-background" />
-                      )}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <p className="font-medium truncate flex items-center gap-2">
-                          {chat.name}
-                          {chat.unreadCount && chat.unreadCount > 0 && (
-                            <span className="h-2 w-2 rounded-full bg-blue-500" />
-                          )}
-                        </p>
-                        {lastMessage && (
-                          <span className="text-xs text-muted-foreground">
-                            {format(new Date(lastMessage.timestamp), 'HH:mm')}
-                          </span>
-                        )}
-                      </div>
-                      {lastMessage && (
-                        <p className={`text-sm truncate ${
-                          chat.unreadCount && chat.unreadCount > 0 ? 'font-semibold text-foreground' : 'text-muted-foreground'
-                        }`}>
-                          {lastMessage.userId === currentUser.id ? 'Du: ' : ''}{lastMessage.content}
-                        </p>
-                      )}
-                    </div>
+                    {chat.lastMessage && (
+                      <p className={`text-sm truncate ${
+                        chat.unreadCount && chat.unreadCount > 0 ? 'font-semibold text-foreground' : 'text-muted-foreground'
+                      }`}>
+                        {chat.lastMessage.userId === currentUser.id ? 'Du: ' : ''}{chat.lastMessage.content}
+                      </p>
+                    )}
                   </div>
-                </button>
-              );
-            })}
+                </div>
+              </button>
+            ))}
           </ScrollArea>
         </div>
       </div>
 
+      {/* Rechte Spalte - Chat */}
       <div className={`flex-1 ${!selectedChat ? 'hidden md:block' : 'block'}`}>
         {selectedChat ? (
           <div className="flex-1 flex flex-col bg-background h-full">
-            <div className="p-4 border-b flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="md:hidden"
-                onClick={() => setSelectedChat(null)}
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-              <div className="relative">
-                <UserAvatar
-                  userId={parseInt(selectedChat.id)}
-                  avatar={selectedChat.avatar}
-                  username={selectedChat.name}
-                  size="sm"
-                  isGroup={selectedChat.isGroup}
-                  clickable={!selectedChat.isGroup}
-                />
+            <div className="p-4 border-b space-y-2">
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="md:hidden"
+                  onClick={() => setSelectedChat(null)}
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+                <div className="relative">
+                  <UserAvatar
+                    userId={parseInt(selectedChat.id)}
+                    avatar={selectedChat.avatar}
+                    username={selectedChat.name}
+                    size="sm"
+                    isGroup={selectedChat.isGroup}
+                    clickable={!selectedChat.isGroup}
+                  />
+                </div>
+                <div>
+                  <h2 className="font-semibold">{selectedChat.name}</h2>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedChat.isGroup ? 'Gruppen-Chat' : 'Online'}
+                  </p>
+                </div>
               </div>
-              <div>
-                <h2 className="font-semibold">{selectedChat.name}</h2>
-                <p className="text-sm text-muted-foreground">
-                  {selectedChat.isGroup ? 'Gruppen-Chat' : 'Online'}
-                </p>
-              </div>
+
+              {/* Gruppenziel Anzeige */}
+              {selectedChat.isGroup && currentGroupGoal && (
+                <div className="bg-muted/30 rounded-lg p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Target className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-medium">{currentGroupGoal.title}</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      Ziel bis {format(new Date(currentGroupGoal.targetDate), 'dd.MM.yyyy')}
+                    </span>
+                  </div>
+                  {currentGroupGoal.description && (
+                    <p className="text-xs text-muted-foreground">{currentGroupGoal.description}</p>
+                  )}
+                  <Progress value={currentGroupGoal.progress} className="h-1.5" />
+                </div>
+              )}
             </div>
 
             <ScrollArea className="flex-1 p-4">
@@ -230,21 +288,38 @@ export default function Chat() {
 
             <form onSubmit={handleSendMessage} className="p-4 border-t">
               <div className="flex gap-2">
-                <Input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  id="image-upload"
-                  onChange={handleImageSelect}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => document.getElementById('image-upload')?.click()}
-                >
-                  <ImageIcon className="h-4 w-4" />
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => handleFileSelect('image')}>
+                      <ImageIcon className="h-4 w-4 mr-2" />
+                      <span>Bild hochladen</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleFileSelect('file')}>
+                      <FileText className="h-4 w-4 mr-2" />
+                      <span>Datei hochladen</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleFileSelect('video')}>
+                      <Video className="h-4 w-4 mr-2" />
+                      <span>Video hochladen</span>
+                    </DropdownMenuItem>
+                    {selectedChat?.isGroup && (
+                      <DropdownMenuItem onClick={() => setIsGroupGoalModalOpen(true)}>
+                        <Target className="h-4 w-4 mr-2" />
+                        <span>Gruppenziel hinzufügen</span>
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
                 <Input
                   value={messageInput}
                   onChange={(e) => setMessageInput(e.target.value)}
@@ -275,6 +350,14 @@ export default function Chat() {
           </div>
         )}
       </div>
+
+      {selectedChat?.isGroup && (
+        <AddGroupGoalModal
+          open={isGroupGoalModalOpen}
+          onOpenChange={setIsGroupGoalModalOpen}
+          onSave={handleAddGroupGoal}
+        />
+      )}
     </div>
   );
 }
