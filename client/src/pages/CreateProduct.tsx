@@ -16,7 +16,7 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { insertProductSchema, type InsertProduct } from "@shared/schema";
-import { Package, Image as ImageIcon, Calendar } from "lucide-react";
+import { Package, Image as ImageIcon } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 
 export default function CreateProduct() {
@@ -24,6 +24,8 @@ export default function CreateProduct() {
   const [, setLocation] = useLocation();
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [productType, setProductType] = useState<"training" | "coaching" | "supplement" | "custom">("training");
+  const [stockEnabled, setStockEnabled] = useState(false);
+  const [onSale, setOnSale] = useState(false);
 
   const form = useForm<InsertProduct>({
     resolver: zodResolver(insertProductSchema),
@@ -37,6 +39,11 @@ export default function CreateProduct() {
         sessions: 12,
         includes: [],
       },
+      stockEnabled: false,
+      stock: 0,
+      onSale: false,
+      salePrice: 0,
+      saleType: "Sale",
     },
   });
 
@@ -122,18 +129,79 @@ export default function CreateProduct() {
               />
             </div>
 
+            {/* Bestandsverwaltung */}
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>Archiviert</Label>
+                <Label>Bestandsverwaltung</Label>
                 <p className="text-sm text-muted-foreground">
-                  Produkt im Admin-Katalog archivieren
+                  Bestand für dieses Produkt verwalten
                 </p>
               </div>
               <Switch
-                checked={form.watch("isArchived")}
-                onCheckedChange={(checked) => form.setValue("isArchived", checked)}
+                checked={stockEnabled}
+                onCheckedChange={(checked) => {
+                  setStockEnabled(checked);
+                  form.setValue("stockEnabled", checked);
+                }}
               />
             </div>
+
+            {stockEnabled && (
+              <div className="space-y-2">
+                <Label>Verfügbare Menge</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  {...form.register("stock", { valueAsNumber: true })}
+                />
+              </div>
+            )}
+
+            {/* Sonderangebot */}
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Sonderangebot</Label>
+                <p className="text-sm text-muted-foreground">
+                  Sonderpreis für dieses Produkt aktivieren
+                </p>
+              </div>
+              <Switch
+                checked={onSale}
+                onCheckedChange={(checked) => {
+                  setOnSale(checked);
+                  form.setValue("onSale", checked);
+                }}
+              />
+            </div>
+
+            {onSale && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Angebotspreis (€)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    {...form.register("salePrice", { valueAsNumber: true })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Art des Angebots</Label>
+                  <Select
+                    value={form.watch("saleType")}
+                    onValueChange={(value: "Sale" | "Budget" | "Angebot") => form.setValue("saleType", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Wähle die Art des Angebots" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Sale">Sale</SelectItem>
+                      <SelectItem value="Budget">Budget</SelectItem>
+                      <SelectItem value="Angebot">Angebot</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
 
             {/* Produktname */}
             <div className="space-y-2">
@@ -166,7 +234,24 @@ export default function CreateProduct() {
               )}
             </div>
 
-            {/* Ablaufdatum */}
+            {/* Preis */}
+            <div className="space-y-2">
+              <Label htmlFor="price">Preis (€)</Label>
+              <Input
+                id="price"
+                type="number"
+                step="0.01"
+                {...form.register("price", { valueAsNumber: true })}
+                placeholder="49.99"
+              />
+              {form.formState.errors.price && (
+                <p className="text-sm text-destructive">
+                  {form.formState.errors.price.message}
+                </p>
+              )}
+            </div>
+
+            {/* Ablaufdatum (optional) */}
             <div className="space-y-2">
               <Label htmlFor="validUntil">Gültig bis (optional)</Label>
               <Input
@@ -230,23 +315,6 @@ export default function CreateProduct() {
                   <SelectItem value="custom">Individuell</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-
-            {/* Preis */}
-            <div className="space-y-2">
-              <Label htmlFor="price">Preis (€)</Label>
-              <Input
-                id="price"
-                type="number"
-                step="0.01"
-                {...form.register("price", { valueAsNumber: true })}
-                placeholder="49.99"
-              />
-              {form.formState.errors.price && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.price.message}
-                </p>
-              )}
             </div>
 
             {/* Dynamische Metadaten basierend auf Produkttyp */}
