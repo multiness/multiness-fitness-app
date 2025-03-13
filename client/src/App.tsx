@@ -15,6 +15,7 @@ import CreateGroup from "./pages/CreateGroup";
 import CreateEvent from "./pages/CreateEvent";
 import CreateNotification from "./pages/CreateNotification";
 import CreateProduct from "./pages/CreateProduct";
+import Products from "./pages/Products";
 import ProductDetail from "./pages/ProductDetail";
 import Groups from "./pages/Groups";
 import GroupPage from "./pages/GroupPage";
@@ -39,6 +40,7 @@ function Router() {
         <Route path="/create/event" component={CreateEvent} />
         <Route path="/create/notification" component={CreateNotification} />
         <Route path="/create/product" component={CreateProduct} />
+        <Route path="/products" component={Products} />
         <Route path="/products/:id" component={ProductDetail} />
         <Route path="/groups" component={Groups} />
         <Route path="/groups/:id" component={GroupPage} />
