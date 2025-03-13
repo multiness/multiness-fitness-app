@@ -54,13 +54,13 @@ export const useChatStore = create<ChatStore>()(
       getMessages: (chatId) => {
         return get().messages[chatId] || [];
       },
-      setGroupGoal: (chatId, goal) => {
+      setGroupGoal: (chatId: string, goal: GroupGoal) => {
         set((state) => ({
           groupGoals: {
             ...state.groupGoals,
             [chatId]: {
               ...goal,
-              contributions: [],
+              contributions: goal.contributions || [],
             },
           },
         }));
@@ -68,12 +68,13 @@ export const useChatStore = create<ChatStore>()(
       getGroupGoal: (chatId) => {
         return get().groupGoals[chatId];
       },
-      updateGroupGoalProgress: (chatId, contribution) => {
+      updateGroupGoalProgress: (chatId: string, contribution: Contribution) => {
         set((state) => {
           const currentGoal = state.groupGoals[chatId];
           if (!currentGoal) return state;
 
-          const newContributions = [...currentGoal.contributions, contribution];
+          const existingContributions = currentGoal.contributions || [];
+          const newContributions = [...existingContributions, contribution];
           const totalProgress = newContributions.reduce((sum, c) => sum + c.progress, 0);
 
           return {
