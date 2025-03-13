@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Image, Video, X, Target, Timer } from "lucide-react";
+import { Image, Video, X } from "lucide-react";
 import { usePostStore, type DailyGoal } from "../lib/postStore";
 import { useLocation } from "wouter";
 import { useUsers } from "../contexts/UserContext";
@@ -79,8 +79,9 @@ export default function CreatePost() {
       }
     }
 
-    // Create daily goal if enabled
     let dailyGoal: DailyGoal | undefined;
+
+    // Create daily goal if enabled
     if (includeDailyGoal) {
       dailyGoal = {
         type: goalType,
@@ -92,6 +93,7 @@ export default function CreatePost() {
         createdAt: new Date()
       };
 
+      console.log('Setting daily goal for user:', currentUser.id, dailyGoal);
       postStore.setDailyGoal(currentUser.id, dailyGoal);
     }
 
@@ -105,7 +107,7 @@ export default function CreatePost() {
       dailyGoal
     };
 
-    // Add post to posts array
+    // Add post to store
     toast({
       title: "Beitrag erstellt!",
       description: "Dein Beitrag wurde erfolgreich veröffentlicht.",

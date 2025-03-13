@@ -48,6 +48,7 @@ export const usePostStore = create<PostStore>()(
       comments: {},
       dailyGoals: {},
       goalParticipants: {},
+
       addLike: (postId, userId) =>
         set((state) => ({
           likes: {
@@ -55,6 +56,7 @@ export const usePostStore = create<PostStore>()(
             [postId]: [...(state.likes[postId] || []), userId]
           }
         })),
+
       removeLike: (postId, userId) =>
         set((state) => ({
           likes: {
@@ -62,10 +64,13 @@ export const usePostStore = create<PostStore>()(
             [postId]: (state.likes[postId] || []).filter((id) => id !== userId)
           }
         })),
+
       hasLiked: (postId, userId) =>
         (get().likes[postId] || []).includes(userId),
+
       getLikes: (postId) =>
         get().likes[postId] || [],
+
       addComment: (postId, userId, content) => {
         const comment: Comment = {
           id: Date.now(),
@@ -81,52 +86,68 @@ export const usePostStore = create<PostStore>()(
           }
         }));
       },
+
       getComments: (postId) =>
         get().comments[postId] || [],
+
       setDailyGoal: (userId, goal) => {
+        console.log('Setting daily goal for user:', userId, goal);
         const existingGoal = get().getDailyGoal(userId);
         const hasExistingGoal = Boolean(existingGoal);
 
-        // Always replace the existing goal with the new one
+        // Create a plain object version of the goal for storage
+        const goalForStorage = {
+          ...goal,
+          createdAt: goal.createdAt.toISOString() // Convert Date to string for storage
+        };
+
         set((state) => ({
           dailyGoals: {
             ...state.dailyGoals,
-            [userId]: goal
+            [userId]: goalForStorage
           }
         }));
 
-        console.log('Setting daily goal for user:', userId, goal);
         return { hasExistingGoal };
       },
+
       getDailyGoal: (userId) => {
+        console.log('Getting daily goal for user:', userId);
         const goal = get().dailyGoals[userId];
-        console.log('Getting daily goal for user:', userId, goal);
+        console.log('Found goal:', goal);
 
         if (!goal) return undefined;
 
+        // Convert stored goal back to proper format with Date object
+        const goalWithDate = {
+          ...goal,
+          createdAt: new Date(goal.createdAt)
+        };
+
+        // Check if goal is expired (24h)
         const now = new Date();
-        const goalAge = now.getTime() - new Date(goal.createdAt).getTime();
+        const goalAge = now.getTime() - goalWithDate.createdAt.getTime();
         const isExpired = goalAge > 24 * 60 * 60 * 1000;
 
         if (isExpired) {
-          set((state) => ({
-            dailyGoals: {
-              ...state.dailyGoals,
-              [userId]: undefined
-            },
-            goalParticipants: {
-              ...state.goalParticipants,
-              [userId]: []
-            }
-          }));
+          set((state) => {
+            const { [userId]: _, ...remainingGoals } = state.dailyGoals;
+            const { [userId]: __, ...remainingParticipants } = state.goalParticipants;
+            return {
+              dailyGoals: remainingGoals,
+              goalParticipants: remainingParticipants
+            };
+          });
           return undefined;
         }
 
-        return goal;
+        return goalWithDate;
       },
+
       hasActiveGoal: (userId) => {
         return Boolean(get().getDailyGoal(userId));
       },
+
       updateDailyGoalProgress: (userId, progress) =>
         set((state) => {
           const currentGoal = state.dailyGoals[userId];
@@ -143,6 +164,7 @@ export const usePostStore = create<PostStore>()(
             }
           };
         }),
+
       joinDailyGoal: (targetUserId, participantId) =>
         set((state) => ({
           goalParticipants: {
@@ -150,6 +172,7 @@ export const usePostStore = create<PostStore>()(
             [targetUserId]: [...(state.goalParticipants[targetUserId] || []), participantId]
           }
         })),
+
       leaveDailyGoal: (targetUserId, participantId) =>
         set((state) => ({
           goalParticipants: {
@@ -157,8 +180,10 @@ export const usePostStore = create<PostStore>()(
             [targetUserId]: (state.goalParticipants[targetUserId] || []).filter(id => id !== participantId)
           }
         })),
+
       getGoalParticipants: (userId) =>
         get().goalParticipants[userId] || [],
+
       checkExpiredGoals: () => {
         const now = new Date();
         const goals = get().dailyGoals;
@@ -168,22 +193,21 @@ export const usePostStore = create<PostStore>()(
 
           const goalAge = now.getTime() - new Date(goal.createdAt).getTime();
           if (goalAge > 24 * 60 * 60 * 1000) {
-            set((state) => ({
-              dailyGoals: {
-                ...state.dailyGoals,
-                [userId]: undefined
-              },
-              goalParticipants: {
-                ...state.goalParticipants,
-                [userId]: []
-              }
-            }));
+            set((state) => {
+              const { [userId]: _, ...remainingGoals } = state.dailyGoals;
+              const { [userId]: __, ...remainingParticipants } = state.goalParticipants;
+              return {
+                dailyGoals: remainingGoals,
+                goalParticipants: remainingParticipants
+              };
+            });
           }
         });
       }
     }),
     {
-      name: 'post-interaction-storage'
+      name: 'post-interaction-storage',
+      version: 1, // Add version number to handle storage migrations
     }
   )
 );
