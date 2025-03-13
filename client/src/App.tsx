@@ -4,6 +4,7 @@ import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { UserProvider } from "./contexts/UserContext";
 import { AdminProvider } from "./contexts/AdminContext";
+import { ProductProvider } from "./contexts/ProductContext";
 import { ThemeProvider } from "./contexts/ThemeProvider";
 import Layout from "./components/Layout";
 import Home from "./pages/Home";
@@ -63,8 +64,10 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <UserProvider>
           <AdminProvider>
-            <Router />
-            <Toaster />
+            <ProductProvider>
+              <Router />
+              <Toaster />
+            </ProductProvider>
           </AdminProvider>
         </UserProvider>
       </QueryClientProvider>

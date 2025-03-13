@@ -4,15 +4,16 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Search, Package, Euro, Archive, Clock, Hash } from "lucide-react";
-import { mockProducts } from "../data/mockData";
 import { Link } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useProducts } from "@/contexts/ProductContext";
 
 export default function Products() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("active");
+  const { products } = useProducts();
 
-  const filteredProducts = mockProducts.filter(product => {
+  const filteredProducts = products.filter(product => {
     const matchesSearch = 
       product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.description.toLowerCase().includes(searchQuery.toLowerCase());
@@ -47,7 +48,7 @@ export default function Products() {
         <Card>
           <CardContent className="pt-6">
             <div className="text-2xl font-bold text-primary">
-              {mockProducts.filter(p => p.isActive && !p.isArchived).length}
+              {products.filter(p => p.isActive && !p.isArchived).length}
             </div>
             <p className="text-sm text-muted-foreground">Aktive Produkte</p>
           </CardContent>
@@ -55,7 +56,7 @@ export default function Products() {
         <Card>
           <CardContent className="pt-6">
             <div className="text-2xl font-bold text-yellow-600">
-              {mockProducts.filter(p => p.validUntil && new Date(p.validUntil) < new Date()).length}
+              {products.filter(p => p.validUntil && new Date(p.validUntil) < new Date()).length}
             </div>
             <p className="text-sm text-muted-foreground">Abgelaufene Produkte</p>
           </CardContent>
@@ -63,7 +64,7 @@ export default function Products() {
         <Card>
           <CardContent className="pt-6">
             <div className="text-2xl font-bold text-gray-500">
-              {mockProducts.filter(p => p.isArchived).length}
+              {products.filter(p => p.isArchived).length}
             </div>
             <p className="text-sm text-muted-foreground">Archivierte Produkte</p>
           </CardContent>

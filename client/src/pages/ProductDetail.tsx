@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "wouter";
 import { loadScript } from "@paypal/paypal-js";
-import { mockProducts } from "../data/mockData";
 import { Package, ShoppingCart, Edit, Save, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
 import { useAdmin } from "@/contexts/AdminContext";
+import { useProducts } from "@/contexts/ProductContext";
 
 interface ProductDetailProps {
   id?: string;
@@ -21,18 +21,19 @@ export default function ProductDetail({ id }: ProductDetailProps) {
   const productId = id || params.id;
   const { toast } = useToast();
   const { isAdmin } = useAdmin();
+  const { products, updateProduct } = useProducts();
   const [isEditing, setIsEditing] = useState(false);
-  const [product, setProduct] = useState(mockProducts[0]);
+  const [product, setProduct] = useState(products[0]);
   const [editedProduct, setEditedProduct] = useState(product);
   const [paypalLoaded, setPaypalLoaded] = useState(false);
 
   useEffect(() => {
-    const prod = mockProducts.find(p => p.id === Number(productId));
+    const prod = products.find(p => p.id === Number(productId));
     if (prod) {
       setProduct(prod);
       setEditedProduct(prod);
     }
-  }, [productId]);
+  }, [productId, products]);
 
   useEffect(() => {
     loadScript({
@@ -50,7 +51,7 @@ export default function ProductDetail({ id }: ProductDetailProps) {
   }, []);
 
   const handleSave = () => {
-    // TODO: Implement API call to save changes
+    updateProduct(editedProduct);
     setProduct(editedProduct);
     setIsEditing(false);
     toast({
