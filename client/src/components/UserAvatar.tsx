@@ -35,10 +35,11 @@ export function UserAvatar({
       className={cn(
         sizeClasses[size],
         isGroup
-          ? "ring-2 ring-green-500"
+          ? "border-2 border-green-500"
           : hasActiveGoal
-            ? "ring-2 ring-blue-500"
+            ? "border-2 border-blue-500"
             : "",
+        "rounded-full",
         className
       )}
     >

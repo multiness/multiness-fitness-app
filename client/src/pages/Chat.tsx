@@ -106,22 +106,21 @@ export default function Chat() {
                   onClick={() => setSelectedChat(chat)}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="relative inline-block">
-                      <UserAvatar
-                        userId={parseInt(chat.id)}
-                        avatar={chat.avatar}
-                        username={chat.name}
-                        size="md"
-                        isGroup={chat.isGroup}
-                      />
-                      {chat.isGroup ? (
-                        <div className="absolute bottom-0 right-0 bg-green-500 rounded-full p-1">
-                          <Users className="h-3 w-3 text-white" />
-                        </div>
-                      ) : chat.isOnline && (
-                        <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-blue-500 ring-2 ring-background" />
-                      )}
-                    </div>
+                    <UserAvatar
+                      userId={parseInt(chat.id)}
+                      avatar={chat.avatar}
+                      username={chat.name}
+                      size="md"
+                      isGroup={chat.isGroup}
+                    />
+                    {chat.isGroup && (
+                      <span className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-1">
+                        <Users className="h-3 w-3 text-white" />
+                      </span>
+                    )}
+                    {chat.isOnline && !chat.isGroup && (
+                      <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-blue-500 ring-2 ring-background" />
+                    )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <p className="font-medium truncate flex items-center gap-2">
@@ -164,15 +163,13 @@ export default function Chat() {
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
-              <div className="relative inline-block">
-                <UserAvatar
-                  userId={parseInt(selectedChat.id)}
-                  avatar={selectedChat.avatar}
-                  username={selectedChat.name}
-                  size="sm"
-                  isGroup={selectedChat.isGroup}
-                />
-              </div>
+              <UserAvatar
+                userId={parseInt(selectedChat.id)}
+                avatar={selectedChat.avatar}
+                username={selectedChat.name}
+                size="sm"
+                isGroup={selectedChat.isGroup}
+              />
               <div>
                 <h2 className="font-semibold">{selectedChat.name}</h2>
                 <p className="text-sm text-muted-foreground">
