@@ -9,6 +9,7 @@ interface UserAvatarProps {
   size?: "sm" | "md" | "lg";
   className?: string;
   showActiveGoal?: boolean;
+  isGroup?: boolean;
 }
 
 export function UserAvatar({
@@ -17,7 +18,8 @@ export function UserAvatar({
   username,
   size = "md",
   className,
-  showActiveGoal = true
+  showActiveGoal = true,
+  isGroup = false
 }: UserAvatarProps) {
   const postStore = usePostStore();
   const hasActiveGoal = showActiveGoal && postStore.getDailyGoal(userId);
@@ -32,7 +34,11 @@ export function UserAvatar({
     <Avatar
       className={cn(
         sizeClasses[size],
-        hasActiveGoal ? "ring-4 ring-blue-500/50" : "ring-4 ring-background",
+        isGroup
+          ? "ring-2 ring-green-500"
+          : hasActiveGoal
+            ? "ring-2 ring-blue-500"
+            : "",
         className
       )}
     >

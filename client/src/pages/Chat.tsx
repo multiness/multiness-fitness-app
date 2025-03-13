@@ -9,6 +9,7 @@ import { mockUsers, mockGroups } from "../data/mockData";
 import { format } from "date-fns";
 import { useChatStore, getChatId } from "../lib/chatService";
 import { usePostStore } from "../lib/postStore";
+import { UserAvatar } from "@/components/UserAvatar";
 
 export default function Chat() {
   const [selectedChat, setSelectedChat] = useState<ChatPreview | null>(null);
@@ -105,18 +106,14 @@ export default function Chat() {
                   onClick={() => setSelectedChat(chat)}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="relative">
-                      <Avatar
-                        className={chat.isGroup 
-                          ? 'h-12 w-12 ring-4 ring-green-500/50'
-                          : hasActiveGoal(userId)
-                            ? 'h-12 w-12 ring-4 ring-blue-500/50'
-                            : 'h-12 w-12'
-                        }
-                      >
-                        <AvatarImage src={chat.avatar || undefined} />
-                        <AvatarFallback>{chat.name[0]}</AvatarFallback>
-                      </Avatar>
+                    <div className="relative inline-block">
+                      <UserAvatar
+                        userId={parseInt(chat.id)}
+                        avatar={chat.avatar}
+                        username={chat.name}
+                        size="md"
+                        isGroup={chat.isGroup}
+                      />
                       {chat.isGroup ? (
                         <div className="absolute bottom-0 right-0 bg-green-500 rounded-full p-1">
                           <Users className="h-3 w-3 text-white" />
@@ -159,23 +156,23 @@ export default function Chat() {
         {selectedChat ? (
           <div className="flex-1 flex flex-col bg-background h-full">
             <div className="p-4 border-b flex items-center gap-3">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="md:hidden" 
+              <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden"
                 onClick={() => setSelectedChat(null)}
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
-              <Avatar
-                className={selectedChat.isGroup 
-                  ? 'h-10 w-10 ring-4 ring-green-500/50'
-                  : 'h-10 w-10 ring-4 ring-blue-500/50'
-                }
-              >
-                <AvatarImage src={selectedChat.avatar || undefined} />
-                <AvatarFallback>{selectedChat.name[0]}</AvatarFallback>
-              </Avatar>
+              <div className="relative inline-block">
+                <UserAvatar
+                  userId={parseInt(selectedChat.id)}
+                  avatar={selectedChat.avatar}
+                  username={selectedChat.name}
+                  size="sm"
+                  isGroup={selectedChat.isGroup}
+                />
+              </div>
               <div>
                 <h2 className="font-semibold">{selectedChat.name}</h2>
                 <p className="text-sm text-muted-foreground">
@@ -206,9 +203,9 @@ export default function Chat() {
                             isCurrentUser ? 'bg-primary text-primary-foreground' : 'bg-muted'
                           }`}>
                             {message.imageUrl && (
-                              <img 
-                                src={message.imageUrl} 
-                                alt="Shared" 
+                              <img
+                                src={message.imageUrl}
+                                alt="Shared"
                                 className="rounded-md mb-2 max-w-full"
                               />
                             )}
