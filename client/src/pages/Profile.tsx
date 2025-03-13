@@ -1,5 +1,5 @@
 import { VerifiedBadge } from "@/components/VerifiedBadge";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "wouter";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,11 @@ export default function Profile() {
 
   // Get the active goal for the current profile's user
   const activeGoal = postStore.getDailyGoal(userId);
+
+  useEffect(() => {
+    console.log('Profile page - userId:', userId);
+    console.log('Profile page - activeGoal:', activeGoal);
+  }, [userId, activeGoal]);
 
   if (!user) return <div>User not found</div>;
 
@@ -87,7 +92,7 @@ export default function Profile() {
           {activeGoal && (
             <div className="w-full max-w-md mt-4">
               <DailyGoalDisplay 
-                goal={activeGoal}
+                goal={activeGoal} 
                 userId={userId}
                 variant="profile"
               />
@@ -123,6 +128,14 @@ export default function Profile() {
         </div>
       </div>
 
+      {/* Edit Profile Dialog */}
+      <EditProfileDialog
+        user={user}
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        onSave={handleProfileUpdate}
+      />
+
       {/* Content Tabs */}
       <Tabs value={selectedTab} onValueChange={setSelectedTab}>
         <TabsList className="grid w-full grid-cols-4">
@@ -143,7 +156,6 @@ export default function Profile() {
             Gruppen
           </TabsTrigger>
         </TabsList>
-
         <TabsContent value="all" className="mt-6 space-y-6">
           {/* Active Challenges */}
           {activeUserChallenges.length > 0 && (

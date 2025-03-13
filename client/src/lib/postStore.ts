@@ -87,6 +87,7 @@ export const usePostStore = create<PostStore>()(
         const existingGoal = get().getDailyGoal(userId);
         const hasExistingGoal = Boolean(existingGoal);
 
+        // Always replace the existing goal with the new one
         set((state) => ({
           dailyGoals: {
             ...state.dailyGoals,
@@ -94,10 +95,13 @@ export const usePostStore = create<PostStore>()(
           }
         }));
 
+        console.log('Setting daily goal for user:', userId, goal);
         return { hasExistingGoal };
       },
       getDailyGoal: (userId) => {
         const goal = get().dailyGoals[userId];
+        console.log('Getting daily goal for user:', userId, goal);
+
         if (!goal) return undefined;
 
         const now = new Date();
