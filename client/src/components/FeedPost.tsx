@@ -84,7 +84,7 @@ export default function FeedPost({ post }: FeedPostProps) {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between p-4">
         <div className="flex items-center gap-3">
-          <Avatar>
+          <Avatar userId={user?.id}>
             <AvatarImage src={user?.avatar || undefined} />
             <AvatarFallback>{user?.username[0]}</AvatarFallback>
           </Avatar>
@@ -217,7 +217,7 @@ export default function FeedPost({ post }: FeedPostProps) {
                 const commentUser = mockUsers.find(u => u.id === comment.userId);
                 return (
                   <div key={comment.id} className="flex gap-3">
-                    <Avatar className="h-8 w-8">
+                    <Avatar className="h-8 w-8" userId={commentUser?.id}>
                       <AvatarImage src={commentUser?.avatar || undefined} />
                       <AvatarFallback>{commentUser?.username[0]}</AvatarFallback>
                     </Avatar>

@@ -47,7 +47,7 @@ export default function Profile() {
 
         <div className="flex flex-col items-center -mt-12">
           <div className="relative">
-            <Avatar className="h-24 w-24 border-4 border-background">
+            <Avatar className="h-24 w-24 border-4 border-background" userId={user.id}>
               <AvatarImage src={user.avatar || undefined} />
               <AvatarFallback>{user.username[0].toUpperCase()}</AvatarFallback>
             </Avatar>

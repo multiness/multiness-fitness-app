@@ -1,6 +1,6 @@
 import { Progress } from "@/components/ui/progress";
 import { DailyGoal } from "../lib/postStore";
-import { Droplet, Footprints, Route, Target, Users } from "lucide-react";
+import { Droplet, Footprints, Route, Target, Users, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,7 @@ import { mockUsers } from "../data/mockData";
 interface DailyGoalDisplayProps {
   goal: DailyGoal;
   userId: number;
-  variant?: "compact" | "full";
+  variant?: "compact" | "full" | "profile";
   onProgressUpdate?: (progress: number) => void;
 }
 
@@ -29,6 +29,7 @@ export default function DailyGoalDisplay({
   const { currentUser } = useUsers();
   const { toast } = useToast();
   const participants = postStore.getGoalParticipants(userId);
+  const isOwner = currentUser?.id === userId;
 
   const goalIcons = {
     water: Droplet,
@@ -91,26 +92,105 @@ export default function DailyGoalDisplay({
     }
   };
 
+  // Profilseiten-Variante
+  if (variant === "profile") {
+    return (
+      <div className="space-y-2 py-4 border-t border-b">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Icon className="h-5 w-5 text-primary" />
+            <h3 className="font-medium">Aktuelles Tagesziel: {goalTypes[goal.type]}</h3>
+          </div>
+          {isOwner && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-primary hover:text-primary/80"
+              onClick={() => setShowProgressInput(true)}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Fortschritt eintragen
+            </Button>
+          )}
+        </div>
+
+        <div className="relative h-2 overflow-hidden rounded-full bg-primary/10">
+          <div 
+            className="h-full bg-primary transition-all duration-500 ease-in-out"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+
+        <div className="flex justify-between text-sm">
+          <span className="text-muted-foreground">
+            {goal.progress} von {goal.target} {goal.unit}
+          </span>
+          {participants.length > 0 && (
+            <span className="text-muted-foreground flex items-center gap-1">
+              <Users className="h-4 w-4" />
+              {participants.length} {participants.length === 1 ? "Teilnehmer" : "Teilnehmer"}
+            </span>
+          )}
+        </div>
+
+        {showProgressInput && (
+          <form onSubmit={handleProgressUpdate} className="flex gap-2 mt-2">
+            <Input
+              type="number"
+              placeholder={`Neuer Fortschritt in ${goal.unit}`}
+              value={progressInput}
+              onChange={(e) => setProgressInput(e.target.value)}
+              className="flex-1"
+            />
+            <Button type="submit">Speichern</Button>
+          </form>
+        )}
+      </div>
+    );
+  }
+
+  // Kompakte Variante für Posts
   if (variant === "compact") {
     return (
-      <div className="space-y-2">
-        <div className="flex items-center gap-2 text-sm">
-          <Icon className="h-4 w-4 text-primary" />
-          <span className="font-medium">{goalTypes[goal.type]}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex-1">
-            <Progress value={progress} className="h-2" />
+      <div className="space-y-3 p-3 bg-primary/5 rounded-lg">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Icon className="h-4 w-4 text-primary" />
+            <span className="font-medium text-sm">{goalTypes[goal.type]}</span>
           </div>
-          <Button 
-            size="sm" 
-            variant="ghost"
-            className="h-6 px-2"
-            onClick={() => setShowProgressInput(true)}
-          >
-            {goal.progress}/{goal.target} {goal.unit}
-          </Button>
+          {isOwner && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs text-primary hover:text-primary/80"
+              onClick={() => setShowProgressInput(true)}
+            >
+              <Plus className="h-3 w-3 mr-1" />
+              Fortschritt
+            </Button>
+          )}
         </div>
+
+        <div className="relative h-2 overflow-hidden rounded-full bg-primary/10">
+          <div 
+            className="h-full bg-primary transition-all duration-500 ease-in-out"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+
+        <div className="flex items-center justify-between text-xs">
+          <span>
+            {goal.progress} von {goal.target} {goal.unit}
+            {goal.completed && " ✓"}
+          </span>
+          {participants.length > 0 && (
+            <span className="text-muted-foreground flex items-center gap-1">
+              <Users className="h-3 w-3" />
+              {participants.length}
+            </span>
+          )}
+        </div>
+
         {showProgressInput && (
           <form onSubmit={handleProgressUpdate} className="flex gap-2">
             <Input
@@ -118,10 +198,10 @@ export default function DailyGoalDisplay({
               placeholder={`Neuer Fortschritt in ${goal.unit}`}
               value={progressInput}
               onChange={(e) => setProgressInput(e.target.value)}
-              className="h-8"
+              className="h-8 text-sm"
             />
             <Button type="submit" size="sm" className="h-8">
-              Speichern
+              OK
             </Button>
           </form>
         )}
@@ -129,37 +209,52 @@ export default function DailyGoalDisplay({
     );
   }
 
+  // Vollständige Variante
   return (
-    <div className="space-y-3 p-4 bg-muted/50 rounded-lg">
+    <div className="space-y-4 p-4 bg-primary/5 rounded-lg">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Icon className="h-5 w-5 text-primary" />
           <h3 className="font-medium">{goalTypes[goal.type]}</h3>
         </div>
-        {currentUser && currentUser.id !== userId && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleJoinGoal}
-            className={participants.includes(currentUser.id) ? "bg-primary/10" : ""}
-          >
-            {participants.includes(currentUser.id) ? "Mache ich auch" : "Mitmachen"}
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {isOwner && (
+            <Button
+              variant="ghost"
+              className="text-primary hover:text-primary/80"
+              onClick={() => setShowProgressInput(true)}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Fortschritt eintragen
+            </Button>
+          )}
+          {currentUser && currentUser.id !== userId && (
+            <Button
+              variant={participants.includes(currentUser.id) ? "secondary" : "outline"}
+              size="sm"
+              onClick={handleJoinGoal}
+              className={participants.includes(currentUser.id) ? "bg-primary/10" : ""}
+            >
+              {participants.includes(currentUser.id) ? "Mache ich auch" : "Mitmachen"}
+            </Button>
+          )}
+        </div>
       </div>
 
-      <Progress value={progress} className="h-2" />
+      <div className="relative h-2.5 overflow-hidden rounded-full bg-primary/10">
+        <div 
+          className="h-full bg-primary transition-all duration-500 ease-in-out"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
 
       <div className="flex justify-between items-center">
-        <Button 
-          variant="ghost" 
-          size="sm"
-          onClick={() => setShowProgressInput(true)}
-          className="text-sm px-0"
-        >
+        <span className="text-sm">
           {goal.progress} von {goal.target} {goal.unit}
-          {goal.completed && " ✓"}
-        </Button>
+          {goal.completed && (
+            <span className="ml-2 text-primary">✓ Geschafft!</span>
+          )}
+        </span>
         {participants.length > 0 && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Users className="h-4 w-4" />
@@ -175,6 +270,7 @@ export default function DailyGoalDisplay({
             placeholder={`Neuer Fortschritt in ${goal.unit}`}
             value={progressInput}
             onChange={(e) => setProgressInput(e.target.value)}
+            className="flex-1"
           />
           <Button type="submit">
             Speichern
@@ -183,13 +279,13 @@ export default function DailyGoalDisplay({
       )}
 
       {participants.length > 0 && (
-        <div className="pt-2 border-t">
+        <div className="pt-3 border-t">
           <p className="text-sm text-muted-foreground mb-2">Machen auch mit:</p>
           <div className="flex flex-wrap gap-2">
             {participants.map(participantId => {
               const participant = mockUsers.find(u => u.id === participantId);
               return (
-                <span key={participantId} className="text-sm bg-primary/5 px-2 py-1 rounded-full">
+                <span key={participantId} className="text-sm bg-primary/10 px-2 py-1 rounded-full">
                   {participant?.username}
                 </span>
               );
