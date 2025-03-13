@@ -1,6 +1,6 @@
 import { Progress } from "@/components/ui/progress";
 import { DailyGoal } from "../lib/postStore";
-import { Droplet, Footprints, Route, Target, Users, Plus } from "lucide-react";
+import { Droplet, Footprints, Route, Target, Users, Plus, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
@@ -139,15 +139,26 @@ export default function DailyGoalDisplay({
 
         <div className="relative h-2 overflow-hidden rounded-full bg-primary/10">
           <div
-            className="h-full bg-primary transition-all duration-500 ease-in-out"
+            className={`h-full transition-all duration-500 ease-in-out ${
+              goal.completed
+                ? 'bg-yellow-500' // Gelbgold wenn komplett
+                : 'bg-blue-500'   // Blau während des Fortschritts
+            }`}
             style={{ width: `${progress}%` }}
           />
         </div>
 
         <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">
-            {goal.progress} von {goal.target} {goal.unit}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground">
+              {goal.progress} von {goal.target} {goal.unit}
+            </span>
+            {goal.completed && (
+              <span className="text-yellow-500 flex items-center gap-1">
+                <Trophy className="h-4 w-4" /> Ziel erreicht!
+              </span>
+            )}
+          </div>
           {participants.length > 0 && (
             <span className="text-muted-foreground flex items-center gap-1">
               <Users className="h-4 w-4" />
@@ -196,16 +207,26 @@ export default function DailyGoalDisplay({
 
         <div className="relative h-2 overflow-hidden rounded-full bg-primary/10">
           <div
-            className="h-full bg-primary transition-all duration-500 ease-in-out"
+            className={`h-full transition-all duration-500 ease-in-out ${
+              goal.completed
+                ? 'bg-yellow-500' // Gelbgold wenn komplett
+                : 'bg-blue-500'   // Blau während des Fortschritts
+            }`}
             style={{ width: `${progress}%` }}
           />
         </div>
 
         <div className="flex items-center justify-between text-xs">
-          <span>
-            {goal.progress} von {goal.target} {goal.unit}
-            {goal.completed && " ✓"}
-          </span>
+          <div className="flex items-center gap-2">
+            <span>
+              {goal.progress} von {goal.target} {goal.unit}
+            </span>
+            {goal.completed && (
+              <span className="text-yellow-500 flex items-center gap-1">
+                <Trophy className="h-3 w-3" />
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             {timeLeft && (
               <span className="text-muted-foreground">
@@ -273,7 +294,11 @@ export default function DailyGoalDisplay({
 
       <div className="relative h-2.5 overflow-hidden rounded-full bg-primary/10">
         <div
-          className="h-full bg-primary transition-all duration-500 ease-in-out"
+          className={`h-full transition-all duration-500 ease-in-out ${
+            goal.completed
+              ? 'bg-yellow-500' // Gelbgold wenn komplett
+              : 'bg-blue-500'   // Blau während des Fortschritts
+          }`}
           style={{ width: `${progress}%` }}
         />
       </div>
@@ -282,7 +307,9 @@ export default function DailyGoalDisplay({
         <span className="text-sm">
           {goal.progress} von {goal.target} {goal.unit}
           {goal.completed && (
-            <span className="ml-2 text-primary">✓ Geschafft!</span>
+            <span className="ml-2 text-yellow-500 flex items-center gap-1 inline-flex">
+              <Trophy className="h-4 w-4" /> Geschafft!
+            </span>
           )}
         </span>
         <div className="flex items-center gap-3">
