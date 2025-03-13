@@ -1,6 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { usePostStore } from "../lib/postStore";
 import { cn } from "@/lib/utils";
+import { Link } from "wouter";
 
 interface UserAvatarProps {
   userId: number;
@@ -10,6 +11,7 @@ interface UserAvatarProps {
   className?: string;
   showActiveGoal?: boolean;
   isGroup?: boolean;
+  clickable?: boolean;
 }
 
 export function UserAvatar({
@@ -19,7 +21,8 @@ export function UserAvatar({
   size = "md",
   className,
   showActiveGoal = true,
-  isGroup = false
+  isGroup = false,
+  clickable = true
 }: UserAvatarProps) {
   const postStore = usePostStore();
   const hasActiveGoal = showActiveGoal && postStore.getDailyGoal(userId);
@@ -38,7 +41,8 @@ export function UserAvatar({
       : hasActiveGoal
         ? "bg-gradient-to-r from-blue-400 to-blue-300"
         : "p-0", // No padding when no border needed
-    sizeClasses[size]
+    sizeClasses[size],
+    clickable && "cursor-pointer hover:opacity-90 transition-opacity"
   );
 
   // Avatar itself should fit perfectly inside the container
@@ -48,7 +52,7 @@ export function UserAvatar({
     className
   );
 
-  return (
+  const AvatarComponent = (
     <div className={containerClasses}>
       <Avatar className={avatarClasses}>
         <AvatarImage src={avatar || undefined} alt={username} className="rounded-full" />
@@ -56,6 +60,16 @@ export function UserAvatar({
       </Avatar>
     </div>
   );
+
+  if (clickable && !isGroup) {
+    return (
+      <Link href={`/profile/${userId}`}>
+        {AvatarComponent}
+      </Link>
+    );
+  }
+
+  return AvatarComponent;
 }
 
 export default UserAvatar;

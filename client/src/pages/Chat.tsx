@@ -30,7 +30,7 @@ export default function Chat() {
       return {
         id: chatId,
         name: user.username,
-        avatar: user.avatar,
+        avatar: user.avatar || undefined,
         isGroup: false,
         isOnline: true,
         lastMessage: messages[messages.length - 1],
@@ -44,7 +44,7 @@ export default function Chat() {
       return {
         id: chatId,
         name: group.name,
-        avatar: group.image,
+        avatar: group.image || undefined,
         isGroup: true,
         lastMessage: messages[messages.length - 1],
         unreadCount,
@@ -54,7 +54,7 @@ export default function Chat() {
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!messageInput.trim() && !selectedImage || !selectedChat) return;
+    if ((!messageInput.trim() && !selectedImage) || !selectedChat) return;
 
     const message = {
       id: Date.now(),
@@ -112,6 +112,7 @@ export default function Chat() {
                         username={chat.name}
                         size="md"
                         isGroup={chat.isGroup}
+                        clickable={!chat.isGroup}
                       />
                       {chat.isGroup && (
                         <span className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-1">
@@ -126,7 +127,7 @@ export default function Chat() {
                       <div className="flex items-center justify-between">
                         <p className="font-medium truncate flex items-center gap-2">
                           {chat.name}
-                          {chat.unreadCount > 0 && (
+                          {chat.unreadCount && chat.unreadCount > 0 && (
                             <span className="h-2 w-2 rounded-full bg-blue-500" />
                           )}
                         </p>
@@ -138,7 +139,7 @@ export default function Chat() {
                       </div>
                       {lastMessage && (
                         <p className={`text-sm truncate ${
-                          chat.unreadCount > 0 ? 'font-semibold text-foreground' : 'text-muted-foreground'
+                          chat.unreadCount && chat.unreadCount > 0 ? 'font-semibold text-foreground' : 'text-muted-foreground'
                         }`}>
                           {lastMessage.userId === currentUser.id ? 'Du: ' : ''}{lastMessage.content}
                         </p>
@@ -171,6 +172,7 @@ export default function Chat() {
                   username={selectedChat.name}
                   size="sm"
                   isGroup={selectedChat.isGroup}
+                  clickable={!selectedChat.isGroup}
                 />
               </div>
               <div>
@@ -192,11 +194,11 @@ export default function Chat() {
                       className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
                     >
                       <div className={`flex gap-2 max-w-[70%] ${isCurrentUser ? 'flex-row-reverse' : ''}`}>
-                        {!isCurrentUser && (
+                        {!isCurrentUser && sender && (
                           <UserAvatar
                             userId={message.userId}
-                            avatar={sender?.avatar}
-                            username={sender?.username || ''}
+                            avatar={sender.avatar}
+                            username={sender.username}
                             size="sm"
                           />
                         )}
