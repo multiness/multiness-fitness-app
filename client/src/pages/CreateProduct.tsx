@@ -49,6 +49,7 @@ export default function CreateProduct() {
       onSale: false,
       salePrice: 0,
       saleType: "Sale",
+      validUntil: undefined, // Explicitly set as undefined
     },
   });
 
@@ -141,6 +142,23 @@ export default function CreateProduct() {
               )}
             </div>
 
+            {/* Preis */}
+            <div className="space-y-2">
+              <Label htmlFor="price">Preis (€)</Label>
+              <Input
+                id="price"
+                type="number"
+                step="0.01"
+                {...form.register("price", { valueAsNumber: true })}
+                placeholder="49.99"
+              />
+              {form.formState.errors.price && (
+                <p className="text-sm text-destructive">
+                  {form.formState.errors.price.message}
+                </p>
+              )}
+            </div>
+
             {/* Produkttyp */}
             <div className="space-y-2">
               <Label htmlFor="type">Produkttyp</Label>
@@ -195,23 +213,6 @@ export default function CreateProduct() {
                   <SelectItem value="custom">Individuell</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-
-            {/* Preis */}
-            <div className="space-y-2">
-              <Label htmlFor="price">Preis (€)</Label>
-              <Input
-                id="price"
-                type="number"
-                step="0.01"
-                {...form.register("price", { valueAsNumber: true })}
-                placeholder="49.99"
-              />
-              {form.formState.errors.price && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.price.message}
-                </p>
-              )}
             </div>
 
             {/* Produktbild */}
@@ -328,7 +329,7 @@ export default function CreateProduct() {
               <Input
                 id="validUntil"
                 type="datetime-local"
-                {...form.register("validUntil")}
+                {...form.register("validUntil", { required: false })}
               />
             </div>
 
@@ -348,7 +349,16 @@ export default function CreateProduct() {
 
             <Button 
               className="w-full mt-6" 
-              type="submit" // Added type="submit" to the button
+              type="submit"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const validUntilInput = document.getElementById('validUntil') as HTMLInputElement;
+                if (validUntilInput) {
+                  validUntilInput.blur(); // Remove focus from the datetime input
+                }
+                form.handleSubmit(handleSubmit)(e);
+              }}
             >
               <Package className="h-4 w-4 mr-2" />
               Produkt erstellen
