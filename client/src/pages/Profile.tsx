@@ -14,9 +14,11 @@ import { usePostStore } from "../lib/postStore";
 import DailyGoalDisplay from "@/components/DailyGoalDisplay";
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
+import { useUsers } from "../contexts/UserContext"; // Add this import
 
 export default function Profile() {
   const { id } = useParams();
+  const { currentUser } = useUsers(); // Get current user
   const userId = parseInt(id || "1");
   const [user, setUser] = useState(() => mockUsers.find(u => u.id === userId));
   const userPosts = mockPosts.filter(p => p.userId === userId);
@@ -26,7 +28,7 @@ export default function Profile() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedTab, setSelectedTab] = useState("all");
   const postStore = usePostStore();
-  const activeGoal = postStore.getDailyGoal(userId);
+  const activeGoal = postStore.getDailyGoal(currentUser?.id || 1); // Use currentUser.id instead
 
   if (!user) return <div>User not found</div>;
 
@@ -83,7 +85,7 @@ export default function Profile() {
             <div className="w-full max-w-md mt-4">
               <DailyGoalDisplay 
                 goal={activeGoal}
-                userId={userId}
+                userId={currentUser?.id || 1}
                 variant="profile"
               />
             </div>
@@ -106,7 +108,7 @@ export default function Profile() {
           </div>
 
           {/* Edit Profile Button */}
-          {userId === 1 && (
+          {currentUser?.id === userId && (
             <Button
               className="mt-6"
               variant="outline"
@@ -117,14 +119,6 @@ export default function Profile() {
           )}
         </div>
       </div>
-
-      {/* Edit Profile Dialog */}
-      <EditProfileDialog
-        user={user}
-        open={isEditDialogOpen}
-        onOpenChange={setIsEditDialogOpen}
-        onSave={handleProfileUpdate}
-      />
 
       {/* Content Tabs */}
       <Tabs value={selectedTab} onValueChange={setSelectedTab}>
