@@ -15,14 +15,9 @@ export function ProductProvider({ children }: { children: ReactNode }) {
   const [products, setProducts] = useState(mockProducts);
 
   const updateProduct = (updatedProduct: any) => {
-    console.log('Updating product:', updatedProduct); // Debug log
-    setProducts(currentProducts => {
-      const newProducts = currentProducts.map(product => 
-        product.id === updatedProduct.id ? updatedProduct : product
-      );
-      console.log('Updated products:', newProducts); // Debug log
-      return newProducts;
-    });
+    setProducts(currentProducts => currentProducts.map(product => 
+      product.id === updatedProduct.id ? updatedProduct : product
+    ));
   };
 
   return (

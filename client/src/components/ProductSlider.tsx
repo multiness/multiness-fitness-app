@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,10 +15,6 @@ import { useProducts } from "@/contexts/ProductContext";
 export default function ProductSlider() {
   const { products } = useProducts();
   const activeProducts = products.filter(p => p.isActive && !p.isArchived);
-
-  useEffect(() => {
-    console.log('ProductSlider received updated products:', products); // Debug log
-  }, [products]);
 
   return (
     <Carousel
