@@ -322,12 +322,13 @@ export default function CreateProduct() {
               )}
             </div>
 
-            {/* Ablaufdatum (optional) - Moved to the end */}
+            {/* Ablaufdatum (optional) */}
             <div className="space-y-2">
               <Label htmlFor="validUntil">Gültig bis (optional)</Label>
               <Input
                 id="validUntil"
-                type="date"
+                type="text" // Changed from date to text
+                placeholder="YYYY-MM-DD"
                 {...form.register("validUntil")}
               />
             </div>
@@ -347,8 +348,7 @@ export default function CreateProduct() {
             </div>
 
             <Button 
-              className="w-full" 
-              type="submit"
+              className="w-full mt-6" 
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
