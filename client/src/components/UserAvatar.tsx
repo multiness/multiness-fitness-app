@@ -36,7 +36,7 @@ export function UserAvatar({
     isGroup
       ? "bg-gradient-to-r from-green-500 to-green-400"
       : hasActiveGoal
-        ? "bg-gradient-to-r from-blue-500 to-blue-400"
+        ? "bg-gradient-to-r from-blue-400 to-blue-300"
         : "p-0", // No padding when no border needed
     sizeClasses[size]
   );
