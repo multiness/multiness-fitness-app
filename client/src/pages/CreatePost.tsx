@@ -3,10 +3,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Image, Video, X } from "lucide-react";
-import { usePostStore2 } from "../lib/postStore";
+import { Image, Video, X, Target, Timer } from "lucide-react";
+import { usePostStore2, DailyGoal } from "../lib/postStore";
 import { useLocation } from "wouter";
 import { useUsers } from "../contexts/UserContext";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 
 export default function CreatePost() {
   const { toast } = useToast();
@@ -16,6 +26,17 @@ export default function CreatePost() {
   const { currentUser } = useUsers();
   const { addPost } = usePostStore2();
   const [, setLocation] = useLocation();
+
+  // Tagesziel-States
+  const [includeDailyGoal, setIncludeDailyGoal] = useState(false);
+  const [goalType, setGoalType] = useState<'water' | 'steps' | 'distance'>('water');
+  const [goalTarget, setGoalTarget] = useState("");
+
+  const goalUnits = {
+    water: 'Liter',
+    steps: 'Schritte',
+    distance: 'Kilometer'
+  };
 
   const handleMediaUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -46,13 +67,34 @@ export default function CreatePost() {
   };
 
   const handleSubmit = () => {
-    if (!content.trim() && !mediaPreview) {
+    if (!content.trim() && !mediaPreview && !includeDailyGoal) {
       toast({
         title: "Leerer Beitrag",
-        description: "Bitte füge Text oder Medien hinzu.",
+        description: "Bitte füge Text, Medien oder ein Tagesziel hinzu.",
         variant: "destructive",
       });
       return;
+    }
+
+    if (includeDailyGoal && (!goalType || !goalTarget)) {
+      toast({
+        title: "Unvollständiges Tagesziel",
+        description: "Bitte gib einen Typ und Zielwert an.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Tagesziel erstellen wenn aktiviert
+    let dailyGoal: DailyGoal | undefined;
+    if (includeDailyGoal) {
+      dailyGoal = {
+        type: goalType,
+        target: Number(goalTarget),
+        unit: goalUnits[goalType],
+        progress: 0,
+        completed: false
+      };
     }
 
     // Neuen Post erstellen
@@ -62,6 +104,7 @@ export default function CreatePost() {
       content: content.trim(),
       image: mediaPreview,
       createdAt: new Date(),
+      dailyGoal
     };
 
     // Post zum Store hinzufügen
@@ -92,6 +135,45 @@ export default function CreatePost() {
             onChange={(e) => setContent(e.target.value)}
             className="min-h-[150px]"
           />
+
+          {/* Tagesziel Toggle */}
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="daily-goal"
+              checked={includeDailyGoal}
+              onCheckedChange={setIncludeDailyGoal}
+            />
+            <Label htmlFor="daily-goal">Tagesziel hinzufügen</Label>
+          </div>
+
+          {/* Tagesziel Einstellungen */}
+          {includeDailyGoal && (
+            <div className="space-y-4 p-4 bg-muted rounded-lg">
+              <div className="space-y-2">
+                <Label>Art des Ziels</Label>
+                <Select value={goalType} onValueChange={(value: 'water' | 'steps' | 'distance') => setGoalType(value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Wähle ein Ziel" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="water">Wasser trinken</SelectItem>
+                    <SelectItem value="steps">Schritte gehen</SelectItem>
+                    <SelectItem value="distance">Strecke laufen</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Zielwert ({goalUnits[goalType]})</Label>
+                <Input
+                  type="number"
+                  placeholder={`Zielwert in ${goalUnits[goalType]}`}
+                  value={goalTarget}
+                  onChange={(e) => setGoalTarget(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
 
           {/* Media Preview */}
           {mediaPreview && (

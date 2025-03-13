@@ -11,6 +11,8 @@ import { format } from 'date-fns';
 import { Badge } from "@/components/ui/badge";
 import type { User, Post, Challenge, Group } from "@shared/schema";
 import EditProfileDialog from "@/components/EditProfileDialog";
+import { usePostStore } from "../lib/postStore";
+import DailyGoalDisplay from "@/components/DailyGoalDisplay";
 
 export default function Profile() {
   const { id } = useParams();
@@ -22,6 +24,7 @@ export default function Profile() {
   const activeUserChallenges = userChallenges.filter(c => new Date() <= new Date(c.endDate));
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedTab, setSelectedTab] = useState("all");
+  const postStore = usePostStore();
 
   if (!user) return <div>User not found</div>;
 
@@ -70,6 +73,15 @@ export default function Profile() {
 
           {user.bio && (
             <p className="text-center mt-4 max-w-md text-muted-foreground">{user.bio}</p>
+          )}
+
+          {/* Tagesziel Anzeige */}
+          {user.id === userId && (
+            <div className="mt-4 max-w-md w-full">
+              {postStore.getDailyGoal(userId) && (
+                <DailyGoalDisplay goal={postStore.getDailyGoal(userId)!} />
+              )}
+            </div>
           )}
 
           {/* Activity Stats */}

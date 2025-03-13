@@ -26,6 +26,7 @@ import { useUsers } from "../contexts/UserContext";
 import { usePostStore } from "../lib/postStore";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
+import DailyGoalDisplay from './DailyGoalDisplay'; // Assuming this component exists
 
 interface FeedPostProps {
   post: Post;
@@ -159,6 +160,13 @@ export default function FeedPost({ post }: FeedPostProps) {
             {post.content}
           </p>
         </div>
+
+        {/* Tagesziel Anzeige wenn vorhanden */}
+        {post.dailyGoal && (
+          <div className="mt-4">
+            <DailyGoalDisplay goal={post.dailyGoal} variant="compact" />
+          </div>
+        )}
 
         {/* Kommentar Vorschau */}
         {comments.length > 0 && (

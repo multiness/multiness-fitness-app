@@ -2,6 +2,14 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Post } from '@shared/schema';
 
+export type DailyGoal = {
+  type: 'water' | 'steps' | 'distance';
+  target: number;
+  unit: string;
+  progress: number;
+  completed: boolean;
+};
+
 export type Comment = {
   id: number;
   postId: number;
@@ -13,12 +21,16 @@ export type Comment = {
 type PostStore = {
   likes: Record<number, number[]>; // postId -> array of userIds who liked
   comments: Record<number, Comment[]>; // postId -> array of comments
+  dailyGoals: Record<number, DailyGoal>; // userId -> active daily goal
   addLike: (postId: number, userId: number) => void;
   removeLike: (postId: number, userId: number) => void;
   hasLiked: (postId: number, userId: number) => boolean;
   getLikes: (postId: number) => number[];
   addComment: (postId: number, userId: number, content: string) => void;
   getComments: (postId: number) => Comment[];
+  setDailyGoal: (userId: number, goal: DailyGoal) => void;
+  getDailyGoal: (userId: number) => DailyGoal | undefined;
+  updateDailyGoalProgress: (userId: number, progress: number) => void;
 };
 
 export const usePostStore = create<PostStore>()(
@@ -26,6 +38,7 @@ export const usePostStore = create<PostStore>()(
     (set, get) => ({
       likes: {},
       comments: {},
+      dailyGoals: {},
       addLike: (postId, userId) =>
         set((state) => ({
           likes: {
@@ -60,7 +73,32 @@ export const usePostStore = create<PostStore>()(
         }));
       },
       getComments: (postId) =>
-        get().comments[postId] || []
+        get().comments[postId] || [],
+      setDailyGoal: (userId, goal) =>
+        set((state) => ({
+          dailyGoals: {
+            ...state.dailyGoals,
+            [userId]: goal
+          }
+        })),
+      getDailyGoal: (userId) =>
+        get().dailyGoals[userId],
+      updateDailyGoalProgress: (userId, progress) =>
+        set((state) => {
+          const currentGoal = state.dailyGoals[userId];
+          if (!currentGoal) return state;
+
+          return {
+            dailyGoals: {
+              ...state.dailyGoals,
+              [userId]: {
+                ...currentGoal,
+                progress,
+                completed: progress >= currentGoal.target
+              }
+            }
+          };
+        })
     }),
     {
       name: 'post-interaction-storage'
@@ -68,11 +106,10 @@ export const usePostStore = create<PostStore>()(
   )
 );
 
-
 interface PostStore2 {
-  posts: Post[];
-  addPost: (post: Post) => void;
-  getPosts: () => Post[];
+  posts: (Post & { dailyGoal?: DailyGoal })[];
+  addPost: (post: Post & { dailyGoal?: DailyGoal }) => void;
+  getPosts: () => (Post & { dailyGoal?: DailyGoal })[];
 }
 
 export const usePostStore2 = create<PostStore2>()(
