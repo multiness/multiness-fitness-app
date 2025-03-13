@@ -8,15 +8,20 @@ import { Search, Send, Image as ImageIcon, ArrowLeft, Users } from "lucide-react
 import { mockUsers, mockGroups } from "../data/mockData";
 import { format } from "date-fns";
 import { useChatStore, getChatId } from "../lib/chatService";
+import { usePostStore } from "../lib/postStore";
 
 export default function Chat() {
   const [selectedChat, setSelectedChat] = useState<ChatPreview | null>(null);
   const [messageInput, setMessageInput] = useState("");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const currentUser = mockUsers[0]; // Using first mock user as current user
+  const currentUser = mockUsers[0];
   const chatStore = useChatStore();
+  const postStore = usePostStore();
 
-  // Kombiniere User und Gruppen für die Chat-Liste
+  const hasActiveGoal = (userId: number) => {
+    return Boolean(postStore.getDailyGoal(userId));
+  };
+
   const chatPreviews: ChatPreview[] = [
     ...mockUsers.slice(1).map(user => {
       const chatId = user.id.toString();
@@ -73,7 +78,6 @@ export default function Chat() {
 
   return (
     <div className="h-[calc(100vh-4rem)] flex">
-      {/* Contact List - Hidden on mobile when chat is open */}
       <div className={`w-full md:w-[320px] md:border-r ${selectedChat ? 'hidden md:block' : 'block'}`}>
         <div className="flex-1 flex flex-col bg-background">
           <div className="p-4 border-b">
@@ -90,6 +94,7 @@ export default function Chat() {
               const isSelected = selectedChat?.id === chat.id;
               const messages = chatStore.getMessages(chat.id);
               const lastMessage = messages[messages.length - 1];
+              const userId = parseInt(chat.id);
 
               return (
                 <button
@@ -103,8 +108,10 @@ export default function Chat() {
                     <div className="relative">
                       <Avatar className={`h-12 w-12 ${
                         chat.isGroup 
-                          ? 'bg-green-50' 
-                          : 'bg-blue-50'
+                          ? 'ring-4 ring-green-500/50' 
+                          : hasActiveGoal(userId)
+                            ? 'ring-4 ring-blue-500/50'
+                            : ''
                       }`}>
                         <AvatarImage src={chat.avatar || undefined} />
                         <AvatarFallback className={chat.isGroup ? 'bg-green-50' : 'bg-blue-50'}>
@@ -149,11 +156,9 @@ export default function Chat() {
         </div>
       </div>
 
-      {/* Chat Area - Full screen on mobile when open */}
       <div className={`flex-1 ${!selectedChat ? 'hidden md:block' : 'block'}`}>
         {selectedChat ? (
           <div className="flex-1 flex flex-col bg-background h-full">
-            {/* Chat Header */}
             <div className="p-4 border-b flex items-center gap-3">
               <Button 
                 variant="ghost" 
@@ -181,7 +186,6 @@ export default function Chat() {
               </div>
             </div>
 
-            {/* Messages */}
             <ScrollArea className="flex-1 p-4">
               <div className="space-y-4">
                 {chatStore.getMessages(selectedChat.id).map(message => {
@@ -225,7 +229,6 @@ export default function Chat() {
               </div>
             </ScrollArea>
 
-            {/* Message Input */}
             <form onSubmit={handleSendMessage} className="p-4 border-t">
               <div className="flex gap-2">
                 <Input

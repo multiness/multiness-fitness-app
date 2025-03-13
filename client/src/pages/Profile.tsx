@@ -67,7 +67,11 @@ export default function Profile() {
 
         <div className="flex flex-col items-center -mt-12">
           <div className="relative">
-            <Avatar className="h-24 w-24 ring-4 ring-background">
+            <Avatar className={`h-24 w-24 ring-4 ${
+              activeGoal
+                ? 'ring-blue-500/50'
+                : 'ring-background'
+            }`}>
               <AvatarImage src={user.avatar || undefined} />
               <AvatarFallback>{user.username[0].toUpperCase()}</AvatarFallback>
             </Avatar>
