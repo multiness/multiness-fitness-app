@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, Package, Euro, Archive, Clock } from "lucide-react";
+import { Search, Package, Euro, Archive, Clock, Hash } from "lucide-react";
 import { mockProducts } from "../data/mockData";
 import { Link } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -32,7 +32,7 @@ export default function Products() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Package className="h-6 w-6 text-primary" />
-          <h1 className="text-2xl font-bold">Shop</h1>
+          <h1 className="text-2xl font-bold">Produktverwaltung</h1>
         </div>
         <Link href="/create/product">
           <Button>
@@ -40,6 +40,34 @@ export default function Products() {
             Produkt erstellen
           </Button>
         </Link>
+      </div>
+
+      {/* Stats Overview */}
+      <div className="grid grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-2xl font-bold text-primary">
+              {mockProducts.filter(p => p.isActive && !p.isArchived).length}
+            </div>
+            <p className="text-sm text-muted-foreground">Aktive Produkte</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-2xl font-bold text-yellow-600">
+              {mockProducts.filter(p => p.validUntil && new Date(p.validUntil) < new Date()).length}
+            </div>
+            <p className="text-sm text-muted-foreground">Abgelaufene Produkte</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-2xl font-bold text-gray-500">
+              {mockProducts.filter(p => p.isArchived).length}
+            </div>
+            <p className="text-sm text-muted-foreground">Archivierte Produkte</p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Search Bar */}
@@ -97,6 +125,14 @@ function ProductCard({ product, showExpired, showArchived }: {
   return (
     <Link href={`/products/${product.id}`}>
       <Card className={`overflow-hidden cursor-pointer transition-transform hover:scale-[1.02] ${showArchived ? 'opacity-75' : ''}`}>
+        {/* Product ID Badge */}
+        <div className="absolute top-2 left-2 z-10">
+          <Badge variant="outline" className="bg-background/80 backdrop-blur-sm">
+            <Hash className="h-3 w-3 mr-1" />
+            {product.id}
+          </Badge>
+        </div>
+
         <img
           src={product.image}
           alt={product.name}
@@ -131,7 +167,7 @@ function ProductCard({ product, showExpired, showArchived }: {
                 {new Date(product.validUntil).toLocaleDateString()}
               </div>
             )}
-            {product.isArchived && (
+            {showArchived && (
               <Badge variant="outline" className="gap-1">
                 <Archive className="h-3 w-3" />
                 Archiviert

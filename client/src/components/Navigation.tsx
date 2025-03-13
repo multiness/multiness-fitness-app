@@ -1,4 +1,4 @@
-import { Home, Award, Users, MessageSquare, Plus } from "lucide-react";
+import { Home, Award, Users, MessageSquare, Plus, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
 
@@ -28,13 +28,13 @@ export default function Navigation({ onCreateClick }: NavigationProps) {
               </Button>
             </Link>
 
-            <Link href="/challenges">
+            <Link href="/products">
               <Button
                 variant="ghost"
                 size="icon"
                 className="w-full h-full rounded-none"
               >
-                <Award className={`h-6 w-6 ${isActive("/challenges") ? "text-primary" : "text-muted-foreground"}`} />
+                <Package className={`h-6 w-6 ${isActive("/products") ? "text-primary" : "text-muted-foreground"}`} />
               </Button>
             </Link>
           </div>

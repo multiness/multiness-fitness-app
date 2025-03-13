@@ -21,7 +21,11 @@ import {
   Link as LinkIcon,
   Copy,
   BarChart,
-  Bell
+  Bell,
+  Package,
+  Hash,
+  Clock,
+  Archive,
 } from "lucide-react";
 import { DEFAULT_BANNER_POSITIONS } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
@@ -31,7 +35,7 @@ import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { useUsers } from "../contexts/UserContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-
+import { Link } from "wouter";
 
 // Erweiterte Mock-Daten mit Button-Konfiguration und archivierten Bannern
 const mockBanners = [
@@ -97,6 +101,43 @@ const mockPosts = [
     image: null,
   }
 ];
+
+// Mock Product Data
+const mockProducts = [
+  {
+    id: 1,
+    name: "Produkt A",
+    description: "Beschreibung von Produkt A",
+    image: "https://via.placeholder.com/150",
+    type: "Type A",
+    isActive: true,
+    isArchived: false,
+    validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
+  },
+  {
+    id: 2,
+    name: "Produkt B",
+    description: "Beschreibung von Produkt B",
+    image: "https://via.placeholder.com/150",
+    type: "Type B",
+    isActive: false,
+    isArchived: true,
+    validUntil: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) // 30 days ago
+
+  },
+  {
+    id: 3,
+    name: "Produkt C",
+    description: "Beschreibung von Produkt C",
+    image: "https://via.placeholder.com/150",
+    type: "Type C",
+    isActive: true,
+    isArchived: false,
+    validUntil: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000) // 10 days ago
+
+  }
+];
+
 
 // Änderungen im BannerManagement
 function BannerManagement() {
@@ -509,6 +550,244 @@ export default function Admin() {
         <BannerManagement />
       </section>
 
+      {/* Products Management Section */}
+      <section>
+        <h2 className="text-2xl font-bold mb-6">Produktverwaltung</h2>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Produkte verwalten
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {/* Stats Overview */}
+            <div className="grid grid-cols-3 gap-4 mb-6">
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-2xl font-bold text-primary">
+                    {mockProducts.filter(p => p.isActive && !p.isArchived).length}
+                  </div>
+                  <p className="text-sm text-muted-foreground">Aktive Produkte</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-2xl font-bold text-yellow-600">
+                    {mockProducts.filter(p => p.validUntil && new Date(p.validUntil) < new Date()).length}
+                  </div>
+                  <p className="text-sm text-muted-foreground">Abgelaufene Produkte</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-2xl font-bold text-gray-500">
+                    {mockProducts.filter(p => p.isArchived).length}
+                  </div>
+                  <p className="text-sm text-muted-foreground">Archivierte Produkte</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Produkte durchsuchen..."
+                    className="pl-9 w-full"
+                  />
+                </div>
+                <Link href="/create/product">
+                  <Button>
+                    <Package className="h-4 w-4 mr-2" />
+                    Neues Produkt
+                  </Button>
+                </Link>
+              </div>
+
+              <Tabs defaultValue="active">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="active">Aktiv</TabsTrigger>
+                  <TabsTrigger value="expired">Abgelaufen</TabsTrigger>
+                  <TabsTrigger value="archived">Archiviert</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="active" className="mt-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {mockProducts
+                      .filter(p => p.isActive && !p.isArchived)
+                      .map(product => (
+                        <Card key={product.id} className="overflow-hidden">
+                          <div className="relative">
+                            <img
+                              src={product.image}
+                              alt={product.name}
+                              className="w-full h-32 object-cover"
+                            />
+                            <Badge 
+                              variant="outline" 
+                              className="absolute top-2 left-2 bg-background/80 backdrop-blur-sm"
+                            >
+                              <Hash className="h-3 w-3 mr-1" />
+                              {product.id}
+                            </Badge>
+                          </div>
+                          <CardContent className="p-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <h3 className="font-semibold">{product.name}</h3>
+                              <Badge>{product.type}</Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                              {product.description}
+                            </p>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Switch
+                                  checked={product.isActive}
+                                  onCheckedChange={() => {
+                                    toast({
+                                      title: product.isActive ? "Produkt deaktiviert" : "Produkt aktiviert",
+                                      description: product.isActive 
+                                        ? "Das Produkt wird nicht mehr im Shop angezeigt." 
+                                        : "Das Produkt ist jetzt im Shop sichtbar."
+                                    });
+                                  }}
+                                />
+                                <span className="text-sm">Aktiv</span>
+                              </div>
+                              <Button variant="outline" size="sm" asChild>
+                                <Link href={`/products/${product.id}`}>
+                                  Bearbeiten
+                                </Link>
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="expired" className="mt-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {mockProducts
+                      .filter(p => p.validUntil && new Date(p.validUntil) < new Date())
+                      .map(product => (
+                        <Card key={product.id} className="overflow-hidden">
+                          <div className="relative">
+                            <img
+                              src={product.image}
+                              alt={product.name}
+                              className="w-full h-32 object-cover"
+                            />
+                            <Badge 
+                              variant="outline" 
+                              className="absolute top-2 left-2 bg-background/80 backdrop-blur-sm"
+                            >
+                              <Hash className="h-3 w-3 mr-1" />
+                              {product.id}
+                            </Badge>
+                          </div>
+                          <CardContent className="p-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <h3 className="font-semibold">{product.name}</h3>
+                              <Badge variant="outline" className="text-yellow-600">
+                                <Clock className="h-3 w-3 mr-1" />
+                                Abgelaufen
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
+                              {product.description}
+                            </p>
+                            <p className="text-sm text-muted-foreground mb-4">
+                              Gültig bis: {new Date(product.validUntil).toLocaleDateString()}
+                            </p>
+                            <div className="flex items-center justify-end gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  toast({
+                                    title: "Gültigkeit verlängert",
+                                    description: "Das Produkt wurde um 30 Tage verlängert."
+                                  });
+                                }}
+                              >
+                                Verlängern
+                              </Button>
+                              <Button variant="outline" size="sm" asChild>
+                                <Link href={`/products/${product.id}`}>
+                                  Bearbeiten
+                                </Link>
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="archived" className="mt-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {mockProducts
+                      .filter(p => p.isArchived)
+                      .map(product => (
+                        <Card key={product.id} className="overflow-hidden opacity-75 hover:opacity-100 transition-opacity">
+                          <div className="relative">
+                            <img
+                              src={product.image}
+                              alt={product.name}
+                              className="w-full h-32 object-cover"
+                            />
+                            <Badge 
+                              variant="outline" 
+                              className="absolute top-2 left-2 bg-background/80 backdrop-blur-sm"
+                            >
+                              <Hash className="h-3 w-3 mr-1" />
+                              {product.id}
+                            </Badge>
+                          </div>
+                          <CardContent className="p-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <h3 className="font-semibold">{product.name}</h3>
+                              <Badge variant="outline">
+                                <Archive className="h-3 w-3 mr-1" />
+                                Archiviert
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                              {product.description}
+                            </p>
+                            <div className="flex items-center justify-end gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  toast({
+                                    title: "Produkt reaktiviert",
+                                    description: "Das Produkt wurde aus dem Archiv geholt und ist wieder aktiv."
+                                  });
+                                }}
+                              >
+                                Reaktivieren
+                              </Button>
+                              <Button variant="outline" size="sm" asChild>
+                                <Link href={`/products/${product.id}`}>
+                                  Bearbeiten
+                                </Link>
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
       {/* User Verification Section */}
       <section>
         <h2 className="text-2xl font-bold mb-6">User Verification</h2>
@@ -561,10 +840,9 @@ export default function Admin() {
 
                       <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm whitespace-nowrap">Verified</span>
+                          <span className="text-sm whitespacenowrap">Verified</span>
                           <Switch
-                            checked={user.isVerified}
-                            onCheckedChange={() => toggleVerification(user.id)}
+                            checked={user.isVerified}                            onCheckedChange={() => toggleVerification(user.id)}
                           />
                         </div>
                       </div>
