@@ -94,18 +94,25 @@ export default function DailyGoalDisplay({
     }
   };
 
-  const getTimeLeft = (createdAt: Date) => {
-    const now = new Date();
-    const endTime = new Date(createdAt);
-    endTime.setHours(endTime.getHours() + 24);
+  const getTimeLeft = (createdAt: Date | string) => {
+    try {
+      const createdAtDate = typeof createdAt === 'string' ? new Date(createdAt) : createdAt;
+      if (isNaN(createdAtDate.getTime())) return null;
 
-    if (now > endTime) return null;
+      const now = new Date();
+      const endTime = new Date(createdAtDate);
+      endTime.setHours(endTime.getHours() + 24);
 
-    return formatDistanceToNow(endTime, { locale: de });
+      if (now > endTime) return null;
+
+      return formatDistanceToNow(endTime, { locale: de });
+    } catch (error) {
+      console.error('Error calculating time left:', error);
+      return null;
+    }
   };
 
-  const timeLeft = getTimeLeft(new Date(goal.createdAt));
-
+  const timeLeft = getTimeLeft(goal.createdAt);
 
   // Profilseiten-Variante
   if (variant === "profile") {
