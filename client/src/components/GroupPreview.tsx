@@ -7,6 +7,7 @@ import { mockUsers } from "../data/mockData";
 import { Link, useLocation } from "wouter";
 import { useGroupStore } from "../lib/groupStore";
 import { useToast } from "@/hooks/use-toast";
+import { getChatId } from "../lib/chatService";
 
 interface GroupPreviewProps {
   group: Group;
@@ -35,12 +36,16 @@ export default function GroupPreview({ group }: GroupPreviewProps) {
         title: "Gruppe beigetreten",
         description: "Du bist der Gruppe erfolgreich beigetreten.",
       });
-      setLocation(`/groups/${group.id}`);
+      // Redirect to chat after joining
+      setLocation(`/chat`);
     }
   };
 
+  // Generate chat URL for groups
+  const chatUrl = `/chat`;
+
   return (
-    <Link href={`/groups/${group.id}`}>
+    <Link href={chatUrl}>
       <Card className="overflow-hidden cursor-pointer transition-transform hover:scale-[1.02]">
         <CardHeader className="p-0">
           <img
@@ -71,13 +76,13 @@ export default function GroupPreview({ group }: GroupPreviewProps) {
             <div className="flex items-center gap-2">
               <div className="flex -space-x-2">
                 {participants.slice(0, 3).map((user, i) => (
-                  <Avatar key={i} className="h-6 w-6 border-2 border-background">
+                  <Avatar key={i} className="h-6 w-6">
                     <AvatarImage src={user.avatar || undefined} />
                     <AvatarFallback>{user.username[0]}</AvatarFallback>
                   </Avatar>
                 ))}
                 {participants.length > 3 && (
-                  <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-xs border-2 border-background">
+                  <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-xs">
                     +{participants.length - 3}
                   </div>
                 )}

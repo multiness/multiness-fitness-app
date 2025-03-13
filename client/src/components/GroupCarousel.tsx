@@ -7,6 +7,7 @@ import { mockUsers } from "../data/mockData";
 import { useGroupStore } from "../lib/groupStore";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
+import { getChatId } from "../lib/chatService";
 
 interface GroupCarouselProps {
   groups: Group[];
@@ -33,7 +34,8 @@ export default function GroupCarousel({ groups }: GroupCarouselProps) {
         title: "Gruppe beigetreten",
         description: "Du bist der Gruppe erfolgreich beigetreten.",
       });
-      setLocation(`/groups/${group.id}`);
+      // Redirect to chat after joining
+      setLocation(`/chat`);
     }
   };
 
@@ -60,7 +62,7 @@ export default function GroupCarousel({ groups }: GroupCarouselProps) {
                 <Card 
                   key={group.id}
                   className="flex-1 overflow-hidden cursor-pointer bg-card hover:bg-accent/5 transition-colors min-w-[150px]"
-                  onClick={() => setLocation(`/groups/${group.id}`)}
+                  onClick={() => setLocation(`/chat`)}
                 >
                   {/* Gruppenbild */}
                   <div className="aspect-[3/2] relative overflow-hidden bg-muted">
