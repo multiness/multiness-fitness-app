@@ -13,9 +13,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Package, Image as ImageIcon } from "lucide-react";
+import { Package, Image as ImageIcon, Calendar } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useProducts } from "@/contexts/ProductContext";
+import { format } from "date-fns";
+import { de } from "date-fns/locale";
+import { Calendar as CalendarIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 // Vereinfachte Standard-Bilder für verschiedene Produkttypen
 const defaultProductImages = {
@@ -34,7 +44,7 @@ export default function CreateProduct() {
   const [productType, setProductType] = useState<"training" | "coaching" | "supplement" | "custom">("training");
   const [stockEnabled, setStockEnabled] = useState(false);
   const [onSale, setOnSale] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<string>("");
+  const [selectedDate, setSelectedDate] = useState<Date>();
   const [isGratis, setIsGratis] = useState(false);
 
   // Formularfelder
@@ -65,18 +75,6 @@ export default function CreateProduct() {
     input.click();
   };
 
-  const handleDateSelect = (e: React.MouseEvent) => {
-    e.preventDefault();
-    const input = document.createElement('input');
-    input.type = 'date';
-    input.onchange = (e) => {
-      const date = (e.target as HTMLInputElement).value;
-      if (date) {
-        setSelectedDate(date);
-      }
-    };
-    input.click();
-  };
 
   const handleProductSubmit = async () => {
     if (!name.trim()) {
@@ -114,7 +112,7 @@ export default function CreateProduct() {
       };
 
       if (selectedDate) {
-        newProduct.validUntil = selectedDate;
+        newProduct.validUntil = selectedDate.toISOString();
       }
 
       if (stockEnabled) {
@@ -300,14 +298,29 @@ export default function CreateProduct() {
 
             <div className="space-y-2">
               <Label>Gültig bis (optional)</Label>
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full justify-start text-left font-normal"
-                onClick={handleDateSelect}
-              >
-                {selectedDate || "Datum auswählen"}
-              </Button>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !selectedDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {selectedDate ? format(selectedDate, "PPP", { locale: de }) : "Datum auswählen"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={setSelectedDate}
+                    initialFocus
+                    disabled={(date) => date < new Date()}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
 
             <Button
