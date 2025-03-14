@@ -48,6 +48,7 @@ export default function CreateProduct() {
       description: "",
       type: "training",
       price: 0,
+      creatorId: 1, // Temporär für den Prototyp
       isActive: true,
       metadata: {
         type: "training",
