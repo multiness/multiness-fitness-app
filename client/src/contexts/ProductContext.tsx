@@ -23,6 +23,7 @@ interface ProductContextType {
   updateProduct: (updatedProduct: Product) => Promise<void>;
   addProduct: (newProduct: Omit<Product, "id">) => Promise<void>;
   decreaseStock: (productId: number) => Promise<void>;
+  deleteProduct: (productId: number, archive?: boolean) => Promise<void>;
 }
 
 const ProductContext = createContext<ProductContextType>({
@@ -30,6 +31,7 @@ const ProductContext = createContext<ProductContextType>({
   updateProduct: async () => {},
   addProduct: async () => {},
   decreaseStock: async () => {},
+  deleteProduct: async () => {},
 });
 
 export function ProductProvider({ children }: { children: ReactNode }) {
@@ -97,6 +99,28 @@ export function ProductProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const deleteProduct = async (productId: number, archive = false) => {
+    try {
+      const endpoint = `/api/products/${productId}${archive ? '?archive=true' : ''}`;
+      const response = await fetch(endpoint, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete product');
+      }
+
+      // Refresh products list after deletion
+      await fetchProducts();
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      throw error;
+    }
+  };
+
   const decreaseStock = async (productId: number) => {
     const product = products.find(p => p.id === productId);
     if (product && product.stockEnabled && product.stock) {
@@ -111,7 +135,13 @@ export function ProductProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <ProductContext.Provider value={{ products, updateProduct, addProduct, decreaseStock }}>
+    <ProductContext.Provider value={{ 
+      products, 
+      updateProduct, 
+      addProduct, 
+      decreaseStock,
+      deleteProduct 
+    }}>
       {children}
     </ProductContext.Provider>
   );

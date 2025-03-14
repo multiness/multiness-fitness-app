@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { loadScript } from "@paypal/paypal-js";
-import { Package, ShoppingCart, Edit, Save, X } from "lucide-react";
+import { Package, ShoppingCart, Edit, Save, X, Archive } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,7 @@ export default function ProductDetail({ id }: ProductDetailProps) {
   const productId = id || params.id;
   const { toast } = useToast();
   const { isAdmin } = useAdmin();
-  const { products, updateProduct } = useProducts();
+  const { products, updateProduct, deleteProduct } = useProducts();
   const [isEditing, setIsEditing] = useState(false);
   const [product, setProduct] = useState(products.find(p => p.id === Number(productId)));
   const [editedProduct, setEditedProduct] = useState(product ? {...product} : null);
@@ -55,39 +55,20 @@ export default function ProductDetail({ id }: ProductDetailProps) {
     try {
       if (!editedProduct) return;
 
-      // Vorbereiten der Aktualisierungsdaten
-      const updateData = {
-        ...editedProduct,
-        isActive: editedProduct.isActive,
-        isArchived: !editedProduct.isActive // Wenn nicht aktiv, dann archiviert
-      };
-
-      const response = await fetch(`/api/products/${editedProduct.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updateData),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update product');
-      }
-
-      const updatedProduct = await response.json();
-      setProduct(updatedProduct);
-      setEditedProduct(updatedProduct);
-      setIsEditing(false);
+      // Aktualisiere das Produkt
+      await updateProduct(editedProduct);
 
       toast({
         title: "Änderungen gespeichert",
-        description: updatedProduct.isActive 
+        description: editedProduct.isActive 
           ? "Das Produkt wurde aktiviert."
-          : "Das Produkt wurde deaktiviert und archiviert.",
+          : "Das Produkt wurde deaktiviert.",
       });
 
+      setIsEditing(false);
+
       // Wenn das Produkt archiviert wurde, zurück zur Produktübersicht
-      if (!updatedProduct.isActive) {
+      if (!editedProduct.isActive) {
         setLocation("/products");
       }
     } catch (error) {
@@ -112,18 +93,8 @@ export default function ProductDetail({ id }: ProductDetailProps) {
     if (window.confirm("Möchten Sie dieses Produkt wirklich löschen? Sie können es auch archivieren, um es später wieder zu aktivieren.")) {
       try {
         const shouldArchive = window.confirm("Möchten Sie das Produkt archivieren (OK) oder endgültig löschen (Abbrechen)?");
-        const endpoint = `/api/products/${product.id}${shouldArchive ? '?archive=true' : ''}`;
 
-        const response = await fetch(endpoint, {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to delete/archive product');
-        }
+        await deleteProduct(product.id, shouldArchive);
 
         toast({
           title: shouldArchive ? "Produkt archiviert" : "Produkt gelöscht",
