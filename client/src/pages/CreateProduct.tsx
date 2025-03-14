@@ -108,6 +108,7 @@ export default function CreateProduct() {
       const formData = form.getValues();
       console.log("Form data:", formData);
 
+      // Erstelle ein sauberes Produktobjekt ohne zyklische Referenzen
       const newProduct = {
         ...formData,
         image: selectedImage ? URL.createObjectURL(selectedImage) : defaultProductImages[productType],

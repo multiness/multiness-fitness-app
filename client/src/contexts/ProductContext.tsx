@@ -27,7 +27,7 @@ interface ProductContextType {
 }
 
 const ProductContext = createContext<ProductContextType>({
-  products: mockProducts,
+  products: [],
   updateProduct: () => {},
   addProduct: () => {},
   decreaseStock: () => {},
@@ -43,13 +43,17 @@ export function ProductProvider({ children }: { children: ReactNode }) {
   };
 
   const addProduct = (newProduct: Omit<Product, "id">) => {
-    setProducts(currentProducts => [
-      ...currentProducts,
-      {
-        ...newProduct,
-        id: Math.max(...currentProducts.map(p => p.id)) + 1
-      }
-    ]);
+    // Entferne mögliche zyklische Referenzen und erstelle ein flaches Objekt
+    const sanitizedProduct = {
+      ...newProduct,
+      id: Math.max(...products.map(p => p.id), 0) + 1,
+      image: newProduct.image || "",
+      isActive: true,
+      isArchived: false,
+      metadata: typeof newProduct.metadata === 'object' ? { ...newProduct.metadata } : {}
+    };
+
+    setProducts(currentProducts => [...currentProducts, sanitizedProduct]);
   };
 
   const decreaseStock = (productId: number) => {
