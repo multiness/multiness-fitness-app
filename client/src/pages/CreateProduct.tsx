@@ -78,9 +78,12 @@ export default function CreateProduct() {
     input.click();
   };
 
-  const onSubmit = async (formData: InsertProduct) => {
-    console.log("Form submission started", formData);
+  const handleProductSubmit = async () => {
+    console.log("Starting product submission");
     try {
+      const formData = form.getValues();
+      console.log("Form data:", formData);
+
       const newProduct = {
         ...formData,
         image: selectedImage ? URL.createObjectURL(selectedImage) : "",
@@ -91,11 +94,13 @@ export default function CreateProduct() {
       };
 
       console.log("Submitting new product:", newProduct);
-      addProduct(newProduct);
+      await addProduct(newProduct);
+
       toast({
         title: "Produkt erstellt!",
         description: "Das Produkt wurde erfolgreich erstellt.",
       });
+
       setLocation("/admin");
     } catch (error) {
       console.error("Error creating product:", error);
@@ -105,12 +110,6 @@ export default function CreateProduct() {
         variant: "destructive",
       });
     }
-  };
-
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Form submit triggered");
-    form.handleSubmit(onSubmit)(e);
   };
 
   return (
@@ -146,7 +145,7 @@ export default function CreateProduct() {
             )}
           </div>
 
-          <form onSubmit={handleFormSubmit} className="space-y-6">
+          <div className="space-y-6">
             <div className="space-y-2">
               <Label>Name</Label>
               <Input {...form.register("name")} placeholder="z.B. Premium Fitness Coaching" />
@@ -306,13 +305,14 @@ export default function CreateProduct() {
             </div>
 
             <Button 
-              type="submit"
+              type="button"
               className="w-full"
+              onClick={handleProductSubmit}
             >
               <Package className="h-4 w-4 mr-2" />
               Produkt erstellen
             </Button>
-          </form>
+          </div>
         </CardContent>
       </Card>
     </div>
