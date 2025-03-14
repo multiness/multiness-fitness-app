@@ -23,7 +23,7 @@ interface ProductContextType {
   updateProduct: (updatedProduct: Product) => Promise<void>;
   addProduct: (newProduct: Omit<Product, "id">) => Promise<void>;
   decreaseStock: (productId: number) => Promise<void>;
-  deleteProduct: (productId: number, archive?: boolean) => Promise<void>;
+  deleteProduct: (productId: number) => Promise<void>;
 }
 
 const ProductContext = createContext<ProductContextType>({
@@ -36,11 +36,6 @@ const ProductContext = createContext<ProductContextType>({
 
 export function ProductProvider({ children }: { children: ReactNode }) {
   const [products, setProducts] = useState<Product[]>([]);
-
-  // Fetch products when the component mounts
-  useEffect(() => {
-    fetchProducts();
-  }, []);
 
   const fetchProducts = async () => {
     try {
@@ -55,6 +50,10 @@ export function ProductProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
   const updateProduct = async (updatedProduct: Product) => {
     try {
       const response = await fetch(`/api/products/${updatedProduct.id}`, {
@@ -62,14 +61,16 @@ export function ProductProvider({ children }: { children: ReactNode }) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(updatedProduct),
+        body: JSON.stringify({
+          ...updatedProduct,
+          validUntil: updatedProduct.validUntil ? new Date(updatedProduct.validUntil) : null
+        }),
       });
 
       if (!response.ok) {
         throw new Error('Failed to update product');
       }
 
-      // Refresh products list after update
       await fetchProducts();
     } catch (error) {
       console.error('Error updating product:', error);
@@ -91,7 +92,6 @@ export function ProductProvider({ children }: { children: ReactNode }) {
         throw new Error('Failed to create product');
       }
 
-      // Refresh products list after adding new product
       await fetchProducts();
     } catch (error) {
       console.error('Error creating product:', error);
@@ -99,22 +99,18 @@ export function ProductProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const deleteProduct = async (productId: number, archive = false) => {
+  const deleteProduct = async (productId: number) => {
     try {
-      const endpoint = `/api/products/${productId}${archive ? '?archive=true' : ''}`;
-      const response = await fetch(endpoint, {
+      const response = await fetch(`/api/products/${productId}`, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete product');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete product');
       }
 
-      // Refresh products list after deletion
-      await fetchProducts();
+      await fetchProducts(); // Aktualisiere die Produktliste nach dem Löschen
     } catch (error) {
       console.error('Error deleting product:', error);
       throw error;

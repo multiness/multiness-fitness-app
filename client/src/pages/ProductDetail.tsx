@@ -90,36 +90,22 @@ export default function ProductDetail({ id }: ProductDetailProps) {
   const handleDelete = async () => {
     if (!product) return;
 
-    if (window.confirm("Möchten Sie dieses Produkt wirklich löschen? Sie können es auch archivieren, um es später wieder zu aktivieren.")) {
+    if (window.confirm("Möchten Sie dieses Produkt wirklich löschen?")) {
       try {
-        const shouldArchive = window.confirm("Möchten Sie das Produkt archivieren (OK) oder endgültig löschen (Abbrechen)?");
-
-        if (shouldArchive) {
-          // Archivieren durch Update
-          await updateProduct({
-            ...product,
-            isActive: false,
-            isArchived: true
-          });
-        } else {
-          // Permanent löschen
-          await deleteProduct(product.id);
-        }
+        await deleteProduct(product.id);
 
         toast({
-          title: shouldArchive ? "Produkt archiviert" : "Produkt gelöscht",
-          description: shouldArchive 
-            ? "Das Produkt wurde erfolgreich archiviert und kann später wieder aktiviert werden."
-            : "Das Produkt wurde erfolgreich gelöscht.",
+          title: "Produkt gelöscht",
+          description: "Das Produkt wurde erfolgreich gelöscht.",
         });
 
         // Zurück zur Produktübersicht navigieren
         setLocation("/products");
       } catch (error) {
-        console.error("Error deleting/archiving product:", error);
+        console.error("Error deleting product:", error);
         toast({
           title: "Fehler",
-          description: "Das Produkt konnte nicht gelöscht/archiviert werden.",
+          description: "Das Produkt konnte nicht gelöscht werden.",
           variant: "destructive",
         });
       }
