@@ -67,17 +67,21 @@ export default function CreateProduct() {
   const [salePrice, setSalePrice] = useState(0);
   const [saleType, setSaleType] = useState<"Sale" | "Budget" | "Angebot">("Sale");
 
-  const handleImageSelect = () => {
+  const handleImageSelect = async () => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
-    input.onchange = (e) => {
+    input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
-        setSelectedImage(file);
-        // Erstelle eine temporäre URL für die Vorschau
-        const previewUrl = URL.createObjectURL(file);
-        setSelectedImagePreview(previewUrl);
+        // Read the file as base64
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const base64String = e.target?.result as string;
+          setSelectedImage(file);
+          setSelectedImagePreview(base64String);
+        };
+        reader.readAsDataURL(file);
       }
     };
     input.click();
@@ -129,7 +133,7 @@ export default function CreateProduct() {
         creatorId: 1, // Temporär für den Prototyp
         isActive: true,
         isArchived: false,
-        metadata: productType === 'custom' 
+        metadata: productType === 'custom'
           ? { type: 'custom' as const }
           : defaultMetadata[productType],
       };
@@ -183,7 +187,7 @@ export default function CreateProduct() {
           <CardTitle>Produktdetails</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div 
+          <div
             onClick={handleImageSelect}
             className="border-2 border-dashed rounded-lg p-4 hover:bg-accent/5 transition-colors cursor-pointer"
           >
@@ -213,20 +217,20 @@ export default function CreateProduct() {
           <div className="space-y-6">
             <div className="space-y-2">
               <Label>Name*</Label>
-              <Input 
+              <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="z.B. Premium Fitness Coaching" 
+                placeholder="z.B. Premium Fitness Coaching"
               />
             </div>
 
             <div className="space-y-2">
               <Label>Beschreibung*</Label>
-              <Textarea 
+              <Textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Beschreibe dein Produkt..." 
-                className="min-h-[100px]" 
+                placeholder="Beschreibe dein Produkt..."
+                className="min-h-[100px]"
               />
             </div>
 
@@ -241,12 +245,12 @@ export default function CreateProduct() {
               {!isGratis && (
                 <div className="space-y-2">
                   <Label>Preis (€)</Label>
-                  <Input 
-                    type="number" 
-                    step="0.01" 
+                  <Input
+                    type="number"
+                    step="0.01"
                     value={price}
                     onChange={(e) => setPrice(Number(e.target.value))}
-                    placeholder="z.B. 49.99" 
+                    placeholder="z.B. 49.99"
                   />
                 </div>
               )}
@@ -338,7 +342,7 @@ export default function CreateProduct() {
               </Button>
             </div>
 
-            <Button 
+            <Button
               type="button"
               className="w-full"
               onClick={handleProductSubmit}

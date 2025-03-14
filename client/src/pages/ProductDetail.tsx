@@ -23,8 +23,8 @@ export default function ProductDetail({ id }: ProductDetailProps) {
   const { isAdmin } = useAdmin();
   const { products, updateProduct } = useProducts();
   const [isEditing, setIsEditing] = useState(false);
-  const [product, setProduct] = useState(products[0]);
-  const [editedProduct, setEditedProduct] = useState({...product});
+  const [product, setProduct] = useState(products.find(p => p.id === Number(productId)));
+  const [editedProduct, setEditedProduct] = useState(product ? {...product} : null);
   const [paypalLoaded, setPaypalLoaded] = useState(false);
   const [, setLocation] = useLocation();
 
@@ -32,7 +32,7 @@ export default function ProductDetail({ id }: ProductDetailProps) {
     const prod = products.find(p => p.id === Number(productId));
     if (prod) {
       setProduct(prod);
-      setEditedProduct({...prod}); 
+      setEditedProduct({...prod});
     }
   }, [productId, products]);
 
@@ -53,12 +53,21 @@ export default function ProductDetail({ id }: ProductDetailProps) {
 
   const handleSave = async () => {
     try {
+      if (!editedProduct) return;
+
+      // Vorbereiten der Aktualisierungsdaten
+      const updateData = {
+        ...editedProduct,
+        isActive: editedProduct.isActive,
+        isArchived: !editedProduct.isActive // Wenn nicht aktiv, dann archiviert
+      };
+
       const response = await fetch(`/api/products/${editedProduct.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(editedProduct),
+        body: JSON.stringify(updateData),
       });
 
       if (!response.ok) {
@@ -67,12 +76,20 @@ export default function ProductDetail({ id }: ProductDetailProps) {
 
       const updatedProduct = await response.json();
       setProduct(updatedProduct);
+      setEditedProduct(updatedProduct);
       setIsEditing(false);
 
       toast({
         title: "Änderungen gespeichert",
-        description: "Die Produktdetails wurden erfolgreich aktualisiert.",
+        description: updatedProduct.isActive 
+          ? "Das Produkt wurde aktiviert."
+          : "Das Produkt wurde deaktiviert und archiviert.",
       });
+
+      // Wenn das Produkt archiviert wurde, zurück zur Produktübersicht
+      if (!updatedProduct.isActive) {
+        setLocation("/products");
+      }
     } catch (error) {
       console.error("Error saving product:", error);
       toast({
@@ -84,21 +101,33 @@ export default function ProductDetail({ id }: ProductDetailProps) {
   };
 
   const handleCancel = () => {
-    setEditedProduct({...product}); 
+    if (!product) return;
+    setEditedProduct({...product});
     setIsEditing(false);
   };
 
   const handleDelete = async () => {
+    if (!product) return;
+
     if (window.confirm("Möchten Sie dieses Produkt wirklich löschen? Sie können es auch archivieren, um es später wieder zu aktivieren.")) {
       try {
-        const action = window.confirm("Möchten Sie das Produkt archivieren (OK) oder endgültig löschen (Abbrechen)?");
-        const endpoint = `/api/products/${product.id}${action ? '?archive=true' : ''}`;
+        const shouldArchive = window.confirm("Möchten Sie das Produkt archivieren (OK) oder endgültig löschen (Abbrechen)?");
+        const endpoint = `/api/products/${product.id}${shouldArchive ? '?archive=true' : ''}`;
 
-        await fetch(endpoint, { method: 'DELETE' });
+        const response = await fetch(endpoint, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to delete/archive product');
+        }
 
         toast({
-          title: action ? "Produkt archiviert" : "Produkt gelöscht",
-          description: action 
+          title: shouldArchive ? "Produkt archiviert" : "Produkt gelöscht",
+          description: shouldArchive 
             ? "Das Produkt wurde erfolgreich archiviert und kann später wieder aktiviert werden."
             : "Das Produkt wurde erfolgreich gelöscht.",
         });
@@ -116,7 +145,7 @@ export default function ProductDetail({ id }: ProductDetailProps) {
     }
   };
 
-  if (!product) {
+  if (!product || !editedProduct) {
     return (
       <div className="container max-w-4xl mx-auto p-4">
         <Card>
@@ -147,11 +176,15 @@ export default function ProductDetail({ id }: ProductDetailProps) {
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (file) {
-                        // TODO: Handle image upload
-                        toast({
-                          title: "Bild hochgeladen",
-                          description: "Das neue Produktbild wurde hochgeladen.",
-                        });
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                          const base64String = e.target?.result as string;
+                          setEditedProduct({
+                            ...editedProduct,
+                            image: base64String
+                          });
+                        };
+                        reader.readAsDataURL(file);
                       }
                     }}
                   />
