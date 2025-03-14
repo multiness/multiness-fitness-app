@@ -17,13 +17,15 @@ import { Package, Image as ImageIcon } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useProducts } from "@/contexts/ProductContext";
 
+// Verbesserte Standard-Bilder für verschiedene Produkttypen
 const defaultProductImages = {
-  training: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=800&auto=format",
-  coaching: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&auto=format",
-  supplement: "https://images.unsplash.com/photo-1579722821273-0f6c7d44362f?w=800&auto=format",
-  custom: "https://images.unsplash.com/photo-1434626881859-194d67b2b86f?w=800&auto=format",
+  training: "https://images.unsplash.com/photo-1599058917765-a780eda07a3e?w=800&auto=format", // Fitness Training Image
+  coaching: "https://images.unsplash.com/photo-1475823678248-624fc6f85785?w=800&auto=format", // Professional Coaching Image
+  supplement: "https://images.unsplash.com/photo-1612187029134-67b11293e7e0?w=800&auto=format", // Supplement Products Image
+  custom: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&auto=format", // Neutral Business/Product Image
 };
 
+// Standardmetadaten nur für vordefinierte Produkttypen
 const defaultMetadata = {
   training: {
     type: "training",
@@ -42,10 +44,6 @@ const defaultMetadata = {
     weight: 1000,
     servings: 30,
     includes: ["Premium Qualität", "100% Natural", "Made in Germany"]
-  },
-  custom: {
-    type: "custom",
-    includes: ["Individuell angepasst", "Flexible Gestaltung", "Nach Ihren Wünschen"]
   }
 };
 
@@ -121,18 +119,17 @@ export default function CreateProduct() {
     }
 
     try {
-      // Erstelle ein sauberes Produktobjekt ohne zyklische Referenzen
       const newProduct = {
         name,
         description,
         type: productType,
         price: isGratis ? 0 : price,
-        // Verwende entweder die hochgeladene Bild-URL oder das Standard-Produktbild
         image: selectedImagePreview || defaultProductImages[productType],
         creatorId: 1, // Temporär für den Prototyp
         isActive: true,
         isArchived: false,
-        metadata: defaultMetadata[productType]
+        // Nur für vordefinierte Produkttypen Metadaten hinzufügen
+        metadata: productType !== 'custom' ? defaultMetadata[productType] : { type: 'custom' }
       };
 
       if (selectedDate) {

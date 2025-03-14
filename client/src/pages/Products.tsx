@@ -142,25 +142,33 @@ function ProductCard({ product, showExpired, showArchived }: {
         <CardContent className="p-4">
           <div className="flex justify-between items-start mb-2">
             <h3 className="font-semibold text-lg">{product.name}</h3>
-            <Badge variant={
-              product.type === "supplement" ? "default" :
-              product.type === "training" ? "secondary" :
-              product.type === "coaching" ? "outline" :
-              "default"
-            }>
-              {product.type === "training" && "Training"}
-              {product.type === "coaching" && "Coaching"}
-              {product.type === "supplement" && "Supplement"}
-              {product.type === "custom" && "Individuell"}
-            </Badge>
+            {/* Nur für nicht-individuelle Produkte Badge anzeigen */}
+            {product.type !== "custom" && (
+              <Badge variant={
+                product.type === "supplement" ? "default" :
+                product.type === "training" ? "secondary" :
+                product.type === "coaching" ? "outline" :
+                "default"
+              }>
+                {product.type === "training" && "Training"}
+                {product.type === "coaching" && "Coaching"}
+                {product.type === "supplement" && "Supplement"}
+              </Badge>
+            )}
           </div>
           <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
             {product.description}
           </p>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1 font-semibold">
-              <Euro className="h-4 w-4" />
-              {Number(product.price).toFixed(2)}
+              {Number(product.price) === 0 ? (
+                <span className="text-green-500">Gratis</span>
+              ) : (
+                <>
+                  <Euro className="h-4 w-4" />
+                  {Number(product.price).toFixed(2)}
+                </>
+              )}
             </div>
             {product.validUntil && (
               <div className="flex items-center gap-1 text-sm text-muted-foreground">

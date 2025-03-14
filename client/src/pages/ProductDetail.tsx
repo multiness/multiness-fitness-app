@@ -226,7 +226,6 @@ export default function ProductDetail({ id }: ProductDetailProps) {
               ) : (
                 <>
                   <h1 className="text-3xl font-bold">{product.name}</h1>
-                  <p className="text-muted-foreground">{product.description}</p>
                   {/* Updated Price Display */}
                   <div className="text-2xl font-bold">
                     {product.onSale ? (
@@ -254,50 +253,51 @@ export default function ProductDetail({ id }: ProductDetailProps) {
               )}
 
               {/* Product Details */}
-              {product.metadata?.type === "supplement" && (
-                <div className="space-y-2">
-                  <p className="font-medium">Produktdetails:</p>
-                  <ul className="list-disc list-inside space-y-1 text-sm">
-                    {product.metadata?.weight && <li>Gewicht: {product.metadata.weight}g</li>}
-                    {product.metadata?.servings && <li>Portionen: {product.metadata.servings}</li>}
-                    {product.metadata?.nutritionFacts && Object.entries(product.metadata.nutritionFacts).map(([key, value]) => (
-                      <li key={key}>{key}: {value}</li>
-                    ))}
-                  </ul>
-                </div>
+              {product.type !== "custom" && (
+                <>
+                  {product.metadata?.type === "supplement" && (
+                    <div className="space-y-2">
+                      <p className="font-medium">Produktdetails:</p>
+                      <ul className="list-disc list-inside space-y-1 text-sm">
+                        {product.metadata?.weight && <li>Gewicht: {product.metadata.weight}g</li>}
+                        {product.metadata?.servings && <li>Portionen: {product.metadata.servings}</li>}
+                        {product.metadata?.includes?.map((item: string, index: number) => (
+                          <li key={index}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {(product.metadata?.type === "training" || product.metadata?.type === "coaching") && (
+                    <div className="space-y-2">
+                      <p className="font-medium">Enthaltene Leistungen:</p>
+                      <ul className="list-disc list-inside space-y-1 text-sm">
+                        {product.metadata?.includes?.map((item: string, index: number) => (
+                          <li key={index}>{item}</li>
+                        ))}
+                      </ul>
+                      {product.metadata?.duration && (
+                        <p className="text-sm">
+                          Dauer: {product.metadata.duration} {product.metadata.type === "training" ? "Wochen" : "Monate"}
+                        </p>
+                      )}
+                      {product.metadata?.type === "coaching" && product.metadata?.callsPerMonth && (
+                        <p className="text-sm">
+                          Coaching-Calls: {product.metadata.callsPerMonth} pro Monat
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </>
               )}
 
-              {(product.metadata?.type === "training" || product.metadata?.type === "coaching") && (
-                <div className="space-y-2">
-                  <p className="font-medium">Enthaltene Leistungen:</p>
-                  <ul className="list-disc list-inside space-y-1 text-sm">
-                    {product.metadata?.includes?.map((item: string, index: number) => (
-                      <li key={index}>{item}</li>
-                    ))}
-                  </ul>
-                  {product.metadata?.duration && (
-                    <p className="text-sm">
-                      Dauer: {product.metadata.duration} {product.metadata.type === "training" ? "Wochen" : "Monate"}
-                    </p>
-                  )}
-                  {product.metadata?.type === "coaching" && product.metadata?.callsPerMonth && (
-                    <p className="text-sm">
-                      Coaching-Calls: {product.metadata.callsPerMonth} pro Monat
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {product.metadata?.type === "custom" && (
-                <div className="space-y-2">
-                  <p className="font-medium">Enthaltene Leistungen:</p>
-                  <ul className="list-disc list-inside space-y-1 text-sm">
-                    {product.metadata?.includes?.map((item: string, index: number) => (
-                      <li key={index}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+              {/* Für alle Produkte die Beschreibung anzeigen */}
+              <div className="space-y-2 mt-4">
+                <p className="font-medium">Beschreibung:</p>
+                <p className="text-sm text-muted-foreground">
+                  {product.description}
+                </p>
+              </div>
 
               {/* PayPal Button */}
               {!isEditing && (
