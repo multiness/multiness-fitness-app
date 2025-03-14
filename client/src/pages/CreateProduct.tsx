@@ -36,6 +36,7 @@ export default function CreateProduct() {
   const [stockEnabled, setStockEnabled] = useState(false);
   const [onSale, setOnSale] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>("");
+  const [isGratis, setIsGratis] = useState(false);
 
   const form = useForm<InsertProduct>({
     resolver: zodResolver(insertProductSchema.extend({
@@ -114,6 +115,7 @@ export default function CreateProduct() {
         isActive: true,
         isArchived: false,
         validUntil: selectedDate,
+        price: isGratis ? 0 : formData.price,
       };
 
       console.log("Submitting new product:", newProduct);
@@ -190,15 +192,31 @@ export default function CreateProduct() {
             </div>
 
             <div className="space-y-2">
-              <Label>Preis (€)</Label>
-              <Input 
-                type="number" 
-                step="0.01" 
-                {...form.register("price", { valueAsNumber: true })} 
-                placeholder="0.00 für kostenlose Produkte" 
-              />
-              {form.formState.errors.price && (
-                <p className="text-sm text-destructive">{form.formState.errors.price.message}</p>
+              <div className="flex items-center justify-between mb-2">
+                <Label>Gratis Produkt</Label>
+                <Switch
+                  checked={isGratis}
+                  onCheckedChange={(checked) => {
+                    setIsGratis(checked);
+                    if (checked) {
+                      form.setValue("price", 0);
+                    }
+                  }}
+                />
+              </div>
+              {!isGratis && (
+                <div className="space-y-2">
+                  <Label>Preis (€)</Label>
+                  <Input 
+                    type="number" 
+                    step="0.01" 
+                    {...form.register("price", { valueAsNumber: true })} 
+                    placeholder="z.B. 49.99" 
+                  />
+                  {form.formState.errors.price && (
+                    <p className="text-sm text-destructive">{form.formState.errors.price.message}</p>
+                  )}
+                </div>
               )}
             </div>
 
