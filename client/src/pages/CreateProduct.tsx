@@ -22,7 +22,7 @@ const defaultProductImages = {
   training: "https://images.unsplash.com/photo-1599058917765-a780eda07a3e?w=800&auto=format", // Fitness Training Image
   coaching: "https://images.unsplash.com/photo-1475823678248-624fc6f85785?w=800&auto=format", // Professional Coaching Image
   supplement: "https://images.unsplash.com/photo-1612187029134-67b11293e7e0?w=800&auto=format", // Supplement Products Image
-  custom: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&auto=format", // Neutral Business/Product Image
+  custom: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' ry='2'/%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3Cpath d='M12 8v1M12 15v1M8 12h1M15 12h1'/%3E%3C/svg%3E", // Neutrales Produkticon
 };
 
 // Standardmetadaten nur für vordefinierte Produkttypen

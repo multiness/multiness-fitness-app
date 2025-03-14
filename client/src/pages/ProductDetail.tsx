@@ -24,14 +24,14 @@ export default function ProductDetail({ id }: ProductDetailProps) {
   const { products, updateProduct } = useProducts();
   const [isEditing, setIsEditing] = useState(false);
   const [product, setProduct] = useState(products[0]);
-  const [editedProduct, setEditedProduct] = useState({...product, stockEnabled: false, onSale: false, salePrice: product.price, saleType: 'Sale', stock: product.stock || 0}); // Initialize new properties
+  const [editedProduct, setEditedProduct] = useState({...product});
   const [paypalLoaded, setPaypalLoaded] = useState(false);
 
   useEffect(() => {
     const prod = products.find(p => p.id === Number(productId));
     if (prod) {
       setProduct(prod);
-      setEditedProduct({...prod, stockEnabled: false, onSale: false, salePrice: prod.price, saleType: 'Sale', stock: prod.stock || 0}); // Initialize new properties
+      setEditedProduct({...prod}); 
     }
   }, [productId, products]);
 
@@ -61,8 +61,27 @@ export default function ProductDetail({ id }: ProductDetailProps) {
   };
 
   const handleCancel = () => {
-    setEditedProduct({...product, stockEnabled: false, onSale: false, salePrice: product.price, saleType: 'Sale', stock: product.stock || 0}); // Initialize new properties
+    setEditedProduct({...product}); 
     setIsEditing(false);
+  };
+
+  const handleDelete = async () => {
+    if (window.confirm("Möchten Sie dieses Produkt wirklich löschen?")) {
+      try {
+        // TODO: Implement delete functionality
+        setProduct({...product, isArchived: true});
+        toast({
+          title: "Produkt gelöscht",
+          description: "Das Produkt wurde erfolgreich gelöscht.",
+        });
+      } catch (error) {
+        toast({
+          title: "Fehler",
+          description: "Das Produkt konnte nicht gelöscht werden.",
+          variant: "destructive",
+        });
+      }
+    }
   };
 
   if (!product) {
@@ -120,19 +139,21 @@ export default function ProductDetail({ id }: ProductDetailProps) {
                   className="w-full rounded-lg object-cover aspect-square"
                 />
               )}
-              <Badge
-                variant={
-                  product.type === "supplement" ? "default" :
-                  product.type === "training" ? "secondary" :
-                  "outline"
-                }
-                className="absolute top-4 right-4"
-              >
-                {product.type === "training" && "Training"}
-                {product.type === "coaching" && "Coaching"}
-                {product.type === "supplement" && "Supplement"}
-                {product.type === "custom" && "Individuell"}
-              </Badge>
+              {/* Nur für nicht-individuelle Produkte Badge anzeigen */}
+              {product.type !== "custom" && (
+                <Badge
+                  variant={
+                    product.type === "supplement" ? "default" :
+                    product.type === "training" ? "secondary" :
+                    "outline"
+                  }
+                  className="absolute top-4 right-4"
+                >
+                  {product.type === "training" && "Training"}
+                  {product.type === "coaching" && "Coaching"}
+                  {product.type === "supplement" && "Supplement"}
+                </Badge>
+              )}
             </div>
 
             {/* Product Info */}
@@ -298,6 +319,35 @@ export default function ProductDetail({ id }: ProductDetailProps) {
                   {product.description}
                 </p>
               </div>
+
+              {/* Admin Controls */}
+              {isAdmin && (
+                <div className="flex gap-2 pt-4 border-t">
+                  {isEditing ? (
+                    <>
+                      <Button onClick={handleSave} className="flex-1">
+                        <Save className="h-4 w-4 mr-2" />
+                        Speichern
+                      </Button>
+                      <Button variant="outline" onClick={handleCancel}>
+                        <X className="h-4 w-4 mr-2" />
+                        Abbrechen
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button variant="outline" onClick={() => setIsEditing(true)} className="flex-1">
+                        <Edit className="h-4 w-4 mr-2" />
+                        Bearbeiten
+                      </Button>
+                      <Button variant="destructive" onClick={handleDelete}>
+                        <X className="h-4 w-4 mr-2" />
+                        Löschen
+                      </Button>
+                    </>
+                  )}
+                </div>
+              )}
 
               {/* PayPal Button */}
               {!isEditing && (
