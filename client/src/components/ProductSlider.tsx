@@ -60,8 +60,14 @@ export default function ProductSlider() {
                         </div>
                       ) : (
                         <div className="flex items-center gap-1">
-                          <Euro className="h-4 w-4" />
-                          {Number(product.price).toFixed(2)}
+                          {Number(product.price) === 0 ? (
+                            <span className="text-green-500">Gratis</span>
+                          ) : (
+                            <>
+                              <Euro className="h-4 w-4" />
+                              {Number(product.price).toFixed(2)}
+                            </>
+                          )}
                         </div>
                       )}
                     </div>

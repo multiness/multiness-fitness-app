@@ -29,6 +29,7 @@ export default function CreateProduct() {
   const [, setLocation] = useLocation();
   const { addProduct } = useProducts();
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [selectedImagePreview, setSelectedImagePreview] = useState<string>("");
   const [productType, setProductType] = useState<"training" | "coaching" | "supplement" | "custom">("training");
   const [stockEnabled, setStockEnabled] = useState(false);
   const [onSale, setOnSale] = useState(false);
@@ -51,6 +52,9 @@ export default function CreateProduct() {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
         setSelectedImage(file);
+        // Erstelle eine temporäre URL für die Vorschau
+        const previewUrl = URL.createObjectURL(file);
+        setSelectedImagePreview(previewUrl);
       }
     };
     input.click();
@@ -98,24 +102,38 @@ export default function CreateProduct() {
         description,
         type: productType,
         price: isGratis ? 0 : price,
-        image: selectedImage ? URL.createObjectURL(selectedImage) : defaultProductImages[productType],
-        createdAt: new Date().toISOString(),
+        // Verwende entweder die hochgeladene Bild-URL oder das Standard-Produktbild
+        image: selectedImagePreview || defaultProductImages[productType],
+        creatorId: 1, // Temporär für den Prototyp
         isActive: true,
         isArchived: false,
-        creatorId: 1, // Temporär für den Prototyp
-        validUntil: selectedDate || undefined,
-        stockEnabled,
-        stock: stockEnabled ? stock : undefined,
-        onSale,
-        salePrice: onSale ? salePrice : undefined,
-        saleType: onSale ? saleType : undefined,
         metadata: {
           type: productType,
         }
       };
 
+      if (selectedDate) {
+        newProduct.validUntil = selectedDate;
+      }
+
+      if (stockEnabled) {
+        newProduct.stockEnabled = true;
+        newProduct.stock = stock;
+      }
+
+      if (onSale) {
+        newProduct.onSale = true;
+        newProduct.salePrice = salePrice;
+        newProduct.saleType = saleType;
+      }
+
       console.log("Submitting new product:", newProduct);
       await addProduct(newProduct);
+
+      // Bereinige die temporäre URL
+      if (selectedImagePreview) {
+        URL.revokeObjectURL(selectedImagePreview);
+      }
 
       toast({
         title: "Produkt erstellt!",
@@ -146,10 +164,10 @@ export default function CreateProduct() {
             onClick={handleImageSelect}
             className="border-2 border-dashed rounded-lg p-4 hover:bg-accent/5 transition-colors cursor-pointer"
           >
-            {selectedImage ? (
+            {selectedImagePreview ? (
               <div className="aspect-video relative overflow-hidden rounded-md">
                 <img
-                  src={URL.createObjectURL(selectedImage)}
+                  src={selectedImagePreview}
                   alt="Vorschau"
                   className="w-full h-full object-cover"
                 />
