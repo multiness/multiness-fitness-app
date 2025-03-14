@@ -230,7 +230,11 @@ export default function ProductDetail({ id }: ProductDetailProps) {
                         <span className="text-lg line-through text-muted-foreground">
                           €{Number(product.price).toFixed(2)}
                         </span>
-                        <Badge variant="secondary">{product.saleType}</Badge>
+                        <Badge variant="secondary">
+                          {product.saleType === "Sale" && "Sale"}
+                          {product.saleType === "Budget" && "Budget-Angebot"}
+                          {product.saleType === "Angebot" && "Sonderangebot"}
+                        </Badge>
                       </div>
                     ) : (
                       Number(product.price) === 0 ? (

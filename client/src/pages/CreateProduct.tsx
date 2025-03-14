@@ -263,7 +263,7 @@ export default function CreateProduct() {
 
             <div className="space-y-2">
               <Label>Sonderangebot</Label>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 mb-4">
                 <Switch
                   checked={onSale}
                   onCheckedChange={setOnSale}
@@ -271,27 +271,39 @@ export default function CreateProduct() {
                 <Label>Sonderpreis aktivieren</Label>
               </div>
               {onSale && (
-                <div className="space-y-2">
-                  <Input
-                    type="number"
-                    step="0.01"
-                    placeholder="Sonderpreis"
-                    value={salePrice}
-                    onChange={(e) => setSalePrice(Number(e.target.value))}
-                  />
-                  <Select
-                    value={saleType}
-                    onValueChange={(value: "Sale" | "Budget" | "Angebot") => setSaleType(value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Art des Angebots" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Sale">Sale</SelectItem>
-                      <SelectItem value="Budget">Budget</SelectItem>
-                      <SelectItem value="Angebot">Angebot</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="space-y-4">
+                  <div>
+                    <Label>Sonderpreis (€)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="z.B. 29.99"
+                      value={salePrice}
+                      onChange={(e) => setSalePrice(Number(e.target.value))}
+                      className="mt-2"
+                    />
+                  </div>
+                  <div>
+                    <Label>Art des Angebots</Label>
+                    <Select
+                      value={saleType}
+                      onValueChange={(value: "Sale" | "Budget" | "Angebot") => setSaleType(value)}
+                    >
+                      <SelectTrigger className="mt-2">
+                        <SelectValue placeholder="Art des Angebots wählen" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Sale">Sale</SelectItem>
+                        <SelectItem value="Budget">Budget-Angebot</SelectItem>
+                        <SelectItem value="Angebot">Sonderangebot</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {salePrice >= price && (
+                    <p className="text-sm text-red-500">
+                      Der Sonderpreis sollte niedriger als der reguläre Preis sein.
+                    </p>
+                  )}
                 </div>
               )}
             </div>
