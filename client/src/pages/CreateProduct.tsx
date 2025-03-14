@@ -137,7 +137,7 @@ export default function CreateProduct() {
             )}
           </div>
 
-          <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-2">
               <Label>Name</Label>
               <Input {...form.register("name")} placeholder="z.B. Premium Fitness Coaching" />
@@ -279,10 +279,7 @@ export default function CreateProduct() {
                 type="button"
                 variant="outline"
                 className="w-full justify-start text-left font-normal"
-                onClick={(e) => {
-                  e.preventDefault(); 
-                  handleDateSelect();
-                }}
+                onClick={handleDateSelect}
               >
                 {selectedDate || "Datum auswählen"}
               </Button>
@@ -302,15 +299,10 @@ export default function CreateProduct() {
             <Button 
               type="submit"
               className="w-full"
-              onClick={(e) => {
-                e.preventDefault(); 
-                form.handleSubmit(onSubmit)(e); 
-              }}
             >
               <Package className="h-4 w-4 mr-2" />
               Produkt erstellen
             </Button>
-
           </form>
         </CardContent>
       </Card>
