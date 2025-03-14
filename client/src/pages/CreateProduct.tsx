@@ -65,7 +65,8 @@ export default function CreateProduct() {
     input.click();
   };
 
-  const handleDateSelect = () => {
+  const handleDateSelect = (e: React.MouseEvent) => {
+    e.preventDefault();
     const input = document.createElement('input');
     input.type = 'date';
     input.onchange = (e) => {
@@ -78,6 +79,7 @@ export default function CreateProduct() {
   };
 
   const onSubmit = async (formData: InsertProduct) => {
+    console.log("Form submission started", formData);
     try {
       const newProduct = {
         ...formData,
@@ -88,6 +90,7 @@ export default function CreateProduct() {
         validUntil: selectedDate,
       };
 
+      console.log("Submitting new product:", newProduct);
       addProduct(newProduct);
       toast({
         title: "Produkt erstellt!",
@@ -102,6 +105,12 @@ export default function CreateProduct() {
         variant: "destructive",
       });
     }
+  };
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log("Form submit triggered");
+    form.handleSubmit(onSubmit)(e);
   };
 
   return (
@@ -137,7 +146,7 @@ export default function CreateProduct() {
             )}
           </div>
 
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={handleFormSubmit} className="space-y-6">
             <div className="space-y-2">
               <Label>Name</Label>
               <Input {...form.register("name")} placeholder="z.B. Premium Fitness Coaching" />
