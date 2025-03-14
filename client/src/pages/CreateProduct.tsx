@@ -13,18 +13,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { insertProductSchema, type InsertProduct } from "@shared/schema";
 import { Package, Image as ImageIcon } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useProducts } from "@/contexts/ProductContext";
 
 const defaultProductImages = {
-  training: "/images/default-training.svg",
-  coaching: "/images/default-coaching.svg",
-  supplement: "/images/default-supplement.svg",
-  custom: "/images/default-product.svg",
+  training: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=800&auto=format",
+  coaching: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&auto=format",
+  supplement: "https://images.unsplash.com/photo-1579722821273-0f6c7d44362f?w=800&auto=format",
+  custom: "https://images.unsplash.com/photo-1434626881859-194d67b2b86f?w=800&auto=format",
 };
 
 export default function CreateProduct() {
@@ -38,31 +35,13 @@ export default function CreateProduct() {
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [isGratis, setIsGratis] = useState(false);
 
-  const form = useForm<InsertProduct>({
-    resolver: zodResolver(insertProductSchema.extend({
-      name: insertProductSchema.shape.name.min(1, "Produktname ist erforderlich"),
-      description: insertProductSchema.shape.description.min(1, "Produktbeschreibung ist erforderlich"),
-    })),
-    defaultValues: {
-      name: "",
-      description: "",
-      type: "training",
-      price: 0,
-      creatorId: 1, // Temporär für den Prototyp
-      isActive: true,
-      metadata: {
-        type: "training",
-        duration: 4,
-        sessions: 12,
-        includes: [],
-      },
-      stockEnabled: false,
-      stock: 0,
-      onSale: false,
-      salePrice: 0,
-      saleType: "Sale",
-    },
-  });
+  // Formularfelder
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [price, setPrice] = useState(0);
+  const [stock, setStock] = useState(0);
+  const [salePrice, setSalePrice] = useState(0);
+  const [saleType, setSaleType] = useState<"Sale" | "Budget" | "Angebot">("Sale");
 
   const handleImageSelect = () => {
     const input = document.createElement('input');
@@ -93,31 +72,46 @@ export default function CreateProduct() {
   const handleProductSubmit = async () => {
     console.log("Starting product submission");
 
-    // Validiere das Formular
-    const validationResult = await form.trigger();
-    if (!validationResult) {
-      console.log("Form validation failed:", form.formState.errors);
+    // Validiere die Pflichtfelder
+    if (!name.trim()) {
       toast({
         title: "Fehlende Angaben",
-        description: "Bitte füllen Sie alle erforderlichen Felder aus.",
+        description: "Bitte geben Sie einen Produktnamen ein.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!description.trim()) {
+      toast({
+        title: "Fehlende Angaben",
+        description: "Bitte geben Sie eine Produktbeschreibung ein.",
         variant: "destructive",
       });
       return;
     }
 
     try {
-      const formData = form.getValues();
-      console.log("Form data:", formData);
-
       // Erstelle ein sauberes Produktobjekt ohne zyklische Referenzen
       const newProduct = {
-        ...formData,
+        name,
+        description,
+        type: productType,
+        price: isGratis ? 0 : price,
         image: selectedImage ? URL.createObjectURL(selectedImage) : defaultProductImages[productType],
         createdAt: new Date().toISOString(),
         isActive: true,
         isArchived: false,
-        validUntil: selectedDate,
-        price: isGratis ? 0 : formData.price,
+        creatorId: 1, // Temporär für den Prototyp
+        validUntil: selectedDate || undefined,
+        stockEnabled,
+        stock: stockEnabled ? stock : undefined,
+        onSale,
+        salePrice: onSale ? salePrice : undefined,
+        saleType: onSale ? saleType : undefined,
+        metadata: {
+          type: productType,
+        }
       };
 
       console.log("Submitting new product:", newProduct);
@@ -128,7 +122,6 @@ export default function CreateProduct() {
         description: "Das Produkt wurde erfolgreich erstellt.",
       });
 
-      // Navigiere zur Produktübersicht statt zum Admin-Panel
       setLocation("/products");
     } catch (error) {
       console.error("Error creating product:", error);
@@ -179,18 +172,21 @@ export default function CreateProduct() {
           <div className="space-y-6">
             <div className="space-y-2">
               <Label>Name*</Label>
-              <Input {...form.register("name")} placeholder="z.B. Premium Fitness Coaching" />
-              {form.formState.errors.name && (
-                <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>
-              )}
+              <Input 
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="z.B. Premium Fitness Coaching" 
+              />
             </div>
 
             <div className="space-y-2">
               <Label>Beschreibung*</Label>
-              <Textarea {...form.register("description")} placeholder="Beschreibe dein Produkt..." className="min-h-[100px]" />
-              {form.formState.errors.description && (
-                <p className="text-sm text-destructive">{form.formState.errors.description.message}</p>
-              )}
+              <Textarea 
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Beschreibe dein Produkt..." 
+                className="min-h-[100px]" 
+              />
             </div>
 
             <div className="space-y-2">
@@ -198,12 +194,7 @@ export default function CreateProduct() {
                 <Label>Gratis Produkt</Label>
                 <Switch
                   checked={isGratis}
-                  onCheckedChange={(checked) => {
-                    setIsGratis(checked);
-                    if (checked) {
-                      form.setValue("price", 0);
-                    }
-                  }}
+                  onCheckedChange={setIsGratis}
                 />
               </div>
               {!isGratis && (
@@ -212,12 +203,10 @@ export default function CreateProduct() {
                   <Input 
                     type="number" 
                     step="0.01" 
-                    {...form.register("price", { valueAsNumber: true })} 
+                    value={price}
+                    onChange={(e) => setPrice(Number(e.target.value))}
                     placeholder="z.B. 49.99" 
                   />
-                  {form.formState.errors.price && (
-                    <p className="text-sm text-destructive">{form.formState.errors.price.message}</p>
-                  )}
                 </div>
               )}
             </div>
@@ -228,40 +217,6 @@ export default function CreateProduct() {
                 value={productType}
                 onValueChange={(value: "training" | "coaching" | "supplement" | "custom") => {
                   setProductType(value);
-                  form.setValue("type", value);
-                  switch (value) {
-                    case "training":
-                      form.setValue("metadata", {
-                        type: "training",
-                        duration: 4,
-                        sessions: 12,
-                        includes: [],
-                      });
-                      break;
-                    case "coaching":
-                      form.setValue("metadata", {
-                        type: "coaching",
-                        duration: 1,
-                        callsPerMonth: 4,
-                        includes: [],
-                      });
-                      break;
-                    case "supplement":
-                      form.setValue("metadata", {
-                        type: "supplement",
-                        weight: 1000,
-                        servings: 30,
-                        nutritionFacts: {},
-                      });
-                      break;
-                    case "custom":
-                      form.setValue("metadata", {
-                        type: "custom",
-                        specifications: {},
-                        includes: [],
-                      });
-                      break;
-                  }
                 }}
               >
                 <SelectTrigger>
@@ -289,7 +244,8 @@ export default function CreateProduct() {
                 <Input
                   type="number"
                   placeholder="Verfügbare Menge"
-                  {...form.register("stock", { valueAsNumber: true })}
+                  value={stock}
+                  onChange={(e) => setStock(Number(e.target.value))}
                 />
               )}
             </div>
@@ -309,11 +265,12 @@ export default function CreateProduct() {
                     type="number"
                     step="0.01"
                     placeholder="Sonderpreis"
-                    {...form.register("salePrice", { valueAsNumber: true })}
+                    value={salePrice}
+                    onChange={(e) => setSalePrice(Number(e.target.value))}
                   />
                   <Select
-                    value={form.watch("saleType")}
-                    onValueChange={(value: "Sale" | "Budget" | "Angebot") => form.setValue("saleType", value)}
+                    value={saleType}
+                    onValueChange={(value: "Sale" | "Budget" | "Angebot") => setSaleType(value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Art des Angebots" />
@@ -338,17 +295,6 @@ export default function CreateProduct() {
               >
                 {selectedDate || "Datum auswählen"}
               </Button>
-            </div>
-
-            <div className="flex items-center justify-between border-t pt-4">
-              <div>
-                <Label>Produktstatus</Label>
-                <p className="text-sm text-muted-foreground">Produkt im Shop anzeigen</p>
-              </div>
-              <Switch
-                checked={form.watch("isActive")}
-                onCheckedChange={(checked) => form.setValue("isActive", checked)}
-              />
             </div>
 
             <Button 
