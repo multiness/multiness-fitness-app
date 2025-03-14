@@ -44,17 +44,34 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createProduct(insertProduct: InsertProduct): Promise<Product> {
-    const [product] = await db.insert(products).values(insertProduct).returning();
+    // Stelle sicher, dass das Datum korrekt formatiert ist
+    const productData = { ...insertProduct };
+    if (productData.validUntil) {
+      productData.validUntil = new Date(productData.validUntil);
+    }
+
+    const [product] = await db.insert(products).values(productData).returning();
     return product;
   }
 
   async updateProduct(id: number, product: Partial<Product>): Promise<Product> {
-    const [updatedProduct] = await db
-      .update(products)
-      .set(product)
-      .where(eq(products.id, id))
-      .returning();
-    return updatedProduct;
+    try {
+      // Stelle sicher, dass das Datum korrekt formatiert ist
+      const updateData = { ...product };
+      if (updateData.validUntil) {
+        updateData.validUntil = new Date(updateData.validUntil);
+      }
+
+      const [updatedProduct] = await db
+        .update(products)
+        .set(updateData)
+        .where(eq(products.id, id))
+        .returning();
+      return updatedProduct;
+    } catch (error) {
+      console.error('Error updating product:', error);
+      throw error;
+    }
   }
 
   async deleteProduct(id: number): Promise<void> {

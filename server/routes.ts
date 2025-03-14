@@ -49,7 +49,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!product) {
         return res.status(404).json({ error: "Product not found" });
       }
-      const updatedProduct = await storage.updateProduct(productId, req.body);
+
+      // Verarbeite das Datum korrekt
+      const updateData = { ...req.body };
+      if (updateData.validUntil) {
+        updateData.validUntil = new Date(updateData.validUntil);
+      }
+
+      const updatedProduct = await storage.updateProduct(productId, updateData);
       res.json(updatedProduct);
     } catch (error) {
       console.error("Error updating product:", error);
@@ -66,12 +73,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Product not found" });
       }
 
-      // Wenn archivieren angefordert wird, setzen wir isArchived auf true
       if (req.query.archive === 'true') {
-        await storage.updateProduct(productId, { isArchived: true, isActive: false });
+        // Archivieren
+        await storage.updateProduct(productId, { 
+          isArchived: true, 
+          isActive: false 
+        });
         res.json({ message: "Product archived successfully" });
       } else {
-        // Ansonsten löschen wir das Produkt komplett
+        // Permanent löschen
         await storage.deleteProduct(productId);
         res.json({ message: "Product deleted successfully" });
       }
