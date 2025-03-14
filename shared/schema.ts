@@ -216,6 +216,7 @@ export const insertProductSchema = createInsertSchema(products)
     onSale: z.boolean().optional(),
     salePrice: z.number().optional(),
     saleType: z.enum(['Sale', 'Budget', 'Angebot']).optional(),
+    validUntil: z.string().datetime().optional(),
   });
 
 export type InsertProduct = z.infer<typeof insertProductSchema>;
