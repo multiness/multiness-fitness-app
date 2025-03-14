@@ -94,7 +94,17 @@ export default function ProductDetail({ id }: ProductDetailProps) {
       try {
         const shouldArchive = window.confirm("Möchten Sie das Produkt archivieren (OK) oder endgültig löschen (Abbrechen)?");
 
-        await deleteProduct(product.id, shouldArchive);
+        if (shouldArchive) {
+          // Archivieren durch Update
+          await updateProduct({
+            ...product,
+            isActive: false,
+            isArchived: true
+          });
+        } else {
+          // Permanent löschen
+          await deleteProduct(product.id);
+        }
 
         toast({
           title: shouldArchive ? "Produkt archiviert" : "Produkt gelöscht",
