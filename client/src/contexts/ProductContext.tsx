@@ -1,5 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from "react";
-import { mockProducts } from "../data/mockData";
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
 interface Product {
   id: number;
@@ -21,54 +20,94 @@ interface Product {
 
 interface ProductContextType {
   products: Product[];
-  updateProduct: (updatedProduct: Product) => void;
-  addProduct: (newProduct: Omit<Product, "id">) => void;
-  decreaseStock: (productId: number) => void;
+  updateProduct: (updatedProduct: Product) => Promise<void>;
+  addProduct: (newProduct: Omit<Product, "id">) => Promise<void>;
+  decreaseStock: (productId: number) => Promise<void>;
 }
 
 const ProductContext = createContext<ProductContextType>({
   products: [],
-  updateProduct: () => {},
-  addProduct: () => {},
-  decreaseStock: () => {},
+  updateProduct: async () => {},
+  addProduct: async () => {},
+  decreaseStock: async () => {},
 });
 
 export function ProductProvider({ children }: { children: ReactNode }) {
-  const [products, setProducts] = useState<Product[]>(mockProducts);
+  const [products, setProducts] = useState<Product[]>([]);
 
-  const updateProduct = (updatedProduct: Product) => {
-    setProducts(currentProducts => currentProducts.map(product => 
-      product.id === updatedProduct.id ? updatedProduct : product
-    ));
-  };
+  // Fetch products when the component mounts
+  useEffect(() => {
+    fetchProducts();
+  }, []);
 
-  const addProduct = (newProduct: Omit<Product, "id">) => {
-    // Entferne mögliche zyklische Referenzen und erstelle ein flaches Objekt
-    const sanitizedProduct = {
-      ...newProduct,
-      id: Math.max(...products.map(p => p.id), 0) + 1,
-      image: newProduct.image || "",
-      isActive: true,
-      isArchived: false,
-      metadata: typeof newProduct.metadata === 'object' ? { ...newProduct.metadata } : {}
-    };
-
-    setProducts(currentProducts => [...currentProducts, sanitizedProduct]);
-  };
-
-  const decreaseStock = (productId: number) => {
-    setProducts(currentProducts => currentProducts.map(product => {
-      if (product.id === productId && product.stockEnabled && product.stock) {
-        const newStock = product.stock - 1;
-        return {
-          ...product,
-          stock: newStock,
-          isActive: newStock > 0,
-          isArchived: newStock === 0
-        };
+  const fetchProducts = async () => {
+    try {
+      const response = await fetch('/api/products');
+      if (!response.ok) {
+        throw new Error('Failed to fetch products');
       }
-      return product;
-    }));
+      const data = await response.json();
+      setProducts(data);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    }
+  };
+
+  const updateProduct = async (updatedProduct: Product) => {
+    try {
+      const response = await fetch(`/api/products/${updatedProduct.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedProduct),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update product');
+      }
+
+      // Refresh products list after update
+      await fetchProducts();
+    } catch (error) {
+      console.error('Error updating product:', error);
+      throw error;
+    }
+  };
+
+  const addProduct = async (newProduct: Omit<Product, "id">) => {
+    try {
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newProduct),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create product');
+      }
+
+      // Refresh products list after adding new product
+      await fetchProducts();
+    } catch (error) {
+      console.error('Error creating product:', error);
+      throw error;
+    }
+  };
+
+  const decreaseStock = async (productId: number) => {
+    const product = products.find(p => p.id === productId);
+    if (product && product.stockEnabled && product.stock) {
+      const updatedProduct = {
+        ...product,
+        stock: product.stock - 1,
+        isActive: product.stock - 1 > 0,
+        isArchived: product.stock - 1 === 0
+      };
+      await updateProduct(updatedProduct);
+    }
   };
 
   return (
