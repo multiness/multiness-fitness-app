@@ -253,59 +253,49 @@ export default function ProductDetail({ id }: ProductDetailProps) {
                 </>
               )}
 
-              {/* Admin Controls */}
-              {isAdmin && (
-                <div className="flex gap-2 pt-4 border-t">
-                  {isEditing ? (
-                    <>
-                      <Button onClick={handleSave} className="flex items-center gap-2">
-                        <Save className="h-4 w-4" />
-                        Speichern
-                      </Button>
-                      <Button variant="outline" onClick={handleCancel} className="flex items-center gap-2">
-                        <X className="h-4 w-4" />
-                        Abbrechen
-                      </Button>
-                    </>
-                  ) : (
-                    <Button variant="outline" onClick={() => setIsEditing(true)} className="flex items-center gap-2">
-                      <Edit className="h-4 w-4" />
-                      Bearbeiten
-                    </Button>
-                  )}
-                </div>
-              )}
-
               {/* Product Details */}
-              {product.metadata.type === "supplement" && (
+              {product.metadata?.type === "supplement" && (
                 <div className="space-y-2">
                   <p className="font-medium">Produktdetails:</p>
                   <ul className="list-disc list-inside space-y-1 text-sm">
-                    <li>Gewicht: {product.metadata.weight}g</li>
-                    <li>Portionen: {product.metadata.servings}</li>
-                    {Object.entries(product.metadata.nutritionFacts).map(([key, value]) => (
+                    {product.metadata?.weight && <li>Gewicht: {product.metadata.weight}g</li>}
+                    {product.metadata?.servings && <li>Portionen: {product.metadata.servings}</li>}
+                    {product.metadata?.nutritionFacts && Object.entries(product.metadata.nutritionFacts).map(([key, value]) => (
                       <li key={key}>{key}: {value}</li>
                     ))}
                   </ul>
                 </div>
               )}
 
-              {(product.metadata.type === "training" || product.metadata.type === "coaching") && (
+              {(product.metadata?.type === "training" || product.metadata?.type === "coaching") && (
                 <div className="space-y-2">
                   <p className="font-medium">Enthaltene Leistungen:</p>
                   <ul className="list-disc list-inside space-y-1 text-sm">
-                    {product.metadata.includes.map((item: string, index: number) => (
+                    {product.metadata?.includes?.map((item: string, index: number) => (
                       <li key={index}>{item}</li>
                     ))}
                   </ul>
-                  <p className="text-sm">
-                    Dauer: {product.metadata.duration} {product.metadata.type === "training" ? "Wochen" : "Monate"}
-                  </p>
-                  {product.metadata.type === "coaching" && (
+                  {product.metadata?.duration && (
+                    <p className="text-sm">
+                      Dauer: {product.metadata.duration} {product.metadata.type === "training" ? "Wochen" : "Monate"}
+                    </p>
+                  )}
+                  {product.metadata?.type === "coaching" && product.metadata?.callsPerMonth && (
                     <p className="text-sm">
                       Coaching-Calls: {product.metadata.callsPerMonth} pro Monat
                     </p>
                   )}
+                </div>
+              )}
+
+              {product.metadata?.type === "custom" && (
+                <div className="space-y-2">
+                  <p className="font-medium">Enthaltene Leistungen:</p>
+                  <ul className="list-disc list-inside space-y-1 text-sm">
+                    {product.metadata?.includes?.map((item: string, index: number) => (
+                      <li key={index}>{item}</li>
+                    ))}
+                  </ul>
                 </div>
               )}
 

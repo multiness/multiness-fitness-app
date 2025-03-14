@@ -24,6 +24,31 @@ const defaultProductImages = {
   custom: "https://images.unsplash.com/photo-1434626881859-194d67b2b86f?w=800&auto=format",
 };
 
+const defaultMetadata = {
+  training: {
+    type: "training",
+    duration: 4,
+    sessions: 12,
+    includes: ["Individueller Trainingsplan", "Video-Anleitungen", "Support via Chat"]
+  },
+  coaching: {
+    type: "coaching",
+    duration: 1,
+    callsPerMonth: 4,
+    includes: ["1:1 Coaching Sessions", "Personalisierte Beratung", "24/7 Support"]
+  },
+  supplement: {
+    type: "supplement",
+    weight: 1000,
+    servings: 30,
+    includes: ["Premium Qualität", "100% Natural", "Made in Germany"]
+  },
+  custom: {
+    type: "custom",
+    includes: ["Individuell angepasst", "Flexible Gestaltung", "Nach Ihren Wünschen"]
+  }
+};
+
 export default function CreateProduct() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
@@ -107,9 +132,7 @@ export default function CreateProduct() {
         creatorId: 1, // Temporär für den Prototyp
         isActive: true,
         isArchived: false,
-        metadata: {
-          type: productType,
-        }
+        metadata: defaultMetadata[productType]
       };
 
       if (selectedDate) {
