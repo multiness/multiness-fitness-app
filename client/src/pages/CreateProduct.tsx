@@ -20,6 +20,13 @@ import { Package, Image as ImageIcon } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useProducts } from "@/contexts/ProductContext";
 
+const defaultProductImages = {
+  training: "/images/default-training.svg",
+  coaching: "/images/default-coaching.svg",
+  supplement: "/images/default-supplement.svg",
+  custom: "/images/default-product.svg",
+};
+
 export default function CreateProduct() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
@@ -31,7 +38,10 @@ export default function CreateProduct() {
   const [selectedDate, setSelectedDate] = useState<string>("");
 
   const form = useForm<InsertProduct>({
-    resolver: zodResolver(insertProductSchema),
+    resolver: zodResolver(insertProductSchema.extend({
+      name: insertProductSchema.shape.name.min(1, "Produktname ist erforderlich"),
+      description: insertProductSchema.shape.description.min(1, "Produktbeschreibung ist erforderlich"),
+    })),
     defaultValues: {
       name: "",
       description: "",
@@ -80,13 +90,26 @@ export default function CreateProduct() {
 
   const handleProductSubmit = async () => {
     console.log("Starting product submission");
+
+    // Validiere das Formular
+    const validationResult = await form.trigger();
+    if (!validationResult) {
+      console.log("Form validation failed:", form.formState.errors);
+      toast({
+        title: "Fehlende Angaben",
+        description: "Bitte füllen Sie alle erforderlichen Felder aus.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const formData = form.getValues();
       console.log("Form data:", formData);
 
       const newProduct = {
         ...formData,
-        image: selectedImage ? URL.createObjectURL(selectedImage) : "",
+        image: selectedImage ? URL.createObjectURL(selectedImage) : defaultProductImages[productType],
         createdAt: new Date().toISOString(),
         isActive: true,
         isArchived: false,
@@ -101,7 +124,8 @@ export default function CreateProduct() {
         description: "Das Produkt wurde erfolgreich erstellt.",
       });
 
-      setLocation("/admin");
+      // Navigiere zur Produktübersicht statt zum Admin-Panel
+      setLocation("/products");
     } catch (error) {
       console.error("Error creating product:", error);
       toast({
@@ -140,6 +164,9 @@ export default function CreateProduct() {
                   <p className="text-sm text-muted-foreground">
                     Klicken um ein Bild hochzuladen
                   </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {productType === "custom" ? "Standard-Produktbild wird verwendet" : `Standard ${productType}-Bild wird verwendet`}
+                  </p>
                 </div>
               </div>
             )}
@@ -147,7 +174,7 @@ export default function CreateProduct() {
 
           <div className="space-y-6">
             <div className="space-y-2">
-              <Label>Name</Label>
+              <Label>Name*</Label>
               <Input {...form.register("name")} placeholder="z.B. Premium Fitness Coaching" />
               {form.formState.errors.name && (
                 <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>
@@ -155,7 +182,7 @@ export default function CreateProduct() {
             </div>
 
             <div className="space-y-2">
-              <Label>Beschreibung</Label>
+              <Label>Beschreibung*</Label>
               <Textarea {...form.register("description")} placeholder="Beschreibe dein Produkt..." className="min-h-[100px]" />
               {form.formState.errors.description && (
                 <p className="text-sm text-destructive">{form.formState.errors.description.message}</p>
@@ -168,7 +195,7 @@ export default function CreateProduct() {
                 type="number" 
                 step="0.01" 
                 {...form.register("price", { valueAsNumber: true })} 
-                placeholder="49.99" 
+                placeholder="0.00 für kostenlose Produkte" 
               />
               {form.formState.errors.price && (
                 <p className="text-sm text-destructive">{form.formState.errors.price.message}</p>
