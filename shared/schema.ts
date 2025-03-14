@@ -44,7 +44,7 @@ export const groups = pgTable("groups", {
   image: text("image"),
   creatorId: integer("creator_id").references(() => users.id).notNull(),
   isPrivate: boolean("is_private").default(false).notNull(),
-  participantIds: integer("participant_ids").array(), // Add participant IDs array
+  participantIds: integer("participant_ids").array(), 
 });
 
 // Workout-Detail Typen
@@ -172,7 +172,7 @@ export const products = pgTable("products", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description").notNull(),
-  type: text("type").notNull(), // 'training', 'coaching', 'supplement', 'custom'
+  type: text("type").notNull(), 
   price: numeric("price").notNull(),
   image: text("image"),
   creatorId: integer("creator_id").references(() => users.id).notNull(),
@@ -183,8 +183,8 @@ export const products = pgTable("products", {
   stock: integer("stock"),
   onSale: boolean("on_sale").default(false),
   salePrice: numeric("sale_price"),
-  saleType: text("sale_type"), // 'Sale', 'Budget', 'Angebot'
-  metadata: jsonb("metadata"), // Zusätzliche Informationen je nach Produkttyp
+  saleType: text("sale_type"), 
+  metadata: jsonb("metadata"), 
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -192,7 +192,7 @@ export const orders = pgTable("orders", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
   productId: integer("product_id").references(() => products.id).notNull(),
-  status: text("status").notNull(), // 'pending', 'completed', 'cancelled'
+  status: text("status").notNull(), 
   paypalOrderId: text("paypal_order_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   completedAt: timestamp("completed_at"),
@@ -201,30 +201,11 @@ export const orders = pgTable("orders", {
 export type Product = typeof products.$inferSelect;
 export type Order = typeof orders.$inferSelect;
 
-export const productMetadataSchema = z.discriminatedUnion("type", [
-  z.object({
-    type: z.literal("training"),
-    duration: z.number(), // Dauer in Wochen
-    sessions: z.number(), // Anzahl der Trainingseinheiten
-    includes: z.array(z.string()), // Liste der Leistungen
-  }),
-  z.object({
-    type: z.literal("coaching"),
-    duration: z.number(), // Dauer in Monaten
-    callsPerMonth: z.number(), // Anzahl der Coaching-Calls pro Monat
-    includes: z.array(z.string()), // Liste der Leistungen
-  }),
-  z.object({
-    type: z.literal("supplement"),
-    weight: z.number(), // Gewicht in Gramm
-    servings: z.number(), // Anzahl der Portionen
-    includes: z.array(z.string()), // Liste der Leistungen
-  }),
-  z.object({
-    type: z.literal("custom"),
-    description: z.string().optional(),
-  }),
-]);
+export const productMetadataSchema = z.object({
+  type: z.enum(['training', 'coaching', 'supplement', 'custom']),
+  description: z.string().optional(),
+  customFields: z.record(z.string()).optional(),
+});
 
 export const insertProductSchema = createInsertSchema(products)
   .extend({

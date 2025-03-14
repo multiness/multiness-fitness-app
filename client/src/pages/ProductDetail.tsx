@@ -253,50 +253,17 @@ export default function ProductDetail({ id }: ProductDetailProps) {
               )}
 
               {/* Product Details */}
-              {product.type !== "custom" ? (
-                <>
-                  {product.metadata?.type === "supplement" && (
-                    <div className="space-y-2">
-                      <p className="font-medium">Produktdetails:</p>
-                      <ul className="list-disc list-inside space-y-1 text-sm">
-                        {product.metadata?.weight && <li>Gewicht: {product.metadata.weight}g</li>}
-                        {product.metadata?.servings && <li>Portionen: {product.metadata.servings}</li>}
-                        {product.metadata?.includes?.map((item: string, index: number) => (
-                          <li key={index}>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {(product.metadata?.type === "training" || product.metadata?.type === "coaching") && (
-                    <div className="space-y-2">
-                      <p className="font-medium">Enthaltene Leistungen:</p>
-                      <ul className="list-disc list-inside space-y-1 text-sm">
-                        {product.metadata?.includes?.map((item: string, index: number) => (
-                          <li key={index}>{item}</li>
-                        ))}
-                      </ul>
-                      {product.metadata?.duration && (
-                        <p className="text-sm">
-                          Dauer: {product.metadata.duration} {product.metadata.type === "training" ? "Wochen" : "Monate"}
-                        </p>
-                      )}
-                      {product.metadata?.type === "coaching" && product.metadata?.callsPerMonth && (
-                        <p className="text-sm">
-                          Coaching-Calls: {product.metadata.callsPerMonth} pro Monat
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="space-y-2">
-                  <p className="font-medium">Beschreibung:</p>
-                  <p className="text-sm text-muted-foreground">
-                    {product.description}
-                  </p>
-                </div>
-              )}
+              <div className="space-y-2">
+                <p className="font-medium">Beschreibung:</p>
+                <p className="text-sm text-muted-foreground">
+                  {product.description}
+                </p>
+                {product.metadata?.customFields && Object.entries(product.metadata.customFields).map(([key, value]) => (
+                  <div key={key} className="text-sm">
+                    <span className="font-medium">{key}:</span> {value}
+                  </div>
+                ))}
+              </div>
 
               {/* Admin Controls */}
               {isAdmin && (

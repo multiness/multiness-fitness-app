@@ -17,34 +17,12 @@ import { Package, Image as ImageIcon } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useProducts } from "@/contexts/ProductContext";
 
-// Verbesserte Standard-Bilder für verschiedene Produkttypen
+// Vereinfachte Standard-Bilder für verschiedene Produkttypen
 const defaultProductImages = {
-  training: "https://images.unsplash.com/photo-1599058917765-a780eda07a3e?w=800&auto=format", // Fitness Training Image
-  coaching: "https://images.unsplash.com/photo-1475823678248-624fc6f85785?w=800&auto=format", // Professional Coaching Image
-  supplement: "https://images.unsplash.com/photo-1612187029134-67b11293e7e0?w=800&auto=format", // Supplement Products Image
-  custom: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' ry='2'/%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3Cpath d='M12 8v1M12 15v1M8 12h1M15 12h1'/%3E%3C/svg%3E", // Neutrales Produkticon
-};
-
-// Standardmetadaten nur für vordefinierte Produkttypen
-const defaultMetadata = {
-  training: {
-    type: "training",
-    duration: 4,
-    sessions: 12,
-    includes: ["Individueller Trainingsplan", "Video-Anleitungen", "Support via Chat"]
-  },
-  coaching: {
-    type: "coaching",
-    duration: 1,
-    callsPerMonth: 4,
-    includes: ["1:1 Coaching Sessions", "Personalisierte Beratung", "24/7 Support"]
-  },
-  supplement: {
-    type: "supplement",
-    weight: 1000,
-    servings: 30,
-    includes: ["Premium Qualität", "100% Natural", "Made in Germany"]
-  }
+  training: "https://images.unsplash.com/photo-1599058917765-a780eda07a3e?w=800&auto=format",
+  coaching: "https://images.unsplash.com/photo-1475823678248-624fc6f85785?w=800&auto=format",
+  supplement: "https://images.unsplash.com/photo-1612187029134-67b11293e7e0?w=800&auto=format",
+  custom: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' ry='2'/%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3Cpath d='M12 8v1M12 15v1M8 12h1M15 12h1'/%3E%3C/svg%3E",
 };
 
 export default function CreateProduct() {
@@ -101,9 +79,6 @@ export default function CreateProduct() {
   };
 
   const handleProductSubmit = async () => {
-    console.log("Starting product submission");
-
-    // Validiere die Pflichtfelder
     if (!name.trim()) {
       toast({
         title: "Fehlende Angaben",
@@ -123,7 +98,6 @@ export default function CreateProduct() {
     }
 
     try {
-      // Erstelle das Produkt-Objekt
       const newProduct = {
         name,
         description,
@@ -133,12 +107,12 @@ export default function CreateProduct() {
         creatorId: 1, // Temporär für den Prototyp
         isActive: true,
         isArchived: false,
-        metadata: productType === 'custom'
-          ? { type: 'custom' as const }
-          : defaultMetadata[productType],
+        metadata: {
+          type: productType,
+          description
+        }
       };
 
-      // Optional fields
       if (selectedDate) {
         newProduct.validUntil = selectedDate;
       }
@@ -154,13 +128,7 @@ export default function CreateProduct() {
         newProduct.saleType = saleType;
       }
 
-      console.log("Submitting new product:", newProduct);
       await addProduct(newProduct);
-
-      // Bereinige die temporäre URL
-      if (selectedImagePreview) {
-        URL.revokeObjectURL(selectedImagePreview);
-      }
 
       toast({
         title: "Produkt erstellt!",
