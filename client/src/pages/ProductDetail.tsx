@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "wouter";
+import { useParams, useLocation } from "wouter";
 import { loadScript } from "@paypal/paypal-js";
 import { Package, ShoppingCart, Edit, Save, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +26,7 @@ export default function ProductDetail({ id }: ProductDetailProps) {
   const [product, setProduct] = useState(products[0]);
   const [editedProduct, setEditedProduct] = useState({...product});
   const [paypalLoaded, setPaypalLoaded] = useState(false);
+  const [, setLocation] = useLocation();
 
   useEffect(() => {
     const prod = products.find(p => p.id === Number(productId));
@@ -50,14 +51,36 @@ export default function ProductDetail({ id }: ProductDetailProps) {
     });
   }, []);
 
-  const handleSave = () => {
-    updateProduct(editedProduct);
-    setProduct(editedProduct);
-    setIsEditing(false);
-    toast({
-      title: "Änderungen gespeichert",
-      description: "Die Produktdetails wurden erfolgreich aktualisiert.",
-    });
+  const handleSave = async () => {
+    try {
+      const response = await fetch(`/api/products/${editedProduct.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(editedProduct),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update product');
+      }
+
+      const updatedProduct = await response.json();
+      setProduct(updatedProduct);
+      setIsEditing(false);
+
+      toast({
+        title: "Änderungen gespeichert",
+        description: "Die Produktdetails wurden erfolgreich aktualisiert.",
+      });
+    } catch (error) {
+      console.error("Error saving product:", error);
+      toast({
+        title: "Fehler",
+        description: "Die Änderungen konnten nicht gespeichert werden.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleCancel = () => {
@@ -66,18 +89,27 @@ export default function ProductDetail({ id }: ProductDetailProps) {
   };
 
   const handleDelete = async () => {
-    if (window.confirm("Möchten Sie dieses Produkt wirklich löschen?")) {
+    if (window.confirm("Möchten Sie dieses Produkt wirklich löschen? Sie können es auch archivieren, um es später wieder zu aktivieren.")) {
       try {
-        // TODO: Implement delete functionality
-        setProduct({...product, isArchived: true});
+        const action = window.confirm("Möchten Sie das Produkt archivieren (OK) oder endgültig löschen (Abbrechen)?");
+        const endpoint = `/api/products/${product.id}${action ? '?archive=true' : ''}`;
+
+        await fetch(endpoint, { method: 'DELETE' });
+
         toast({
-          title: "Produkt gelöscht",
-          description: "Das Produkt wurde erfolgreich gelöscht.",
+          title: action ? "Produkt archiviert" : "Produkt gelöscht",
+          description: action 
+            ? "Das Produkt wurde erfolgreich archiviert und kann später wieder aktiviert werden."
+            : "Das Produkt wurde erfolgreich gelöscht.",
         });
+
+        // Zurück zur Produktübersicht navigieren
+        setLocation("/products");
       } catch (error) {
+        console.error("Error deleting/archiving product:", error);
         toast({
           title: "Fehler",
-          description: "Das Produkt konnte nicht gelöscht werden.",
+          description: "Das Produkt konnte nicht gelöscht/archiviert werden.",
           variant: "destructive",
         });
       }
@@ -179,63 +211,6 @@ export default function ProductDetail({ id }: ProductDetailProps) {
                       onChange={(e) => setEditedProduct({...editedProduct, price: Number(e.target.value)})}
                     />
                   </div>
-                  {/* Added Stock Management */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <label className="text-sm font-medium">Bestandsverwaltung aktivieren</label>
-                      <Switch
-                        checked={editedProduct.stockEnabled}
-                        onCheckedChange={(checked) => setEditedProduct({...editedProduct, stockEnabled: checked})}
-                      />
-                    </div>
-                    {editedProduct.stockEnabled && (
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Verfügbare Menge</label>
-                        <Input
-                          type="number"
-                          min="0"
-                          value={editedProduct.stock || 0}
-                          onChange={(e) => setEditedProduct({...editedProduct, stock: Number(e.target.value)})}
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Added Special Offer */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <label className="text-sm font-medium">Sonderangebot aktivieren</label>
-                      <Switch
-                        checked={editedProduct.onSale}
-                        onCheckedChange={(checked) => setEditedProduct({...editedProduct, onSale: checked})}
-                      />
-                    </div>
-                    {editedProduct.onSale && (
-                      <div className="space-y-4">
-                        <div>
-                          <label className="text-sm font-medium">Angebotspreis (€)</label>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={editedProduct.salePrice || editedProduct.price}
-                            onChange={(e) => setEditedProduct({...editedProduct, salePrice: Number(e.target.value)})}
-                          />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium">Art des Angebots</label>
-                          <select
-                            className="w-full mt-1 rounded-md border border-input bg-background px-3 py-2"
-                            value={editedProduct.saleType || 'Sale'}
-                            onChange={(e) => setEditedProduct({...editedProduct, saleType: e.target.value as 'Sale' | 'Budget' | 'Angebot'})}
-                          >
-                            <option value="Sale">Sale</option>
-                            <option value="Budget">Budget</option>
-                            <option value="Angebot">Angebot</option>
-                          </select>
-                        </div>
-                      </div>
-                    )}
-                  </div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm">Aktiv</span>
                     <Switch
@@ -258,7 +233,11 @@ export default function ProductDetail({ id }: ProductDetailProps) {
                         <Badge variant="secondary">{product.saleType}</Badge>
                       </div>
                     ) : (
-                      <span>€{Number(product.price).toFixed(2)}</span>
+                      Number(product.price) === 0 ? (
+                        <span className="text-green-500">Gratis</span>
+                      ) : (
+                        <span>€{Number(product.price).toFixed(2)}</span>
+                      )
                     )}
                   </div>
                   {product.stockEnabled && (
@@ -274,7 +253,7 @@ export default function ProductDetail({ id }: ProductDetailProps) {
               )}
 
               {/* Product Details */}
-              {product.type !== "custom" && (
+              {product.type !== "custom" ? (
                 <>
                   {product.metadata?.type === "supplement" && (
                     <div className="space-y-2">
@@ -310,15 +289,14 @@ export default function ProductDetail({ id }: ProductDetailProps) {
                     </div>
                   )}
                 </>
+              ) : (
+                <div className="space-y-2">
+                  <p className="font-medium">Beschreibung:</p>
+                  <p className="text-sm text-muted-foreground">
+                    {product.description}
+                  </p>
+                </div>
               )}
-
-              {/* Für alle Produkte die Beschreibung anzeigen */}
-              <div className="space-y-2 mt-4">
-                <p className="font-medium">Beschreibung:</p>
-                <p className="text-sm text-muted-foreground">
-                  {product.description}
-                </p>
-              </div>
 
               {/* Admin Controls */}
               {isAdmin && (
