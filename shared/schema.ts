@@ -218,12 +218,11 @@ export const productMetadataSchema = z.discriminatedUnion("type", [
     type: z.literal("supplement"),
     weight: z.number(), // Gewicht in Gramm
     servings: z.number(), // Anzahl der Portionen
-    nutritionFacts: z.record(z.string(), z.string()), // Nährwertangaben
+    includes: z.array(z.string()), // Liste der Leistungen
   }),
   z.object({
     type: z.literal("custom"),
-    specifications: z.record(z.string(), z.string()), // Beliebige Spezifikationen
-    includes: z.array(z.string()), // Liste der Leistungen
+    description: z.string().optional(),
   }),
 ]);
 

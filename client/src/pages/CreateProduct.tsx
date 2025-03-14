@@ -119,6 +119,7 @@ export default function CreateProduct() {
     }
 
     try {
+      // Erstelle das Produkt-Objekt
       const newProduct = {
         name,
         description,
@@ -128,10 +129,12 @@ export default function CreateProduct() {
         creatorId: 1, // Temporär für den Prototyp
         isActive: true,
         isArchived: false,
-        // Nur für vordefinierte Produkttypen Metadaten hinzufügen
-        metadata: productType !== 'custom' ? defaultMetadata[productType] : { type: 'custom' }
+        metadata: productType === 'custom' 
+          ? { type: 'custom' as const }
+          : defaultMetadata[productType],
       };
 
+      // Optional fields
       if (selectedDate) {
         newProduct.validUntil = selectedDate;
       }
