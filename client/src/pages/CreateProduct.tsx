@@ -52,7 +52,7 @@ export default function CreateProduct() {
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState(0);
   const [stock, setStock] = useState(0);
-  const [salePrice, setSalePrice] = useState(0);
+  const [salePrice, setSalePrice] = useState<number | null>(null);
   const [saleType, setSaleType] = useState<"Sale" | "Budget" | "Angebot">("Sale");
 
   const handleImageSelect = async () => {
@@ -273,33 +273,17 @@ export default function CreateProduct() {
               {onSale && (
                 <div className="space-y-4">
                   <div>
-                    <Label>Sonderpreis (€)</Label>
+                    <Label>Sonderpreis (€) (optional)</Label>
                     <Input
                       type="number"
                       step="0.01"
-                      placeholder="z.B. 29.99"
-                      value={salePrice}
-                      onChange={(e) => setSalePrice(Number(e.target.value))}
+                      placeholder="Leer lassen für Angebot ohne Preisreduzierung"
+                      value={salePrice || ''}
+                      onChange={(e) => setSalePrice(e.target.value ? Number(e.target.value) : null)}
                       className="mt-2"
                     />
                   </div>
-                  <div>
-                    <Label>Art des Angebots</Label>
-                    <Select
-                      value={saleType}
-                      onValueChange={(value: "Sale" | "Budget" | "Angebot") => setSaleType(value)}
-                    >
-                      <SelectTrigger className="mt-2">
-                        <SelectValue placeholder="Art des Angebots wählen" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Sale">Sale</SelectItem>
-                        <SelectItem value="Budget">Budget-Angebot</SelectItem>
-                        <SelectItem value="Angebot">Sonderangebot</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  {salePrice >= price && (
+                  {salePrice !== null && salePrice >= price && (
                     <p className="text-sm text-red-500">
                       Der Sonderpreis sollte niedriger als der reguläre Preis sein.
                     </p>

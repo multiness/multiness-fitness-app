@@ -53,10 +53,19 @@ export default function ProductSlider() {
                     <div className="flex items-center gap-1 font-semibold">
                       {product.onSale ? (
                         <div className="flex items-center gap-2">
-                          <span className="text-red-500">€{Number(product.salePrice).toFixed(2)}</span>
-                          <span className="text-sm line-through text-muted-foreground">
-                            €{Number(product.price).toFixed(2)}
-                          </span>
+                          {product.salePrice ? (
+                            <>
+                              <span className="text-red-500">€{Number(product.salePrice).toFixed(2)}</span>
+                              <span className="text-sm line-through text-muted-foreground">
+                                €{Number(product.price).toFixed(2)}
+                              </span>
+                            </>
+                          ) : (
+                            <div className="flex items-center gap-1">
+                              <span className="text-red-500">Angebot</span>
+                              <span>€{Number(product.price).toFixed(2)}</span>
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <div className="flex items-center gap-1">

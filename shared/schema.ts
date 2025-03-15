@@ -183,7 +183,6 @@ export const products = pgTable("products", {
   stock: integer("stock"),
   onSale: boolean("on_sale").default(false),
   salePrice: numeric("sale_price"),
-  saleType: text("sale_type"), 
   metadata: jsonb("metadata"), 
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -215,7 +214,6 @@ export const insertProductSchema = createInsertSchema(products)
     stock: z.number().optional(),
     onSale: z.boolean().optional(),
     salePrice: z.number().optional(),
-    saleType: z.enum(['Sale', 'Budget', 'Angebot']).optional(),
     validUntil: z.string().datetime().optional(),
   });
 
