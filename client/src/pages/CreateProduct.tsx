@@ -53,7 +53,6 @@ export default function CreateProduct() {
   const [price, setPrice] = useState(0);
   const [stock, setStock] = useState(0);
   const [salePrice, setSalePrice] = useState<number | null>(null);
-  const [saleType, setSaleType] = useState<"Sale" | "Budget" | "Angebot">("Sale");
 
   const handleImageSelect = async () => {
     const input = document.createElement('input');
@@ -74,7 +73,6 @@ export default function CreateProduct() {
     };
     input.click();
   };
-
 
   const handleProductSubmit = async () => {
     if (!name.trim()) {
@@ -122,8 +120,9 @@ export default function CreateProduct() {
 
       if (onSale) {
         newProduct.onSale = true;
-        newProduct.salePrice = salePrice;
-        newProduct.saleType = saleType;
+        if (salePrice !== null) {
+          newProduct.salePrice = salePrice;
+        }
       }
 
       await addProduct(newProduct);
@@ -268,7 +267,7 @@ export default function CreateProduct() {
                   checked={onSale}
                   onCheckedChange={setOnSale}
                 />
-                <Label>Sonderpreis aktivieren</Label>
+                <Label>Als Sonderangebot markieren</Label>
               </div>
               {onSale && (
                 <div className="space-y-4">

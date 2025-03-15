@@ -226,15 +226,20 @@ export default function ProductDetail({ id }: ProductDetailProps) {
                   <div className="text-2xl font-bold">
                     {product.onSale ? (
                       <div className="flex items-center gap-4">
-                        <span className="text-red-500">€{Number(product.salePrice).toFixed(2)}</span>
-                        <span className="text-lg line-through text-muted-foreground">
-                          €{Number(product.price).toFixed(2)}
-                        </span>
-                        <Badge variant="secondary">
-                          {product.saleType === "Sale" && "Sale"}
-                          {product.saleType === "Budget" && "Budget-Angebot"}
-                          {product.saleType === "Angebot" && "Sonderangebot"}
-                        </Badge>
+                        {product.salePrice ? (
+                          <>
+                            <span className="text-red-500">€{Number(product.salePrice).toFixed(2)}</span>
+                            <span className="text-lg line-through text-muted-foreground">
+                              €{Number(product.price).toFixed(2)}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-red-500">Angebot</span>
+                            <span>€{Number(product.price).toFixed(2)}</span>
+                          </>
+                        )}
+                        <Badge variant="secondary">Angebot</Badge>
                       </div>
                     ) : (
                       Number(product.price) === 0 ? (
