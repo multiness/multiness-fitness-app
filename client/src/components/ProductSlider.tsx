@@ -12,6 +12,14 @@ import {
 } from "@/components/ui/carousel";
 import { useProducts } from "@/contexts/ProductContext";
 
+// Fallback-Bilder für verschiedene Produkttypen
+const defaultProductImages = {
+  training: "https://images.unsplash.com/photo-1599058917765-a780eda07a3e?w=800&auto=format",
+  coaching: "https://images.unsplash.com/photo-1475823678248-624fc6f85785?w=800&auto=format",
+  supplement: "https://images.unsplash.com/photo-1612187029134-67b11293e7e0?w=800&auto=format",
+  custom: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' ry='2'/%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3Cpath d='M12 8v1M12 15v1M8 12h1M15 12h1'/%3E%3C/svg%3E",
+};
+
 export default function ProductSlider() {
   const { products } = useProducts();
   const activeProducts = products.filter(p => p.isActive && !p.isArchived);
@@ -31,7 +39,7 @@ export default function ProductSlider() {
               <Card className="overflow-hidden cursor-pointer transition-transform hover:scale-[1.02]">
                 <CardHeader className="p-0 relative">
                   <img
-                    src={product.image || "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=800&auto=format"}
+                    src={product.image || defaultProductImages[product.type] || defaultProductImages.custom}
                     alt={product.name}
                     className="w-full h-48 object-cover"
                   />
@@ -68,16 +76,14 @@ export default function ProductSlider() {
                           )}
                         </div>
                       ) : (
-                        <div className="flex items-center gap-1">
-                          {Number(product.price) === 0 ? (
-                            <span className="text-green-500">Gratis</span>
-                          ) : (
-                            <>
-                              <Euro className="h-4 w-4" />
-                              {Number(product.price).toFixed(2)}
-                            </>
-                          )}
-                        </div>
+                        Number(product.price) === 0 ? (
+                          <span className="text-green-500">Gratis</span>
+                        ) : (
+                          <>
+                            <Euro className="h-4 w-4" />
+                            {Number(product.price).toFixed(2)}
+                          </>
+                        )
                       )}
                     </div>
                     {product.stockEnabled && product.stock === 0 ? (

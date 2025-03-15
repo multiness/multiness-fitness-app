@@ -127,6 +127,13 @@ export default function ProductDetail({ id }: ProductDetailProps) {
     );
   }
 
+  const defaultProductImages = {
+    supplement: "/images/default-supplement.jpg",
+    training: "/images/default-training.jpg",
+    coaching: "/images/default-coaching.jpg",
+    custom: "/images/default-custom.jpg",
+  };
+
   return (
     <div className="container max-w-4xl mx-auto p-4">
       <Card>
@@ -166,7 +173,7 @@ export default function ProductDetail({ id }: ProductDetailProps) {
                 </div>
               ) : (
                 <img
-                  src={product.image}
+                  src={product.image || defaultProductImages[product.type] || defaultProductImages.custom}
                   alt={product.name}
                   className="w-full rounded-lg object-cover aspect-square"
                 />
