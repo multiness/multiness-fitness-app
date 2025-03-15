@@ -51,7 +51,7 @@ export default function Chat() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [isGroupGoalModalOpen, setIsGroupGoalModalOpen] = useState(false);
   const [isAddProgressModalOpen, setIsAddProgressModalOpen] = useState(false);
-  const [isPerformanceBoardOpen, setIsPerformanceBoardOpen] = useState(false); // Add state for Performance Board
+  const [isPerformanceBoardOpen, setIsPerformanceBoardOpen] = useState(false);
 
   const chatPreviews: ChatPreview[] = [
     ...mockUsers.slice(1).map(user => {
@@ -106,7 +106,7 @@ export default function Chat() {
       content: messageInput,
       timestamp: new Date().toISOString(),
       imageUrl: selectedImage ? URL.createObjectURL(selectedImage) : undefined,
-      groupId: selectedChat.isGroup ? parseInt(selectedChat.id.substring(6)) : undefined,
+      groupId: selectedChat.isGroup ? parseInt(selectedChat.id.replace('group-', '')) : undefined,
     };
 
     chatStore.addMessage(selectedChat.id, message);
@@ -162,10 +162,11 @@ export default function Chat() {
       userId: currentUser.id,
       content: `🎯 Neues Gruppenziel erstellt: ${data.title} (${data.targetValue} ${data.unit})`,
       timestamp: new Date().toISOString(),
-      groupId: parseInt(selectedChat.id.substring(6)),
+      groupId: parseInt(selectedChat.id.replace('group-', '')),
     };
 
     chatStore.addMessage(selectedChat.id, message);
+    setIsGroupGoalModalOpen(false);
   };
 
   const handleAddGroupProgress = (value: number) => {
@@ -187,7 +188,7 @@ export default function Chat() {
       userId: currentUser.id,
       content: `📈 Hat ${value} ${currentGroupGoal.unit} zum Gruppenziel "${currentGroupGoal.title}" beigetragen!`,
       timestamp: new Date().toISOString(),
-      groupId: parseInt(selectedChat.id.substring(6)),
+      groupId: parseInt(selectedChat.id.replace('group-', '')),
     };
 
     chatStore.addMessage(selectedChat.id, message);
@@ -291,63 +292,83 @@ export default function Chat() {
                 </div>
               </div>
 
-              {selectedChat.isGroup && currentGroupGoal && (
-                <div className="bg-muted/30 rounded-lg p-3 space-y-2">
+              {selectedChat.isGroup && (
+                <div className="p-4 border-b space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Target className="h-4 w-4 text-primary" />
-                      <span className="text-sm font-medium">{currentGroupGoal.title}</span>
+                      <span className="text-sm font-medium">Gruppenziele</span>
                     </div>
-                    <span className="text-xs text-muted-foreground">
-                      Ziel bis {format(new Date(currentGroupGoal.targetDate), 'dd.MM.yyyy')}
-                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7"
+                      onClick={() => setIsGroupGoalModalOpen(true)}
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      Neues Ziel
+                    </Button>
                   </div>
-                  {currentGroupGoal.description && (
-                    <p className="text-xs text-muted-foreground">{currentGroupGoal.description}</p>
-                  )}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">
-                          {(currentGroupGoal.contributions || []).reduce((sum, c) => sum + c.value, 0).toFixed(1)} {currentGroupGoal.unit}
-                          von {currentGroupGoal.targetValue} {currentGroupGoal.unit}
-                          ({currentGroupGoal.progress}%)
+
+                  {currentGroupGoal && (
+                    <div className="bg-muted/30 rounded-lg p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Target className="h-4 w-4 text-primary" />
+                          <span className="text-sm font-medium">{currentGroupGoal.title}</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          Ziel bis {format(new Date(currentGroupGoal.targetDate), 'dd.MM.yyyy')}
                         </span>
-                        {currentGroupGoal.progress >= 100 && (
-                          <span className="text-yellow-500">
-                            🎉 Ziel erreicht!
-                          </span>
-                        )}
                       </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7"
-                          onClick={() => setIsPerformanceBoardOpen(true)}
-                        >
-                          👥 Performance
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7"
-                          onClick={() => setIsAddProgressModalOpen(true)}
-                        >
-                          <Plus className="h-3 w-3 mr-1" />
-                          Fortschritt
-                        </Button>
+                      {currentGroupGoal.description && (
+                        <p className="text-xs text-muted-foreground">{currentGroupGoal.description}</p>
+                      )}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium">
+                              {(currentGroupGoal.contributions || []).reduce((sum, c) => sum + c.value, 0).toFixed(1)} {currentGroupGoal.unit}
+                              von {currentGroupGoal.targetValue} {currentGroupGoal.unit}
+                              ({currentGroupGoal.progress}%)
+                            </span>
+                            {currentGroupGoal.progress >= 100 && (
+                              <span className="text-yellow-500">
+                                🎉 Ziel erreicht!
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7"
+                              onClick={() => setIsPerformanceBoardOpen(true)}
+                            >
+                              👥 Performance
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7"
+                              onClick={() => setIsAddProgressModalOpen(true)}
+                            >
+                              <Plus className="h-3 w-3 mr-1" />
+                              Fortschritt
+                            </Button>
+                          </div>
+                        </div>
+                        <Progress 
+                          value={currentGroupGoal.progress} 
+                          className={`h-1.5 ${
+                            currentGroupGoal.progress >= 100 
+                              ? "bg-yellow-500" 
+                              : ""
+                          }`}
+                        />
                       </div>
                     </div>
-                    <Progress 
-                      value={currentGroupGoal.progress} 
-                      className={`h-1.5 ${
-                        currentGroupGoal.progress >= 100 
-                          ? "bg-yellow-500" 
-                          : ""
-                      }`}
-                    />
-                  </div>
+                  )}
                 </div>
               )}
             </div>
@@ -478,28 +499,32 @@ export default function Chat() {
         )}
       </div>
 
-      {selectedChat?.isGroup && currentGroupGoal && (
+      {selectedChat?.isGroup && (
         <>
           <AddGroupGoalModal
             open={isGroupGoalModalOpen}
             onOpenChange={setIsGroupGoalModalOpen}
             onSave={handleAddGroupGoal}
           />
-          <AddGroupProgress
-            open={isAddProgressModalOpen}
-            onOpenChange={setIsAddProgressModalOpen}
-            onSave={handleAddGroupProgress}
-            currentProgress={currentGroupGoal.progress}
-            goalTitle={currentGroupGoal.title}
-            targetValue={currentGroupGoal.targetValue}
-            unit={currentGroupGoal.unit}
-            currentValue={(currentGroupGoal.contributions || []).reduce((sum, c) => sum + c.value, 0)}
-          />
-          <PerformanceBoard
-            open={isPerformanceBoardOpen}
-            onOpenChange={setIsPerformanceBoardOpen}
-            goal={currentGroupGoal}
-          />
+          {currentGroupGoal && (
+            <>
+              <AddGroupProgress
+                open={isAddProgressModalOpen}
+                onOpenChange={setIsAddProgressModalOpen}
+                onSave={handleAddGroupProgress}
+                currentProgress={currentGroupGoal.progress}
+                goalTitle={currentGroupGoal.title}
+                targetValue={currentGroupGoal.targetValue}
+                unit={currentGroupGoal.unit}
+                currentValue={(currentGroupGoal.contributions || []).reduce((sum, c) => sum + c.value, 0)}
+              />
+              <PerformanceBoard
+                open={isPerformanceBoardOpen}
+                onOpenChange={setIsPerformanceBoardOpen}
+                goal={currentGroupGoal}
+              />
+            </>
+          )}
         </>
       )}
     </div>
