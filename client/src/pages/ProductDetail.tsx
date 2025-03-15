@@ -127,10 +127,10 @@ export default function ProductDetail({ id }: ProductDetailProps) {
     );
   }
 
-  const defaultProductImages = {
+  const defaultProductImages: Record<string, string> = {
     training: "https://images.unsplash.com/photo-1599058917765-a780eda07a3e?w=800&auto=format",
-    coaching: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=800&auto=format",
-    supplement: "https://images.unsplash.com/photo-1579722820308-d74e571900a9?w=800&auto=format",
+    coaching: "https://images.unsplash.com/photo-1606889463862-a8fc57a706ce?w=800&auto=format",
+    supplement: "https://images.unsplash.com/photo-1593095948071-474c5cc2989d?w=800&auto=format",
     custom: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' ry='2'/%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3Cpath d='M12 8v1M12 15v1M8 12h1M15 12h1'/%3E%3C/svg%3E",
   };
 
