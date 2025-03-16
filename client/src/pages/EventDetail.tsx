@@ -1,5 +1,6 @@
 import { useParams, useLocation } from "wouter";
 import { useEvents } from "@/contexts/EventContext";
+import { useUser } from "@/contexts/UserContext"; // Add this import
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,7 @@ export default function EventDetail() {
   const [, setLocation] = useLocation();
   const { events, deleteEvent, updateEvent } = useEvents();
   const { toast } = useToast();
+  const { user } = useUser(); // Add this line to get current user
   const event = events.find(e => e.id === parseInt(id));
 
   const handleDelete = () => {
@@ -88,37 +90,39 @@ export default function EventDetail() {
     <div className="container mx-auto p-4">
       <div className="max-w-4xl mx-auto">
         {/* Admin Actions */}
-        <div className="flex justify-end gap-2 mb-4">
-          <Button
-            variant="outline"
-            onClick={() => setLocation(`/events/edit/${event.id}`)}
-          >
-            <Edit className="h-4 w-4 mr-2" />
-            Bearbeiten
-          </Button>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive">
-                <Trash2 className="h-4 w-4 mr-2" />
-                Löschen
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Event wirklich löschen?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Diese Aktion kann nicht rückgängig gemacht werden. Das Event wird permanent gelöscht.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
+        {user?.isAdmin && (
+          <div className="flex justify-end gap-2 mb-4">
+            <Button
+              variant="outline"
+              onClick={() => setLocation(`/events/edit/${event.id}`)}
+            >
+              <Edit className="h-4 w-4 mr-2" />
+              Bearbeiten
+            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive">
+                  <Trash2 className="h-4 w-4 mr-2" />
                   Löschen
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Event wirklich löschen?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Diese Aktion kann nicht rückgängig gemacht werden. Das Event wird permanent gelöscht.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
+                    Löschen
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        )}
 
         {/* Event Header */}
         <div className="relative h-64 rounded-t-xl overflow-hidden mb-6">
@@ -212,11 +216,12 @@ export default function EventDetail() {
                   <p>
                     {event.currentParticipants} von {event.maxParticipants || "∞"} Plätzen belegt
                   </p>
-                  {event.isPublic && event.requiresRegistration ? (
+                  {!user && event.isPublic && event.requiresRegistration ? (
+                    // Anmeldeformular nur für nicht angemeldete Benutzer
                     <Dialog>
                       <DialogTrigger asChild>
                         <Button>
-                          Teilnehmen
+                          Als Gast anmelden
                         </Button>
                       </DialogTrigger>
                       <DialogContent className="sm:max-w-[500px]">
@@ -239,8 +244,20 @@ export default function EventDetail() {
                       </DialogContent>
                     </Dialog>
                   ) : (
-                    <Button disabled={event.currentParticipants === event.maxParticipants}>
-                      {event.currentParticipants === event.maxParticipants ? "Ausgebucht" : "Teilnehmen"}
+                    // Button für angemeldete Benutzer
+                    <Button 
+                      disabled={event.currentParticipants === event.maxParticipants}
+                      onClick={() => {
+                        if (user) {
+                          toast({
+                            title: "Info",
+                            description: "Sie sind bereits als Community-Mitglied angemeldet.",
+                          });
+                        }
+                      }}
+                    >
+                      {event.currentParticipants === event.maxParticipants ? "Ausgebucht" : 
+                       user ? "Als Mitglied teilnehmen" : "Bitte melden Sie sich an"}
                     </Button>
                   )}
                 </div>

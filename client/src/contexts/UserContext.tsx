@@ -15,7 +15,7 @@ type User = {
 
 interface UserContextType {
   users: User[];
-  currentUser: User;
+  currentUser: User | null;
   toggleVerification: (userId: number) => void;
 }
 
@@ -47,4 +47,12 @@ export function useUsers() {
     throw new Error("useUsers must be used within a UserProvider");
   }
   return context;
+}
+
+export function useUser() {
+  const context = useContext(UserContext);
+  if (context === undefined) {
+    throw new Error("useUser must be used within a UserProvider");
+  }
+  return { user: context.currentUser };
 }
