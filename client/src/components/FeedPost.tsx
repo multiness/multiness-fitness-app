@@ -57,6 +57,17 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
     }
   }, [postStore, post.id]);
 
+  const formatDate = (date: Date | string) => {
+    try {
+      const dateObj = typeof date === 'string' ? new Date(date) : date;
+      if (isNaN(dateObj.getTime())) {
+        return 'Ungültiges Datum';
+      }
+      return format(dateObj, "dd. MMM yyyy");
+    } catch (error) {
+      return 'Ungültiges Datum';
+    }
+  };
 
   const handleLike = () => {
     const userId = currentUser?.id || 1;
@@ -127,7 +138,7 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
           <div>
             <h3 className="font-semibold">{user?.username}</h3>
             <p className="text-sm text-muted-foreground">
-              {format(post.createdAt, "dd. MMM yyyy")}
+              {formatDate(post.createdAt)}
             </p>
           </div>
         </div>
@@ -283,7 +294,7 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
                         <div className="flex items-center gap-2">
                           <span className="font-semibold text-sm">{commentUser?.username}</span>
                           <span className="text-xs text-muted-foreground">
-                            {format(new Date(comment.timestamp), "dd. MMM")}
+                            {formatDate(comment.timestamp)}
                           </span>
                         </div>
                         <p className="text-sm">{comment.content}</p>
