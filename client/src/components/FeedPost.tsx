@@ -39,6 +39,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { UserAvatar } from "@/components/UserAvatar";
 import DailyGoalDisplay from './DailyGoalDisplay';
+import { useQuery } from "@tanstack/react-query";
 
 interface FeedPostProps {
   post: Post;
@@ -49,14 +50,26 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [reportReason, setReportReason] = useState("");
-  const [post, setPost] = useState(initialPost);
-  const [editContent, setEditContent] = useState(post.content);
+  const [editContent, setEditContent] = useState(initialPost.content);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showAllComments, setShowAllComments] = useState(false);
   const [newComment, setNewComment] = useState("");
   const { toast } = useToast();
   const { currentUser } = useUsers();
   const postStore = usePostStore();
+
+  // Lade den Post aus der Datenbank
+  const { data: post = initialPost, isLoading } = useQuery({
+    queryKey: ['/api/posts', initialPost.id],
+    queryFn: async () => {
+      const response = await fetch(`/api/posts/${initialPost.id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch post');
+      }
+      return response.json();
+    }
+  });
+
   const isLiked = postStore.hasLiked(post.id, currentUser?.id || 1);
   const likes = postStore.getLikes(post.id);
   const comments = postStore.getComments(post.id);
@@ -64,12 +77,9 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
   const isOwnPost = currentUser?.id === post.userId;
 
   useEffect(() => {
-    const updatedPost = postStore.getPost(post.id);
-    if (updatedPost) {
-      setPost(updatedPost);
-      setEditContent(updatedPost.content);
-    }
-  }, [postStore, post.id]);
+    setEditContent(post.content);
+  }, [post]);
+
 
   const formatDate = (date: Date | string) => {
     try {
