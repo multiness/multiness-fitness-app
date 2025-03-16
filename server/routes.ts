@@ -53,23 +53,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/posts/migrate", async (req, res) => {
     try {
       const existingPosts = req.body.posts;
+      if (!Array.isArray(existingPosts)) {
+        return res.status(400).json({ error: "Posts must be an array" });
+      }
+
+      console.log(`Starting migration of ${existingPosts.length} posts`);
       const migratedPosts = [];
 
       for (const post of existingPosts) {
-        const newPost = await db.insert(posts).values({
-          userId: post.userId,
-          content: post.content,
-          images: post.images || [],
-          createdAt: new Date(post.createdAt),
-          updatedAt: new Date(post.updatedAt)
-        }).returning();
+        try {
+          const newPost = await db.insert(posts).values({
+            userId: post.userId,
+            content: post.content,
+            images: post.images || [],
+            createdAt: new Date(post.createdAt),
+            updatedAt: new Date(post.updatedAt)
+          }).returning();
 
-        migratedPosts.push(newPost[0]);
+          migratedPosts.push(newPost[0]);
+          console.log(`Successfully migrated post ${newPost[0].id}`);
+        } catch (error) {
+          console.error("Error migrating individual post:", error);
+          // Continue with other posts even if one fails
+          continue;
+        }
       }
 
+      console.log(`Successfully migrated ${migratedPosts.length} posts`);
       res.status(201).json(migratedPosts);
     } catch (error) {
-      console.error("Error migrating posts:", error);
+      console.error("Error in post migration:", error);
       res.status(500).json({ error: "Failed to migrate posts" });
     }
   });
@@ -91,7 +104,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const updatedPost = await db
         .update(posts)
-        .set({ 
+        .set({
           content,
           updatedAt: new Date()
         })
@@ -193,9 +206,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (req.query.archive === 'true') {
         // Archivieren
-        await storage.updateProduct(productId, { 
-          isArchived: true, 
-          isActive: false 
+        await storage.updateProduct(productId, {
+          isArchived: true,
+          isActive: false
         });
         res.json({ message: "Product archived successfully" });
       } else {
