@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import {
   Table,
@@ -28,7 +28,7 @@ import { mockEvents } from "../data/mockData";
 export default function EventManager() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const [filter, setFilter] = useState("all"); // all, active, archived
+  const [filter, setFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
 
   const filteredEvents = mockEvents.filter(event => {
@@ -112,12 +112,14 @@ export default function EventManager() {
                 {filteredEvents.map((event) => (
                   <TableRow key={event.id}>
                     <TableCell>
-                      <div>
-                        <div className="font-medium">{event.title}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {event.description.substring(0, 50)}...
+                      <Link href={`/events/${event.id}`} className="hover:underline">
+                        <div>
+                          <div className="font-medium">{event.title}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {event.description.substring(0, 50)}...
+                          </div>
                         </div>
-                      </div>
+                      </Link>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -145,13 +147,9 @@ export default function EventManager() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => setLocation(`/events/edit/${event.id}`)}
-                        >
+                        <Link href={`/events/${event.id}`}><Button variant="outline" size="icon">
                           <Edit className="h-4 w-4" />
-                        </Button>
+                        </Button></Link>
                         <Button
                           variant="outline"
                           size="icon"

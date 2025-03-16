@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { UserProvider } from "./contexts/UserContext";
 import { AdminProvider } from "./contexts/AdminContext";
 import { ProductProvider } from "./contexts/ProductContext";
+import { EventProvider } from "./contexts/EventContext";
 import { ThemeProvider } from "./contexts/ThemeProvider";
 import Layout from "./components/Layout";
 import Home from "./pages/Home";
@@ -22,6 +23,7 @@ import ProductDetail from "./pages/ProductDetail";
 import Groups from "./pages/Groups";
 import GroupPage from "./pages/GroupPage";
 import Events from "./pages/Events";
+import EventDetail from "./pages/EventDetail";
 import EventManager from "./pages/EventManager";
 import Members from "./pages/Members";
 import Chat from "./pages/Chat";
@@ -48,6 +50,7 @@ function Router() {
         <Route path="/groups" component={Groups} />
         <Route path="/groups/:id" component={GroupPage} />
         <Route path="/events" component={Events} />
+        <Route path="/events/:id" component={EventDetail} />
         <Route path="/events/manager" component={EventManager} />
         <Route path="/members" component={Members} />
         <Route path="/chat" component={Chat} />
@@ -67,8 +70,10 @@ function App() {
         <UserProvider>
           <AdminProvider>
             <ProductProvider>
-              <Router />
-              <Toaster />
+              <EventProvider>
+                <Router />
+                <Toaster />
+              </EventProvider>
             </ProductProvider>
           </AdminProvider>
         </UserProvider>
