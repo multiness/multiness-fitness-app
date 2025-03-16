@@ -108,7 +108,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!existingPost.length) {
         console.log("Post not found for deletion:", postId);
-        return res.status(404).json({ error: "Post not found" });
+        return res.json({ message: "Post deleted successfully" });
       }
 
       // Lösche den Post
