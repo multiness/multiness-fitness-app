@@ -21,38 +21,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/posts/:id", async (req, res) => {
-    try {
-      const post = await db.select().from(posts).where(eq(posts.id, parseInt(req.params.id))).limit(1);
-      if (!post.length) {
-        return res.status(404).json({ error: "Post not found" });
-      }
-      res.json(post[0]);
-    } catch (error) {
-      console.error("Error fetching post:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
-
   app.post("/api/posts", async (req, res) => {
     try {
-      const { userId, content, images, dailyGoal } = req.body;
+      const { userId, content, images } = req.body;
 
       if (!userId || !content) {
         return res.status(400).json({ error: "Missing required fields" });
       }
 
-      // Direktes Einfügen ohne Zwischenschritte
-      const newPost = await db.insert(posts).values({
+      const [newPost] = await db.insert(posts).values({
         userId,
-        content,
+        content: content.trim(),
         images: images || [],
-        dailyGoal,
         createdAt: new Date(),
         updatedAt: new Date()
       }).returning();
 
-      res.status(201).json(newPost[0]);
+      res.status(201).json(newPost);
     } catch (error) {
       console.error("Error creating post:", error);
       res.status(500).json({ error: "Failed to create post" });
@@ -61,29 +46,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/posts/:id", async (req, res) => {
     try {
-      const postId = parseInt(req.params.id);
       const { content } = req.body;
+      const [updatedPost] = await db
+        .update(posts)
+        .set({
+          content: content.trim(),
+          updatedAt: new Date()
+        })
+        .where(eq(posts.id, parseInt(req.params.id)))
+        .returning();
 
-      const existingPost = await db
-        .select()
-        .from(posts)
-        .where(eq(posts.id, postId))
-        .limit(1);
-
-      if (!existingPost.length) {
+      if (!updatedPost) {
         return res.status(404).json({ error: "Post not found" });
       }
 
-      const updatedPost = await db
-        .update(posts)
-        .set({
-          content,
-          updatedAt: new Date()
-        })
-        .where(eq(posts.id, postId))
-        .returning();
-
-      res.json(updatedPost[0]);
+      res.json(updatedPost);
     } catch (error) {
       console.error("Error updating post:", error);
       res.status(500).json({ error: "Failed to update post" });
@@ -92,21 +69,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/posts/:id", async (req, res) => {
     try {
-      const postId = parseInt(req.params.id);
-
-      const existingPost = await db
-        .select()
-        .from(posts)
-        .where(eq(posts.id, postId))
-        .limit(1);
-
-      if (!existingPost.length) {
-        return res.json({ message: "Post deleted successfully" });
-      }
-
       await db
         .delete(posts)
-        .where(eq(posts.id, postId));
+        .where(eq(posts.id, parseInt(req.params.id)));
 
       res.json({ message: "Post deleted successfully" });
     } catch (error) {

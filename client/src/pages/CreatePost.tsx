@@ -4,21 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Image, Video, X } from "lucide-react";
-import { usePostStore, type DailyGoal } from "../lib/postStore";
 import { useLocation } from "wouter";
 import { useUsers } from "../contexts/UserContext";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 
 export default function CreatePost() {
   const { toast } = useToast();
@@ -26,23 +15,8 @@ export default function CreatePost() {
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<"image" | "video" | null>(null);
   const { currentUser } = useUsers();
-  const postStore = usePostStore();
   const [, setLocation] = useLocation();
-
-  // Tagesziel-States
-  const [includeDailyGoal, setIncludeDailyGoal] = useState(false);
-  const [goalType, setGoalType] = useState<'water' | 'steps' | 'distance' | 'custom'>('water');
-  const [goalTarget, setGoalTarget] = useState("");
-  const [customGoalName, setCustomGoalName] = useState("");
-  const [customGoalUnit, setCustomGoalUnit] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const goalUnits = {
-    water: 'Liter',
-    steps: 'Schritte',
-    distance: 'Kilometer',
-    custom: ''
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,36 +32,13 @@ export default function CreatePost() {
       return;
     }
 
-    if (!content.trim() && !mediaPreview && !includeDailyGoal) {
+    if (!content.trim()) {
       toast({
         title: "Leerer Beitrag",
-        description: "Bitte füge Text, Medien oder ein Tagesziel hinzu.",
+        description: "Bitte füge Text hinzu.",
         variant: "destructive",
       });
       return;
-    }
-
-    if (includeDailyGoal && (!goalType || !goalTarget || (goalType === 'custom' && (!customGoalName || !customGoalUnit)))) {
-      toast({
-        title: "Unvollständiges Tagesziel",
-        description: "Bitte gib einen Typ und Zielwert an.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    let dailyGoal: DailyGoal | undefined;
-
-    if (includeDailyGoal) {
-      dailyGoal = {
-        type: goalType,
-        target: Number(goalTarget),
-        unit: goalType === 'custom' ? customGoalUnit : goalUnits[goalType],
-        progress: 0,
-        completed: false,
-        customName: goalType === 'custom' ? customGoalName : undefined,
-        createdAt: new Date()
-      };
     }
 
     try {
@@ -96,8 +47,7 @@ export default function CreatePost() {
       const postData = {
         userId: currentUser.id,
         content: content.trim(),
-        images: mediaPreview ? [mediaPreview] : [],
-        dailyGoal
+        images: mediaPreview ? [mediaPreview] : []
       };
 
       const response = await apiRequest("POST", "/api/posts", postData);
@@ -106,9 +56,7 @@ export default function CreatePost() {
         throw new Error('Failed to create post');
       }
 
-      const newPost = await response.json();
-
-      // Cache invalidieren
+      // Sofort den Cache invalidieren
       await queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
 
       toast({
@@ -116,7 +64,6 @@ export default function CreatePost() {
         description: "Dein Beitrag wurde erfolgreich veröffentlicht.",
       });
 
-      // Zur Startseite navigieren
       setLocation("/");
     } catch (error) {
       console.error('Error creating post:', error);
@@ -160,13 +107,11 @@ export default function CreatePost() {
 
   return (
     <div className="container py-6 px-4 sm:px-6 max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Neuer Beitrag</h1>
-
       <Card>
         <CardHeader>
           <CardTitle>Erstelle deinen Beitrag</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <Textarea
               placeholder="Was möchtest du teilen?"
@@ -175,68 +120,6 @@ export default function CreatePost() {
               className="min-h-[150px]"
             />
 
-            {/* Tagesziel Toggle */}
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="daily-goal"
-                checked={includeDailyGoal}
-                onCheckedChange={setIncludeDailyGoal}
-              />
-              <Label htmlFor="daily-goal">Tagesziel hinzufügen</Label>
-            </div>
-
-            {/* Tagesziel Einstellungen */}
-            {includeDailyGoal && (
-              <div className="space-y-4 p-4 bg-muted rounded-lg">
-                <div className="space-y-2">
-                  <Label>Art des Ziels</Label>
-                  <Select value={goalType} onValueChange={(value: 'water' | 'steps' | 'distance' | 'custom') => setGoalType(value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Wähle ein Ziel" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="water">Wasser trinken</SelectItem>
-                      <SelectItem value="steps">Schritte gehen</SelectItem>
-                      <SelectItem value="distance">Strecke laufen</SelectItem>
-                      <SelectItem value="custom">Eigenes Ziel</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Zielwert ({goalType === 'custom' ? customGoalUnit : goalUnits[goalType]})</Label>
-                  <Input
-                    type="number"
-                    placeholder={`Zielwert in ${goalType === 'custom' ? customGoalUnit : goalUnits[goalType]}`}
-                    value={goalTarget}
-                    onChange={(e) => setGoalTarget(e.target.value)}
-                  />
-                </div>
-
-                {goalType === 'custom' && (
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Name des Ziels</Label>
-                      <Input
-                        placeholder="z.B. Liegestütze"
-                        value={customGoalName}
-                        onChange={(e) => setCustomGoalName(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Einheit</Label>
-                      <Input
-                        placeholder="z.B. Wiederholungen"
-                        value={customGoalUnit}
-                        onChange={(e) => setCustomGoalUnit(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Media Preview */}
             {mediaPreview && (
               <div className="relative">
                 {mediaType === "image" && (
