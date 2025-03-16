@@ -44,7 +44,7 @@ export const groups = pgTable("groups", {
   image: text("image"),
   creatorId: integer("creator_id").references(() => users.id).notNull(),
   isPrivate: boolean("is_private").default(false).notNull(),
-  participantIds: integer("participant_ids").array(), 
+  participantIds: integer("participant_ids").array(),
 });
 
 // Workout-Detail Typen
@@ -172,7 +172,7 @@ export const products = pgTable("products", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description").notNull(),
-  type: text("type").notNull(), 
+  type: text("type").notNull(),
   price: numeric("price").notNull(),
   image: text("image"),
   creatorId: integer("creator_id").references(() => users.id).notNull(),
@@ -183,7 +183,7 @@ export const products = pgTable("products", {
   stock: integer("stock"),
   onSale: boolean("on_sale").default(false),
   salePrice: numeric("sale_price"),
-  metadata: jsonb("metadata"), 
+  metadata: jsonb("metadata"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -191,7 +191,7 @@ export const orders = pgTable("orders", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
   productId: integer("product_id").references(() => products.id).notNull(),
-  status: text("status").notNull(), 
+  status: text("status").notNull(),
   paypalOrderId: text("paypal_order_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   completedAt: timestamp("completed_at"),
@@ -209,7 +209,7 @@ export const productMetadataSchema = z.object({
 export const insertProductSchema = createInsertSchema(products)
   .extend({
     metadata: productMetadataSchema,
-    price: z.number(), 
+    price: z.number(),
     stockEnabled: z.boolean().optional(),
     stock: z.number().optional(),
     onSale: z.boolean().optional(),
@@ -218,3 +218,39 @@ export const insertProductSchema = createInsertSchema(products)
   });
 
 export type InsertProduct = z.infer<typeof insertProductSchema>;
+
+// Add events table after the existing tables
+export const events = pgTable("events", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  date: timestamp("date").notNull(),
+  location: text("location").notNull(),
+  image: text("image"),
+  type: text("type").notNull(), // 'event' oder 'course'
+  creatorId: integer("creator_id").references(() => users.id).notNull(),
+  maxParticipants: integer("max_participants"),
+  currentParticipants: integer("current_participants").default(0),
+  isRecurring: boolean("is_recurring").default(false),
+  recurringType: text("recurring_type"), // 'daily', 'weekly', 'monthly'
+  isHighlight: boolean("is_highlight").default(false),
+  isArchived: boolean("is_archived").default(false),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Add type definitions
+export type Event = typeof events.$inferSelect;
+export const insertEventSchema = createInsertSchema(events)
+  .extend({
+    date: z.string().datetime(),
+  })
+  .omit({
+    id: true,
+    currentParticipants: true,
+    createdAt: true,
+    updatedAt: true,
+  });
+
+export type InsertEvent = z.infer<typeof insertEventSchema>;

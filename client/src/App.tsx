@@ -22,6 +22,7 @@ import ProductDetail from "./pages/ProductDetail";
 import Groups from "./pages/Groups";
 import GroupPage from "./pages/GroupPage";
 import Events from "./pages/Events";
+import EventManager from "./pages/EventManager";
 import Members from "./pages/Members";
 import Chat from "./pages/Chat";
 import Admin from "./pages/Admin";
@@ -47,6 +48,7 @@ function Router() {
         <Route path="/groups" component={Groups} />
         <Route path="/groups/:id" component={GroupPage} />
         <Route path="/events" component={Events} />
+        <Route path="/events/manager" component={EventManager} />
         <Route path="/members" component={Members} />
         <Route path="/chat" component={Chat} />
         <Route path="/chat/:id" component={Chat} />

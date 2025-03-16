@@ -26,6 +26,9 @@ import {
   Hash,
   Clock,
   Archive,
+  Plus,
+  Settings,
+  Calendar,
 } from "lucide-react";
 import { DEFAULT_BANNER_POSITIONS } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
@@ -46,7 +49,7 @@ function ProductManagement() {
   const { toast } = useToast();
 
   const filteredProducts = products.filter(product => {
-    const matchesSearch = 
+    const matchesSearch =
       product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.description.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSearch;
@@ -132,8 +135,8 @@ function ProductManagement() {
                               e.currentTarget.src = "https://placehold.co/600x400/png";
                             }}
                           />
-                          <Badge 
-                            variant="outline" 
+                          <Badge
+                            variant="outline"
                             className="absolute top-2 left-2 bg-background/80 backdrop-blur-sm"
                           >
                             <Hash className="h-3 w-3 mr-1" />
@@ -160,7 +163,7 @@ function ProductManagement() {
                                   updateProduct(updatedProduct);
                                   toast({
                                     title: updatedProduct.isActive ? "Produkt aktiviert" : "Produkt deaktiviert",
-                                    description: updatedProduct.isActive 
+                                    description: updatedProduct.isActive
                                       ? "Das Produkt ist jetzt im Shop sichtbar."
                                       : "Das Produkt wird nicht mehr im Shop angezeigt."
                                   });
@@ -195,8 +198,8 @@ function ProductManagement() {
                               e.currentTarget.src = "https://placehold.co/600x400/png";
                             }}
                           />
-                          <Badge 
-                            variant="outline" 
+                          <Badge
+                            variant="outline"
                             className="absolute top-2 left-2 bg-background/80 backdrop-blur-sm"
                           >
                             <Hash className="h-3 w-3 mr-1" />
@@ -264,8 +267,8 @@ function ProductManagement() {
                               e.currentTarget.src = "https://placehold.co/600x400/png";
                             }}
                           />
-                          <Badge 
-                            variant="outline" 
+                          <Badge
+                            variant="outline"
                             className="absolute top-2 left-2 bg-background/80 backdrop-blur-sm"
                           >
                             <Hash className="h-3 w-3 mr-1" />
@@ -313,6 +316,7 @@ function ProductManagement() {
                     ))}
                 </div>
               </TabsContent>
+
             </Tabs>
           </div>
         </CardContent>
@@ -747,6 +751,39 @@ function BannerManagement() {
   );
 }
 
+function EventSection() {
+  return (
+    <section>
+      <h2 className="text-2xl font-bold mb-6">Event Management</h2>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            Events verwalten
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Link href="/events/create">
+              <Button className="w-full" variant="outline">
+                <Plus className="h-4 w-4 mr-2" />
+                Neues Event erstellen
+              </Button>
+            </Link>
+            <Link href="/events/manager">
+              <Button className="w-full" variant="outline">
+                <Settings className="h-4 w-4 mr-2" />
+                Event Manager öffnen
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+    </section>
+  );
+}
+
+
 export default function Admin() {
   const { users, toggleVerification } = useUsers();
   const [searchQuery, setSearchQuery] = useState("");
@@ -772,7 +809,7 @@ export default function Admin() {
   };
 
   return (
-    <div className="container max-w-7xl mx-auto p-4 pb-8 space-y-8">
+    <div className="container mx-auto p-4 pb-8 space-y-8">
       {/* Insights Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <Card className="col-span-1">
@@ -817,12 +854,12 @@ export default function Admin() {
         <Card className="col-span-1">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Posts</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <TrendingUp className="h-4 w-4 text-muted-foreground"/>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{mockPosts.length}</div>
             <p className="text-xs text-muted-foreground">
-              +25% engagement
+              +2 seit letzter Woche
             </p>
           </CardContent>
         </Card>
@@ -837,6 +874,8 @@ export default function Admin() {
       {/* Products Management Section */}
       <ProductManagement />
 
+      {/* Event Management Section */}
+      <EventSection />
 
       {/* User Verification Section */}
       <section>
@@ -892,7 +931,8 @@ export default function Admin() {
                         <div className="flex items-center gap-2">
                           <span className="text-sm whitespacenowrap">Verified</span>
                           <Switch
-                            checked={user.isVerified}                            onCheckedChange={() => toggleVerification(user.id)}
+                            checked={user.isVerified}
+                            onCheckedChange={() => toggleVerification(user.id)}
                           />
                         </div>
                       </div>
@@ -943,9 +983,9 @@ export default function Admin() {
                           {post.content}
                         </p>
                         {post.image && (
-                          <img 
-                            src={post.image} 
-                            alt="Reported content" 
+                          <img
+                            src={post.image}
+                            alt="Reported content"
                             className="h-20 w-20 object-cover rounded-md"
                           />
                         )}
