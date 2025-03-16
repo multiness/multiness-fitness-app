@@ -1,16 +1,40 @@
-import { useParams } from "wouter";
+import { useParams, useLocation } from "wouter";
 import { useEvents } from "@/contexts/EventContext";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CalendarDays, MapPin, Users, Target } from "lucide-react";
+import { CalendarDays, MapPin, Users, Edit, Trash2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function EventDetail() {
   const { id } = useParams<{ id: string }>();
-  const { events } = useEvents();
+  const [, setLocation] = useLocation();
+  const { events, deleteEvent } = useEvents();
+  const { toast } = useToast();
   const event = events.find(e => e.id === parseInt(id));
+
+  const handleDelete = () => {
+    if (!event) return;
+    deleteEvent(event.id);
+    toast({
+      title: "Event gelöscht",
+      description: "Das Event wurde erfolgreich gelöscht.",
+    });
+    setLocation("/events/manager");
+  };
 
   if (!event) {
     return (
@@ -24,6 +48,39 @@ export default function EventDetail() {
   return (
     <div className="container mx-auto p-4">
       <div className="max-w-4xl mx-auto">
+        {/* Admin Actions */}
+        <div className="flex justify-end gap-2 mb-4">
+          <Button
+            variant="outline"
+            onClick={() => setLocation(`/events/edit/${event.id}`)}
+          >
+            <Edit className="h-4 w-4 mr-2" />
+            Bearbeiten
+          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive">
+                <Trash2 className="h-4 w-4 mr-2" />
+                Löschen
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Event wirklich löschen?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Diese Aktion kann nicht rückgängig gemacht werden. Das Event wird permanent gelöscht.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
+                  Löschen
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+
         {/* Event Header */}
         <div className="relative h-64 rounded-t-xl overflow-hidden mb-6">
           <img
@@ -46,7 +103,7 @@ export default function EventDetail() {
               <Badge variant="outline">{event.type === "event" ? "Event" : "Kurs"}</Badge>
               {event.isRecurring && (
                 <Badge variant="outline">
-                  {event.recurringType === "daily" ? "Täglich" : 
+                  {event.recurringType === "daily" ? "Täglich" :
                    event.recurringType === "weekly" ? "Wöchentlich" : "Monatlich"}
                 </Badge>
               )}
@@ -64,8 +121,8 @@ export default function EventDetail() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p>{format(event.date, "EEEE, dd. MMMM yyyy", { locale: de })}</p>
-                <p>{format(event.date, "HH:mm", { locale: de })} Uhr</p>
+                <p>{format(new Date(event.date), "EEEE, dd. MMMM yyyy", { locale: de })}</p>
+                <p>{format(new Date(event.date), "HH:mm", { locale: de })} Uhr</p>
               </CardContent>
             </Card>
 
@@ -97,7 +154,7 @@ export default function EventDetail() {
                     {event.currentParticipants} von {event.maxParticipants} Plätzen belegt
                   </p>
                   <Button disabled={event.currentParticipants === event.maxParticipants}>
-                    {event.currentParticipants === event.maxParticipants ? 
+                    {event.currentParticipants === event.maxParticipants ?
                       "Ausgebucht" : "Teilnehmen"}
                   </Button>
                 </div>

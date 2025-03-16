@@ -16,6 +16,7 @@ import CreateChallenge from "./pages/CreateChallenge";
 import CreatePost from "./pages/CreatePost";
 import CreateGroup from "./pages/CreateGroup";
 import CreateEvent from "./pages/CreateEvent";
+import EditEvent from "./pages/EditEvent";
 import CreateNotification from "./pages/CreateNotification";
 import CreateProduct from "./pages/CreateProduct";
 import Products from "./pages/Products";
@@ -51,6 +52,7 @@ function Router() {
         <Route path="/groups/:id" component={GroupPage} />
         <Route path="/events" component={Events} />
         <Route path="/events/manager" component={EventManager} />
+        <Route path="/events/edit/:id" component={EditEvent} />
         <Route path="/events/:id" component={EventDetail} />
         <Route path="/members" component={Members} />
         <Route path="/chat" component={Chat} />
