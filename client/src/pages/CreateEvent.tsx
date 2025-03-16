@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
+import { useEvents } from "@/contexts/EventContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +42,7 @@ type EventFormData = z.infer<typeof eventSchema>;
 export default function CreateEvent() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const { addEvent } = useEvents(); // Import addEvent from context
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const form = useForm<EventFormData>({
@@ -81,14 +83,31 @@ export default function CreateEvent() {
   };
 
   const onSubmit = (data: EventFormData) => {
-    // Hier würde in einer echten App das Event erstellt werden
-    console.log("Event Data:", data);
+    // Combine date and time
+    const combinedDate = new Date(data.date);
+    const [hours, minutes] = data.time.split(':');
+    combinedDate.setHours(parseInt(hours), parseInt(minutes));
+
+    // Create the new event object
+    const newEvent = {
+      ...data,
+      date: combinedDate,
+      id: Math.random(), // This would normally be handled by the backend
+      currentParticipants: 0,
+      isActive: true,
+      isArchived: false,
+      location: "To be determined", // You might want to add a location field to your form
+    };
+
+    // Add the event using the context
+    addEvent(newEvent);
 
     toast({
       title: "Event erstellt!",
       description: `Das Event "${data.title}" wurde erfolgreich ${data.isRecurring ? 'als wiederkehrendes Event ' : ''}erstellt.`,
     });
-    setLocation("/admin");
+
+    setLocation("/events/manager");
   };
 
   return (
