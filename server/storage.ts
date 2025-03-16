@@ -1,10 +1,9 @@
 import { users, type User, type InsertUser } from "@shared/schema";
 import { products, type Product, type InsertProduct } from "@shared/schema";
-import { events, eventExternalRegistrations, type Event, type EventExternalRegistration, type InsertEventExternalRegistration } from "@shared/schema";
+import { events, eventExternalRegistrations, type Event, type EventExternalRegistration, type InsertEventExternalRegistration, type InsertEvent } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 
-// Modify the interface with CRUD methods for products and events
 export interface IStorage {
   // User methods
   getUser(id: number): Promise<User | undefined>;
@@ -20,12 +19,14 @@ export interface IStorage {
 
   // Event methods
   getEvent(id: number): Promise<Event | undefined>;
+  getEventBySlug(slug: string): Promise<Event | undefined>;
+  createEvent(event: InsertEvent): Promise<Event>;
   createEventExternalRegistration(registration: InsertEventExternalRegistration): Promise<EventExternalRegistration>;
   getEventExternalRegistrations(eventId: number): Promise<EventExternalRegistration[]>;
 }
 
 export class DatabaseStorage implements IStorage {
-  // Existing user methods remain unchanged
+  // User methods
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
@@ -41,7 +42,7 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  // Product methods remain unchanged
+  // Product methods
   async getProducts(): Promise<Product[]> {
     return await db.select().from(products);
   }
@@ -89,9 +90,19 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // New Event methods
+  // Event methods
   async getEvent(id: number): Promise<Event | undefined> {
     const [event] = await db.select().from(events).where(eq(events.id, id));
+    return event;
+  }
+
+  async getEventBySlug(slug: string): Promise<Event | undefined> {
+    const [event] = await db.select().from(events).where(eq(events.slug, slug));
+    return event;
+  }
+
+  async createEvent(eventData: InsertEvent): Promise<Event> {
+    const [event] = await db.insert(events).values(eventData).returning();
     return event;
   }
 

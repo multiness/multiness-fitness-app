@@ -237,8 +237,9 @@ export const events = pgTable("events", {
   isHighlight: boolean("is_highlight").default(false),
   isArchived: boolean("is_archived").default(false),
   isActive: boolean("is_active").default(true),
-  isPublic: boolean("is_public").default(false), // New field for public/private events
-  requiresRegistration: boolean("requires_registration").default(true), // New field for registration requirement
+  isPublic: boolean("is_public").default(false),
+  requiresRegistration: boolean("requires_registration").default(true),
+  slug: text("slug").unique(), // New field for public URL
   likes: integer("likes").default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -278,6 +279,7 @@ export const insertEventSchema = createInsertSchema(events)
     unlimitedParticipants: z.boolean().optional(),
     isPublic: z.boolean().default(false),
     requiresRegistration: z.boolean().default(true),
+    slug: z.string().optional(), // Make optional as it will be generated
   })
   .omit({
     id: true,

@@ -26,6 +26,7 @@ import GroupPage from "./pages/GroupPage";
 import Events from "./pages/Events";
 import EventDetail from "./pages/EventDetail";
 import EventManager from "./pages/EventManager";
+import PublicEventView from "./pages/PublicEventView";
 import Members from "./pages/Members";
 import Chat from "./pages/Chat";
 import Admin from "./pages/Admin";
@@ -54,6 +55,9 @@ function Router() {
         <Route path="/events/manager" component={EventManager} />
         <Route path="/events/edit/:id" component={EditEvent} />
         <Route path="/events/:id" component={EventDetail} />
+        <Route path="/events/p/:slug">
+          {params => <PublicEventView slug={params.slug} />}
+        </Route>
         <Route path="/members" component={Members} />
         <Route path="/chat" component={Chat} />
         <Route path="/chat/:id" component={Chat} />

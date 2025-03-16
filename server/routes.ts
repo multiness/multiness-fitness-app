@@ -2,6 +2,13 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertProductSchema, insertEventExternalRegistrationSchema } from "@shared/schema";
+import slugify from "slugify";
+
+function generateEventSlug(title: string): string {
+  const baseSlug = slugify(title, { lower: true, strict: true });
+  const timestamp = Date.now().toString(36);
+  return `${baseSlug}-${timestamp}`;
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Alle Produkte abrufen
@@ -130,6 +137,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching registrations:", error);
       res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // New route for public event view
+  app.get("/api/events/public/:slug", async (req, res) => {
+    try {
+      const event = await storage.getEventBySlug(req.params.slug);
+
+      if (!event) {
+        return res.status(404).json({ error: "Event nicht gefunden" });
+      }
+
+      if (!event.isPublic) {
+        return res.status(403).json({ error: "Event ist nicht öffentlich" });
+      }
+
+      res.json(event);
+    } catch (error) {
+      console.error("Error fetching public event:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Update create event route to generate slug
+  app.post("/api/events", async (req, res) => {
+    try {
+      const eventData = req.body;
+
+      if (eventData.isPublic) {
+        eventData.slug = generateEventSlug(eventData.title);
+      }
+
+      const event = await storage.createEvent(eventData);
+      res.status(201).json(event);
+    } catch (error) {
+      console.error("Error creating event:", error);
+      res.status(400).json({ error: "Invalid event data" });
     }
   });
 
