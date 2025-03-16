@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertProductSchema } from "@shared/schema";
+import { insertProductSchema, insertEventExternalRegistrationSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Alle Produkte abrufen
@@ -87,6 +87,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       console.error("Error deleting/archiving product:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Neue Route für externe Event-Registrierungen
+  app.post("/api/events/:id/register-external", async (req, res) => {
+    try {
+      const eventId = Number(req.params.id);
+      const event = await storage.getEvent(eventId);
+
+      if (!event) {
+        return res.status(404).json({ error: "Event nicht gefunden" });
+      }
+
+      if (!event.isPublic || !event.requiresRegistration) {
+        return res.status(400).json({ error: "Event erlaubt keine externe Registrierung" });
+      }
+
+      const registrationData = insertEventExternalRegistrationSchema.parse({
+        ...req.body,
+        eventId,
+      });
+
+      const registration = await storage.createEventExternalRegistration(registrationData);
+
+      // Hier könnte später E-Mail-Versand implementiert werden
+
+      res.status(201).json(registration);
+    } catch (error) {
+      console.error("Error creating external registration:", error);
+      res.status(400).json({ error: "Ungültige Registrierungsdaten" });
+    }
+  });
+
+  // Endpoint zum Abrufen der Registrierungen eines Events
+  app.get("/api/events/:id/registrations", async (req, res) => {
+    try {
+      const eventId = Number(req.params.id);
+      const registrations = await storage.getEventExternalRegistrations(eventId);
+      res.json(registrations);
+    } catch (error) {
+      console.error("Error fetching registrations:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });

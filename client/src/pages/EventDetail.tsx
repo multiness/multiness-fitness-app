@@ -20,6 +20,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import EventRegistrationForm from "@/components/EventRegistrationForm";
 
 export default function EventDetail() {
@@ -197,25 +205,40 @@ export default function EventDetail() {
               <CardContent>
                 <div className="flex items-center justify-between">
                   <p>
-                    {event.currentParticipants} von {event.maxParticipants} Plätzen belegt
+                    {event.currentParticipants} von {event.maxParticipants || "∞"} Plätzen belegt
                   </p>
-                  <Button disabled={event.currentParticipants === event.maxParticipants}>
-                    {event.currentParticipants === event.maxParticipants ?
-                      "Ausgebucht" : "Teilnehmen"}
-                  </Button>
+                  {event.isPublic ? (
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button>
+                          Teilnehmen
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[500px]">
+                        <DialogHeader>
+                          <DialogTitle>Anmeldung: {event.title}</DialogTitle>
+                          <DialogDescription>
+                            Bitte füllen Sie das Formular aus, um sich für dieses Event anzumelden.
+                            Sie erhalten eine Bestätigung per E-Mail.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <EventRegistrationForm 
+                          eventId={event.id} 
+                          onSuccess={() => {
+                            toast({
+                              title: "Anmeldung erfolgreich",
+                              description: "Sie erhalten in Kürze eine Bestätigung per E-Mail.",
+                            });
+                          }}
+                        />
+                      </DialogContent>
+                    </Dialog>
+                  ) : (
+                    <Button disabled={event.currentParticipants === event.maxParticipants}>
+                      {event.currentParticipants === event.maxParticipants ? "Ausgebucht" : "Teilnehmen"}
+                    </Button>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* External Registration Form */}
-          {event.isPublic && event.requiresRegistration && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Anmeldung zum Event</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <EventRegistrationForm eventId={event.id} />
               </CardContent>
             </Card>
           )}

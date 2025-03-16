@@ -12,7 +12,7 @@ const registrationSchema = z.object({
   firstName: z.string().min(1, "Vorname ist erforderlich"),
   lastName: z.string().min(1, "Nachname ist erforderlich"),
   email: z.string().email("Bitte geben Sie eine gültige E-Mail-Adresse ein"),
-  phone: z.string().optional(),
+  phone: z.string().min(1, "Telefonnummer ist erforderlich"),
   message: z.string().optional(),
 });
 
@@ -34,21 +34,29 @@ export default function EventRegistrationForm({ eventId, onSuccess }: EventRegis
   const onSubmit = async (data: RegistrationFormData) => {
     setIsSubmitting(true);
     try {
-      // Here we would make an API call to register the external participant
-      // For now, we'll just simulate success
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      const response = await fetch(`/api/events/${eventId}/register-external`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error('Anmeldung fehlgeschlagen');
+      }
+
       toast({
         title: "Anmeldung erfolgreich!",
-        description: "Wir haben Ihre Anmeldung erhalten und werden uns in Kürze bei Ihnen melden.",
+        description: "Sie erhalten in Kürze eine Bestätigungs-E-Mail mit allen Details.",
       });
-      
+
       onSuccess?.();
       form.reset();
     } catch (error) {
       toast({
         title: "Fehler bei der Anmeldung",
-        description: "Bitte versuchen Sie es später erneut.",
+        description: "Bitte versuchen Sie es später erneut oder kontaktieren Sie uns direkt.",
         variant: "destructive",
       });
     } finally {
@@ -95,12 +103,15 @@ export default function EventRegistrationForm({ eventId, onSuccess }: EventRegis
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="phone">Telefon (optional)</Label>
+        <Label htmlFor="phone">Telefon</Label>
         <Input
           id="phone"
           type="tel"
           {...form.register("phone")}
         />
+        {form.formState.errors.phone && (
+          <p className="text-sm text-destructive">{form.formState.errors.phone.message}</p>
+        )}
       </div>
 
       <div className="space-y-2">
@@ -115,6 +126,10 @@ export default function EventRegistrationForm({ eventId, onSuccess }: EventRegis
       <Button type="submit" className="w-full" disabled={isSubmitting}>
         {isSubmitting ? "Wird gesendet..." : "Jetzt anmelden"}
       </Button>
+
+      <p className="text-sm text-muted-foreground text-center mt-4">
+        Nach der Anmeldung erhalten Sie eine Bestätigungs-E-Mail mit allen Details zum Event.
+      </p>
     </form>
   );
 }
