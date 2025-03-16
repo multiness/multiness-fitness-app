@@ -7,16 +7,7 @@ import { Image, Video, X } from "lucide-react";
 import { usePostStore, type DailyGoal } from "../lib/postStore";
 import { useLocation } from "wouter";
 import { useUsers } from "../contexts/UserContext";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function CreatePost() {
   const { toast } = useToast();
@@ -27,21 +18,7 @@ export default function CreatePost() {
   const postStore = usePostStore();
   const [, setLocation] = useLocation();
 
-  // Tagesziel-States
-  const [includeDailyGoal, setIncludeDailyGoal] = useState(false);
-  const [goalType, setGoalType] = useState<'water' | 'steps' | 'distance' | 'custom'>('water');
-  const [goalTarget, setGoalTarget] = useState("");
-  const [customGoalName, setCustomGoalName] = useState("");
-  const [customGoalUnit, setCustomGoalUnit] = useState("");
-
-  const goalUnits = {
-    water: 'Liter',
-    steps: 'Schritte',
-    distance: 'Kilometer',
-    custom: ''
-  };
-
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!currentUser) {
       toast({
         title: "Nicht angemeldet",
@@ -51,70 +28,48 @@ export default function CreatePost() {
       return;
     }
 
-    if (!content.trim() && !mediaPreview && !includeDailyGoal) {
+    if (!content.trim()) {
       toast({
         title: "Leerer Beitrag",
-        description: "Bitte füge Text, Medien oder ein Tagesziel hinzu.",
+        description: "Bitte füge Text hinzu.",
         variant: "destructive",
       });
       return;
     }
 
-    if (includeDailyGoal && (!goalType || !goalTarget || (goalType === 'custom' && (!customGoalName || !customGoalUnit)))) {
-      toast({
-        title: "Unvollständiges Tagesziel",
-        description: "Bitte gib einen Typ und Zielwert an.",
-        variant: "destructive",
+    try {
+      // API-Aufruf zum Erstellen des Posts
+      const response = await apiRequest("POST", "/api/posts", {
+        userId: currentUser.id,
+        content: content.trim(),
+        images: mediaPreview ? [mediaPreview] : []
       });
-      return;
-    }
 
-    // Check for existing active goal
-    if (includeDailyGoal && postStore.hasActiveGoal(currentUser.id)) {
-      const confirmReplace = window.confirm(
-        "Du hast bereits ein aktives Tagesziel. Möchtest du es durch dieses neue Ziel ersetzen?"
-      );
-      if (!confirmReplace) {
-        return;
+      if (!response.ok) {
+        throw new Error('Failed to create post');
       }
+
+      const newPost = await response.json();
+      console.log("Created post:", newPost);
+
+      // Post zum Store hinzufügen
+      postStore.initializePost(newPost);
+
+      toast({
+        title: "Beitrag erstellt!",
+        description: "Dein Beitrag wurde erfolgreich veröffentlicht.",
+      });
+
+      // Zur Startseite navigieren
+      setLocation("/");
+    } catch (error) {
+      console.error('Error creating post:', error);
+      toast({
+        title: "Fehler",
+        description: "Dein Beitrag konnte nicht erstellt werden.",
+        variant: "destructive",
+      });
     }
-
-    let dailyGoal: DailyGoal | undefined;
-
-    // Create daily goal if enabled
-    if (includeDailyGoal) {
-      dailyGoal = {
-        type: goalType,
-        target: Number(goalTarget),
-        unit: goalType === 'custom' ? customGoalUnit : goalUnits[goalType],
-        progress: 0,
-        completed: false,
-        customName: goalType === 'custom' ? customGoalName : undefined,
-        createdAt: new Date()
-      };
-
-      console.log('Setting daily goal for user:', currentUser.id, dailyGoal);
-      postStore.setDailyGoal(currentUser.id, dailyGoal);
-    }
-
-    // Create new post
-    const newPost = {
-      id: Date.now(),
-      userId: currentUser.id,
-      content: content.trim(),
-      image: mediaPreview,
-      createdAt: new Date(),
-      dailyGoal
-    };
-
-    // Add post to store
-    toast({
-      title: "Beitrag erstellt!",
-      description: "Dein Beitrag wurde erfolgreich veröffentlicht.",
-    });
-
-    // Navigate to home page
-    setLocation("/");
   };
 
   const handleMediaUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -160,67 +115,6 @@ export default function CreatePost() {
             onChange={(e) => setContent(e.target.value)}
             className="min-h-[150px]"
           />
-
-          {/* Tagesziel Toggle */}
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="daily-goal"
-              checked={includeDailyGoal}
-              onCheckedChange={setIncludeDailyGoal}
-            />
-            <Label htmlFor="daily-goal">Tagesziel hinzufügen</Label>
-          </div>
-
-          {/* Tagesziel Einstellungen */}
-          {includeDailyGoal && (
-            <div className="space-y-4 p-4 bg-muted rounded-lg">
-              <div className="space-y-2">
-                <Label>Art des Ziels</Label>
-                <Select value={goalType} onValueChange={(value: 'water' | 'steps' | 'distance' | 'custom') => setGoalType(value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Wähle ein Ziel" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="water">Wasser trinken</SelectItem>
-                    <SelectItem value="steps">Schritte gehen</SelectItem>
-                    <SelectItem value="distance">Strecke laufen</SelectItem>
-                    <SelectItem value="custom">Eigenes Ziel</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Zielwert ({goalType === 'custom' ? customGoalUnit : goalUnits[goalType]})</Label>
-                <Input
-                  type="number"
-                  placeholder={`Zielwert in ${goalType === 'custom' ? customGoalUnit : goalUnits[goalType]}`}
-                  value={goalTarget}
-                  onChange={(e) => setGoalTarget(e.target.value)}
-                />
-              </div>
-
-              {goalType === 'custom' && (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Name des Ziels</Label>
-                    <Input
-                      placeholder="z.B. Liegestütze"
-                      value={customGoalName}
-                      onChange={(e) => setCustomGoalName(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Einheit</Label>
-                    <Input
-                      placeholder="z.B. Wiederholungen"
-                      value={customGoalUnit}
-                      onChange={(e) => setCustomGoalUnit(e.target.value)}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Media Preview */}
           {mediaPreview && (

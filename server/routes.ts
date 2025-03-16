@@ -14,6 +14,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .select()
         .from(posts)
         .orderBy(posts.createdAt, "desc"); // Neueste Posts zuerst
+      console.log("Fetched posts:", allPosts);
       res.json(allPosts);
     } catch (error) {
       console.error("Error fetching posts:", error);
@@ -37,6 +38,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/posts", async (req, res) => {
     try {
       const { userId, content, images } = req.body;
+      console.log("Creating new post with data:", { userId, content, images });
+
+      if (!userId || !content) {
+        console.error("Missing required fields:", { userId, content });
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
       const newPost = await db.insert(posts).values({
         userId,
         content,

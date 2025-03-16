@@ -6,7 +6,7 @@ import { useEffect } from "react";
 
 export default function HomePage() {
   const postStore = usePostStore();
-  
+
   const { data: posts = [] } = useQuery<Post[]>({
     queryKey: ['/api/posts'],
     queryFn: async () => {
@@ -15,6 +15,7 @@ export default function HomePage() {
         throw new Error('Failed to fetch posts');
       }
       const data = await response.json();
+      console.log("Fetched posts:", data);
       // Initialize each post in the store
       data.forEach((post: Post) => postStore.initializePost(post));
       return data;
