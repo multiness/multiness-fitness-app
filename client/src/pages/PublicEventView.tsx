@@ -18,8 +18,9 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function PublicEventView({ slug }: { slug: string }) {
   const { toast } = useToast();
-  const { data: event, isLoading } = useQuery({
+  const { data: event, isLoading, error } = useQuery({
     queryKey: ['/api/events/public', slug],
+    retry: false,
   });
 
   if (isLoading) {
@@ -35,11 +36,17 @@ export default function PublicEventView({ slug }: { slug: string }) {
     );
   }
 
-  if (!event) {
+  if (error || !event) {
     return (
       <div className="container mx-auto p-4">
-        <h1 className="text-2xl font-bold mb-4">Event nicht gefunden</h1>
-        <p>Das angeforderte Event existiert nicht oder wurde gelöscht.</p>
+        <Card>
+          <CardContent className="py-8">
+            <h1 className="text-2xl font-bold mb-4">Event nicht gefunden</h1>
+            <p className="text-muted-foreground">
+              Das angeforderte Event existiert nicht oder wurde gelöscht.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }

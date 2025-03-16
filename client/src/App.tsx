@@ -54,10 +54,11 @@ function Router() {
         <Route path="/events" component={Events} />
         <Route path="/events/manager" component={EventManager} />
         <Route path="/events/edit/:id" component={EditEvent} />
-        <Route path="/events/:id" component={EventDetail} />
+        {/* Wichtig: Die öffentliche Route VOR der dynamischen ID-Route */}
         <Route path="/events/p/:slug">
           {params => <PublicEventView slug={params.slug} />}
         </Route>
+        <Route path="/events/:id" component={EventDetail} />
         <Route path="/members" component={Members} />
         <Route path="/chat" component={Chat} />
         <Route path="/chat/:id" component={Chat} />
