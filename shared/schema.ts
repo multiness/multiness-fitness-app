@@ -227,30 +227,56 @@ export const events = pgTable("events", {
   date: timestamp("date").notNull(),
   location: text("location").notNull(),
   image: text("image"),
+  gallery: text("gallery").array(),
   type: text("type").notNull(), // 'event' oder 'course'
   creatorId: integer("creator_id").references(() => users.id).notNull(),
-  maxParticipants: integer("max_participants"),
+  unlimitedParticipants: boolean("unlimited_participants").default(false),
   currentParticipants: integer("current_participants").default(0),
   isRecurring: boolean("is_recurring").default(false),
   recurringType: text("recurring_type"), // 'daily', 'weekly', 'monthly'
   isHighlight: boolean("is_highlight").default(false),
   isArchived: boolean("is_archived").default(false),
   isActive: boolean("is_active").default(true),
+  likes: integer("likes").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const eventComments = pgTable("event_comments", {
+  id: serial("id").primaryKey(),
+  eventId: integer("event_id").references(() => events.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  content: text("content").notNull(),
+  likes: integer("likes").default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 // Add type definitions
 export type Event = typeof events.$inferSelect;
+export type EventComment = typeof eventComments.$inferSelect;
+
 export const insertEventSchema = createInsertSchema(events)
   .extend({
     date: z.string().datetime(),
+    gallery: z.array(z.string()).optional(),
+    unlimitedParticipants: z.boolean().optional(),
   })
   .omit({
     id: true,
     currentParticipants: true,
+    likes: true,
+    createdAt: true,
+    updatedAt: true,
+  });
+
+export const insertEventCommentSchema = createInsertSchema(eventComments)
+  .omit({
+    id: true,
+    likes: true,
     createdAt: true,
     updatedAt: true,
   });
 
 export type InsertEvent = z.infer<typeof insertEventSchema>;
+export type InsertEventComment = z.infer<typeof insertEventCommentSchema>;

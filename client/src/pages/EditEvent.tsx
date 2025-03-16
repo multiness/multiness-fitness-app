@@ -34,7 +34,8 @@ const eventSchema = z.object({
   type: z.enum(["event", "course"], {
     required_error: "Bitte wähle einen Typ aus",
   }),
-  maxParticipants: z.number().min(1, "Mindestens 1 Teilnehmer").default(10),
+  maxParticipants: z.number().min(1, "Mindestens 1 Teilnehmer").optional(),
+  unlimitedParticipants: z.boolean().default(false),
 });
 
 type EventFormData = z.infer<typeof eventSchema>;
@@ -59,7 +60,8 @@ export default function EditEvent() {
       isRecurring: event?.isRecurring || false,
       recurringType: event?.recurringType || "weekly",
       type: event?.type || "event",
-      maxParticipants: event?.maxParticipants || 10,
+      maxParticipants: event?.maxParticipants,
+      unlimitedParticipants: !event?.maxParticipants,
       isHighlight: event?.isHighlight || false,
     },
   });
@@ -72,6 +74,7 @@ export default function EditEvent() {
   }, [event, form]);
 
   const isRecurring = form.watch("isRecurring");
+  const unlimitedParticipants = form.watch("unlimitedParticipants");
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -230,49 +233,37 @@ export default function EditEvent() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="maxParticipants">Maximale Teilnehmerzahl</Label>
-              <Input
-                id="maxParticipants"
-                type="number"
-                min="1"
-                {...form.register("maxParticipants", { valueAsNumber: true })}
-              />
-              {form.formState.errors.maxParticipants && (
-                <p className="text-sm text-destructive">{form.formState.errors.maxParticipants.message}</p>
-              )}
-            </div>
-
             <div className="space-y-4 pt-4 border-t">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>Wiederkehrendes Event</Label>
+                  <Label>Unbegrenzte Teilnehmer</Label>
                   <div className="text-sm text-muted-foreground">
-                    Aktiviere diese Option für regelmäßige Events
+                    Aktiviere diese Option, wenn es keine Teilnehmerbegrenzung geben soll
                   </div>
                 </div>
                 <Switch
-                  checked={isRecurring}
-                  onCheckedChange={(checked) => form.setValue("isRecurring", checked)}
+                  checked={unlimitedParticipants}
+                  onCheckedChange={(checked) => {
+                    form.setValue("unlimitedParticipants", checked);
+                    if (checked) {
+                      form.setValue("maxParticipants", undefined);
+                    }
+                  }}
                 />
               </div>
 
-              {isRecurring && (
+              {!unlimitedParticipants && (
                 <div className="space-y-2">
-                  <Label>Wiederholungsintervall</Label>
-                  <Select
-                    value={form.watch("recurringType")}
-                    onValueChange={(value) => form.setValue("recurringType", value as "daily" | "weekly" | "monthly")}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Wähle ein Intervall" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="daily">Täglich</SelectItem>
-                      <SelectItem value="weekly">Wöchentlich</SelectItem>
-                      <SelectItem value="monthly">Monatlich</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="maxParticipants">Maximale Teilnehmerzahl</Label>
+                  <Input
+                    id="maxParticipants"
+                    type="number"
+                    min="1"
+                    {...form.register("maxParticipants", { valueAsNumber: true })}
+                  />
+                  {form.formState.errors.maxParticipants && (
+                    <p className="text-sm text-destructive">{form.formState.errors.maxParticipants.message}</p>
+                  )}
                 </div>
               )}
             </div>
