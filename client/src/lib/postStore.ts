@@ -45,6 +45,7 @@ type PostStore = {
   getGoalParticipants: (userId: number) => number[];
   checkExpiredGoals: () => void;
   hasActiveGoal: (userId: number) => boolean;
+  migrateExistingPosts: () => Promise<void>;
 };
 
 export const usePostStore = create<PostStore>()(
@@ -63,6 +64,32 @@ export const usePostStore = create<PostStore>()(
             [post.id]: post
           }
         })),
+
+      migrateExistingPosts: async () => {
+        try {
+          const existingPosts = Object.values(get().posts);
+          if (existingPosts.length === 0) return;
+
+          const response = await apiRequest('POST', '/api/posts/migrate', { posts: existingPosts });
+          if (!response.ok) {
+            throw new Error('Failed to migrate posts');
+          }
+
+          const migratedPosts = await response.json();
+          console.log('Successfully migrated posts:', migratedPosts);
+
+          const postsMap = migratedPosts.reduce((acc: Record<number, Post>, post: Post) => {
+            acc[post.id] = post;
+            return acc;
+          }, {});
+
+          set({ posts: postsMap });
+          queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+        } catch (error) {
+          console.error('Error migrating posts:', error);
+          throw error;
+        }
+      },
 
       addLike: (postId, userId) =>
         set((state) => ({
@@ -111,6 +138,10 @@ export const usePostStore = create<PostStore>()(
       updatePost: async (postId, content) => {
         try {
           const response = await apiRequest('PATCH', `/api/posts/${postId}`, { content });
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to update post');
+          }
           const updatedPost = await response.json();
 
           set((state) => ({
@@ -120,7 +151,6 @@ export const usePostStore = create<PostStore>()(
             }
           }));
 
-          // Invalidate the posts query to trigger a refetch
           queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
         } catch (error) {
           console.error('Error updating post:', error);
@@ -144,7 +174,6 @@ export const usePostStore = create<PostStore>()(
             };
           });
 
-          // Invalidate the posts query to trigger a refetch
           queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
         } catch (error) {
           console.error('Error deleting post:', error);
@@ -264,6 +293,13 @@ export const usePostStore = create<PostStore>()(
     {
       name: 'post-interaction-storage',
       version: 1,
+      onRehydrateStorage: () => {
+        return (state) => {
+          if (state) {
+            state.migrateExistingPosts().catch(console.error);
+          }
+        };
+      }
     }
   )
 );

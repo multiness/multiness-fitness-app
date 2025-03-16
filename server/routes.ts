@@ -33,7 +33,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/posts", async (req, res) => {
     try {
-      const newPost = await db.insert(posts).values(req.body).returning();
+      const { userId, content, images } = req.body;
+      const newPost = await db.insert(posts).values({
+        userId,
+        content,
+        images: images || [],
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }).returning();
+
       res.status(201).json(newPost[0]);
     } catch (error) {
       console.error("Error creating post:", error);
@@ -41,20 +49,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint to migrate existing posts to database
+  app.post("/api/posts/migrate", async (req, res) => {
+    try {
+      const existingPosts = req.body.posts;
+      const migratedPosts = [];
+
+      for (const post of existingPosts) {
+        const newPost = await db.insert(posts).values({
+          userId: post.userId,
+          content: post.content,
+          images: post.images || [],
+          createdAt: new Date(post.createdAt),
+          updatedAt: new Date(post.updatedAt)
+        }).returning();
+
+        migratedPosts.push(newPost[0]);
+      }
+
+      res.status(201).json(migratedPosts);
+    } catch (error) {
+      console.error("Error migrating posts:", error);
+      res.status(500).json({ error: "Failed to migrate posts" });
+    }
+  });
+
   app.patch("/api/posts/:id", async (req, res) => {
     try {
+      const postId = parseInt(req.params.id);
+      const { content } = req.body;
+
+      const existingPost = await db
+        .select()
+        .from(posts)
+        .where(eq(posts.id, postId))
+        .limit(1);
+
+      if (!existingPost.length) {
+        return res.status(404).json({ error: "Post not found" });
+      }
+
       const updatedPost = await db
         .update(posts)
         .set({ 
-          content: req.body.content,
+          content,
           updatedAt: new Date()
         })
-        .where(eq(posts.id, parseInt(req.params.id)))
+        .where(eq(posts.id, postId))
         .returning();
 
-      if (!updatedPost.length) {
-        return res.status(404).json({ error: "Post not found" });
-      }
       res.json(updatedPost[0]);
     } catch (error) {
       console.error("Error updating post:", error);
