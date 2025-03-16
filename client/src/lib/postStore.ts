@@ -25,15 +25,16 @@ type PostStore = {
   comments: Record<number, Comment[]>;
   dailyGoals: Record<number, DailyGoal>;
   goalParticipants: Record<number, number[]>;
-  posts: Record<number, Post>;  // Neue Eigenschaft für Posts
+  posts: Record<number, Post>;
   addLike: (postId: number, userId: number) => void;
   removeLike: (postId: number, userId: number) => void;
   hasLiked: (postId: number, userId: number) => boolean;
   getLikes: (postId: number) => number[];
   addComment: (postId: number, userId: number, content: string) => void;
   getComments: (postId: number) => Comment[];
-  updatePost: (postId: number, content: string) => void;  // Neue Funktion
-  deletePost: (postId: number) => void;  // Neue Funktion
+  getPost: (postId: number) => Post | undefined;  // Neue Funktion
+  updatePost: (postId: number, content: string) => void;
+  deletePost: (postId: number) => void;
   setDailyGoal: (userId: number, goal: DailyGoal) => { hasExistingGoal: boolean };
   getDailyGoal: (userId: number) => DailyGoal | undefined;
   updateDailyGoalProgress: (userId: number, progress: number) => void;
@@ -51,7 +52,7 @@ export const usePostStore = create<PostStore>()(
       comments: {},
       dailyGoals: {},
       goalParticipants: {},
-      posts: {},  // Initialisierung der Posts
+      posts: {},
 
       addLike: (postId, userId) =>
         set((state) => ({
@@ -94,7 +95,10 @@ export const usePostStore = create<PostStore>()(
       getComments: (postId) =>
         get().comments[postId] || [],
 
-      // Neue Funktion zum Aktualisieren eines Posts
+      // Neue Funktion zum Abrufen eines Posts
+      getPost: (postId) =>
+        get().posts[postId],
+
       updatePost: (postId, content) =>
         set((state) => ({
           posts: {
@@ -107,7 +111,6 @@ export const usePostStore = create<PostStore>()(
           }
         })),
 
-      // Neue Funktion zum Löschen eines Posts
       deletePost: (postId) =>
         set((state) => {
           const { [postId]: deletedPost, ...remainingPosts } = state.posts;

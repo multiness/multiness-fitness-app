@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Heart, MessageCircle, Share2, MoreHorizontal, AlertTriangle, Send, Pencil, Trash2 } from "lucide-react";
@@ -32,11 +32,12 @@ interface FeedPostProps {
   post: Post;
 }
 
-export default function FeedPost({ post }: FeedPostProps) {
+export default function FeedPost({ post: initialPost }: FeedPostProps) {
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [reportReason, setReportReason] = useState("");
+  const [post, setPost] = useState(initialPost);
   const [editContent, setEditContent] = useState(post.content);
   const [showAllComments, setShowAllComments] = useState(false);
   const [newComment, setNewComment] = useState("");
@@ -48,6 +49,14 @@ export default function FeedPost({ post }: FeedPostProps) {
   const comments = postStore.getComments(post.id);
   const user = mockUsers.find(u => u.id === post.userId);
   const isOwnPost = currentUser?.id === post.userId;
+
+  useEffect(() => {
+    const updatedPost = postStore.getPost(post.id);
+    if (updatedPost) {
+      setPost(updatedPost);
+    }
+  }, [postStore, post.id]);
+
 
   const handleLike = () => {
     const userId = currentUser?.id || 1;
@@ -64,6 +73,7 @@ export default function FeedPost({ post }: FeedPostProps) {
 
   const handleEdit = () => {
     postStore.updatePost(post.id, editContent);
+    setPost({ ...post, content: editContent });
     setIsEditDialogOpen(false);
     toast({
       title: "Post bearbeitet",
