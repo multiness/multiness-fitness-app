@@ -38,7 +38,7 @@ import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { useUsers } from "../contexts/UserContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useAdmin } from "@/contexts/AdminContext";
 import { useProducts } from "@/contexts/ProductContext";
 
@@ -752,6 +752,7 @@ function BannerManagement() {
 }
 
 function EventSection() {
+  const [, setLocation] = useLocation();
   return (
     <section>
       <h2 className="text-2xl font-bold mb-6">Event Management</h2>
@@ -764,18 +765,22 @@ function EventSection() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Link href="/create/event">
-              <Button className="w-full" variant="outline">
-                <Plus className="h-4 w-4 mr-2" />
-                Neues Event erstellen
-              </Button>
-            </Link>
-            <Link href="/events/manager">
-              <Button className="w-full" variant="outline">
-                <Settings className="h-4 w-4 mr-2" />
-                Event Manager öffnen
-              </Button>
-            </Link>
+            <Button 
+              className="w-full" 
+              variant="outline"
+              onClick={() => setLocation("/create/event")}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Neues Event erstellen
+            </Button>
+            <Button 
+              className="w-full" 
+              variant="outline"
+              onClick={() => setLocation("/events/manager")}
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              Event Manager öffnen
+            </Button>
           </div>
         </CardContent>
       </Card>
