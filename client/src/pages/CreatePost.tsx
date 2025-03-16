@@ -100,6 +100,7 @@ export default function CreatePost() {
         dailyGoal
       };
 
+      console.log("Sending post data:", postData);
       const response = await apiRequest("POST", "/api/posts", postData);
 
       if (!response.ok) {
@@ -107,6 +108,7 @@ export default function CreatePost() {
       }
 
       const newPost = await response.json();
+      console.log("Received response:", newPost);
 
       // Invalidiere den Cache für die Posts-Liste
       await queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
