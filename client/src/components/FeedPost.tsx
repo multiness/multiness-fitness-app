@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Heart, MessageCircle, Share2, MoreHorizontal, AlertTriangle, Send, Pencil, Trash2 } from "lucide-react";
 import { Post } from "@shared/schema";
 import { mockUsers } from "../data/mockData";
-import { format } from "date-fns";
+import { format } from 'date-fns';
+import { de } from 'date-fns/locale';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -54,6 +55,7 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
     const updatedPost = postStore.getPost(post.id);
     if (updatedPost) {
       setPost(updatedPost);
+      setEditContent(updatedPost.content);
     }
   }, [postStore, post.id]);
 
@@ -63,8 +65,9 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
       if (isNaN(dateObj.getTime())) {
         return 'Ungültiges Datum';
       }
-      return format(dateObj, "dd. MMM yyyy");
+      return format(dateObj, "dd. MMM yyyy", { locale: de });
     } catch (error) {
+      console.error("Fehler beim Formatieren des Datums:", error);
       return 'Ungültiges Datum';
     }
   };
@@ -84,7 +87,11 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
 
   const handleEdit = () => {
     postStore.updatePost(post.id, editContent);
-    setPost({ ...post, content: editContent });
+    setPost(prev => ({
+      ...prev,
+      content: editContent,
+      updatedAt: new Date().toISOString()
+    }));
     setIsEditDialogOpen(false);
     toast({
       title: "Post bearbeitet",
@@ -193,8 +200,8 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
             <Heart className={`h-6 w-6 transition-transform hover:scale-110 ${isLiked ? "fill-current" : ""}`} />
           </Button>
 
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             size="sm"
             onClick={() => setShowAllComments(true)}
           >
@@ -224,10 +231,10 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
         {/* Tagesziel Anzeige wenn vorhanden */}
         {post.dailyGoal && (
           <div className="mt-4">
-            <DailyGoalDisplay 
-              goal={post.dailyGoal} 
+            <DailyGoalDisplay
+              goal={post.dailyGoal}
               userId={post.userId}
-              variant="compact" 
+              variant="compact"
             />
           </div>
         )}
@@ -236,7 +243,7 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
         {comments.length > 0 && (
           <div className="space-y-2">
             {comments.length > 2 && (
-              <button 
+              <button
                 className="text-muted-foreground text-sm"
                 onClick={() => setShowAllComments(true)}
               >

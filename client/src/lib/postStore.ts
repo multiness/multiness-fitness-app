@@ -32,7 +32,7 @@ type PostStore = {
   getLikes: (postId: number) => number[];
   addComment: (postId: number, userId: number, content: string) => void;
   getComments: (postId: number) => Comment[];
-  getPost: (postId: number) => Post | undefined;  // Neue Funktion
+  getPost: (postId: number) => Post | undefined;
   updatePost: (postId: number, content: string) => void;
   deletePost: (postId: number) => void;
   setDailyGoal: (userId: number, goal: DailyGoal) => { hasExistingGoal: boolean };
@@ -95,21 +95,25 @@ export const usePostStore = create<PostStore>()(
       getComments: (postId) =>
         get().comments[postId] || [],
 
-      // Neue Funktion zum Abrufen eines Posts
       getPost: (postId) =>
         get().posts[postId],
 
       updatePost: (postId, content) =>
-        set((state) => ({
-          posts: {
-            ...state.posts,
-            [postId]: {
-              ...state.posts[postId],
-              content,
-              updatedAt: new Date()
+        set((state) => {
+          const currentPost = state.posts[postId];
+          if (!currentPost) return state;
+
+          return {
+            posts: {
+              ...state.posts,
+              [postId]: {
+                ...currentPost,
+                content,
+                updatedAt: new Date().toISOString()
+              }
             }
-          }
-        })),
+          };
+        }),
 
       deletePost: (postId) =>
         set((state) => {
