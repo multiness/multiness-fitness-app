@@ -10,7 +10,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Posts API endpoints
   app.get("/api/posts", async (req, res) => {
     try {
-      const allPosts = await db.select().from(posts).orderBy(posts.createdAt);
+      const allPosts = await db
+        .select()
+        .from(posts)
+        .orderBy(posts.createdAt, "desc"); // Neueste Posts zuerst
       res.json(allPosts);
     } catch (error) {
       console.error("Error fetching posts:", error);
@@ -42,6 +45,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         updatedAt: new Date()
       }).returning();
 
+      console.log("Created new post:", newPost[0]);
       res.status(201).json(newPost[0]);
     } catch (error) {
       console.error("Error creating post:", error);

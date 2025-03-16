@@ -59,12 +59,19 @@ export const usePostStore = create<PostStore>()(
 
       initializePost: (post: Post) => {
         console.log('Initializing post:', post);
-        set((state) => ({
-          posts: {
-            ...state.posts,
-            [post.id]: post
-          }
-        }));
+        set((state) => {
+          // Aktualisiere den Cache
+          queryClient.setQueryData(['/api/posts'], (oldData: Post[] = []) => {
+            return [post, ...oldData];
+          });
+
+          return {
+            posts: {
+              ...state.posts,
+              [post.id]: post
+            }
+          };
+        });
       },
 
       migrateExistingPosts: async () => {
@@ -86,13 +93,15 @@ export const usePostStore = create<PostStore>()(
           const migratedPosts = await response.json();
           console.log('Successfully migrated posts:', migratedPosts);
 
+          // Aktualisiere den Cache
+          queryClient.setQueryData(['/api/posts'], migratedPosts);
+
           const postsMap = migratedPosts.reduce((acc: Record<number, Post>, post: Post) => {
             acc[post.id] = post;
             return acc;
           }, {});
 
           set({ posts: postsMap });
-          queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
         } catch (error) {
           console.error('Error migrating posts:', error);
           throw error;
