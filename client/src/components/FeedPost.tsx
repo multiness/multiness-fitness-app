@@ -39,7 +39,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { UserAvatar } from "@/components/UserAvatar";
 import DailyGoalDisplay from './DailyGoalDisplay';
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 interface FeedPostProps {
   post: Post;
@@ -57,6 +58,7 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
   const { toast } = useToast();
   const { currentUser } = useUsers();
   const postStore = usePostStore();
+  const queryClient = useQueryClient();
 
   // Lade den Post aus der Datenbank
   const { data: post = initialPost, isLoading } = useQuery({
@@ -64,22 +66,35 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
     queryFn: async () => {
       const response = await fetch(`/api/posts/${initialPost.id}`);
       if (!response.ok) {
+        if (response.status === 404) {
+          // Post wurde gelöscht, aus dem Store entfernen
+          postStore.deletePost(initialPost.id);
+          queryClient.setQueryData(['/api/posts'], (oldData: Post[] = []) => 
+            oldData.filter(p => p.id !== initialPost.id)
+          );
+          return null;
+        }
         throw new Error('Failed to fetch post');
       }
       return response.json();
-    }
+    },
+    retry: false
   });
 
-  const isLiked = postStore.hasLiked(post.id, currentUser?.id || 1);
-  const likes = postStore.getLikes(post.id);
-  const comments = postStore.getComments(post.id);
-  const user = mockUsers.find(u => u.id === post.userId);
-  const isOwnPost = currentUser?.id === post.userId;
+  const isLiked = postStore.hasLiked(post?.id || initialPost.id, currentUser?.id || 1);
+  const likes = postStore.getLikes(post?.id || initialPost.id);
+  const comments = postStore.getComments(post?.id || initialPost.id);
+  const user = mockUsers.find(u => u.id === (post?.userId || initialPost.userId));
+  const isOwnPost = currentUser?.id === (post?.userId || initialPost.userId);
 
   useEffect(() => {
-    setEditContent(post.content);
+    if (post) {
+      setEditContent(post.content);
+    }
   }, [post]);
 
+  // Wenn der Post nicht mehr existiert, zeige nichts an
+  if (!post) return null;
 
   const formatDate = (date: Date | string) => {
     try {
@@ -107,27 +122,62 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
     }
   };
 
-  const handleEdit = () => {
-    postStore.updatePost(post.id, editContent);
-    setPost(prev => ({
-      ...prev,
-      content: editContent,
-      updatedAt: new Date().toISOString()
-    }));
-    setIsEditDialogOpen(false);
-    toast({
-      title: "Post bearbeitet",
-      description: "Dein Post wurde erfolgreich aktualisiert.",
-    });
+  const handleEdit = async () => {
+    try {
+      const response = await apiRequest("PATCH", `/api/posts/${post.id}`, {
+        content: editContent
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update post');
+      }
+
+      const updatedPost = await response.json();
+      postStore.updatePost(post.id, editContent);
+      queryClient.setQueryData(['/api/posts', post.id], updatedPost);
+
+      setIsEditDialogOpen(false);
+      toast({
+        title: "Post bearbeitet",
+        description: "Dein Post wurde erfolgreich aktualisiert.",
+      });
+    } catch (error) {
+      console.error('Error updating post:', error);
+      toast({
+        title: "Fehler",
+        description: "Dein Post konnte nicht aktualisiert werden.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleDelete = () => {
-    postStore.deletePost(post.id);
-    setIsDeleteDialogOpen(false);
-    toast({
-      title: "Post gelöscht",
-      description: "Dein Post wurde erfolgreich gelöscht.",
-    });
+  const handleDelete = async () => {
+    try {
+      const response = await apiRequest("DELETE", `/api/posts/${post.id}`);
+      // Wenn der Post nicht gefunden wird (404), nehmen wir an, dass er bereits gelöscht wurde
+      if (!response.ok && response.status !== 404) {
+        throw new Error('Failed to delete post');
+      }
+
+      // Post aus dem Store und Query-Cache entfernen, auch wenn die Antwort 404 ist
+      postStore.deletePost(post.id);
+      queryClient.setQueryData(['/api/posts'], (oldData: Post[] = []) => 
+        oldData.filter(p => p.id !== post.id)
+      );
+
+      setIsDeleteDialogOpen(false);
+      toast({
+        title: "Post gelöscht",
+        description: "Dein Post wurde erfolgreich gelöscht.",
+      });
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      toast({
+        title: "Fehler",
+        description: "Dein Post konnte nicht gelöscht werden.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleComment = (e: React.FormEvent) => {
@@ -211,49 +261,66 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
         </DropdownMenu>
       </CardHeader>
 
-      {post.images && post.images.length > 0 && (
-        <CardContent className="p-0 relative">
-          <img
-            src={post.images[currentImageIndex]}
-            alt=""
-            className="w-full aspect-square object-cover"
-          />
-          {post.images.length > 1 && (
-            <>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/20 hover:bg-black/40 text-white rounded-full"
-                onClick={prevImage}
-                disabled={currentImageIndex === 0}
-              >
-                <ChevronLeft className="h-6 w-6" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/20 hover:bg-black/40 text-white rounded-full"
-                onClick={nextImage}
-                disabled={currentImageIndex === post.images.length - 1}
-              >
-                <ChevronRight className="h-6 w-6" />
-              </Button>
-              <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-1">
-                {post.images.map((_, index) => (
-                  <div
-                    key={index}
-                    className={`w-2 h-2 rounded-full ${
-                      index === currentImageIndex ? "bg-white" : "bg-white/50"
-                    }`}
-                  />
-                ))}
-              </div>
-            </>
-          )}
-        </CardContent>
-      )}
-
       <CardContent className="p-4 space-y-4">
+        <div className="space-y-1">
+          <p>
+            <span className="font-semibold mr-2">{user?.username}</span>
+            {post.content}
+          </p>
+        </div>
+
+        {post.dailyGoal && (
+          <div className="mt-4">
+            <DailyGoalDisplay
+              goal={post.dailyGoal}
+              userId={post.userId}
+              variant="compact"
+            />
+          </div>
+        )}
+
+        {post.images && post.images.length > 0 && (
+          <div className="relative">
+            <img
+              src={post.images[currentImageIndex]}
+              alt=""
+              className="w-full aspect-square object-cover rounded-lg"
+            />
+            {post.images.length > 1 && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/20 hover:bg-black/40 text-white rounded-full"
+                  onClick={prevImage}
+                  disabled={currentImageIndex === 0}
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/20 hover:bg-black/40 text-white rounded-full"
+                  onClick={nextImage}
+                  disabled={currentImageIndex === post.images.length - 1}
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </Button>
+                <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-1">
+                  {post.images.map((_, index) => (
+                    <div
+                      key={index}
+                      className={`w-2 h-2 rounded-full ${
+                        index === currentImageIndex ? "bg-white" : "bg-white/50"
+                      }`}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
         <div className="flex gap-4 items-center -ml-2">
           <Button
             variant="ghost"
@@ -281,23 +348,6 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
           <p className="font-semibold text-sm">
             {likes.length} {likes.length === 1 ? "Like" : "Likes"}
           </p>
-        )}
-
-        <div className="space-y-1">
-          <p>
-            <span className="font-semibold mr-2">{user?.username}</span>
-            {post.content}
-          </p>
-        </div>
-
-        {post.dailyGoal && (
-          <div className="mt-4">
-            <DailyGoalDisplay
-              goal={post.dailyGoal}
-              userId={post.userId}
-              variant="compact"
-            />
-          </div>
         )}
 
         {comments.length > 0 && (

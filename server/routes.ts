@@ -37,8 +37,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/posts", async (req, res) => {
     try {
-      const { userId, content, images } = req.body;
-      console.log("Creating new post with data:", { userId, content, images });
+      const { userId, content, images, dailyGoal } = req.body;
+      console.log("Creating new post with data:", { userId, content, images, dailyGoal });
 
       if (!userId || !content) {
         console.error("Missing required fields:", { userId, content });
@@ -49,6 +49,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId,
         content,
         images: images || [],
+        dailyGoal,
         createdAt: new Date(),
         updatedAt: new Date()
       }).returning();
@@ -132,14 +133,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/posts/:id", async (req, res) => {
     try {
+      const postId = parseInt(req.params.id);
+      console.log("Attempting to delete post:", postId);
+
       const deletedPost = await db
         .delete(posts)
-        .where(eq(posts.id, parseInt(req.params.id)))
+        .where(eq(posts.id, postId))
         .returning();
 
       if (!deletedPost.length) {
+        console.log("Post not found for deletion:", postId);
         return res.status(404).json({ error: "Post not found" });
       }
+
+      console.log("Successfully deleted post:", postId);
       res.json({ message: "Post deleted successfully" });
     } catch (error) {
       console.error("Error deleting post:", error);
