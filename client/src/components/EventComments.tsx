@@ -8,7 +8,22 @@ import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { ThumbsUp, MessageSquare, Share2, Flag } from "lucide-react";
+import {
+  ThumbsUp,
+  MessageSquare,
+  Share2,
+  Flag,
+  Facebook,
+  Instagram,
+  Linkedin,
+  Link as LinkIcon
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { mockUsers } from "../data/mockData";
 import { useToast } from "@/hooks/use-toast";
 
@@ -90,13 +105,53 @@ export default function EventComments({ eventId }: EventCommentsProps) {
     });
   };
 
-  const handleShare = () => {
-    // Copy current URL to clipboard
-    navigator.clipboard.writeText(window.location.href);
-    toast({
-      title: "Link kopiert",
-      description: "Der Event-Link wurde in die Zwischenablage kopiert.",
-    });
+  const handleShare = async (platform?: string) => {
+    const url = window.location.href;
+    const title = "Event entdeckt!";
+    const text = "Schau dir dieses interessante Event an!";
+
+    switch (platform) {
+      case 'facebook':
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
+        break;
+      case 'linkedin':
+        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, '_blank');
+        break;
+      case 'instagram':
+        // Instagram doesn't have a direct share URL, show a message instead
+        toast({
+          title: "Instagram Sharing",
+          description: "Kopiere den Link und teile ihn in deiner Instagram Story oder deinem Feed.",
+        });
+        await navigator.clipboard.writeText(url);
+        break;
+      case 'copy':
+        await navigator.clipboard.writeText(url);
+        toast({
+          title: "Link kopiert",
+          description: "Der Event-Link wurde in die Zwischenablage kopiert.",
+        });
+        break;
+      default:
+        // Use Web Share API if available
+        if (navigator.share) {
+          try {
+            await navigator.share({
+              title,
+              text,
+              url,
+            });
+          } catch (error) {
+            console.error('Error sharing:', error);
+          }
+        } else {
+          await navigator.clipboard.writeText(url);
+          toast({
+            title: "Link kopiert",
+            description: "Der Event-Link wurde in die Zwischenablage kopiert.",
+          });
+        }
+    }
   };
 
   return (
@@ -119,14 +174,35 @@ export default function EventComments({ eventId }: EventCommentsProps) {
           <MessageSquare className="h-4 w-4 mr-2" />
           Kommentieren
         </Button>
-        <Button 
-          variant="outline" 
-          className="w-full sm:flex-1"
-          onClick={handleShare}
-        >
-          <Share2 className="h-4 w-4 mr-2" />
-          Teilen
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button 
+              variant="outline" 
+              className="w-full sm:flex-1"
+            >
+              <Share2 className="h-4 w-4 mr-2" />
+              Teilen
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem onClick={() => handleShare('facebook')}>
+              <Facebook className="h-4 w-4 mr-2" />
+              Facebook
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleShare('linkedin')}>
+              <Linkedin className="h-4 w-4 mr-2" />
+              LinkedIn
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleShare('instagram')}>
+              <Instagram className="h-4 w-4 mr-2" />
+              Instagram
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleShare('copy')}>
+              <LinkIcon className="h-4 w-4 mr-2" />
+              Link kopieren
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Comment Form */}
