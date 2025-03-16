@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CalendarDays, MapPin, Users, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import EventGallery from "@/components/EventGallery";
+import EventComments from "@/components/EventComments";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,7 +24,7 @@ import {
 export default function EventDetail() {
   const { id } = useParams<{ id: string }>();
   const [, setLocation] = useLocation();
-  const { events, deleteEvent } = useEvents();
+  const { events, deleteEvent, updateEvent } = useEvents();
   const { toast } = useToast();
   const event = events.find(e => e.id === parseInt(id));
 
@@ -34,6 +36,34 @@ export default function EventDetail() {
       description: "Das Event wurde erfolgreich gelöscht.",
     });
     setLocation("/events/manager");
+  };
+
+  const handleAddImage = (image: string) => {
+    if (!event) return;
+    const updatedEvent = {
+      ...event,
+      gallery: [...(event.gallery || []), image],
+    };
+    updateEvent(updatedEvent);
+    toast({
+      title: "Bild hinzugefügt",
+      description: "Das Bild wurde erfolgreich zur Galerie hinzugefügt.",
+    });
+  };
+
+  const handleRemoveImage = (index: number) => {
+    if (!event) return;
+    const gallery = [...(event.gallery || [])];
+    gallery.splice(index, 1);
+    const updatedEvent = {
+      ...event,
+      gallery,
+    };
+    updateEvent(updatedEvent);
+    toast({
+      title: "Bild entfernt",
+      description: "Das Bild wurde erfolgreich aus der Galerie entfernt.",
+    });
   };
 
   if (!event) {
@@ -139,6 +169,21 @@ export default function EventDetail() {
             </Card>
           </div>
 
+          {/* Event Gallery */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Event Galerie</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <EventGallery
+                images={[event.image, ...(event.gallery || [])].filter(Boolean)}
+                onAddImage={handleAddImage}
+                onRemoveImage={handleRemoveImage}
+                isEditable={true}
+              />
+            </CardContent>
+          </Card>
+
           {/* Teilnehmer Info */}
           {(event.maxParticipants || event.currentParticipants) && (
             <Card>
@@ -161,6 +206,16 @@ export default function EventDetail() {
               </CardContent>
             </Card>
           )}
+
+          {/* Comments Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Kommentare & Diskussion</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <EventComments eventId={event.id} />
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
