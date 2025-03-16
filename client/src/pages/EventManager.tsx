@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLocation, Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
+import { useEvents } from "@/contexts/EventContext";
 import {
   Table,
   TableBody,
@@ -23,15 +24,15 @@ import { Input } from "@/components/ui/input";
 import { CalendarDays, Plus, Search, Archive, Edit, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { mockEvents } from "../data/mockData";
 
 export default function EventManager() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [filter, setFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const { events, archiveEvent, deleteEvent } = useEvents();
 
-  const filteredEvents = mockEvents.filter(event => {
+  const filteredEvents = events.filter(event => {
     const matchesFilter = 
       filter === "all" ||
       (filter === "active" && !event.isArchived) ||
@@ -45,6 +46,7 @@ export default function EventManager() {
   });
 
   const handleArchive = (eventId: number) => {
+    archiveEvent(eventId);
     toast({
       title: "Event archiviert",
       description: "Das Event wurde erfolgreich archiviert.",
@@ -52,6 +54,7 @@ export default function EventManager() {
   };
 
   const handleDelete = (eventId: number) => {
+    deleteEvent(eventId);
     toast({
       title: "Event gelöscht",
       description: "Das Event wurde erfolgreich gelöscht.",

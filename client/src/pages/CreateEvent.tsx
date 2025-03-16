@@ -19,22 +19,22 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CalendarDays, Clock, Image as ImageIcon, X } from "lucide-react";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"; // Import RadioGroup
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
-
-// Validierungsschema für das Formular
 const eventSchema = z.object({
   title: z.string().min(1, "Titel ist erforderlich"),
   description: z.string().min(10, "Beschreibung muss mindestens 10 Zeichen lang sein"),
   date: z.string().min(1, "Datum ist erforderlich"),
   time: z.string().min(1, "Uhrzeit ist erforderlich"),
+  location: z.string().min(1, "Ort ist erforderlich"),
   isRecurring: z.boolean().default(false),
   recurringType: z.enum(["daily", "weekly", "monthly"]).optional(),
   image: z.string().optional(),
   isHighlight: z.boolean().default(false),
   type: z.enum(["event", "course"], {
     required_error: "Bitte wähle einen Typ aus",
-  }), // Neues Feld für Event-Typ
+  }),
+  maxParticipants: z.number().min(1, "Mindestens 1 Teilnehmer").default(10),
 });
 
 type EventFormData = z.infer<typeof eventSchema>;
@@ -42,7 +42,7 @@ type EventFormData = z.infer<typeof eventSchema>;
 export default function CreateEvent() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const { addEvent } = useEvents(); // Import addEvent from context
+  const { addEvent } = useEvents();
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const form = useForm<EventFormData>({
@@ -51,7 +51,9 @@ export default function CreateEvent() {
       isRecurring: false,
       recurringType: "weekly",
       isHighlight: false,
-      type: "event", // Default: Event
+      type: "event",
+      maxParticipants: 10,
+      location: "",
     },
   });
 
@@ -92,11 +94,10 @@ export default function CreateEvent() {
     const newEvent = {
       ...data,
       date: combinedDate,
-      id: Math.random(), // This would normally be handled by the backend
+      trainer: 1, // Set a default trainer ID
       currentParticipants: 0,
       isActive: true,
       isArchived: false,
-      location: "To be determined", // You might want to add a location field to your form
     };
 
     // Add the event using the context
@@ -120,7 +121,6 @@ export default function CreateEvent() {
             <CardTitle>Event Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Event-Typ Auswahl */}
             <div className="space-y-2">
               <Label>Event-Typ</Label>
               <RadioGroup
@@ -166,6 +166,18 @@ export default function CreateEvent() {
               )}
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="location">Ort</Label>
+              <Input
+                id="location"
+                placeholder="Wo findet das Event statt?"
+                {...form.register("location")}
+              />
+              {form.formState.errors.location && (
+                <p className="text-sm text-destructive">{form.formState.errors.location.message}</p>
+              )}
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="date">Datum</Label>
@@ -198,6 +210,19 @@ export default function CreateEvent() {
                   <p className="text-sm text-destructive">{form.formState.errors.time.message}</p>
                 )}
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="maxParticipants">Maximale Teilnehmerzahl</Label>
+              <Input
+                id="maxParticipants"
+                type="number"
+                min="1"
+                {...form.register("maxParticipants", { valueAsNumber: true })}
+              />
+              {form.formState.errors.maxParticipants && (
+                <p className="text-sm text-destructive">{form.formState.errors.maxParticipants.message}</p>
+              )}
             </div>
 
             <div className="space-y-4 pt-4 border-t">
@@ -246,7 +271,6 @@ export default function CreateEvent() {
                 onCheckedChange={(checked) => form.setValue("isHighlight", checked)}
               />
             </div>
-
 
             <div className="space-y-2">
               <Label>Event Bild</Label>
