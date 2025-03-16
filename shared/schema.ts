@@ -18,8 +18,9 @@ export const posts = pgTable("posts", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
   content: text("content").notNull(),
-  image: text("image"),
+  images: text("images").array(),  // Änderung von image zu images als Array
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const challenges = pgTable("challenges", {

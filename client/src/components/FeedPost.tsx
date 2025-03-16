@@ -1,7 +1,18 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Heart, MessageCircle, Share2, MoreHorizontal, AlertTriangle, Send, Pencil, Trash2 } from "lucide-react";
+import { 
+  Heart, 
+  MessageCircle, 
+  Share2, 
+  MoreHorizontal, 
+  AlertTriangle, 
+  Send, 
+  Pencil, 
+  Trash2,
+  ChevronLeft,
+  ChevronRight 
+} from "lucide-react";
 import { Post } from "@shared/schema";
 import { mockUsers } from "../data/mockData";
 import { format } from 'date-fns';
@@ -40,6 +51,7 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
   const [reportReason, setReportReason] = useState("");
   const [post, setPost] = useState(initialPost);
   const [editContent, setEditContent] = useState(post.content);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showAllComments, setShowAllComments] = useState(false);
   const [newComment, setNewComment] = useState("");
   const { toast } = useToast();
@@ -127,7 +139,18 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
     });
   };
 
-  // Nehme die letzten 2 Kommentare für die Vorschau
+  const nextImage = () => {
+    if (post.images && currentImageIndex < post.images.length - 1) {
+      setCurrentImageIndex(prev => prev + 1);
+    }
+  };
+
+  const prevImage = () => {
+    if (currentImageIndex > 0) {
+      setCurrentImageIndex(prev => prev - 1);
+    }
+  };
+
   const previewComments = comments.slice(-2);
 
   return (
@@ -178,18 +201,49 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
         </DropdownMenu>
       </CardHeader>
 
-      {post.image && (
-        <CardContent className="p-0">
+      {post.images && post.images.length > 0 && (
+        <CardContent className="p-0 relative">
           <img
-            src={post.image}
+            src={post.images[currentImageIndex]}
             alt=""
             className="w-full aspect-square object-cover"
           />
+          {post.images.length > 1 && (
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/20 hover:bg-black/40 text-white rounded-full"
+                onClick={prevImage}
+                disabled={currentImageIndex === 0}
+              >
+                <ChevronLeft className="h-6 w-6" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/20 hover:bg-black/40 text-white rounded-full"
+                onClick={nextImage}
+                disabled={currentImageIndex === post.images.length - 1}
+              >
+                <ChevronRight className="h-6 w-6" />
+              </Button>
+              <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-1">
+                {post.images.map((_, index) => (
+                  <div
+                    key={index}
+                    className={`w-2 h-2 rounded-full ${
+                      index === currentImageIndex ? "bg-white" : "bg-white/50"
+                    }`}
+                  />
+                ))}
+              </div>
+            </>
+          )}
         </CardContent>
       )}
 
       <CardContent className="p-4 space-y-4">
-        {/* Interaktions-Buttons */}
         <div className="flex gap-4 items-center -ml-2">
           <Button
             variant="ghost"
@@ -213,14 +267,12 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
           </Button>
         </div>
 
-        {/* Likes Anzeige */}
         {likes.length > 0 && (
           <p className="font-semibold text-sm">
             {likes.length} {likes.length === 1 ? "Like" : "Likes"}
           </p>
         )}
 
-        {/* Post Inhalt */}
         <div className="space-y-1">
           <p>
             <span className="font-semibold mr-2">{user?.username}</span>
@@ -228,7 +280,6 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
           </p>
         </div>
 
-        {/* Tagesziel Anzeige wenn vorhanden */}
         {post.dailyGoal && (
           <div className="mt-4">
             <DailyGoalDisplay
@@ -239,7 +290,6 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
           </div>
         )}
 
-        {/* Kommentar Vorschau */}
         {comments.length > 0 && (
           <div className="space-y-2">
             {comments.length > 2 && (
@@ -262,7 +312,6 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
           </div>
         )}
 
-        {/* Kommentar Input */}
         <form onSubmit={handleComment} className="flex gap-2 pt-2">
           <Input
             value={newComment}
@@ -276,7 +325,6 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
         </form>
       </CardContent>
 
-      {/* Alle Kommentare Dialog */}
       <Dialog open={showAllComments} onOpenChange={setShowAllComments}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -326,7 +374,6 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -350,7 +397,6 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -370,7 +416,6 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Report Dialog */}
       <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
         <DialogContent>
           <DialogHeader>

@@ -12,4 +12,17 @@ if (!process.env.DATABASE_URL) {
 }
 
 export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-export const db = drizzle({ client: pool, schema });
+export const db = drizzle(pool, { schema });
+
+// Initialize database tables
+async function initDb() {
+  try {
+    const { migrate } = await import("drizzle-orm/neon-serverless/migrator");
+    await migrate(db, { migrationsFolder: "./drizzle" });
+    console.log("Database initialized successfully");
+  } catch (error) {
+    console.error("Failed to initialize database:", error);
+  }
+}
+
+initDb();

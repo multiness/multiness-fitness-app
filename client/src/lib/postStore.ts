@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Post } from '@shared/schema';
+import { apiRequest, queryClient } from '@/lib/queryClient';
 
 export type DailyGoal = {
   type: 'water' | 'steps' | 'distance' | 'custom';
@@ -33,8 +34,8 @@ type PostStore = {
   addComment: (postId: number, userId: number, content: string) => void;
   getComments: (postId: number) => Comment[];
   getPost: (postId: number) => Post | undefined;
-  updatePost: (postId: number, content: string) => void;
-  deletePost: (postId: number) => void;
+  updatePost: (postId: number, content: string) => Promise<void>;
+  deletePost: (postId: number) => Promise<void>;
   initializePost: (post: Post) => void;
   setDailyGoal: (userId: number, goal: DailyGoal) => { hasExistingGoal: boolean };
   getDailyGoal: (userId: number) => DailyGoal | undefined;
@@ -107,35 +108,49 @@ export const usePostStore = create<PostStore>()(
       getPost: (postId) =>
         get().posts[postId],
 
-      updatePost: (postId, content) =>
-        set((state) => {
-          const currentPost = state.posts[postId];
-          if (!currentPost) return state;
+      updatePost: async (postId, content) => {
+        try {
+          const response = await apiRequest('PATCH', `/api/posts/${postId}`, { content });
+          const updatedPost = await response.json();
 
-          return {
+          set((state) => ({
             posts: {
               ...state.posts,
-              [postId]: {
-                ...currentPost,
-                content,
-                updatedAt: new Date().toISOString()
-              }
+              [postId]: updatedPost
             }
-          };
-        }),
+          }));
 
-      deletePost: (postId) =>
-        set((state) => {
-          const { [postId]: deletedPost, ...remainingPosts } = state.posts;
-          const { [postId]: deletedLikes, ...remainingLikes } = state.likes;
-          const { [postId]: deletedComments, ...remainingComments } = state.comments;
+          // Invalidate the posts query to trigger a refetch
+          queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+        } catch (error) {
+          console.error('Error updating post:', error);
+          throw error;
+        }
+      },
 
-          return {
-            posts: remainingPosts,
-            likes: remainingLikes,
-            comments: remainingComments
-          };
-        }),
+      deletePost: async (postId) => {
+        try {
+          await apiRequest('DELETE', `/api/posts/${postId}`);
+
+          set((state) => {
+            const { [postId]: deletedPost, ...remainingPosts } = state.posts;
+            const { [postId]: deletedLikes, ...remainingLikes } = state.likes;
+            const { [postId]: deletedComments, ...remainingComments } = state.comments;
+
+            return {
+              posts: remainingPosts,
+              likes: remainingLikes,
+              comments: remainingComments
+            };
+          });
+
+          // Invalidate the posts query to trigger a refetch
+          queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+        } catch (error) {
+          console.error('Error deleting post:', error);
+          throw error;
+        }
+      },
 
       setDailyGoal: (userId, goal) => {
         const existingGoal = get().getDailyGoal(userId);
@@ -252,12 +267,3 @@ export const usePostStore = create<PostStore>()(
     }
   )
 );
-
-// Add a function to delete a specific post by ID.  This is an example; the actual implementation
-// would depend on how the faulty post is identified.  This assumes a faulty postId is known.
-function deleteFaultyPost(postId: number) {
-    usePostStore.getState().deletePost(postId);
-}
-
-// Example usage:  Replace '1' with the actual ID of the faulty post.
-deleteFaultyPost(1);
