@@ -25,12 +25,15 @@ type PostStore = {
   comments: Record<number, Comment[]>;
   dailyGoals: Record<number, DailyGoal>;
   goalParticipants: Record<number, number[]>;
+  posts: Record<number, Post>;  // Neue Eigenschaft für Posts
   addLike: (postId: number, userId: number) => void;
   removeLike: (postId: number, userId: number) => void;
   hasLiked: (postId: number, userId: number) => boolean;
   getLikes: (postId: number) => number[];
   addComment: (postId: number, userId: number, content: string) => void;
   getComments: (postId: number) => Comment[];
+  updatePost: (postId: number, content: string) => void;  // Neue Funktion
+  deletePost: (postId: number) => void;  // Neue Funktion
   setDailyGoal: (userId: number, goal: DailyGoal) => { hasExistingGoal: boolean };
   getDailyGoal: (userId: number) => DailyGoal | undefined;
   updateDailyGoalProgress: (userId: number, progress: number) => void;
@@ -48,6 +51,7 @@ export const usePostStore = create<PostStore>()(
       comments: {},
       dailyGoals: {},
       goalParticipants: {},
+      posts: {},  // Initialisierung der Posts
 
       addLike: (postId, userId) =>
         set((state) => ({
@@ -90,15 +94,40 @@ export const usePostStore = create<PostStore>()(
       getComments: (postId) =>
         get().comments[postId] || [],
 
+      // Neue Funktion zum Aktualisieren eines Posts
+      updatePost: (postId, content) =>
+        set((state) => ({
+          posts: {
+            ...state.posts,
+            [postId]: {
+              ...state.posts[postId],
+              content,
+              updatedAt: new Date()
+            }
+          }
+        })),
+
+      // Neue Funktion zum Löschen eines Posts
+      deletePost: (postId) =>
+        set((state) => {
+          const { [postId]: deletedPost, ...remainingPosts } = state.posts;
+          const { [postId]: deletedLikes, ...remainingLikes } = state.likes;
+          const { [postId]: deletedComments, ...remainingComments } = state.comments;
+
+          return {
+            posts: remainingPosts,
+            likes: remainingLikes,
+            comments: remainingComments
+          };
+        }),
+
       setDailyGoal: (userId, goal) => {
-        console.log('Setting daily goal for user:', userId, goal);
         const existingGoal = get().getDailyGoal(userId);
         const hasExistingGoal = Boolean(existingGoal);
 
-        // Create a plain object version of the goal for storage
         const goalForStorage = {
           ...goal,
-          createdAt: goal.createdAt.toISOString() // Convert Date to string for storage
+          createdAt: goal.createdAt.toISOString()
         };
 
         set((state) => ({
@@ -112,19 +141,15 @@ export const usePostStore = create<PostStore>()(
       },
 
       getDailyGoal: (userId) => {
-        console.log('Getting daily goal for user:', userId);
         const goal = get().dailyGoals[userId];
-        console.log('Found goal:', goal);
 
         if (!goal) return undefined;
 
-        // Convert stored goal back to proper format with Date object
         const goalWithDate = {
           ...goal,
           createdAt: new Date(goal.createdAt)
         };
 
-        // Check if goal is expired (24h)
         const now = new Date();
         const goalAge = now.getTime() - goalWithDate.createdAt.getTime();
         const isExpired = goalAge > 24 * 60 * 60 * 1000;
@@ -207,7 +232,7 @@ export const usePostStore = create<PostStore>()(
     }),
     {
       name: 'post-interaction-storage',
-      version: 1, // Add version number to handle storage migrations
+      version: 1,
     }
   )
 );
