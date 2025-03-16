@@ -5,7 +5,7 @@ import { de } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CalendarDays, MapPin, Users, Edit, Trash2, Link as LinkIcon, Copy } from "lucide-react";
+import { CalendarDays, MapPin, Users, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import EventGallery from "@/components/EventGallery";
 import EventComments from "@/components/EventComments";
@@ -29,7 +29,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import EventRegistrationForm from "@/components/EventRegistrationForm";
-import { Input } from "@/components/ui/input";
 
 export default function EventDetail() {
   const { id } = useParams<{ id: string }>();
@@ -73,16 +72,6 @@ export default function EventDetail() {
     toast({
       title: "Bild entfernt",
       description: "Das Bild wurde erfolgreich aus der Galerie entfernt.",
-    });
-  };
-
-  const handleCopyLink = async () => {
-    if (!event.slug) return;
-    const publicUrl = `${window.location.origin}/events/p/${event.slug}`;
-    await navigator.clipboard.writeText(publicUrl);
-    toast({
-      title: "Link kopiert",
-      description: "Der öffentliche Event-Link wurde in die Zwischenablage kopiert.",
     });
   };
 
@@ -131,33 +120,6 @@ export default function EventDetail() {
           </AlertDialog>
         </div>
 
-        {/* Public URL Section - only show if event is public */}
-        {event.isPublic && event.slug && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <LinkIcon className="h-5 w-5" />
-                Öffentlicher Link
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-2">
-                <Input
-                  readOnly
-                  value={`${window.location.origin}/events/p/${event.slug}`}
-                  className="font-mono"
-                />
-                <Button variant="outline" onClick={handleCopyLink}>
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </div>
-              <p className="text-sm text-muted-foreground mt-2">
-                Dieser Link kann mit externen Teilnehmern geteilt werden.
-              </p>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Event Header */}
         <div className="relative h-64 rounded-t-xl overflow-hidden mb-6">
           <img
@@ -182,6 +144,11 @@ export default function EventDetail() {
                 <Badge variant="outline">
                   {event.recurringType === "daily" ? "Täglich" :
                    event.recurringType === "weekly" ? "Wöchentlich" : "Monatlich"}
+                </Badge>
+              )}
+              {event.isPublic && (
+                <Badge variant="outline" className="bg-primary text-primary-foreground">
+                  Öffentliches Event
                 </Badge>
               )}
             </div>
@@ -245,7 +212,7 @@ export default function EventDetail() {
                   <p>
                     {event.currentParticipants} von {event.maxParticipants || "∞"} Plätzen belegt
                   </p>
-                  {event.isPublic ? (
+                  {event.isPublic && event.requiresRegistration ? (
                     <Dialog>
                       <DialogTrigger asChild>
                         <Button>

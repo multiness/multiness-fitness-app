@@ -219,7 +219,7 @@ export const insertProductSchema = createInsertSchema(products)
 
 export type InsertProduct = z.infer<typeof insertProductSchema>;
 
-// Add events table after the existing tables
+// Events table definition bleibt bestehen, aber ohne slug
 export const events = pgTable("events", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
@@ -239,7 +239,6 @@ export const events = pgTable("events", {
   isActive: boolean("is_active").default(true),
   isPublic: boolean("is_public").default(false),
   requiresRegistration: boolean("requires_registration").default(true),
-  slug: text("slug").unique(), // New field for public URL
   likes: integer("likes").default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
