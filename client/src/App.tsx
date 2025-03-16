@@ -50,8 +50,8 @@ function Router() {
         <Route path="/groups" component={Groups} />
         <Route path="/groups/:id" component={GroupPage} />
         <Route path="/events" component={Events} />
-        <Route path="/events/:id" component={EventDetail} />
         <Route path="/events/manager" component={EventManager} />
+        <Route path="/events/:id" component={EventDetail} />
         <Route path="/members" component={Members} />
         <Route path="/chat" component={Chat} />
         <Route path="/chat/:id" component={Chat} />
