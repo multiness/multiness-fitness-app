@@ -22,7 +22,8 @@ async function initDb() {
     console.log("Database initialized successfully");
   } catch (error) {
     console.error("Failed to initialize database:", error);
+    throw error; // Add this to ensure we see the full error
   }
 }
 
-initDb();
+initDb().catch(console.error);

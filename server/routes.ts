@@ -208,7 +208,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  //This route was in original code but removed in edited code.  Keeping it for completeness.
   app.post("/api/events", async (req, res) => {
     try {
       const event = await storage.createEvent(req.body);
