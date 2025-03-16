@@ -14,11 +14,19 @@ import {
 } from "@/components/ui/carousel";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, MapPin } from "lucide-react";
-import { mockEvents, mockUsers } from "../data/mockData";
+import { mockUsers } from "../data/mockData";
 import { Link } from "wouter";
 import { UserAvatar } from "./UserAvatar";
+import { useEvents } from "@/contexts/EventContext";
 
 export default function EventSlider() {
+  const { events } = useEvents();
+
+  // Sort events by date and filter out archived events
+  const activeEvents = events
+    .filter(event => !event.isArchived)
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
   return (
     <Carousel
       opts={{
@@ -28,7 +36,7 @@ export default function EventSlider() {
       className="w-full"
     >
       <CarouselContent>
-        {mockEvents.map((event) => {
+        {activeEvents.map((event) => {
           const trainer = mockUsers.find(u => u.id === event.trainer);
           return (
             <CarouselItem key={event.id} className="basis-full md:basis-1/2 lg:basis-1/3 pl-4">
@@ -36,7 +44,7 @@ export default function EventSlider() {
                 <Card className="overflow-hidden cursor-pointer transition-transform hover:scale-[1.02]">
                   <CardHeader className="p-0 relative">
                     <img
-                      src={event.image}
+                      src={event.image || "https://images.unsplash.com/photo-1534258936925-c58bed479fcb?w=800&auto=format"}
                       alt={event.title}
                       className="w-full h-48 object-cover"
                     />
@@ -51,7 +59,7 @@ export default function EventSlider() {
                   <CardContent className="p-4">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                       <Calendar className="h-4 w-4" />
-                      {format(event.date, "dd. MMMM", { locale: de })}
+                      {format(new Date(event.date), "dd. MMMM", { locale: de })}
                     </div>
                     <h3 className="font-semibold text-lg mb-2">{event.title}</h3>
                     <p className="text-sm text-muted-foreground mb-4">{event.description}</p>
