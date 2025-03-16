@@ -305,8 +305,8 @@ export default function CreatePost() {
               </div>
             </div>
 
-            <Button 
-              className="w-full" 
+            <Button
+              className="w-full"
               type="submit"
               disabled={isSubmitting}
             >
