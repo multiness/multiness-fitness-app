@@ -64,21 +64,28 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
   const { data: post = initialPost, isLoading } = useQuery({
     queryKey: ['/api/posts', initialPost.id],
     queryFn: async () => {
-      const response = await fetch(`/api/posts/${initialPost.id}`);
-      if (!response.ok) {
-        if (response.status === 404) {
-          // Post wurde gelöscht, aus dem Store entfernen
-          postStore.deletePost(initialPost.id);
-          queryClient.setQueryData(['/api/posts'], (oldData: Post[] = []) => 
-            oldData.filter(p => p.id !== initialPost.id)
-          );
-          return null;
+      try {
+        const response = await fetch(`/api/posts/${initialPost.id}`);
+        if (!response.ok) {
+          if (response.status === 404) {
+            // Post wurde gelöscht, aus dem Store und Cache entfernen
+            postStore.deletePost(initialPost.id);
+            queryClient.setQueryData(['/api/posts'], (oldData: Post[] = []) => 
+              oldData.filter(p => p.id !== initialPost.id)
+            );
+            return null;
+          }
+          throw new Error('Failed to fetch post');
         }
-        throw new Error('Failed to fetch post');
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        console.error("Error fetching post:", error);
+        return null; // Bei Fehler null zurückgeben
       }
-      return response.json();
     },
-    retry: false
+    retry: false, // Keine Wiederholungsversuche bei Fehlern
+    staleTime: 30000, // Cache für 30 Sekunden behalten
   });
 
   const isLiked = postStore.hasLiked(post?.id || initialPost.id, currentUser?.id || 1);
@@ -93,8 +100,10 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
     }
   }, [post]);
 
-  // Wenn der Post nicht mehr existiert, zeige nichts an
-  if (!post) return null;
+  // Wenn der Post nicht mehr existiert, nichts anzeigen
+  if (!post) {
+    return null;
+  }
 
   const formatDate = (date: Date | string) => {
     try {
@@ -154,16 +163,22 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
   const handleDelete = async () => {
     try {
       const response = await apiRequest("DELETE", `/api/posts/${post.id}`);
+
       // Wenn der Post nicht gefunden wird (404), nehmen wir an, dass er bereits gelöscht wurde
       if (!response.ok && response.status !== 404) {
         throw new Error('Failed to delete post');
       }
 
-      // Post aus dem Store und Query-Cache entfernen, auch wenn die Antwort 404 ist
+      // Post aus dem Store und Query-Cache entfernen
       postStore.deletePost(post.id);
+
+      // Aktualisiere die Postliste im Cache
       queryClient.setQueryData(['/api/posts'], (oldData: Post[] = []) => 
         oldData.filter(p => p.id !== post.id)
       );
+
+      // Entferne den einzelnen Post aus dem Cache
+      queryClient.removeQueries({ queryKey: ['/api/posts', post.id] });
 
       setIsDeleteDialogOpen(false);
       toast({

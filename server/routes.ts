@@ -1,10 +1,10 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertProductSchema, insertEventExternalRegistrationSchema, Post } from "@shared/schema";
+import { insertProductSchema, insertEventExternalRegistrationSchema } from "@shared/schema";
 import { db } from "./db";
 import { posts } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Posts API endpoints
@@ -13,7 +13,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allPosts = await db
         .select()
         .from(posts)
-        .orderBy(posts.createdAt, "desc"); // Neueste Posts zuerst
+        .orderBy(desc(posts.createdAt));
       console.log("Fetched posts:", allPosts);
       res.json(allPosts);
     } catch (error) {
@@ -26,6 +26,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const post = await db.select().from(posts).where(eq(posts.id, parseInt(req.params.id))).limit(1);
       if (!post.length) {
+        console.log(`Post ${req.params.id} not found`);
         return res.status(404).json({ error: "Post not found" });
       }
       res.json(post[0]);
@@ -59,44 +60,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error creating post:", error);
       res.status(400).json({ error: "Invalid post data" });
-    }
-  });
-
-  // Endpoint to migrate existing posts to database
-  app.post("/api/posts/migrate", async (req, res) => {
-    try {
-      const existingPosts = req.body.posts;
-      if (!Array.isArray(existingPosts)) {
-        return res.status(400).json({ error: "Posts must be an array" });
-      }
-
-      console.log(`Starting migration of ${existingPosts.length} posts`);
-      const migratedPosts = [];
-
-      for (const post of existingPosts) {
-        try {
-          const newPost = await db.insert(posts).values({
-            userId: post.userId,
-            content: post.content,
-            images: post.images || [],
-            createdAt: new Date(post.createdAt),
-            updatedAt: new Date(post.updatedAt)
-          }).returning();
-
-          migratedPosts.push(newPost[0]);
-          console.log(`Successfully migrated post ${newPost[0].id}`);
-        } catch (error) {
-          console.error("Error migrating individual post:", error);
-          // Continue with other posts even if one fails
-          continue;
-        }
-      }
-
-      console.log(`Successfully migrated ${migratedPosts.length} posts`);
-      res.status(201).json(migratedPosts);
-    } catch (error) {
-      console.error("Error in post migration:", error);
-      res.status(500).json({ error: "Failed to migrate posts" });
     }
   });
 
@@ -136,15 +99,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const postId = parseInt(req.params.id);
       console.log("Attempting to delete post:", postId);
 
+      // Prüfe zuerst, ob der Post existiert
+      const existingPost = await db
+        .select()
+        .from(posts)
+        .where(eq(posts.id, postId))
+        .limit(1);
+
+      if (!existingPost.length) {
+        console.log("Post not found for deletion:", postId);
+        return res.status(404).json({ error: "Post not found" });
+      }
+
+      // Lösche den Post
       const deletedPost = await db
         .delete(posts)
         .where(eq(posts.id, postId))
         .returning();
-
-      if (!deletedPost.length) {
-        console.log("Post not found for deletion:", postId);
-        return res.status(404).json({ error: "Post not found" });
-      }
 
       console.log("Successfully deleted post:", postId);
       res.json({ message: "Post deleted successfully" });
@@ -200,7 +171,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Product not found" });
       }
 
-      // Verarbeite das Datum korrekt
       const updateData = { ...req.body };
       if (updateData.validUntil) {
         updateData.validUntil = new Date(updateData.validUntil);
@@ -262,8 +232,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const registration = await storage.createEventExternalRegistration(registrationData);
 
-      // Hier könnte später E-Mail-Versand implementiert werden
-
       res.status(201).json(registration);
     } catch (error) {
       console.error("Error creating external registration:", error);
@@ -292,7 +260,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ error: "Invalid event data" });
     }
   });
-
 
   const httpServer = createServer(app);
   return httpServer;
