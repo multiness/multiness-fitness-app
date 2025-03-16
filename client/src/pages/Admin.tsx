@@ -764,7 +764,7 @@ function EventSection() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Link href="/events/create">
+            <Link href="/create/event">
               <Button className="w-full" variant="outline">
                 <Plus className="h-4 w-4 mr-2" />
                 Neues Event erstellen

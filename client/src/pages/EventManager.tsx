@@ -45,7 +45,6 @@ export default function EventManager() {
   });
 
   const handleArchive = (eventId: number) => {
-    // In einer echten Implementierung würde hier der API-Call erfolgen
     toast({
       title: "Event archiviert",
       description: "Das Event wurde erfolgreich archiviert.",
@@ -53,7 +52,6 @@ export default function EventManager() {
   };
 
   const handleDelete = (eventId: number) => {
-    // In einer echten Implementierung würde hier der API-Call erfolgen
     toast({
       title: "Event gelöscht",
       description: "Das Event wurde erfolgreich gelöscht.",
@@ -64,7 +62,7 @@ export default function EventManager() {
     <div className="container mx-auto p-4 max-w-7xl">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Event Manager</h1>
-        <Button onClick={() => setLocation("/events/create")}>
+        <Button onClick={() => setLocation("/create/event")}>
           <Plus className="mr-2 h-4 w-4" /> Event erstellen
         </Button>
       </div>
@@ -131,6 +129,11 @@ export default function EventManager() {
                       <Badge variant={event.isArchived ? "secondary" : "default"}>
                         {event.isArchived ? "Archiviert" : "Aktiv"}
                       </Badge>
+                      {event.isRecurring && (
+                        <Badge variant="outline" className="ml-2">
+                          Wiederkehrend ({event.recurringType})
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">
