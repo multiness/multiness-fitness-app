@@ -57,22 +57,30 @@ export const usePostStore = create<PostStore>()(
       goalParticipants: {},
       posts: {},
 
-      initializePost: (post: Post) =>
+      initializePost: (post: Post) => {
+        console.log('Initializing post:', post);
         set((state) => ({
           posts: {
             ...state.posts,
             [post.id]: post
           }
-        })),
+        }));
+      },
 
       migrateExistingPosts: async () => {
         try {
           const existingPosts = Object.values(get().posts);
-          if (existingPosts.length === 0) return;
+          console.log('Starting migration with posts:', existingPosts);
+
+          if (existingPosts.length === 0) {
+            console.log('No posts to migrate');
+            return;
+          }
 
           const response = await apiRequest('POST', '/api/posts/migrate', { posts: existingPosts });
           if (!response.ok) {
-            throw new Error('Failed to migrate posts');
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to migrate posts');
           }
 
           const migratedPosts = await response.json();
@@ -296,6 +304,7 @@ export const usePostStore = create<PostStore>()(
       onRehydrateStorage: () => {
         return (state) => {
           if (state) {
+            console.log('Storage rehydrated, attempting to migrate posts');
             state.migrateExistingPosts().catch(console.error);
           }
         };
