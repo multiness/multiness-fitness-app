@@ -99,7 +99,7 @@ export default function CreateEvent() {
     const newEvent = {
       ...data,
       date: combinedDate,
-      trainer: 1, 
+      trainer: 1,
       currentParticipants: 0,
       isActive: true,
       isArchived: false,
@@ -186,15 +186,12 @@ export default function CreateEvent() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="date">Datum</Label>
-                <div className="relative">
-                  <CalendarDays className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="date"
-                    type="date"
-                    className="pl-10"
-                    {...form.register("date")}
-                  />
-                </div>
+                <Input
+                  id="date"
+                  type="date"
+                  icon={<CalendarDays className="h-4 w-4" />}
+                  {...form.register("date")}
+                />
                 {form.formState.errors.date && (
                   <p className="text-sm text-destructive">{form.formState.errors.date.message}</p>
                 )}
@@ -202,15 +199,12 @@ export default function CreateEvent() {
 
               <div className="space-y-2">
                 <Label htmlFor="time">Uhrzeit</Label>
-                <div className="relative">
-                  <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="time"
-                    type="time"
-                    className="pl-10"
-                    {...form.register("time")}
-                  />
-                </div>
+                <Input
+                  id="time"
+                  type="time"
+                  icon={<Clock className="h-4 w-4" />}
+                  {...form.register("time")}
+                />
                 {form.formState.errors.time && (
                   <p className="text-sm text-destructive">{form.formState.errors.time.message}</p>
                 )}
