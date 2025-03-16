@@ -34,6 +34,7 @@ export default function CreatePost() {
   const [goalTarget, setGoalTarget] = useState("");
   const [customGoalName, setCustomGoalName] = useState("");
   const [customGoalUnit, setCustomGoalUnit] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const goalUnits = {
     water: 'Liter',
@@ -42,7 +43,10 @@ export default function CreatePost() {
     custom: ''
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isSubmitting) return;
+
     if (!currentUser) {
       toast({
         title: "Nicht angemeldet",
@@ -99,6 +103,7 @@ export default function CreatePost() {
     }
 
     try {
+      setIsSubmitting(true);
       // API-Aufruf zum Erstellen des Posts
       const response = await apiRequest("POST", "/api/posts", {
         userId: currentUser.id,
@@ -131,6 +136,8 @@ export default function CreatePost() {
         description: "Dein Beitrag konnte nicht erstellt werden.",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -171,134 +178,141 @@ export default function CreatePost() {
           <CardTitle>Erstelle deinen Beitrag</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Textarea
-            placeholder="Was möchtest du teilen?"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            className="min-h-[150px]"
-          />
-
-          {/* Tagesziel Toggle */}
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="daily-goal"
-              checked={includeDailyGoal}
-              onCheckedChange={setIncludeDailyGoal}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <Textarea
+              placeholder="Was möchtest du teilen?"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              className="min-h-[150px]"
             />
-            <Label htmlFor="daily-goal">Tagesziel hinzufügen</Label>
-          </div>
 
-          {/* Tagesziel Einstellungen */}
-          {includeDailyGoal && (
-            <div className="space-y-4 p-4 bg-muted rounded-lg">
-              <div className="space-y-2">
-                <Label>Art des Ziels</Label>
-                <Select value={goalType} onValueChange={(value: 'water' | 'steps' | 'distance' | 'custom') => setGoalType(value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Wähle ein Ziel" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="water">Wasser trinken</SelectItem>
-                    <SelectItem value="steps">Schritte gehen</SelectItem>
-                    <SelectItem value="distance">Strecke laufen</SelectItem>
-                    <SelectItem value="custom">Eigenes Ziel</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            {/* Tagesziel Toggle */}
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="daily-goal"
+                checked={includeDailyGoal}
+                onCheckedChange={setIncludeDailyGoal}
+              />
+              <Label htmlFor="daily-goal">Tagesziel hinzufügen</Label>
+            </div>
 
-              <div className="space-y-2">
-                <Label>Zielwert ({goalType === 'custom' ? customGoalUnit : goalUnits[goalType]})</Label>
-                <Input
-                  type="number"
-                  placeholder={`Zielwert in ${goalType === 'custom' ? customGoalUnit : goalUnits[goalType]}`}
-                  value={goalTarget}
-                  onChange={(e) => setGoalTarget(e.target.value)}
-                />
-              </div>
-
-              {goalType === 'custom' && (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Name des Ziels</Label>
-                    <Input
-                      placeholder="z.B. Liegestütze"
-                      value={customGoalName}
-                      onChange={(e) => setCustomGoalName(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Einheit</Label>
-                    <Input
-                      placeholder="z.B. Wiederholungen"
-                      value={customGoalUnit}
-                      onChange={(e) => setCustomGoalUnit(e.target.value)}
-                    />
-                  </div>
+            {/* Tagesziel Einstellungen */}
+            {includeDailyGoal && (
+              <div className="space-y-4 p-4 bg-muted rounded-lg">
+                <div className="space-y-2">
+                  <Label>Art des Ziels</Label>
+                  <Select value={goalType} onValueChange={(value: 'water' | 'steps' | 'distance' | 'custom') => setGoalType(value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Wähle ein Ziel" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="water">Wasser trinken</SelectItem>
+                      <SelectItem value="steps">Schritte gehen</SelectItem>
+                      <SelectItem value="distance">Strecke laufen</SelectItem>
+                      <SelectItem value="custom">Eigenes Ziel</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              )}
-            </div>
-          )}
 
-          {/* Media Preview */}
-          {mediaPreview && (
-            <div className="relative">
-              {mediaType === "image" && (
-                <img src={mediaPreview} alt="Preview" className="max-h-[300px] rounded-lg" />
-              )}
-              {mediaType === "video" && (
-                <video src={mediaPreview} controls className="max-h-[300px] rounded-lg" />
-              )}
-              <Button
-                variant="destructive"
-                size="icon"
-                className="absolute top-2 right-2"
-                onClick={removeMedia}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
+                <div className="space-y-2">
+                  <Label>Zielwert ({goalType === 'custom' ? customGoalUnit : goalUnits[goalType]})</Label>
+                  <Input
+                    type="number"
+                    placeholder={`Zielwert in ${goalType === 'custom' ? customGoalUnit : goalUnits[goalType]}`}
+                    value={goalTarget}
+                    onChange={(e) => setGoalTarget(e.target.value)}
+                  />
+                </div>
 
-          <div className="flex gap-4">
-            <div>
-              <input
-                type="file"
-                id="image-upload"
-                accept="image/*"
-                className="hidden"
-                onChange={handleMediaUpload}
-              />
-              <label htmlFor="image-upload">
-                <Button variant="outline" className="cursor-pointer" asChild>
-                  <div className="flex items-center gap-2">
-                    <Image className="h-4 w-4" />
-                    Bild hinzufügen
+                {goalType === 'custom' && (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Name des Ziels</Label>
+                      <Input
+                        placeholder="z.B. Liegestütze"
+                        value={customGoalName}
+                        onChange={(e) => setCustomGoalName(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Einheit</Label>
+                      <Input
+                        placeholder="z.B. Wiederholungen"
+                        value={customGoalUnit}
+                        onChange={(e) => setCustomGoalUnit(e.target.value)}
+                      />
+                    </div>
                   </div>
-                </Button>
-              </label>
-            </div>
-            <div>
-              <input
-                type="file"
-                id="video-upload"
-                accept="video/*"
-                className="hidden"
-                onChange={handleMediaUpload}
-              />
-              <label htmlFor="video-upload">
-                <Button variant="outline" className="cursor-pointer" asChild>
-                  <div className="flex items-center gap-2">
-                    <Video className="h-4 w-4" />
-                    Video hinzufügen
-                  </div>
-                </Button>
-              </label>
-            </div>
-          </div>
+                )}
+              </div>
+            )}
 
-          <Button className="w-full" onClick={handleSubmit}>
-            Beitrag veröffentlichen
-          </Button>
+            {/* Media Preview */}
+            {mediaPreview && (
+              <div className="relative">
+                {mediaType === "image" && (
+                  <img src={mediaPreview} alt="Preview" className="max-h-[300px] rounded-lg" />
+                )}
+                {mediaType === "video" && (
+                  <video src={mediaPreview} controls className="max-h-[300px] rounded-lg" />
+                )}
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  className="absolute top-2 right-2"
+                  onClick={removeMedia}
+                  type="button"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+
+            <div className="flex gap-4">
+              <div>
+                <input
+                  type="file"
+                  id="image-upload"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleMediaUpload}
+                />
+                <label htmlFor="image-upload">
+                  <Button variant="outline" className="cursor-pointer" type="button" asChild>
+                    <div className="flex items-center gap-2">
+                      <Image className="h-4 w-4" />
+                      Bild hinzufügen
+                    </div>
+                  </Button>
+                </label>
+              </div>
+              <div>
+                <input
+                  type="file"
+                  id="video-upload"
+                  accept="video/*"
+                  className="hidden"
+                  onChange={handleMediaUpload}
+                />
+                <label htmlFor="video-upload">
+                  <Button variant="outline" className="cursor-pointer" type="button" asChild>
+                    <div className="flex items-center gap-2">
+                      <Video className="h-4 w-4" />
+                      Video hinzufügen
+                    </div>
+                  </Button>
+                </label>
+              </div>
+            </div>
+
+            <Button 
+              className="w-full" 
+              type="submit"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Wird veröffentlicht...' : 'Beitrag veröffentlichen'}
+            </Button>
+          </form>
         </CardContent>
       </Card>
     </div>
