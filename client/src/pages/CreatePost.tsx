@@ -8,6 +8,7 @@ import { usePostStore, type DailyGoal } from "../lib/postStore";
 import { useLocation } from "wouter";
 import { useUsers } from "../contexts/UserContext";
 import { apiRequest } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
 import {
   Select,
   SelectContent,
@@ -45,6 +46,7 @@ export default function CreatePost() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (isSubmitting) return;
 
     if (!currentUser) {
@@ -74,19 +76,8 @@ export default function CreatePost() {
       return;
     }
 
-    // Check for existing active goal
-    if (includeDailyGoal && postStore.hasActiveGoal(currentUser.id)) {
-      const confirmReplace = window.confirm(
-        "Du hast bereits ein aktives Tagesziel. Möchtest du es durch dieses neue Ziel ersetzen?"
-      );
-      if (!confirmReplace) {
-        return;
-      }
-    }
-
     let dailyGoal: DailyGoal | undefined;
 
-    // Create daily goal if enabled
     if (includeDailyGoal) {
       dailyGoal = {
         type: goalType,
@@ -97,27 +88,28 @@ export default function CreatePost() {
         customName: goalType === 'custom' ? customGoalName : undefined,
         createdAt: new Date()
       };
-
-      console.log('Setting daily goal for user:', currentUser.id, dailyGoal);
-      postStore.setDailyGoal(currentUser.id, dailyGoal);
     }
 
     try {
       setIsSubmitting(true);
-      // API-Aufruf zum Erstellen des Posts
-      const response = await apiRequest("POST", "/api/posts", {
+
+      const postData = {
         userId: currentUser.id,
         content: content.trim(),
         images: mediaPreview ? [mediaPreview] : [],
         dailyGoal
-      });
+      };
+
+      const response = await apiRequest("POST", "/api/posts", postData);
 
       if (!response.ok) {
         throw new Error('Failed to create post');
       }
 
       const newPost = await response.json();
-      console.log("Created post:", newPost);
+
+      // Invalidiere den Cache für die Posts-Liste
+      await queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
 
       // Post zum Store hinzufügen
       postStore.initializePost(newPost);

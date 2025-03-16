@@ -142,8 +142,13 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
       }
 
       const updatedPost = await response.json();
+
+      // Update sowohl im Store als auch im Cache
       postStore.updatePost(post.id, editContent);
       queryClient.setQueryData(['/api/posts', post.id], updatedPost);
+
+      // Invalidiere auch die Posts-Liste
+      await queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
 
       setIsEditDialogOpen(false);
       toast({
