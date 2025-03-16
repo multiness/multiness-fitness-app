@@ -35,6 +35,7 @@ type PostStore = {
   getPost: (postId: number) => Post | undefined;
   updatePost: (postId: number, content: string) => void;
   deletePost: (postId: number) => void;
+  initializePost: (post: Post) => void;
   setDailyGoal: (userId: number, goal: DailyGoal) => { hasExistingGoal: boolean };
   getDailyGoal: (userId: number) => DailyGoal | undefined;
   updateDailyGoalProgress: (userId: number, progress: number) => void;
@@ -53,6 +54,14 @@ export const usePostStore = create<PostStore>()(
       dailyGoals: {},
       goalParticipants: {},
       posts: {},
+
+      initializePost: (post: Post) =>
+        set((state) => ({
+          posts: {
+            ...state.posts,
+            [post.id]: post
+          }
+        })),
 
       addLike: (postId, userId) =>
         set((state) => ({
@@ -243,3 +252,12 @@ export const usePostStore = create<PostStore>()(
     }
   )
 );
+
+// Add a function to delete a specific post by ID.  This is an example; the actual implementation
+// would depend on how the faulty post is identified.  This assumes a faulty postId is known.
+function deleteFaultyPost(postId: number) {
+    usePostStore.getState().deletePost(postId);
+}
+
+// Example usage:  Replace '1' with the actual ID of the faulty post.
+deleteFaultyPost(1);
