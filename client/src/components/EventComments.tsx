@@ -163,16 +163,16 @@ export default function EventComments({ eventId }: EventCommentsProps) {
           className="w-full sm:flex-1"
           onClick={handleEventLike}
         >
-          <ThumbsUp className={`h-4 w-4 mr-2 ${isLiked ? "text-primary" : ""}`} />
-          Like
+          <ThumbsUp className={`h-4 w-4 sm:mr-2 ${isLiked ? "text-primary" : ""}`} />
+          <span className="hidden sm:inline">Like</span>
         </Button>
         <Button 
           variant="outline" 
           className="w-full sm:flex-1"
           onClick={() => form.setFocus("content")}
         >
-          <MessageSquare className="h-4 w-4 mr-2" />
-          Kommentieren
+          <MessageSquare className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">Kommentieren</span>
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -180,8 +180,8 @@ export default function EventComments({ eventId }: EventCommentsProps) {
               variant="outline" 
               className="w-full sm:flex-1"
             >
-              <Share2 className="h-4 w-4 mr-2" />
-              Teilen
+              <Share2 className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Teilen</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
