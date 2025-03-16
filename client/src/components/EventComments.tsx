@@ -7,10 +7,10 @@ import { de } from "date-fns/locale";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ThumbsUp, MessageSquare, Share2, Flag } from "lucide-react";
 import { mockUsers } from "../data/mockData";
+import { useToast } from "@/hooks/use-toast";
 
 const commentSchema = z.object({
   content: z.string().min(1, "Kommentar darf nicht leer sein"),
@@ -42,6 +42,8 @@ export default function EventComments({ eventId }: EventCommentsProps) {
       isLiked: false,
     },
   ]);
+  const [isLiked, setIsLiked] = useState(false);
+  const { toast } = useToast();
 
   const form = useForm<CommentFormData>({
     resolver: zodResolver(commentSchema),
@@ -61,6 +63,10 @@ export default function EventComments({ eventId }: EventCommentsProps) {
     };
     setComments([...comments, newComment]);
     form.reset();
+    toast({
+      title: "Kommentar hinzugefügt",
+      description: "Dein Kommentar wurde erfolgreich veröffentlicht.",
+    });
   };
 
   const handleLike = (commentId: number) => {
@@ -76,23 +82,54 @@ export default function EventComments({ eventId }: EventCommentsProps) {
     }));
   };
 
+  const handleEventLike = () => {
+    setIsLiked(!isLiked);
+    toast({
+      title: isLiked ? "Like entfernt" : "Event geliked",
+      description: isLiked ? "Du hast deinen Like entfernt." : "Du hast das Event geliked.",
+    });
+  };
+
+  const handleShare = () => {
+    // Copy current URL to clipboard
+    navigator.clipboard.writeText(window.location.href);
+    toast({
+      title: "Link kopiert",
+      description: "Der Event-Link wurde in die Zwischenablage kopiert.",
+    });
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex gap-4 items-center">
-        <Button variant="outline" className="flex-1">
-          <ThumbsUp className="h-4 w-4 mr-2" />
+      {/* Action Buttons */}
+      <div className="grid grid-cols-3 gap-2 sm:flex sm:gap-4">
+        <Button 
+          variant="outline" 
+          className="w-full sm:flex-1"
+          onClick={handleEventLike}
+        >
+          <ThumbsUp className={`h-4 w-4 mr-2 ${isLiked ? "text-primary" : ""}`} />
           Like
         </Button>
-        <Button variant="outline" className="flex-1">
+        <Button 
+          variant="outline" 
+          className="w-full sm:flex-1"
+          onClick={() => form.setFocus("content")}
+        >
           <MessageSquare className="h-4 w-4 mr-2" />
           Kommentieren
         </Button>
-        <Button variant="outline" className="flex-1">
+        <Button 
+          variant="outline" 
+          className="w-full sm:flex-1"
+          onClick={handleShare}
+        >
           <Share2 className="h-4 w-4 mr-2" />
           Teilen
         </Button>
       </div>
 
+      {/* Comment Form */}
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
         <Textarea
           placeholder="Schreibe einen Kommentar..."
@@ -104,6 +141,7 @@ export default function EventComments({ eventId }: EventCommentsProps) {
         <Button type="submit">Kommentar senden</Button>
       </form>
 
+      {/* Comments List */}
       <div className="space-y-4">
         {comments.map((comment) => {
           const user = mockUsers.find(u => u.id === comment.userId);
