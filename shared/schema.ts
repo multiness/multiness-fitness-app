@@ -237,9 +237,23 @@ export const events = pgTable("events", {
   isHighlight: boolean("is_highlight").default(false),
   isArchived: boolean("is_archived").default(false),
   isActive: boolean("is_active").default(true),
+  isPublic: boolean("is_public").default(false), // New field for public/private events
+  requiresRegistration: boolean("requires_registration").default(true), // New field for registration requirement
   likes: integer("likes").default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const eventExternalRegistrations = pgTable("event_external_registrations", {
+  id: serial("id").primaryKey(),
+  eventId: integer("event_id").references(() => events.id).notNull(),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone"),
+  status: text("status").notNull().default('pending'), // pending, confirmed, cancelled
+  message: text("message"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const eventComments = pgTable("event_comments", {
@@ -255,12 +269,15 @@ export const eventComments = pgTable("event_comments", {
 // Add type definitions
 export type Event = typeof events.$inferSelect;
 export type EventComment = typeof eventComments.$inferSelect;
+export type EventExternalRegistration = typeof eventExternalRegistrations.$inferSelect;
 
 export const insertEventSchema = createInsertSchema(events)
   .extend({
     date: z.string().datetime(),
     gallery: z.array(z.string()).optional(),
     unlimitedParticipants: z.boolean().optional(),
+    isPublic: z.boolean().default(false),
+    requiresRegistration: z.boolean().default(true),
   })
   .omit({
     id: true,
@@ -278,5 +295,12 @@ export const insertEventCommentSchema = createInsertSchema(eventComments)
     updatedAt: true,
   });
 
+export const insertEventExternalRegistrationSchema = createInsertSchema(eventExternalRegistrations)
+  .omit({
+    id: true,
+    createdAt: true,
+  });
+
 export type InsertEvent = z.infer<typeof insertEventSchema>;
 export type InsertEventComment = z.infer<typeof insertEventCommentSchema>;
+export type InsertEventExternalRegistration = z.infer<typeof insertEventExternalRegistrationSchema>;

@@ -36,6 +36,8 @@ const eventSchema = z.object({
   }),
   maxParticipants: z.number().min(1, "Mindestens 1 Teilnehmer").optional(),
   unlimitedParticipants: z.boolean().default(false),
+  isPublic: z.boolean().default(false),
+  requiresRegistration: z.boolean().default(true),
 });
 
 type EventFormData = z.infer<typeof eventSchema>;
@@ -56,6 +58,8 @@ export default function CreateEvent() {
       maxParticipants: 10,
       location: "",
       unlimitedParticipants: false,
+      isPublic: false,
+      requiresRegistration: true,
     },
   });
 
@@ -88,23 +92,20 @@ export default function CreateEvent() {
   };
 
   const onSubmit = (data: EventFormData) => {
-    // Combine date and time
     const combinedDate = new Date(data.date);
     const [hours, minutes] = data.time.split(':');
     combinedDate.setHours(parseInt(hours), parseInt(minutes));
 
-    // Create the new event object
     const newEvent = {
       ...data,
       date: combinedDate,
-      trainer: 1, // Set a default trainer ID
+      trainer: 1, 
       currentParticipants: 0,
       isActive: true,
       isArchived: false,
       maxParticipants: data.unlimitedParticipants ? null : data.maxParticipants,
     };
 
-    // Add the event using the context
     addEvent(newEvent);
 
     toast({
@@ -300,6 +301,36 @@ export default function CreateEvent() {
                       </div>
                     </Button>
                   </label>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-4 pt-4 border-t">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Öffentliches Event</Label>
+                  <div className="text-sm text-muted-foreground">
+                    Aktiviere diese Option, wenn das Event auch für Nicht-Mitglieder sichtbar sein soll
+                  </div>
+                </div>
+                <Switch
+                  checked={form.watch("isPublic")}
+                  onCheckedChange={(checked) => form.setValue("isPublic", checked)}
+                />
+              </div>
+
+              {form.watch("isPublic") && (
+                <div className="flex items-center justify-between pt-2">
+                  <div className="space-y-0.5">
+                    <Label>Anmeldung erforderlich</Label>
+                    <div className="text-sm text-muted-foreground">
+                      Müssen sich externe Teilnehmer für das Event registrieren?
+                    </div>
+                  </div>
+                  <Switch
+                    checked={form.watch("requiresRegistration")}
+                    onCheckedChange={(checked) => form.setValue("requiresRegistration", checked)}
+                  />
                 </div>
               )}
             </div>

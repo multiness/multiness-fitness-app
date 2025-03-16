@@ -20,6 +20,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import EventRegistrationForm from "@/components/EventRegistrationForm";
 
 export default function EventDetail() {
   const { id } = useParams<{ id: string }>();
@@ -203,6 +204,18 @@ export default function EventDetail() {
                       "Ausgebucht" : "Teilnehmen"}
                   </Button>
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* External Registration Form */}
+          {event.isPublic && event.requiresRegistration && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Anmeldung zum Event</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <EventRegistrationForm eventId={event.id} />
               </CardContent>
             </Card>
           )}
