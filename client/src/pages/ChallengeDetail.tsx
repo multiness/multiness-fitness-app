@@ -10,28 +10,14 @@ import { de } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { UserAvatar } from "@/components/UserAvatar";
 import { useUsers } from "../contexts/UserContext";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-
-
-interface WorkoutExercise {
-  name: string;
-  reps: number;
-  description?: string;
-}
-
-interface WorkoutDetails {
-  timePerRound: number;
-  rounds: number;
-  exercises: WorkoutExercise[];
-}
 
 export default function ChallengeDetail() {
   const { id } = useParams();
   const { toast } = useToast();
   const { users, currentUser } = useUsers();
   const challenge = mockChallenges.find(c => c.id === parseInt(id || ""));
-  const creator = challenge ? users.find(u => u.id === challenge.creatorId) : null;
+  const creator = users.find(u => u.id === challenge?.creatorId);
 
   const [isParticipating, setIsParticipating] = useState(false);
   const [showResultForm, setShowResultForm] = useState(false);
@@ -40,14 +26,22 @@ export default function ChallengeDetail() {
   if (!challenge || !creator) return <div>Challenge nicht gefunden</div>;
 
   const currentDate = new Date();
-  const isActive = currentDate >= challenge.startDate && currentDate <= challenge.endDate;
-  const isEnded = currentDate > challenge.endDate;
-  const workoutDetails = challenge.workoutDetails as WorkoutDetails;
+  const startDate = new Date(challenge.startDate);
+  const endDate = new Date(challenge.endDate);
+  const isActive = currentDate >= startDate && currentDate <= endDate;
+  const isEnded = currentDate > endDate;
 
-  const participants = users.map(user => ({
-    ...user,
-    points: Math.floor(Math.random() * 1000),
-  })).sort((a, b) => b.points - a.points);
+  // Aktualisierte Teilnehmerliste mit echten Benutzerdaten
+  const participants = challenge.participantIds
+    ?.map(participantId => {
+      const user = users.find(u => u.id === participantId);
+      return user ? {
+        ...user,
+        points: Math.floor(Math.random() * 1000), // Simulierte Punkte
+      } : null;
+    })
+    .filter(Boolean)
+    .sort((a, b) => (b?.points || 0) - (a?.points || 0)) || [];
 
   const winners = participants.slice(0, 3);
 
@@ -110,7 +104,7 @@ export default function ChallengeDetail() {
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
               <span className="text-sm">
-                {format(challenge.startDate, "dd. MMMM", { locale: de })} - {format(challenge.endDate, "dd. MMMM yyyy", { locale: de })}
+                {format(startDate, "dd. MMMM", { locale: de })} - {format(endDate, "dd. MMMM yyyy", { locale: de })}
               </span>
             </div>
           </div>
@@ -292,21 +286,21 @@ export default function ChallengeDetail() {
           <CardTitle>Workout Details</CardTitle>
         </CardHeader>
         <CardContent>
-          {workoutDetails && (
+          {challenge.workoutDetails && (
             <div className="space-y-4">
               <div className="p-4 bg-muted rounded-lg">
                 <h3 className="font-semibold mb-2">Workout Typ: {challenge.workoutType.toUpperCase()}</h3>
                 <p className="text-sm text-muted-foreground mb-2">
-                  {workoutDetails.timePerRound} Sekunden pro Runde
+                  {challenge.workoutDetails.timePerRound} Sekunden pro Runde
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {workoutDetails.rounds} Runden
+                  {challenge.workoutDetails.rounds} Runden
                 </p>
               </div>
               <div>
                 <h4 className="font-semibold mb-2">Übungen:</h4>
                 <ul className="space-y-2">
-                  {workoutDetails.exercises.map((exercise, index) => (
+                  {challenge.workoutDetails.exercises.map((exercise, index) => (
                     <li key={index} className="p-3 border rounded-lg">
                       <div className="font-medium">{exercise.name}</div>
                       <div className="text-sm text-muted-foreground">
