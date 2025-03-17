@@ -79,11 +79,10 @@ export default function CreatePost() {
       }
     }
 
-    let dailyGoal: DailyGoal | undefined;
-
-    // Create daily goal if enabled
+    // Create post based on type
     if (includeDailyGoal) {
-      dailyGoal = {
+      // Create daily goal post
+      const dailyGoal: DailyGoal = {
         type: goalType,
         target: Number(goalTarget),
         unit: goalType === 'custom' ? customGoalUnit : goalUnits[goalType],
@@ -93,24 +92,18 @@ export default function CreatePost() {
         createdAt: new Date()
       };
 
-      // Create a post with the daily goal
       postStore.createPostWithGoal(
         currentUser.id,
-        content.trim() || `Neues Tagesziel: ${goalType === 'custom' ? customGoalName : goalUnits[goalType]}`,
+        content.trim() || `Neues Tagesziel: ${goalType === 'custom' ? customGoalName : goalType}`,
         dailyGoal
       );
     } else {
-      // Create new post without goal
-      const newPost = {
-        id: Date.now(),
-        userId: currentUser.id,
-        content: content.trim(),
-        image: mediaPreview,
-        createdAt: new Date()
-      };
-
-      // Add post to store
-      postStore.posts[newPost.id] = newPost;
+      // Create regular post with potential media
+      postStore.createPost(
+        currentUser.id,
+        content.trim(),
+        mediaPreview
+      );
     }
 
     toast({

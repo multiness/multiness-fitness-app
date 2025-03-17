@@ -42,7 +42,8 @@ type PostStore = {
   getGoalParticipants: (userId: number) => number[];
   checkExpiredGoals: () => void;
   hasActiveGoal: (userId: number) => boolean;
-  createPostWithGoal: (userId: number, content: string, goal: DailyGoal) => void; // Neue Funktion
+  createPostWithGoal: (userId: number, content: string, goal: DailyGoal) => void;
+  createPost: (userId: number, content: string, image?: string | null) => void; // Neue Funktion
 };
 
 export const usePostStore = create<PostStore>()(
@@ -95,12 +96,33 @@ export const usePostStore = create<PostStore>()(
       getComments: (postId) =>
         get().comments[postId] || [],
 
+      createPost: (userId, content, image) => {
+        const postId = Date.now();
+        const post: Post = {
+          id: postId,
+          userId,
+          content,
+          image,
+          createdAt: new Date()
+        };
+
+        set((state) => ({
+          posts: {
+            ...state.posts,
+            [postId]: post
+          }
+        }));
+
+        return postId;
+      },
+
       createPostWithGoal: (userId, content, goal) => {
         const postId = Date.now();
         const post: Post = {
           id: postId,
           userId,
           content,
+          image: null,
           createdAt: new Date(),
           dailyGoal: goal
         };
