@@ -3,7 +3,6 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import { Heart, MessageCircle, Share2, MoreHorizontal, AlertTriangle, Send, Pencil, Trash2 } from "lucide-react";
 import { Post } from "@shared/schema";
-import { mockUsers } from "../data/mockData";
 import { format } from "date-fns";
 import {
   DropdownMenu,
@@ -56,13 +55,15 @@ export default function FeedPost({ post }: FeedPostProps) {
   const [showAllComments, setShowAllComments] = useState(false);
   const [newComment, setNewComment] = useState("");
   const { toast } = useToast();
-  const { currentUser } = useUsers();
+  const { currentUser, users } = useUsers();
   const postStore = usePostStore();
   const isLiked = postStore.hasLiked(post.id, currentUser?.id || 1);
   const likes = postStore.getLikes(post.id);
   const comments = postStore.getComments(post.id);
-  const user = mockUsers.find(u => u.id === post.userId);
+  const user = users.find(u => u.id === post.userId);
   const isOwnPost = currentUser?.id === post.userId;
+
+  if (!user) return null;
 
   const handleLike = () => {
     const userId = currentUser?.id || 1;
@@ -121,16 +122,12 @@ export default function FeedPost({ post }: FeedPostProps) {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between p-4">
         <div className="flex items-center gap-3">
-          {user && (
-            <UserAvatar
-              userId={user.id}
-              avatar={user.avatar}
-              username={user.username}
-              size="sm"
-            />
-          )}
+          <UserAvatar
+            userId={user.id}
+            size="sm"
+          />
           <div>
-            <h3 className="font-semibold">{user?.username}</h3>
+            <h3 className="font-semibold">{user.username}</h3>
             <p className="text-sm text-muted-foreground">
               {format(post.createdAt, "dd. MMM yyyy")}
             </p>
@@ -179,7 +176,7 @@ export default function FeedPost({ post }: FeedPostProps) {
         {/* Post Content */}
         <div className="space-y-1">
           <p>
-            <span className="font-semibold mr-2">{user?.username}</span>
+            <span className="font-semibold mr-2">{user.username}</span>
             {post.content}
           </p>
         </div>
@@ -238,13 +235,13 @@ export default function FeedPost({ post }: FeedPostProps) {
               </button>
             )}
             {previewComments.map(comment => {
-              const commentUser = mockUsers.find(u => u.id === comment.userId);
-              return (
+              const commentUser = users.find(u => u.id === comment.userId);
+              return commentUser ? (
                 <p key={comment.id} className="text-sm">
-                  <span className="font-semibold mr-2">{commentUser?.username}</span>
+                  <span className="font-semibold mr-2">{commentUser.username}</span>
                   {comment.content}
                 </p>
-              );
+              ) : null;
             })}
           </div>
         )}
@@ -316,21 +313,17 @@ export default function FeedPost({ post }: FeedPostProps) {
           <ScrollArea className="h-[400px] pr-4">
             <div className="space-y-4">
               {comments.map(comment => {
-                const commentUser = mockUsers.find(u => u.id === comment.userId);
-                return (
+                const commentUser = users.find(u => u.id === comment.userId);
+                return commentUser ? (
                   <div key={comment.id} className="flex gap-3">
-                    {commentUser && (
-                      <UserAvatar
-                        userId={commentUser.id}
-                        avatar={commentUser.avatar}
-                        username={commentUser.username}
-                        size="sm"
-                      />
-                    )}
+                    <UserAvatar
+                      userId={commentUser.id}
+                      size="sm"
+                    />
                     <div className="flex-1">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold text-sm">{commentUser?.username}</span>
+                          <span className="font-semibold text-sm">{commentUser.username}</span>
                           <span className="text-xs text-muted-foreground">
                             {format(new Date(comment.timestamp), "dd. MMM")}
                           </span>
@@ -339,7 +332,7 @@ export default function FeedPost({ post }: FeedPostProps) {
                       </div>
                     </div>
                   </div>
-                );
+                ) : null;
               })}
             </div>
           </ScrollArea>
