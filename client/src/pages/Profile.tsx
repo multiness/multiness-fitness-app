@@ -121,6 +121,7 @@ export default function Profile() {
               username={user.username}
               size="lg"
               showActiveGoal={true}
+              enableImageModal={true}
             />
           </div>
 

@@ -4,6 +4,8 @@ import { cn } from "@/lib/utils";
 import { Link } from "wouter";
 import { useUsers } from "../contexts/UserContext";
 import { VerifiedBadge } from "./VerifiedBadge";
+import { useState } from "react";
+import ImageModal from "./ImageModal";
 
 interface UserAvatarProps {
   userId: number;
@@ -13,6 +15,7 @@ interface UserAvatarProps {
   isGroup?: boolean;
   clickable?: boolean;
   hideVerifiedBadge?: boolean;
+  enableImageModal?: boolean;
 }
 
 export function UserAvatar({
@@ -22,11 +25,13 @@ export function UserAvatar({
   showActiveGoal = true,
   isGroup = false,
   clickable = true,
-  hideVerifiedBadge = false
+  hideVerifiedBadge = false,
+  enableImageModal = false
 }: UserAvatarProps) {
   const postStore = usePostStore();
   const { users } = useUsers();
   const user = users.find(u => u.id === userId);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   if (!user) return null;
 
@@ -38,28 +43,35 @@ export function UserAvatar({
     lg: "h-24 w-24"
   };
 
-  // Create a container with the colored border
   const containerClasses = cn(
-    "rounded-full p-[2px]", // Thin border padding
+    "rounded-full p-[2px]",
     isGroup
       ? "bg-gradient-to-r from-green-500 to-green-400"
       : hasActiveGoal
         ? "bg-gradient-to-r from-blue-400 to-blue-300"
-        : "p-0", // No padding when no border needed
+        : "p-0",
     sizeClasses[size],
-    clickable && "cursor-pointer hover:opacity-90 transition-opacity"
+    enableImageModal && "cursor-zoom-in hover:opacity-90 transition-opacity",
+    !enableImageModal && clickable && "cursor-pointer hover:opacity-90 transition-opacity"
   );
 
-  // Avatar itself should fit perfectly inside the container
   const avatarClasses = cn(
-    "h-full w-full", // Fill the container
-    "ring-0", // Remove any ring/border from the avatar itself
+    "h-full w-full",
+    "ring-0",
     className
   );
 
+  const handleClick = (e: React.MouseEvent) => {
+    if (enableImageModal) {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsModalOpen(true);
+    }
+  };
+
   const AvatarComponent = (
     <div className="relative inline-block">
-      <div className={containerClasses}>
+      <div className={containerClasses} onClick={handleClick}>
         <Avatar className={avatarClasses}>
           <AvatarImage src={user.avatar || undefined} alt={user.username} className="object-cover rounded-full" />
           <AvatarFallback className="rounded-full">{user.username[0].toUpperCase()}</AvatarFallback>
@@ -70,10 +82,18 @@ export function UserAvatar({
           <VerifiedBadge size={size === "lg" ? "default" : "sm"} />
         </div>
       )}
+      {enableImageModal && (
+        <ImageModal
+          src={user.avatar || "/placeholder-avatar.png"}
+          alt={user.username}
+          open={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+        />
+      )}
     </div>
   );
 
-  if (clickable && !isGroup) {
+  if (clickable && !isGroup && !enableImageModal) {
     return (
       <Link href={`/profile/${userId}`}>
         {AvatarComponent}
