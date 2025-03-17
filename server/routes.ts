@@ -11,12 +11,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/posts", async (req, res) => {
     try {
       console.log("Fetching all posts...");
+
+      // Explizites Logging der Datenbankabfrage
+      const startTime = Date.now();
       const allPosts = await db
         .select()
         .from(posts)
         .orderBy(desc(posts.createdAt));
 
-      console.log("Found posts:", allPosts);
+      console.log(`DB Query took ${Date.now() - startTime}ms`);
+      console.log("Posts found:", allPosts.length);
+
+      if (!allPosts.length) {
+        console.log("No posts found in database");
+      }
+
       res.json(allPosts);
     } catch (error) {
       console.error("Error fetching posts:", error);

@@ -5,21 +5,31 @@ import CreatePost from "@/components/CreatePost";
 import { useEffect } from "react";
 
 export default function HomePage() {
-  const { data: posts = [], isLoading, error, refetch } = useQuery<Post[]>({
+  const { data: posts, isLoading, error, refetch } = useQuery<Post[]>({
     queryKey: ['/api/posts'],
     queryFn: async () => {
-      console.log("Fetching posts...");
-      const response = await fetch('/api/posts');
-      if (!response.ok) {
-        throw new Error('Failed to fetch posts');
+      try {
+        console.log("Fetching posts...");
+        const response = await fetch('/api/posts');
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch posts');
+        }
+
+        const data = await response.json();
+        console.log("Received posts:", data);
+        return data;
+      } catch (error) {
+        console.error("Error fetching posts:", error);
+        throw error;
       }
-      const data = await response.json();
-      console.log("Fetched posts:", data);
-      return data;
     },
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    staleTime: 0
   });
 
-  // Automatically refetch posts every few seconds
+  // Automatische Aktualisierung
   useEffect(() => {
     const interval = setInterval(() => {
       refetch();
@@ -39,7 +49,7 @@ export default function HomePage() {
   if (error) {
     return (
       <div className="text-center text-red-500 p-4">
-        Fehler beim Laden der Beiträge. Bitte versuchen Sie es später erneut.
+        <p>Fehler beim Laden der Beiträge</p>
         <button 
           onClick={() => refetch()} 
           className="mt-2 px-4 py-2 bg-primary text-white rounded-md"
@@ -54,7 +64,7 @@ export default function HomePage() {
     <div className="max-w-2xl mx-auto p-4 space-y-6">
       <CreatePost />
       <div className="space-y-6">
-        {Array.isArray(posts) && posts.length > 0 ? (
+        {posts && posts.length > 0 ? (
           posts.map((post) => (
             <FeedPost key={post.id} post={post} />
           ))

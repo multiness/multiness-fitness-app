@@ -20,7 +20,7 @@ export const pool = new Pool({
 
 export const db = drizzle(pool, { 
   schema,
-  logger: false // Deaktiviere Logging für bessere Performance
+  logger: true // Aktiviere Logging für Debugging
 });
 
 // Datenbank-Initialisierung
@@ -28,6 +28,10 @@ async function initDb() {
   try {
     const { migrate } = await import("drizzle-orm/neon-serverless/migrator");
     await migrate(db, { migrationsFolder: "./migrations" });
+
+    // Verify the connection and posts table
+    const testQuery = await db.select().from(schema.posts).limit(1);
+    console.log("Database connection and posts table verified:", testQuery);
   } catch (error) {
     console.error("Failed to initialize database:", error);
     throw error;
