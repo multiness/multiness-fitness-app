@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Heart, MessageCircle, Share2, MoreHorizontal, AlertTriangle, Send, Pencil, Trash2 } from "lucide-react";
+import { Heart, MessageCircle, Share2, MoreHorizontal, AlertTriangle, Send } from "lucide-react";
 import { Post } from "@shared/schema";
 import { mockUsers } from "../data/mockData";
 import { format } from "date-fns";
@@ -34,10 +34,7 @@ interface FeedPostProps {
 
 export default function FeedPost({ post }: FeedPostProps) {
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [reportReason, setReportReason] = useState("");
-  const [editContent, setEditContent] = useState(post.content);
   const [showAllComments, setShowAllComments] = useState(false);
   const [newComment, setNewComment] = useState("");
   const { toast } = useToast();
@@ -47,7 +44,6 @@ export default function FeedPost({ post }: FeedPostProps) {
   const likes = postStore.getLikes(post.id);
   const comments = postStore.getComments(post.id);
   const user = mockUsers.find(u => u.id === post.userId);
-  const isOwnPost = currentUser?.id === post.userId;
 
   const handleLike = () => {
     const userId = currentUser?.id || 1;
@@ -60,24 +56,6 @@ export default function FeedPost({ post }: FeedPostProps) {
         description: "Der Post wurde zu deinen Likes hinzugefügt.",
       });
     }
-  };
-
-  const handleEdit = () => {
-    postStore.updatePost(post.id, editContent);
-    setIsEditDialogOpen(false);
-    toast({
-      title: "Post bearbeitet",
-      description: "Dein Post wurde erfolgreich aktualisiert.",
-    });
-  };
-
-  const handleDelete = () => {
-    postStore.deletePost(post.id);
-    setIsDeleteDialogOpen(false);
-    toast({
-      title: "Post gelöscht",
-      description: "Dein Post wurde erfolgreich gelöscht.",
-    });
   };
 
   const handleComment = (e: React.FormEvent) => {
@@ -129,23 +107,10 @@ export default function FeedPost({ post }: FeedPostProps) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-[200px]">
-            {isOwnPost ? (
-              <>
-                <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)}>
-                  <Pencil className="h-4 w-4 mr-2" />
-                  Bearbeiten
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setIsDeleteDialogOpen(true)} className="text-red-500 focus:text-red-500">
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Löschen
-                </DropdownMenuItem>
-              </>
-            ) : (
-              <DropdownMenuItem onClick={() => setIsReportDialogOpen(true)}>
-                <AlertTriangle className="h-4 w-4 mr-2" />
-                Beitrag melden
-              </DropdownMenuItem>
-            )}
+            <DropdownMenuItem onClick={() => setIsReportDialogOpen(true)}>
+              <AlertTriangle className="h-4 w-4 mr-2" />
+              Beitrag melden
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </CardHeader>
@@ -295,50 +260,6 @@ export default function FeedPost({ post }: FeedPostProps) {
               <Send className="h-4 w-4" />
             </Button>
           </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Beitrag bearbeiten</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <Textarea
-              value={editContent}
-              onChange={(e) => setEditContent(e.target.value)}
-              className="min-h-[100px]"
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setIsEditDialogOpen(false)}>
-              Abbrechen
-            </Button>
-            <Button onClick={handleEdit}>
-              Speichern
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Beitrag löschen</DialogTitle>
-            <DialogDescription>
-              Möchtest du diesen Beitrag wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setIsDeleteDialogOpen(false)}>
-              Abbrechen
-            </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              Löschen
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
 

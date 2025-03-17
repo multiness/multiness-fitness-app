@@ -25,15 +25,15 @@ type PostStore = {
   comments: Record<number, Comment[]>;
   dailyGoals: Record<number, DailyGoal>;
   goalParticipants: Record<number, number[]>;
-  posts: Record<number, Post>;  // Neue Eigenschaft für Posts
+  posts: Record<number, Post>;  //Re-added from original
   addLike: (postId: number, userId: number) => void;
   removeLike: (postId: number, userId: number) => void;
   hasLiked: (postId: number, userId: number) => boolean;
   getLikes: (postId: number) => number[];
   addComment: (postId: number, userId: number, content: string) => void;
   getComments: (postId: number) => Comment[];
-  updatePost: (postId: number, content: string) => void;  // Neue Funktion
-  deletePost: (postId: number) => void;  // Neue Funktion
+  updatePost: (postId: number, content: string) => void; //Re-added from original
+  deletePost: (postId: number) => void; //Re-added from original
   setDailyGoal: (userId: number, goal: DailyGoal) => { hasExistingGoal: boolean };
   getDailyGoal: (userId: number) => DailyGoal | undefined;
   updateDailyGoalProgress: (userId: number, progress: number) => void;
@@ -51,7 +51,7 @@ export const usePostStore = create<PostStore>()(
       comments: {},
       dailyGoals: {},
       goalParticipants: {},
-      posts: {},  // Initialisierung der Posts
+      posts: {},  //Re-added from original
 
       addLike: (postId, userId) =>
         set((state) => ({
@@ -93,33 +93,6 @@ export const usePostStore = create<PostStore>()(
 
       getComments: (postId) =>
         get().comments[postId] || [],
-
-      // Neue Funktion zum Aktualisieren eines Posts
-      updatePost: (postId, content) =>
-        set((state) => ({
-          posts: {
-            ...state.posts,
-            [postId]: {
-              ...state.posts[postId],
-              content,
-              updatedAt: new Date()
-            }
-          }
-        })),
-
-      // Neue Funktion zum Löschen eines Posts
-      deletePost: (postId) =>
-        set((state) => {
-          const { [postId]: deletedPost, ...remainingPosts } = state.posts;
-          const { [postId]: deletedLikes, ...remainingLikes } = state.likes;
-          const { [postId]: deletedComments, ...remainingComments } = state.comments;
-
-          return {
-            posts: remainingPosts,
-            likes: remainingLikes,
-            comments: remainingComments
-          };
-        }),
 
       setDailyGoal: (userId, goal) => {
         const existingGoal = get().getDailyGoal(userId);
@@ -228,7 +201,32 @@ export const usePostStore = create<PostStore>()(
             });
           }
         });
-      }
+      },
+      //Re-added from original
+      updatePost: (postId, content) =>
+        set((state) => ({
+          posts: {
+            ...state.posts,
+            [postId]: {
+              ...state.posts[postId],
+              content,
+              updatedAt: new Date()
+            }
+          }
+        })),
+      //Re-added from original
+      deletePost: (postId) =>
+        set((state) => {
+          const { [postId]: deletedPost, ...remainingPosts } = state.posts;
+          const { [postId]: deletedLikes, ...remainingLikes } = state.likes;
+          const { [postId]: deletedComments, ...remainingComments } = state.comments;
+
+          return {
+            posts: remainingPosts,
+            likes: remainingLikes,
+            comments: remainingComments
+          };
+        })
     }),
     {
       name: 'post-interaction-storage',
