@@ -3,7 +3,6 @@ import { usePostStore } from "../lib/postStore";
 import { cn } from "@/lib/utils";
 import { Link } from "wouter";
 import { useUsers } from "../contexts/UserContext";
-import { VerifiedBadge } from "./VerifiedBadge";
 
 interface UserAvatarProps {
   userId: number;
@@ -12,7 +11,6 @@ interface UserAvatarProps {
   showActiveGoal?: boolean;
   isGroup?: boolean;
   clickable?: boolean;
-  hideVerifiedBadge?: boolean;
 }
 
 export function UserAvatar({
@@ -21,8 +19,7 @@ export function UserAvatar({
   className,
   showActiveGoal = true,
   isGroup = false,
-  clickable = true,
-  hideVerifiedBadge = false
+  clickable = true
 }: UserAvatarProps) {
   const postStore = usePostStore();
   const { users } = useUsers();
@@ -58,18 +55,11 @@ export function UserAvatar({
   );
 
   const AvatarComponent = (
-    <div className="relative">
-      <div className={containerClasses}>
-        <Avatar className={avatarClasses}>
-          <AvatarImage src={user.avatar || undefined} alt={user.username} className="object-cover rounded-full" />
-          <AvatarFallback className="rounded-full">{user.username[0].toUpperCase()}</AvatarFallback>
-        </Avatar>
-      </div>
-      {!hideVerifiedBadge && user.isVerified && (
-        <div className="absolute -bottom-1 -right-1">
-          <VerifiedBadge size={size === "lg" ? "default" : "sm"} />
-        </div>
-      )}
+    <div className={containerClasses}>
+      <Avatar className={avatarClasses}>
+        <AvatarImage src={user.avatar || undefined} alt={user.username} className="object-cover rounded-full" />
+        <AvatarFallback className="rounded-full">{user.username[0].toUpperCase()}</AvatarFallback>
+      </Avatar>
     </div>
   );
 
