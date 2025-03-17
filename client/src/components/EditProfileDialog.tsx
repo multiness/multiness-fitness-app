@@ -13,6 +13,46 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { User } from "@shared/schema";
 import { ImagePlus } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useToast } from "@/hooks/use-toast";
+
+const MAX_IMAGE_SIZE = 800; // Maximum dimension (width or height) in pixels
+
+const compressImage = (file: File, maxSize: number): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        // Calculate new dimensions while maintaining aspect ratio
+        if (width > height && width > maxSize) {
+          height = (height * maxSize) / width;
+          width = maxSize;
+        } else if (height > maxSize) {
+          width = (width * maxSize) / height;
+          height = maxSize;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+
+        // Convert to WebP format for better compression
+        const compressedImage = canvas.toDataURL('image/webp', 0.8);
+        resolve(compressedImage);
+      };
+      img.onerror = reject;
+    };
+    reader.onerror = reject;
+  });
+};
+
 
 const profileSchema = z.object({
   name: z.string().min(2, "Name muss mindestens 2 Zeichen lang sein"),
@@ -42,6 +82,7 @@ interface EditProfileDialogProps {
 export default function EditProfileDialog({ user, open, onOpenChange, onSave }: EditProfileDialogProps) {
   const [avatarPreview, setAvatarPreview] = useState<string | undefined>(user.avatar || undefined);
   const [bannerPreview, setBannerPreview] = useState<string | undefined>(user.bannerImage || undefined);
+  const { toast } = useToast();
 
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -55,29 +96,36 @@ export default function EditProfileDialog({ user, open, onOpenChange, onSave }: 
     },
   });
 
+  const handleImageUpload = async (file: File, isAvatar: boolean) => {
+    try {
+      const compressedImage = await compressImage(file, MAX_IMAGE_SIZE);
+      if (isAvatar) {
+        setAvatarPreview(compressedImage);
+        form.setValue("avatar", compressedImage);
+      } else {
+        setBannerPreview(compressedImage);
+        form.setValue("bannerImage", compressedImage);
+      }
+    } catch (error) {
+      toast({
+        title: "Fehler beim Bildupload",
+        description: "Bitte versuche es mit einem kleineren Bild.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        setAvatarPreview(result);
-        form.setValue("avatar", result);
-      };
-      reader.readAsDataURL(file);
+      handleImageUpload(file, true);
     }
   };
 
   const handleBannerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        setBannerPreview(result);
-        form.setValue("bannerImage", result);
-      };
-      reader.readAsDataURL(file);
+      handleImageUpload(file, false);
     }
   };
 
