@@ -14,13 +14,14 @@ import {
 } from "@/components/ui/carousel";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, MapPin } from "lucide-react";
-import { mockUsers } from "../data/mockData";
 import { Link } from "wouter";
 import { UserAvatar } from "./UserAvatar";
 import { useEvents } from "@/contexts/EventContext";
+import { useUsers } from "@/contexts/UserContext";
 
 export default function EventSlider() {
   const { events } = useEvents();
+  const { users } = useUsers();
 
   // Sort events by date and filter out archived events
   const activeEvents = events
@@ -37,7 +38,7 @@ export default function EventSlider() {
     >
       <CarouselContent>
         {activeEvents.map((event) => {
-          const trainer = mockUsers.find(u => u.id === event.trainer);
+          const trainer = users.find(u => u.id === event.trainer);
           return (
             <CarouselItem key={event.id} className="basis-full md:basis-1/2 lg:basis-1/3 pl-4">
               <Link href={`/events/${event.id}`}>
@@ -73,8 +74,6 @@ export default function EventSlider() {
                       <div className="flex items-center gap-2 mt-4 pt-4 border-t">
                         <UserAvatar
                           userId={trainer.id}
-                          avatar={trainer.avatar}
-                          username={trainer.username}
                           size="sm"
                         />
                         <div>
