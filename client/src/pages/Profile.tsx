@@ -23,9 +23,9 @@ export default function Profile() {
   const { id } = useParams();
   const { currentUser, updateCurrentUser, users } = useUsers();
   const userId = parseInt(id || "1");
-  const [user, setUser] = useState(() => 
-    userId === currentUser?.id 
-      ? currentUser 
+  const [user, setUser] = useState(() =>
+    userId === currentUser?.id
+      ? currentUser
       : users.find(u => u.id === userId)
   );
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -57,10 +57,10 @@ export default function Profile() {
 
   if (!user) return <div>Benutzer nicht gefunden</div>;
 
-  const handleProfileUpdate = (updatedData: { 
-    name: string; 
+  const handleProfileUpdate = (updatedData: {
+    name: string;
     username: string;
-    bio?: string; 
+    bio?: string;
     avatar?: string;
     bannerImage?: string;
   }) => {
@@ -153,7 +153,17 @@ export default function Profile() {
             {currentUser?.id === userId ? (
               <Button onClick={() => setIsEditDialogOpen(true)}>Profil bearbeiten</Button>
             ) : (
-              <Button>Folgen</Button>
+              <Button
+                variant="default"
+                className="flex items-center gap-2"
+                onClick={() => {
+                  const chatId = getChatId(userId);
+                  setLocation(`/chat/${chatId}/direct`);
+                }}
+              >
+                <MessageSquare className="h-4 w-4" />
+                Nachricht senden
+              </Button>
             )}
           </div>
         </div>
@@ -171,131 +181,131 @@ export default function Profile() {
       )}
 
       <ScrollArea className="max-h-[90vh]">
-      <Tabs value={selectedTab} onValueChange={setSelectedTab} className="mt-6">
-        <TabsList className="grid w-full grid-cols-3 mb-4">
-          <TabsTrigger value="posts" className="flex items-center gap-2">
-            <MessageSquare className="h-4 w-4" />
-            Beiträge
-          </TabsTrigger>
-          <TabsTrigger value="challenges" className="flex items-center gap-2">
-            <Trophy className="h-4 w-4" />
-            Challenges
-          </TabsTrigger>
-          <TabsTrigger value="groups" className="flex items-center gap-2">
-            <Users2 className="h-4 w-4" />
-            Gruppen
-          </TabsTrigger>
-        </TabsList>
+        <Tabs value={selectedTab} onValueChange={setSelectedTab} className="mt-6">
+          <TabsList className="grid w-full grid-cols-3 mb-4">
+            <TabsTrigger value="posts" className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4" />
+              Beiträge
+            </TabsTrigger>
+            <TabsTrigger value="challenges" className="flex items-center gap-2">
+              <Trophy className="h-4 w-4" />
+              Challenges
+            </TabsTrigger>
+            <TabsTrigger value="groups" className="flex items-center gap-2">
+              <Users2 className="h-4 w-4" />
+              Gruppen
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Groups Tab */}
-        <TabsContent value="groups" className="space-y-4">
-          {userGroups.length > 0 ? (
-            <div className="grid gap-4 grid-cols-1">
-              {userGroups.map(group => {
-                const isCreator = group.creatorId === userId;
-                const isAdmin = group.adminIds?.includes(userId);
-                console.log(`Group ${group.name} - Creator: ${isCreator}, Admin: ${isAdmin}`);
+          {/* Groups Tab */}
+          <TabsContent value="groups" className="space-y-4">
+            {userGroups.length > 0 ? (
+              <div className="grid gap-4 grid-cols-1">
+                {userGroups.map(group => {
+                  const isCreator = group.creatorId === userId;
+                  const isAdmin = group.adminIds?.includes(userId);
+                  console.log(`Group ${group.name} - Creator: ${isCreator}, Admin: ${isAdmin}`);
 
-                return (
-                  <Card
-                    key={group.id}
-                    className="cursor-pointer hover:shadow-lg transition-shadow"
-                    onClick={() => navigateToGroupChat(group.id)}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-4">
-                        {group.image ? (
-                          <img
-                            src={group.image}
-                            alt={group.name}
-                            className="w-16 h-16 rounded-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
-                            <Users2 className="h-8 w-8 text-muted-foreground" />
-                          </div>
-                        )}
-
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <h3 className="font-semibold text-lg">{group.name}</h3>
-                              <p className="text-sm text-muted-foreground line-clamp-2">{group.description}</p>
+                  return (
+                    <Card
+                      key={group.id}
+                      className="cursor-pointer hover:shadow-lg transition-shadow"
+                      onClick={() => navigateToGroupChat(group.id)}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-4">
+                          {group.image ? (
+                            <img
+                              src={group.image}
+                              alt={group.name}
+                              className="w-16 h-16 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
+                              <Users2 className="h-8 w-8 text-muted-foreground" />
                             </div>
-                            <div className="flex items-center gap-2">
-                              <Badge variant={isCreator ? "default" : "secondary"} className="ml-2">
-                                {isCreator ? 'Admin' : (isAdmin ? 'Co-Admin' : 'Mitglied')}
-                              </Badge>
-                              {(isCreator || isAdmin) && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="ml-2"
-                                  onClick={(e) => handleEditGroup(group, e)}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                              )}
-                            </div>
-                          </div>
+                          )}
 
-                          <div className="mt-2 flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <div className="flex -space-x-2">
-                                {group.participantIds?.slice(0, 3).map((participantId) => {
-                                  const participant = mockUsers.find(u => u.id === participantId);
-                                  return participant ? (
-                                    <UserAvatar
-                                      key={participant.id}
-                                      userId={participant.id}
-                                      avatar={participant.avatar}
-                                      username={participant.username}
-                                      size="sm"
-                                    />
-                                  ) : null;
-                                })}
-                                {(group.participantIds?.length || 0) > 3 && (
-                                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm">
-                                    +{(group.participantIds?.length || 0) - 3}
-                                  </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <h3 className="font-semibold text-lg">{group.name}</h3>
+                                <p className="text-sm text-muted-foreground line-clamp-2">{group.description}</p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Badge variant={isCreator ? "default" : "secondary"} className="ml-2">
+                                  {isCreator ? 'Admin' : (isAdmin ? 'Co-Admin' : 'Mitglied')}
+                                </Badge>
+                                {(isCreator || isAdmin) && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="ml-2"
+                                    onClick={(e) => handleEditGroup(group, e)}
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
                                 )}
                               </div>
-                              <span className="text-sm text-muted-foreground">
-                                {group.participantIds?.length || 0} Mitglieder
-                              </span>
                             </div>
-                            <Button variant="ghost" size="sm" className="gap-1">
-                              Chat öffnen <ArrowRight className="h-4 w-4" />
-                            </Button>
+
+                            <div className="mt-2 flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <div className="flex -space-x-2">
+                                  {group.participantIds?.slice(0, 3).map((participantId) => {
+                                    const participant = mockUsers.find(u => u.id === participantId);
+                                    return participant ? (
+                                      <UserAvatar
+                                        key={participant.id}
+                                        userId={participant.id}
+                                        avatar={participant.avatar}
+                                        username={participant.username}
+                                        size="sm"
+                                      />
+                                    ) : null;
+                                  })}
+                                  {(group.participantIds?.length || 0) > 3 && (
+                                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm">
+                                      +{(group.participantIds?.length || 0) - 3}
+                                    </div>
+                                  )}
+                                </div>
+                                <span className="text-sm text-muted-foreground">
+                                  {group.participantIds?.length || 0} Mitglieder
+                                </span>
+                              </div>
+                              <Button variant="ghost" size="sm" className="gap-1">
+                                Chat öffnen <ArrowRight className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          ) : (
-            <p className="text-center text-muted-foreground">Keine Gruppen gefunden</p>
-          )}
-        </TabsContent>
-        <TabsContent value="posts">
-          {/* Posts TabContent */}
-          {userPosts.map((post) => (
-            <FeedPost key={post.id} post={post} />
-          ))}
-        </TabsContent>
-        <TabsContent value="challenges">
-          {/* Challenges TabContent */}
-          {activeUserChallenges.map((challenge) => (
-            <div key={challenge.id} className="flex items-center gap-2">
-              <Button onClick={() => navigateToChallenge(challenge.id)}>
-                {challenge.title}
-              </Button>
-            </div>
-          ))}
-        </TabsContent>
-      </Tabs>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-center text-muted-foreground">Keine Gruppen gefunden</p>
+            )}
+          </TabsContent>
+          <TabsContent value="posts">
+            {/* Posts TabContent */}
+            {userPosts.map((post) => (
+              <FeedPost key={post.id} post={post} />
+            ))}
+          </TabsContent>
+          <TabsContent value="challenges">
+            {/* Challenges TabContent */}
+            {activeUserChallenges.map((challenge) => (
+              <div key={challenge.id} className="flex items-center gap-2">
+                <Button onClick={() => navigateToChallenge(challenge.id)}>
+                  {challenge.title}
+                </Button>
+              </div>
+            ))}
+          </TabsContent>
+        </Tabs>
       </ScrollArea>
       <EditProfileDialog
         open={isEditDialogOpen}
