@@ -9,8 +9,8 @@ type User = {
   avatar: string | null;
   bannerImage?: string | null;
   isAdmin: boolean;
-  isVerified: boolean;
-  isTeamMember: boolean;
+  isVerified: boolean | null;
+  isTeamMember: boolean | null;
   teamRole: string | null;
 };
 
@@ -51,7 +51,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setCurrentUser(updatedUser);
 
     // Aktualisiere auch den Benutzer in der users-Liste
-    setUsers(users.map(user =>
+    setUsers(prevUsers => prevUsers.map(user =>
       user.id === currentUser.id ? updatedUser : user
     ));
 
@@ -71,6 +71,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (currentUser) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(currentUser));
+      // Aktualisiere die users-Liste wenn sich currentUser ändert
+      setUsers(prevUsers => prevUsers.map(user =>
+        user.id === currentUser.id ? currentUser : user
+      ));
     }
   }, [currentUser]);
 

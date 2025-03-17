@@ -2,11 +2,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { usePostStore } from "../lib/postStore";
 import { cn } from "@/lib/utils";
 import { Link } from "wouter";
+import { useUsers } from "../contexts/UserContext";
 
 interface UserAvatarProps {
   userId: number;
-  avatar?: string | null;
-  username: string;
   size?: "sm" | "md" | "lg";
   className?: string;
   showActiveGoal?: boolean;
@@ -16,8 +15,6 @@ interface UserAvatarProps {
 
 export function UserAvatar({
   userId,
-  avatar,
-  username,
   size = "md",
   className,
   showActiveGoal = true,
@@ -25,6 +22,11 @@ export function UserAvatar({
   clickable = true
 }: UserAvatarProps) {
   const postStore = usePostStore();
+  const { users } = useUsers();
+  const user = users.find(u => u.id === userId);
+
+  if (!user) return null;
+
   const hasActiveGoal = showActiveGoal && postStore.getDailyGoal(userId);
 
   const sizeClasses = {
@@ -55,8 +57,8 @@ export function UserAvatar({
   const AvatarComponent = (
     <div className={containerClasses}>
       <Avatar className={avatarClasses}>
-        <AvatarImage src={avatar || undefined} alt={username} className="rounded-full" />
-        <AvatarFallback className="rounded-full">{username[0].toUpperCase()}</AvatarFallback>
+        <AvatarImage src={user.avatar || undefined} alt={user.username} className="object-cover rounded-full" />
+        <AvatarFallback className="rounded-full">{user.username[0].toUpperCase()}</AvatarFallback>
       </Avatar>
     </div>
   );
