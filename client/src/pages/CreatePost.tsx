@@ -93,21 +93,26 @@ export default function CreatePost() {
         createdAt: new Date()
       };
 
-      console.log('Setting daily goal for user:', currentUser.id, dailyGoal);
-      postStore.setDailyGoal(currentUser.id, dailyGoal);
+      // Create a post with the daily goal
+      postStore.createPostWithGoal(
+        currentUser.id,
+        content.trim() || `Neues Tagesziel: ${goalType === 'custom' ? customGoalName : goalUnits[goalType]}`,
+        dailyGoal
+      );
+    } else {
+      // Create new post without goal
+      const newPost = {
+        id: Date.now(),
+        userId: currentUser.id,
+        content: content.trim(),
+        image: mediaPreview,
+        createdAt: new Date()
+      };
+
+      // Add post to store
+      postStore.posts[newPost.id] = newPost;
     }
 
-    // Create new post
-    const newPost = {
-      id: Date.now(),
-      userId: currentUser.id,
-      content: content.trim(),
-      image: mediaPreview,
-      createdAt: new Date(),
-      dailyGoal
-    };
-
-    // Add post to store
     toast({
       title: "Beitrag erstellt!",
       description: "Dein Beitrag wurde erfolgreich veröffentlicht.",
