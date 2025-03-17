@@ -21,9 +21,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/posts/user/:userId", async (req, res) => {
+    try {
+      const userPosts = await db
+        .select()
+        .from(posts)
+        .where(eq(posts.userId, parseInt(req.params.userId)))
+        .orderBy(desc(posts.createdAt));
+      res.json(userPosts);
+    } catch (error) {
+      console.error("Error fetching user posts:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.post("/api/posts", async (req, res) => {
     try {
-      const { userId, content, images } = req.body;
+      const { userId, content, images, dailyGoal } = req.body;
 
       if (!userId || !content) {
         return res.status(400).json({ error: "Missing required fields" });
@@ -33,6 +47,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId,
         content: content.trim(),
         images: images || [],
+        dailyGoal,
         createdAt: new Date(),
         updatedAt: new Date()
       }).returning();

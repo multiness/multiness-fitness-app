@@ -8,6 +8,26 @@ import { useLocation } from "wouter";
 import { useUsers } from "../contexts/UserContext";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+
+type DailyGoal = {
+  type: 'water' | 'steps' | 'distance' | 'custom';
+  target: number;
+  unit: string;
+  progress: number;
+  completed: boolean;
+  customName?: string;
+  createdAt: Date;
+};
 
 export default function CreatePost() {
   const { toast } = useToast();
@@ -18,9 +38,22 @@ export default function CreatePost() {
   const [, setLocation] = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Tagesziel States
+  const [includeDailyGoal, setIncludeDailyGoal] = useState(false);
+  const [goalType, setGoalType] = useState<'water' | 'steps' | 'distance' | 'custom'>('water');
+  const [goalTarget, setGoalTarget] = useState("");
+  const [customGoalName, setCustomGoalName] = useState("");
+  const [customGoalUnit, setCustomGoalUnit] = useState("");
+
+  const goalUnits = {
+    water: 'Liter',
+    steps: 'Schritte',
+    distance: 'Kilometer',
+    custom: ''
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (isSubmitting) return;
 
     if (!currentUser) {
@@ -41,13 +74,37 @@ export default function CreatePost() {
       return;
     }
 
+    if (includeDailyGoal && (!goalType || !goalTarget || (goalType === 'custom' && (!customGoalName || !customGoalUnit)))) {
+      toast({
+        title: "Unvollständiges Tagesziel",
+        description: "Bitte fülle alle Felder aus.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setIsSubmitting(true);
+
+      let dailyGoal: DailyGoal | undefined;
+
+      if (includeDailyGoal) {
+        dailyGoal = {
+          type: goalType,
+          target: Number(goalTarget),
+          unit: goalType === 'custom' ? customGoalUnit : goalUnits[goalType],
+          progress: 0,
+          completed: false,
+          customName: goalType === 'custom' ? customGoalName : undefined,
+          createdAt: new Date()
+        };
+      }
 
       const postData = {
         userId: currentUser.id,
         content: content.trim(),
-        images: mediaPreview ? [mediaPreview] : []
+        images: mediaPreview ? [mediaPreview] : [],
+        dailyGoal
       };
 
       const response = await apiRequest("POST", "/api/posts", postData);
@@ -56,8 +113,13 @@ export default function CreatePost() {
         throw new Error('Failed to create post');
       }
 
-      // Sofort den Cache invalidieren
-      await queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
+      // Invalidiere den Cache für Posts und User-Posts
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['/api/posts'] }),
+        queryClient.invalidateQueries({ 
+          queryKey: ['/api/posts/user', currentUser.id] 
+        })
+      ]);
 
       toast({
         title: "Beitrag erstellt!",
@@ -119,6 +181,67 @@ export default function CreatePost() {
               onChange={(e) => setContent(e.target.value)}
               className="min-h-[150px]"
             />
+
+            {/* Tagesziel Toggle */}
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="daily-goal"
+                checked={includeDailyGoal}
+                onCheckedChange={setIncludeDailyGoal}
+              />
+              <Label htmlFor="daily-goal">Tagesziel hinzufügen</Label>
+            </div>
+
+            {/* Tagesziel Einstellungen */}
+            {includeDailyGoal && (
+              <div className="space-y-4 p-4 bg-muted rounded-lg">
+                <div className="space-y-2">
+                  <Label>Art des Ziels</Label>
+                  <Select value={goalType} onValueChange={(value: 'water' | 'steps' | 'distance' | 'custom') => setGoalType(value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Wähle ein Ziel" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="water">Wasser trinken</SelectItem>
+                      <SelectItem value="steps">Schritte gehen</SelectItem>
+                      <SelectItem value="distance">Strecke laufen</SelectItem>
+                      <SelectItem value="custom">Eigenes Ziel</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Zielwert ({goalType === 'custom' ? customGoalUnit : goalUnits[goalType]})</Label>
+                  <Input
+                    type="number"
+                    placeholder={`Zielwert in ${goalType === 'custom' ? customGoalUnit : goalUnits[goalType]}`}
+                    value={goalTarget}
+                    onChange={(e) => setGoalTarget(e.target.value)}
+                  />
+                </div>
+
+                {goalType === 'custom' && (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Name des Ziels</Label>
+                      <Input
+                        placeholder="z.B. Liegestütze"
+                        value={customGoalName}
+                        onChange={(e) => setCustomGoalName(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Einheit</Label>
+                      <Input
+                        placeholder="z.B. Wiederholungen"
+                        value={customGoalUnit}
+                        onChange={(e) => setCustomGoalUnit(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {mediaPreview && (
               <div className="relative">
