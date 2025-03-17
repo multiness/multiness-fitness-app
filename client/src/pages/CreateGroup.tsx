@@ -11,11 +11,13 @@ import { Switch } from "@/components/ui/switch";
 import { useUsers } from "../contexts/UserContext";
 import { useGroupStore } from "../lib/groupStore";
 import { useLocation } from "wouter";
+import { useChatStore } from "../lib/chatService";
 
 export default function CreateGroup() {
   const { toast } = useToast();
   const { currentUser } = useUsers();
   const groupStore = useGroupStore();
+  const chatStore = useChatStore();
   const [, setLocation] = useLocation();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -77,7 +79,11 @@ export default function CreateGroup() {
       adminIds: [currentUser.id], // Der Ersteller ist automatisch Admin
     });
 
+    // Initialisiere den Gruppen-Chat
+    chatStore.initializeGroupChat(groupId);
+
     console.log('Created group with ID:', groupId);
+    console.log('Initialized group chat');
 
     toast({
       title: "Gruppe erstellt!",
@@ -256,12 +262,12 @@ export default function CreateGroup() {
 }
 
 const handleAddInvite = () => {
-    if (currentInvite.trim() && !invites.includes(currentInvite.trim())) {
-      setInvites([...invites, currentInvite.trim()]);
-      setCurrentInvite("");
-    }
-  };
+  if (currentInvite.trim() && !invites.includes(currentInvite.trim())) {
+    setInvites([...invites, currentInvite.trim()]);
+    setCurrentInvite("");
+  }
+};
 
 const removeInvite = (invite: string) => {
-    setInvites(invites.filter(i => i !== invite));
-  };
+  setInvites(invites.filter(i => i !== invite));
+};
