@@ -12,6 +12,7 @@ interface UserAvatarProps {
   showActiveGoal?: boolean;
   isGroup?: boolean;
   clickable?: boolean;
+  showUsername?: boolean; // Neue Prop um die Anzeige des Benutzernamens zu steuern
 }
 
 export function UserAvatar({
@@ -21,6 +22,7 @@ export function UserAvatar({
   showActiveGoal = true,
   isGroup = false,
   clickable = true,
+  showUsername = true, // Standardmäßig den Benutzernamen anzeigen
 }: UserAvatarProps) {
   const postStore = usePostStore();
   const { users } = useUsers();
@@ -61,6 +63,17 @@ export function UserAvatar({
       </Avatar>
     </div>
   );
+
+  if (!showUsername) {
+    if (clickable && !isGroup) {
+      return (
+        <Link href={`/profile/${userId}`}>
+          {AvatarComponent}
+        </Link>
+      );
+    }
+    return AvatarComponent;
+  }
 
   if (clickable && !isGroup) {
     return (
