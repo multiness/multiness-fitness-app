@@ -1,19 +1,19 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Search, MessageSquare, UserPlus } from "lucide-react";
-import { mockUsers } from "../data/mockData";
 import { Link } from "wouter";
-import { VerifiedBadge } from "@/components/VerifiedBadge"; // Fix import to use named import
-
+import { VerifiedBadge } from "@/components/VerifiedBadge";
+import { useUsers } from "../contexts/UserContext";
+import { UserAvatar } from "@/components/UserAvatar";
 
 export default function Members() {
   const [searchQuery, setSearchQuery] = useState("");
+  const { users } = useUsers();
 
-  const filteredUsers = mockUsers.filter(user =>
+  const filteredUsers = users.filter(user =>
     user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -24,7 +24,7 @@ export default function Members() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <h1 className="text-2xl md:text-3xl font-bold">Community Mitglieder</h1>
         <div className="text-sm text-muted-foreground">
-          {mockUsers.length} Mitglieder
+          {users.length} Mitglieder
         </div>
       </div>
 
@@ -54,10 +54,11 @@ export default function Members() {
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                 <Link href={`/profile/${user.id}`} className="hover:opacity-80">
                   <div className="relative">
-                    <Avatar className="h-16 w-16 sm:h-20 sm:w-20">
-                      <AvatarImage src={user.avatar || undefined} />
-                      <AvatarFallback>{user.username[0]}</AvatarFallback>
-                    </Avatar>
+                    <UserAvatar
+                      userId={user.id}
+                      size="lg"
+                      clickable={false}
+                    />
                     {user.isVerified && (
                       <VerifiedBadge className="absolute bottom-0 right-0" />
                     )}
