@@ -1,37 +1,51 @@
 import { useQuery } from "@tanstack/react-query";
 import { Post } from "@shared/schema";
 import FeedPost from "@/components/FeedPost";
-import { usePostStore } from "@/lib/postStore";
-import { useEffect } from "react";
+import CreatePost from "@/components/CreatePost";
 
 export default function HomePage() {
-  const postStore = usePostStore();
-
-  const { data: posts = [] } = useQuery<Post[]>({
+  const { data: posts = [], isLoading, error } = useQuery<Post[]>({
     queryKey: ['/api/posts'],
     queryFn: async () => {
       const response = await fetch('/api/posts');
       if (!response.ok) {
         throw new Error('Failed to fetch posts');
       }
-      const data = await response.json();
-      console.log("Fetched posts:", data);
-      // Initialize each post in the store
-      data.forEach((post: Post) => postStore.initializePost(post));
-      return data;
-    }
+      return response.json();
+    },
+    refetchInterval: 5000, // Automatische Aktualisierung alle 5 Sekunden
+    staleTime: 1000 // Daten werden nach 1 Sekunde als veraltet markiert
   });
 
-  // Migrate existing posts when component mounts
-  useEffect(() => {
-    postStore.migrateExistingPosts().catch(console.error);
-  }, []);
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center text-red-500 p-4">
+        Fehler beim Laden der Beiträge. Bitte versuchen Sie es später erneut.
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-4 p-4">
-      {posts.map((post) => (
-        <FeedPost key={post.id} post={post} />
-      ))}
+    <div className="max-w-2xl mx-auto p-4 space-y-6">
+      <CreatePost />
+      <div className="space-y-6">
+        {posts.map((post) => (
+          <FeedPost key={post.id} post={post} />
+        ))}
+        {posts.length === 0 && (
+          <div className="text-center text-muted-foreground p-4">
+            Noch keine Beiträge vorhanden. Erstellen Sie den ersten Beitrag!
+          </div>
+        )}
+      </div>
     </div>
   );
 }
