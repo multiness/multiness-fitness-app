@@ -18,6 +18,7 @@ import { Link } from "wouter";
 import { UserAvatar } from "./UserAvatar";
 import { useEvents } from "@/contexts/EventContext";
 import { useUsers } from "@/contexts/UserContext";
+import { UsernameWithVerification } from "./UserAvatar";
 
 export default function EventSlider() {
   const { events } = useEvents();
@@ -76,9 +77,8 @@ export default function EventSlider() {
                           userId={trainer.id}
                           size="sm"
                         />
-                        <div>
-                          <div className="text-sm font-medium">{trainer.name}</div>
-                          <div className="text-xs text-muted-foreground">{trainer.username}</div>
+                        <div className="flex items-center gap-1">
+                          <UsernameWithVerification userId={trainer.id} />
                         </div>
                       </div>
                     )}

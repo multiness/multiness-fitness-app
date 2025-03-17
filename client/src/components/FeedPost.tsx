@@ -24,8 +24,9 @@ import { useUsers } from "../contexts/UserContext";
 import { usePostStore } from "../lib/postStore";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
-import { UserAvatar } from "@/components/UserAvatar";
+import { UserAvatar } from "./UserAvatar";
 import DailyGoalDisplay from './DailyGoalDisplay';
+import { UsernameWithVerification } from "./UserAvatar";
 
 interface FeedPostProps {
   post: {
@@ -126,12 +127,10 @@ export default function FeedPost({ post }: FeedPostProps) {
             userId={user.id}
             size="sm"
           />
-          <div>
-            <h3 className="font-semibold">{user.username}</h3>
-            <p className="text-sm text-muted-foreground">
-              {format(post.createdAt, "dd. MMM yyyy")}
-            </p>
-          </div>
+          <UsernameWithVerification userId={user.id} />
+        </div>
+        <div className="text-sm text-muted-foreground">
+          {format(post.createdAt, "dd. MMM yyyy")}
         </div>
 
         <DropdownMenu>
@@ -175,9 +174,9 @@ export default function FeedPost({ post }: FeedPostProps) {
       <CardContent className="p-4 space-y-4">
         {/* Post Content */}
         <div className="space-y-1">
-          <p>
-            <span className="font-semibold mr-2">{user.username}</span>
-            {post.content}
+          <p className="flex items-center gap-2">
+            <UsernameWithVerification userId={user.id} />
+            <span>{post.content}</span>
           </p>
         </div>
 
@@ -237,9 +236,9 @@ export default function FeedPost({ post }: FeedPostProps) {
             {previewComments.map(comment => {
               const commentUser = users.find(u => u.id === comment.userId);
               return commentUser ? (
-                <p key={comment.id} className="text-sm">
-                  <span className="font-semibold mr-2">{commentUser.username}</span>
-                  {comment.content}
+                <p key={comment.id} className="text-sm flex items-center gap-2">
+                  <UsernameWithVerification userId={commentUser.id} />
+                  <span>{comment.content}</span>
                 </p>
               ) : null;
             })}
@@ -323,7 +322,7 @@ export default function FeedPost({ post }: FeedPostProps) {
                     <div className="flex-1">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold text-sm">{commentUser.username}</span>
+                          <UsernameWithVerification userId={commentUser.id} />
                           <span className="text-xs text-muted-foreground">
                             {format(new Date(comment.timestamp), "dd. MMM")}
                           </span>
