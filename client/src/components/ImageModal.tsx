@@ -16,9 +16,11 @@ export default function ImageModal({ src, alt, open, onClose }: ImageModalProps)
       <DialogContent className="max-w-4xl p-4">
         <div className="relative">
           <img
-            src={src || "/placeholder-avatar.png"}
+            src={src}
             alt={alt}
             className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
+            style={{ imageRendering: 'auto' }}
+            loading="eager"
           />
         </div>
       </DialogContent>
