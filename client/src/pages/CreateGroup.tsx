@@ -5,14 +5,18 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Image, Lock, Globe, X, UserPlus, Pin } from "lucide-react";
+import { Image, Lock, Globe, X, UserPlus } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { useUsers } from "../contexts/UserContext";
+import { useGroupStore } from "../lib/groupStore";
+import { useLocation } from "wouter";
 
 export default function CreateGroup() {
   const { toast } = useToast();
   const { currentUser } = useUsers();
+  const groupStore = useGroupStore();
+  const [, setLocation] = useLocation();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -44,18 +48,16 @@ export default function CreateGroup() {
     setImagePreview(null);
   };
 
-  const handleAddInvite = () => {
-    if (currentInvite.trim() && !invites.includes(currentInvite.trim())) {
-      setInvites([...invites, currentInvite.trim()]);
-      setCurrentInvite("");
-    }
-  };
-
-  const removeInvite = (invite: string) => {
-    setInvites(invites.filter(i => i !== invite));
-  };
-
   const handleSubmit = () => {
+    if (!currentUser) {
+      toast({
+        title: "Nicht angemeldet",
+        description: "Bitte melde dich an, um eine Gruppe zu erstellen.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!name.trim() || !description.trim()) {
       toast({
         title: "Fehlende Informationen",
@@ -65,11 +67,25 @@ export default function CreateGroup() {
       return;
     }
 
-    // Hier würde die Gruppe in einer echten App erstellt werden
+    // Erstelle die neue Gruppe mit dem groupStore
+    const groupId = groupStore.createGroup({
+      name: name.trim(),
+      description: description.trim(),
+      image: imagePreview || undefined,
+      creatorId: currentUser.id,
+      participantIds: [currentUser.id],
+      adminIds: [currentUser.id], // Der Ersteller ist automatisch Admin
+    });
+
+    console.log('Created group with ID:', groupId);
+
     toast({
       title: "Gruppe erstellt!",
       description: "Deine Gruppe wurde erfolgreich erstellt.",
     });
+
+    // Navigiere zur Gruppen-Übersicht
+    setLocation("/groups");
   };
 
   return (
@@ -115,7 +131,7 @@ export default function CreateGroup() {
                   onCheckedChange={setIsFeatured}
                   aria-label="Toggle featured status"
                 />
-                <Pin className={`h-4 w-4 ${isFeatured ? 'text-primary' : 'text-muted-foreground'}`} />
+                {/*<Pin className={`h-4 w-4 ${isFeatured ? 'text-primary' : 'text-muted-foreground'}`} />*/}
               </div>
             </div>
           )}
@@ -238,3 +254,14 @@ export default function CreateGroup() {
     </div>
   );
 }
+
+const handleAddInvite = () => {
+    if (currentInvite.trim() && !invites.includes(currentInvite.trim())) {
+      setInvites([...invites, currentInvite.trim()]);
+      setCurrentInvite("");
+    }
+  };
+
+const removeInvite = (invite: string) => {
+    setInvites(invites.filter(i => i !== invite));
+  };

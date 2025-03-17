@@ -14,6 +14,7 @@ type Group = {
 type GroupStore = {
   groups: Record<number, Group>;
   joinedGroups: number[];
+  createGroup: (group: Omit<Group, 'id'>) => number;
   joinGroup: (groupId: number) => void;
   leaveGroup: (groupId: number) => void;
   isGroupMember: (groupId: number) => boolean;
@@ -29,6 +30,22 @@ export const useGroupStore = create<GroupStore>()(
       groups: {},
       joinedGroups: [],
 
+      createGroup: (groupData) => {
+        const id = Date.now();
+        const group = { ...groupData, id };
+
+        set((state) => ({
+          groups: {
+            ...state.groups,
+            [id]: group
+          },
+          joinedGroups: [...state.joinedGroups, id]
+        }));
+
+        console.log('Group created:', group);
+        return id;
+      },
+
       joinGroup: (groupId) => 
         set((state) => ({
           joinedGroups: [...state.joinedGroups, groupId]
@@ -42,7 +59,8 @@ export const useGroupStore = create<GroupStore>()(
       isGroupMember: (groupId) =>
         get().joinedGroups.includes(groupId),
 
-      updateGroup: (groupId, data) =>
+      updateGroup: (groupId, data) => {
+        console.log('Updating group:', groupId, 'with data:', data);
         set((state) => ({
           groups: {
             ...state.groups,
@@ -51,7 +69,8 @@ export const useGroupStore = create<GroupStore>()(
               ...data
             }
           }
-        })),
+        }));
+      },
 
       addAdmin: (groupId, userId) =>
         set((state) => {
@@ -63,7 +82,7 @@ export const useGroupStore = create<GroupStore>()(
               ...state.groups,
               [groupId]: {
                 ...group,
-                adminIds: [...new Set([...group.adminIds, userId])]
+                adminIds: [...(group.adminIds || []), userId]
               }
             }
           };
@@ -79,7 +98,7 @@ export const useGroupStore = create<GroupStore>()(
               ...state.groups,
               [groupId]: {
                 ...group,
-                adminIds: group.adminIds.filter(id => id !== userId)
+                adminIds: (group.adminIds || []).filter(id => id !== userId)
               }
             }
           };
@@ -87,11 +106,14 @@ export const useGroupStore = create<GroupStore>()(
 
       isGroupAdmin: (groupId, userId) => {
         const group = get().groups[groupId];
-        return group ? (group.creatorId === userId || group.adminIds.includes(userId)) : false;
+        const isAdmin = group ? (group.creatorId === userId || (group.adminIds || []).includes(userId)) : false;
+        console.log('Checking admin status:', { groupId, userId, group, isAdmin });
+        return isAdmin;
       }
     }),
     {
-      name: 'group-storage'
+      name: 'group-storage',
+      version: 1,
     }
   )
 );
