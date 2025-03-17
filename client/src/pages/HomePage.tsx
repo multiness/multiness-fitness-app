@@ -13,7 +13,11 @@ export default function HomePage() {
     queryFn: async () => {
       try {
         console.log("Starting posts fetch...");
-        const response = await fetch('/api/posts');
+        const response = await fetch('/api/posts', {
+          headers: {
+            'Accept': 'application/json',
+          }
+        });
 
         if (!response.ok) {
           const errorText = await response.text();

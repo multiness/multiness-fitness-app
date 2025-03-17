@@ -1,7 +1,5 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
-import { insertProductSchema, insertEventExternalRegistrationSchema } from "@shared/schema";
 import { db } from "./db";
 import { posts } from "@shared/schema";
 import { eq, desc } from "drizzle-orm";
@@ -59,55 +57,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/posts/user/:userId", async (req, res) => {
-    try {
-      const userPosts = await db
-        .select()
-        .from(posts)
-        .where(eq(posts.userId, parseInt(req.params.userId)))
-        .orderBy(desc(posts.createdAt));
-      res.json(userPosts);
-    } catch (error) {
-      console.error("Error fetching user posts:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
-
-  app.patch("/api/posts/:id", async (req, res) => {
-    try {
-      const { content } = req.body;
-      const [updatedPost] = await db
-        .update(posts)
-        .set({
-          content: content.trim(),
-          updatedAt: new Date()
-        })
-        .where(eq(posts.id, parseInt(req.params.id)))
-        .returning();
-
-      if (!updatedPost) {
-        return res.status(404).json({ error: "Post not found" });
-      }
-
-      res.json(updatedPost);
-    } catch (error) {
-      console.error("Error updating post:", error);
-      res.status(500).json({ error: "Failed to update post" });
-    }
-  });
-
-  app.delete("/api/posts/:id", async (req, res) => {
-    try {
-      await db
-        .delete(posts)
-        .where(eq(posts.id, parseInt(req.params.id)));
-
-      res.json({ message: "Post deleted successfully" });
-    } catch (error) {
-      console.error("Error deleting post:", error);
-      res.status(500).json({ error: "Failed to delete post" });
-    }
-  });
 
   // Alle Produkte abrufen
   app.get("/api/products", async (req, res) => {
