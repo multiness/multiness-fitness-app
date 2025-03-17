@@ -9,19 +9,23 @@ import { eq, desc } from "drizzle-orm";
 export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/posts", async (req, res) => {
     try {
-      // Debug Logging
       console.log("GET /api/posts called");
 
-      // Einfache, direkte Abfrage
+      // Basic query with error handling
       const allPosts = await db
         .select()
         .from(posts)
         .orderBy(desc(posts.createdAt));
 
-      // Debug Logging
-      console.log("Posts fetched from database:", allPosts);
+      // Log the result
+      console.log("Posts found:", {
+        count: allPosts.length,
+        firstPost: allPosts[0],
+        lastPost: allPosts[allPosts.length - 1]
+      });
 
-      // Sende den Response
+      // Send response with explicit content type
+      res.setHeader('Content-Type', 'application/json');
       return res.status(200).json(allPosts);
     } catch (error) {
       console.error("Error fetching posts:", error);
@@ -32,6 +36,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/posts", async (req, res) => {
     try {
       const { userId, content, images, dailyGoal } = req.body;
+      console.log("Creating post with data:", { userId, content, hasImages: !!images?.length });
 
       if (!userId || !content) {
         return res.status(400).json({ error: "Missing required fields" });
@@ -46,9 +51,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         updatedAt: new Date()
       }).returning();
 
-      // Debug Logging
       console.log("New post created:", newPost);
-
       return res.status(201).json(newPost);
     } catch (error) {
       console.error("Error creating post:", error);

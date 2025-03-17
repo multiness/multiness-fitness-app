@@ -2,26 +2,48 @@ import { useQuery } from "@tanstack/react-query";
 import { Post } from "@shared/schema";
 import FeedPost from "@/components/FeedPost";
 import CreatePost from "@/components/CreatePost";
+import { usePostStore } from "../lib/postStore";
+import { useEffect } from "react";
 
 export default function HomePage() {
-  const { data: posts, isLoading, error } = useQuery<Post[]>({
+  const postStore = usePostStore();
+
+  const { data: posts = [], isLoading, error } = useQuery<Post[]>({
     queryKey: ['/api/posts'],
     queryFn: async () => {
       try {
+        console.log("Starting posts fetch...");
         const response = await fetch('/api/posts');
+
         if (!response.ok) {
-          throw new Error('Failed to fetch posts');
+          const errorText = await response.text();
+          console.error('API Error:', errorText);
+          throw new Error(`API error: ${response.status}`);
         }
+
         const data = await response.json();
-        // Debug Logging
-        console.log("Posts received:", data);
+        console.log('Posts received from API:', data);
+
+        // Initialize posts in the store
+        if (Array.isArray(data)) {
+          data.forEach(post => postStore.initializePost(post));
+        }
+
         return data;
       } catch (error) {
-        console.error("Error fetching posts:", error);
+        console.error('Error in posts query:', error);
         throw error;
       }
     },
+    refetchInterval: 5000 // Refresh every 5 seconds
   });
+
+  // Debug logging
+  useEffect(() => {
+    if (Array.isArray(posts)) {
+      console.log('Current posts:', posts);
+    }
+  }, [posts]);
 
   if (isLoading) {
     return (
@@ -32,19 +54,24 @@ export default function HomePage() {
   }
 
   if (error) {
-    console.error("Error in HomePage:", error);
     return (
       <div className="text-center text-red-500 p-4">
-        Fehler beim Laden der Beiträge. Bitte aktualisieren Sie die Seite.
+        <div>Fehler beim Laden der Beiträge</div>
+        <div className="text-sm mt-2">{error.message}</div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-4 space-y-6">
+    <div className="max-w-2xl mx-auto p-4">
       <CreatePost />
-      <div className="space-y-6">
-        {posts && posts.length > 0 ? (
+      <div className="mt-6 space-y-4">
+        {/* Debug info */}
+        <div className="bg-muted p-2 rounded text-sm">
+          Posts geladen: {posts.length}
+        </div>
+
+        {Array.isArray(posts) && posts.length > 0 ? (
           posts.map((post) => (
             <FeedPost key={post.id} post={post} />
           ))
