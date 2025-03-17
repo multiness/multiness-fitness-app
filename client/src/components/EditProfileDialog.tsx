@@ -15,16 +15,11 @@ import { ImagePlus } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 
-const MAX_IMAGE_SIZE = 400; // Reduzierte maximale Dimension
+const MAX_IMAGE_SIZE = 200; // Kleinere maximale Dimension für bessere Komprimierung
 const MAX_FILE_SIZE = 500 * 1024; // 500KB maximale Dateigröße
 
-const compressImage = (file: File, maxSize: number): Promise<string> => {
+const compressImage = async (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
-    if (file.size > MAX_FILE_SIZE) {
-      reject(new Error("Datei ist zu groß (max. 500KB)"));
-      return;
-    }
-
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = (event) => {
@@ -35,27 +30,43 @@ const compressImage = (file: File, maxSize: number): Promise<string> => {
         let width = img.width;
         let height = img.height;
 
-        // Calculate new dimensions while maintaining aspect ratio
-        if (width > height && width > maxSize) {
-          height = (height * maxSize) / width;
-          width = maxSize;
-        } else if (height > maxSize) {
-          width = (width * maxSize) / height;
-          height = maxSize;
+        // Berechne neue Dimensionen unter Beibehaltung des Seitenverhältnisses
+        if (width > height && width > MAX_IMAGE_SIZE) {
+          height = Math.round((height * MAX_IMAGE_SIZE) / width);
+          width = MAX_IMAGE_SIZE;
+        } else if (height > MAX_IMAGE_SIZE) {
+          width = Math.round((width * MAX_IMAGE_SIZE) / height);
+          height = MAX_IMAGE_SIZE;
         }
 
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
-        ctx?.drawImage(img, 0, 0, width, height);
+
+        // Aktiviere Bildglättung für bessere Qualität
+        if (ctx) {
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, width, height);
+        }
 
         // Stärkere Kompression mit WebP
-        const compressedImage = canvas.toDataURL('image/webp', 0.6);
+        const compressedImage = canvas.toDataURL('image/webp', 0.4);
+
+        // Überprüfe die Größe des komprimierten Bildes
+        const base64Length = compressedImage.length - (compressedImage.indexOf(',') + 1);
+        const size = (base64Length * 3) / 4;
+
+        if (size > MAX_FILE_SIZE) {
+          reject(new Error("Das Bild ist zu groß. Bitte versuche es mit einem kleineren Bild."));
+          return;
+        }
+
         resolve(compressedImage);
       };
-      img.onerror = reject;
+      img.onerror = () => reject(new Error("Fehler beim Laden des Bildes"));
     };
-    reader.onerror = reject;
+    reader.onerror = () => reject(new Error("Fehler beim Lesen der Datei"));
   });
 };
 
@@ -103,7 +114,7 @@ export default function EditProfileDialog({ user, open, onOpenChange, onSave }: 
 
   const handleImageUpload = async (file: File, isAvatar: boolean) => {
     try {
-      const compressedImage = await compressImage(file, MAX_IMAGE_SIZE);
+      const compressedImage = await compressImage(file);
       if (isAvatar) {
         setAvatarPreview(compressedImage);
         form.setValue("avatar", compressedImage);
@@ -114,7 +125,7 @@ export default function EditProfileDialog({ user, open, onOpenChange, onSave }: 
     } catch (error) {
       toast({
         title: "Fehler beim Bildupload",
-        description: error instanceof Error ? error.message : "Bitte versuche es mit einem kleineren Bild (max. 500KB).",
+        description: error instanceof Error ? error.message : "Bitte versuche es erneut.",
         variant: "destructive",
       });
     }
@@ -179,9 +190,6 @@ export default function EditProfileDialog({ user, open, onOpenChange, onSave }: 
                     <ImagePlus className="h-4 w-4" />
                   </Label>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Maximale Dateigröße: 500KB
-                </p>
               </div>
 
               {/* Avatar Upload */}
@@ -207,9 +215,6 @@ export default function EditProfileDialog({ user, open, onOpenChange, onSave }: 
                     <ImagePlus className="h-4 w-4" />
                     Profilbild ändern
                   </Label>
-                  <p className="text-xs text-muted-foreground text-center mt-1">
-                    Maximale Dateigröße: 500KB
-                  </p>
                 </div>
               </div>
 
