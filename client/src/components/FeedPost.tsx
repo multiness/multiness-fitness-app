@@ -29,15 +29,22 @@ import { UserAvatar } from "@/components/UserAvatar";
 import DailyGoalDisplay from './DailyGoalDisplay';
 
 interface FeedPostProps {
-  post: Post & { dailyGoal?: {
-    type: 'water' | 'steps' | 'distance' | 'custom';
-    target: number;
-    unit: string;
-    progress: number;
-    completed: boolean;
-    customName?: string;
+  post: {
+    id: number;
+    userId: number;
+    content: string;
+    image?: string | null;
     createdAt: Date;
-  }};
+    dailyGoal?: {
+      type: 'water' | 'steps' | 'distance' | 'custom';
+      target: number;
+      unit: string;
+      progress: number;
+      completed: boolean;
+      customName?: string;
+      createdAt: Date;
+    };
+  };
 }
 
 export default function FeedPost({ post }: FeedPostProps) {

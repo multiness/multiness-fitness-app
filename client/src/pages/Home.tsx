@@ -5,8 +5,8 @@ import GroupPreview from "@/components/GroupPreview";
 import ChallengeCard from "@/components/ChallengeCard";
 import FeedPost from "@/components/FeedPost";
 import EventSlider from "@/components/EventSlider";
-import { ArrowRight, Crown, Heart, Share2, Users, Trophy, Package } from "lucide-react"; // Added Package import
-import { mockGroups, mockChallenges, mockPosts, mockUsers, mockProducts } from "../data/mockData"; // Added mockProducts import
+import { ArrowRight, Crown, Heart, Share2, Users, Trophy, Package } from "lucide-react";
+import { mockGroups, mockChallenges, mockUsers, mockProducts } from "../data/mockData";
 import { useLocation, Link } from "wouter";
 import { usePostStore } from "../lib/postStore";
 import { getChatId } from "../lib/chatService";
@@ -21,7 +21,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import GroupCarousel from "@/components/GroupCarousel";
 import { UserAvatar } from "@/components/UserAvatar";
-import ProductSlider from "@/components/ProductSlider"; // Added ProductSlider import
+import ProductSlider from "@/components/ProductSlider";
 
 
 const format = (date: Date, formatStr: string) => {
@@ -35,8 +35,8 @@ export default function Home() {
     challenge => new Date() <= new Date(challenge.endDate)
   );
 
-  // Kombiniere Mock-Posts und sortiere sie nach Datum
-  const allPosts = [...mockPosts].sort((a, b) =>
+  // Lade Posts aus dem postStore statt mockPosts
+  const allPosts = Object.values(postStore.posts).sort((a, b) =>
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
