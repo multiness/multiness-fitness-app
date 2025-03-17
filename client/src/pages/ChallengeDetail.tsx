@@ -1,17 +1,17 @@
+import { useState, useEffect } from "react";
 import { useParams } from "wouter";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Gift, Trophy, Timer, Users, Calendar, Crown } from "lucide-react";
 import { format } from "date-fns";
-import { mockChallenges, mockUsers } from "../data/mockData";
+import { mockChallenges } from "../data/mockData";
 import { de } from "date-fns/locale";
-import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { UserAvatar } from "@/components/UserAvatar";
-import { useEffect } from "react";
+import { useUsers } from "../contexts/UserContext";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 
 
 interface WorkoutExercise {
@@ -29,9 +29,9 @@ interface WorkoutDetails {
 export default function ChallengeDetail() {
   const { id } = useParams();
   const { toast } = useToast();
+  const { users, currentUser } = useUsers();
   const challenge = mockChallenges.find(c => c.id === parseInt(id || ""));
-  const creator = challenge ? mockUsers.find(u => u.id === challenge.creatorId) : null;
-  const currentUser = mockUsers[0];
+  const creator = challenge ? users.find(u => u.id === challenge.creatorId) : null;
 
   const [isParticipating, setIsParticipating] = useState(false);
   const [showResultForm, setShowResultForm] = useState(false);
@@ -44,7 +44,7 @@ export default function ChallengeDetail() {
   const isEnded = currentDate > challenge.endDate;
   const workoutDetails = challenge.workoutDetails as WorkoutDetails;
 
-  const participants = mockUsers.map(user => ({
+  const participants = users.map(user => ({
     ...user,
     points: Math.floor(Math.random() * 1000),
   })).sort((a, b) => b.points - a.points);
