@@ -31,12 +31,13 @@ const compressImage = async (file: File): Promise<string> => {
         let height = img.height;
 
         // Berechne neue Dimensionen unter Beibehaltung des Seitenverhältnisses
-        if (width > height && width > MAX_IMAGE_SIZE) {
-          height = Math.round((height * MAX_IMAGE_SIZE) / width);
-          width = MAX_IMAGE_SIZE;
-        } else if (height > MAX_IMAGE_SIZE) {
-          width = Math.round((width * MAX_IMAGE_SIZE) / height);
-          height = MAX_IMAGE_SIZE;
+        const ratio = width / height;
+        if (width > height) {
+          width = Math.min(width, MAX_IMAGE_SIZE);
+          height = Math.round(width / ratio);
+        } else {
+          height = Math.min(height, MAX_IMAGE_SIZE);
+          width = Math.round(height * ratio);
         }
 
         canvas.width = width;
