@@ -3,14 +3,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, Send, Image as ImageIcon, ArrowLeft, Users, Plus, FileText, Video, Target } from "lucide-react";
-import { mockUsers, mockGroups } from "../data/mockData";
+import { Search, Send, Image as ImageIcon, ArrowLeft, Users2, Plus, FileText, Video, Target } from "lucide-react";
+import { mockUsers } from "../data/mockData";
 import { format } from "date-fns";
 import { useChatStore, getChatId } from "../lib/chatService";
 import { usePostStore } from "../lib/postStore";
 import { UserAvatar } from "@/components/UserAvatar";
 import { Progress } from "@/components/ui/progress";
 import { useLocation, useParams } from "wouter";
+import { useGroupStore } from "../lib/groupStore";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,6 +46,7 @@ export default function Chat() {
   const { id } = useParams();
   const chatStore = useChatStore();
   const postStore = usePostStore();
+  const groupStore = useGroupStore();
   const currentUser = mockUsers[0];
 
   const [messageInput, setMessageInput] = useState("");
@@ -53,7 +55,12 @@ export default function Chat() {
   const [isAddProgressModalOpen, setIsAddProgressModalOpen] = useState(false);
   const [isPerformanceBoardOpen, setIsPerformanceBoardOpen] = useState(false);
 
-  const chatPreviews: ChatPreview[] = [
+  // Get all groups from groupStore
+  const groups = Object.values(groupStore.groups);
+  console.log("Available groups in chat:", groups);
+
+  // Create chat previews from real groups and mock users
+  const chatPreviews = [
     ...mockUsers.slice(1).map(user => {
       const chatId = user.id.toString();
       const messages = chatStore.getMessages(chatId);
@@ -68,7 +75,7 @@ export default function Chat() {
         unreadCount,
       };
     }),
-    ...mockGroups.map(group => {
+    ...groups.map(group => {
       const chatId = getChatId(group.id);
       const messages = chatStore.getMessages(chatId);
       const unreadCount = messages.filter(m => m.userId !== currentUser.id).length;
@@ -230,7 +237,7 @@ export default function Chat() {
                     />
                     {chat.isGroup && (
                       <span className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-1">
-                        <Users className="h-3 w-3 text-white" />
+                        <Users2 className="h-3 w-3 text-white" />
                       </span>
                     )}
                     {!chat.isGroup && chat.isOnline && (
