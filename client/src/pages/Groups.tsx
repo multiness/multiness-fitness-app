@@ -2,50 +2,42 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, Users, Plus, Pin } from "lucide-react";
-import GroupPreview from "@/components/GroupPreview";
+import { Search, Users2, Plus } from "lucide-react";
 import { useUsers } from "../contexts/UserContext";
 import { useGroupStore } from "../lib/groupStore";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
+import { Card, CardContent } from "@/components/ui/card";
+import { getChatId } from "../lib/chatService";
+import { UserAvatar } from "@/components/UserAvatar";
+import { Badge } from "@/components/ui/badge";
+import { mockUsers } from "../data/mockData";
 
 export default function Groups() {
   const [searchQuery, setSearchQuery] = useState("");
   const { currentUser } = useUsers();
   const groupStore = useGroupStore();
+  const [, setLocation] = useLocation();
   const groups = Object.values(groupStore.groups);
 
   console.log("Available groups:", groups);
 
-  // Featured Group wird als erste Gruppe angezeigt
-  const featuredGroup = groups.find(g => g.isFeatured);
-  const regularGroups = groups.filter(g => !g.isFeatured);
-
-  const handleToggleFeatured = (groupId: number) => {
-    const group = groupStore.groups[groupId];
-    if (group) {
-      // Entferne den Featured-Status von allen anderen Gruppen
-      Object.values(groupStore.groups).forEach(g => {
-        if (g.id !== groupId && g.isFeatured) {
-          groupStore.updateGroup(g.id, { isFeatured: false });
-        }
-      });
-
-      // Setze den Featured-Status für die ausgewählte Gruppe
-      groupStore.updateGroup(groupId, { isFeatured: !group.isFeatured });
-    }
-  };
-
-  const filteredGroups = regularGroups.filter(group =>
+  const filteredGroups = groups.filter(group =>
     group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     group.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const navigateToGroupChat = (groupId: number) => {
+    const chatId = getChatId(groupId);
+    console.log('Navigating to group chat:', chatId);
+    setLocation(`/chat/${chatId}`);
+  };
 
   return (
     <div className="container max-w-4xl mx-auto p-4 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Users className="h-6 w-6 text-primary" />
+          <Users2 className="h-6 w-6 text-primary" />
           <h1 className="text-2xl font-bold">Gruppen</h1>
         </div>
         <Link href="/create/group">
@@ -67,59 +59,76 @@ export default function Groups() {
         />
       </div>
 
-      {/* Featured Group */}
-      {featuredGroup && (
-        <div className="relative mb-6 rounded-lg overflow-hidden group">
-          <img
-            src={featuredGroup.image || "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=1200&auto=format"}
-            alt={featuredGroup.name}
-            className="w-full h-48 object-cover transition-transform group-hover:scale-105"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 p-4">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                {featuredGroup.name}
-                <Pin className="h-4 w-4 text-primary" />
-              </h2>
-              {currentUser?.isAdmin && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => handleToggleFeatured(featuredGroup.id)}
-                >
-                  Featured entfernen
-                </Button>
-              )}
-            </div>
-            <p className="text-white/90 mb-4">{featuredGroup.description}</p>
-            <Button variant="secondary">
-              <Users className="h-4 w-4 mr-2" />
-              Gruppe beitreten
-            </Button>
-          </div>
-        </div>
-      )}
-
       {/* Groups Grid */}
       <ScrollArea className="h-[calc(100vh-300px)]">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {filteredGroups.map(group => (
-            <div key={group.id} className="relative">
-              <GroupPreview group={group} />
-              {currentUser?.isAdmin && !group.isFeatured && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="absolute top-2 right-2 bg-background/50 backdrop-blur-sm hover:bg-background/80"
-                  onClick={() => handleToggleFeatured(group.id)}
-                >
-                  <Pin className="h-4 w-4 mr-1" />
-                  Featured
-                </Button>
-              )}
-            </div>
-          ))}
+        <div className="grid grid-cols-1 gap-4">
+          {filteredGroups.map(group => {
+            const isCreator = group.creatorId === currentUser?.id;
+            const isAdmin = group.adminIds?.includes(currentUser?.id || 0);
+
+            return (
+              <Card 
+                key={group.id}
+                className="cursor-pointer hover:shadow-lg transition-shadow"
+                onClick={() => navigateToGroupChat(group.id)}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-4">
+                    {group.image ? (
+                      <img 
+                        src={group.image} 
+                        alt={group.name}
+                        className="w-16 h-16 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
+                        <Users2 className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                    )}
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h3 className="font-semibold text-lg">{group.name}</h3>
+                          <p className="text-sm text-muted-foreground line-clamp-2">{group.description}</p>
+                        </div>
+                        <Badge variant={isCreator ? "default" : "secondary"} className="ml-2">
+                          {isCreator ? 'Admin' : (isAdmin ? 'Co-Admin' : 'Mitglied')}
+                        </Badge>
+                      </div>
+
+                      <div className="mt-2 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="flex -space-x-2">
+                            {group.participantIds?.slice(0, 3).map((participantId) => {
+                              const participant = mockUsers.find(u => u.id === participantId);
+                              return participant ? (
+                                <UserAvatar
+                                  key={participant.id}
+                                  userId={participant.id}
+                                  avatar={participant.avatar}
+                                  username={participant.username}
+                                  size="sm"
+                                />
+                              ) : null;
+                            })}
+                            {(group.participantIds?.length || 0) > 3 && (
+                              <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm">
+                                +{(group.participantIds?.length || 0) - 3}
+                              </div>
+                            )}
+                          </div>
+                          <span className="text-sm text-muted-foreground">
+                            {group.participantIds?.length || 0} Mitglieder
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       </ScrollArea>
     </div>

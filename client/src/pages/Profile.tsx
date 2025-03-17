@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MessageSquare, Trophy, Users2, ArrowRight, Pencil } from "lucide-react";
 import FeedPost from "@/components/FeedPost";
-import { mockUsers, mockChallenges } from "../data/mockData"; 
+import { mockUsers, mockChallenges } from "../data/mockData";
 import { Badge } from "@/components/ui/badge";
 import EditProfileDialog from "@/components/EditProfileDialog";
 import { usePostStore } from "../lib/postStore";
@@ -42,13 +42,14 @@ export default function Profile() {
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   const userChallenges = mockChallenges.filter(c => c.creatorId === userId || c.participantIds?.includes(userId));
-  
+
+  // Hole die Gruppen aus dem groupStore
   const userGroups = Object.values(groupStore.groups)
     .filter(g => g.creatorId === userId || g.participantIds?.includes(userId));
 
-  console.log('Current groups in store:', groupStore.groups);
-  console.log('User groups:', userGroups);
   console.log('Current user ID:', userId);
+  console.log('User groups:', userGroups);
+  console.log('All groups in store:', groupStore.groups);
 
   const activeUserChallenges = userChallenges.filter(c => new Date() <= new Date(c.endDate));
 
@@ -68,6 +69,7 @@ export default function Profile() {
 
   const navigateToGroupChat = (groupId: number) => {
     const chatId = getChatId(groupId);
+    console.log('Navigating to group chat:', chatId);
     setLocation(`/chat/${chatId}`);
   };
 
@@ -83,15 +85,22 @@ export default function Profile() {
 
   return (
     <div className="container max-w-4xl mx-auto p-4">
-      {/* Profile Header - unchanged */}
-
-      {/* Content Tabs */}
+      {/* Profile Header und andere Tabs bleiben unverändert */}
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="mt-6">
-        {/* TabsList - unchanged */}
-
-        {/* Posts TabContent - unchanged */}
-
-        {/* Challenges TabContent - unchanged */}
+        <TabsList className="grid w-full grid-cols-3 mb-4">
+          <TabsTrigger value="posts" className="flex items-center gap-2">
+            <MessageSquare className="h-4 w-4" />
+            Beiträge
+          </TabsTrigger>
+          <TabsTrigger value="challenges" className="flex items-center gap-2">
+            <Trophy className="h-4 w-4" />
+            Challenges
+          </TabsTrigger>
+          <TabsTrigger value="groups" className="flex items-center gap-2">
+            <Users2 className="h-4 w-4" />
+            Gruppen
+          </TabsTrigger>
+        </TabsList>
 
         {/* Groups Tab */}
         <TabsContent value="groups" className="space-y-4">
@@ -184,6 +193,22 @@ export default function Profile() {
           ) : (
             <p className="text-center text-muted-foreground">Keine Gruppen gefunden</p>
           )}
+        </TabsContent>
+        <TabsContent value="posts">
+          {/* Posts TabContent */}
+          {userPosts.map((post) => (
+            <FeedPost key={post.id} post={post} />
+          ))}
+        </TabsContent>
+        <TabsContent value="challenges">
+          {/* Challenges TabContent */}
+          {activeUserChallenges.map((challenge) => (
+            <div key={challenge.id} className="flex items-center gap-2">
+              <Button onClick={() => navigateToChallenge(challenge.id)}>
+                {challenge.title}
+              </Button>
+            </div>
+          ))}
         </TabsContent>
       </Tabs>
 
