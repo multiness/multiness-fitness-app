@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Grid3X3, Trophy, Users2, Image } from "lucide-react";
 import FeedPost from "@/components/FeedPost";
-import { mockUsers, mockPosts, mockChallenges, mockGroups } from "../data/mockData";
+import { mockUsers, mockChallenges, mockGroups } from "../data/mockData";
 import { Badge } from "@/components/ui/badge";
 import EditProfileDialog from "@/components/EditProfileDialog";
 import { usePostStore } from "../lib/postStore";
@@ -20,17 +20,21 @@ export default function Profile() {
   const { currentUser } = useUsers();
   const userId = parseInt(id || "1");
   const [user, setUser] = useState(() => mockUsers.find(u => u.id === userId));
-  const userPosts = mockPosts.filter(p => p.userId === userId);
+  const postStore = usePostStore();
+
+  // Verwende Posts aus dem postStore statt mockPosts
+  const userPosts = Object.values(postStore.posts)
+    .filter(p => p.userId === userId)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
   const userChallenges = mockChallenges.filter(c => c.creatorId === userId);
   const userGroups = mockGroups.filter(g => g.participantIds?.includes(userId));
   const activeUserChallenges = userChallenges.filter(c => new Date() <= new Date(c.endDate));
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedTab, setSelectedTab] = useState("all");
-  const postStore = usePostStore();
   const activeGoal = postStore.getDailyGoal(userId);
 
   useEffect(() => {
-    // Scroll to top when profile loads or changes
     window.scrollTo(0, 0);
   }, [userId]);
 
@@ -46,11 +50,13 @@ export default function Profile() {
     });
   };
 
+  // Filtere Posts mit Bilder für den Medien-Tab
+  const mediaPosts = userPosts.filter(post => post.image);
+
   return (
     <div className="container max-w-4xl mx-auto p-4">
       {/* Profile Header */}
       <div className="relative mb-8">
-        {/* Cover Image */}
         <div className="h-32 bg-gradient-to-r from-primary/20 to-primary/10 rounded-t-lg" />
 
         <div className="flex flex-col items-center -mt-12">
@@ -70,7 +76,6 @@ export default function Profile() {
           <h1 className="text-2xl font-bold mt-4">{user.name}</h1>
           <h2 className="text-lg text-muted-foreground">@{user.username}</h2>
 
-          {/* Bio */}
           {user.bio && (
             <p className="text-center mt-2 max-w-md text-muted-foreground">{user.bio}</p>
           )}
@@ -177,18 +182,16 @@ export default function Profile() {
         </TabsContent>
 
         <TabsContent value="media" className="space-y-4">
-          {userPosts.filter(post => post.image).length > 0 ? (
+          {mediaPosts.length > 0 ? (
             <div className="grid gap-4 grid-cols-3">
-              {userPosts
-                .filter(post => post.image)
-                .map(post => (
-                  <img
-                    key={post.id}
-                    src={post.image || ''}
-                    alt=""
-                    className="w-full aspect-square object-cover rounded-lg"
-                  />
-                ))}
+              {mediaPosts.map(post => (
+                <img
+                  key={post.id}
+                  src={post.image || ''}
+                  alt=""
+                  className="w-full aspect-square object-cover rounded-lg"
+                />
+              ))}
             </div>
           ) : (
             <p className="text-center text-muted-foreground">Keine Medien gefunden</p>
