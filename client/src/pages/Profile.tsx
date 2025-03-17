@@ -1,6 +1,6 @@
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { useState, useEffect } from "react";
-import { useParams, useLocation } from "wouter";
+import { useParams } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MessageSquare, Trophy, Users2, ArrowRight, Pencil } from "lucide-react";
@@ -10,8 +10,6 @@ import { Badge } from "@/components/ui/badge";
 import EditProfileDialog from "@/components/EditProfileDialog";
 import { usePostStore } from "../lib/postStore";
 import DailyGoalDisplay from "@/components/DailyGoalDisplay";
-import { format } from 'date-fns';
-import { de } from 'date-fns/locale';
 import { useUsers } from "../contexts/UserContext";
 import { UserAvatar } from "@/components/UserAvatar";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,10 +21,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function Profile() {
   const { id } = useParams();
-  const { currentUser } = useUsers();
-  const [, setLocation] = useLocation();
+  const { currentUser, updateCurrentUser, users } = useUsers();
   const userId = parseInt(id || "1");
-  const [user, setUser] = useState(() => mockUsers.find(u => u.id === userId));
+  const [user, setUser] = useState(() => 
+    userId === currentUser?.id 
+      ? currentUser 
+      : users.find(u => u.id === userId)
+  );
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedTab, setSelectedTab] = useState("posts");
   const postStore = usePostStore();
@@ -63,6 +64,10 @@ export default function Profile() {
     avatar?: string;
     bannerImage?: string;
   }) => {
+    if (userId === currentUser?.id) {
+      // Wenn es der aktuelle Benutzer ist, aktualisiere über den Context
+      updateCurrentUser(updatedData);
+    }
     setUser(currentUser => {
       if (!currentUser) return currentUser;
       return {
@@ -73,13 +78,13 @@ export default function Profile() {
   };
 
   const navigateToChallenge = (challengeId: number) => {
-    setLocation(`/challenges/${challengeId}`);
+    //setLocation(`/challenges/${challengeId}`);
   };
 
   const navigateToGroupChat = (groupId: number) => {
     const chatId = getChatId(groupId);
     console.log('Navigating to group chat:', chatId);
-    setLocation(`/chat/${chatId}`);
+    //setLocation(`/chat/${chatId}`);
   };
 
   const handleEditGroup = (group: any, event: React.MouseEvent) => {

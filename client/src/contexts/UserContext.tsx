@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { mockUsers } from "../data/mockData";
 
 type User = {
@@ -7,6 +7,7 @@ type User = {
   name: string;
   bio: string | null;
   avatar: string | null;
+  bannerImage?: string | null;
   isAdmin: boolean;
   isVerified: boolean;
   isTeamMember: boolean;
@@ -16,15 +17,47 @@ type User = {
 interface UserContextType {
   users: User[];
   currentUser: User | null;
+  updateCurrentUser: (userData: Partial<User>) => void;
   toggleVerification: (userId: number) => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
+const STORAGE_KEY = 'fitness-app-user';
+
 export function UserProvider({ children }: { children: ReactNode }) {
-  const [users, setUsers] = useState(mockUsers);
-  // Setze den ersten User als currentUser (für Demo-Zwecke)
-  const [currentUser] = useState(mockUsers[0]);
+  // Versuche zuerst, den gespeicherten Benutzer aus dem localStorage zu laden
+  const loadInitialUser = () => {
+    const savedUser = localStorage.getItem(STORAGE_KEY);
+    if (savedUser) {
+      const parsedUser = JSON.parse(savedUser);
+      // Aktualisiere den entsprechenden Mock-User mit den gespeicherten Daten
+      const updatedMockUsers = mockUsers.map(user =>
+        user.id === parsedUser.id ? { ...user, ...parsedUser } : user
+      );
+      return { savedUser: parsedUser, updatedUsers: updatedMockUsers };
+    }
+    return { savedUser: mockUsers[0], updatedUsers: mockUsers };
+  };
+
+  const { savedUser, updatedUsers } = loadInitialUser();
+  const [users, setUsers] = useState(updatedUsers);
+  const [currentUser, setCurrentUser] = useState(savedUser);
+
+  const updateCurrentUser = (userData: Partial<User>) => {
+    if (!currentUser) return;
+
+    const updatedUser = { ...currentUser, ...userData };
+    setCurrentUser(updatedUser);
+
+    // Aktualisiere auch den Benutzer in der users-Liste
+    setUsers(users.map(user =>
+      user.id === currentUser.id ? updatedUser : user
+    ));
+
+    // Speichere die Änderungen im localStorage
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedUser));
+  };
 
   const toggleVerification = (userId: number) => {
     setUsers(users.map(user =>
@@ -34,8 +67,15 @@ export function UserProvider({ children }: { children: ReactNode }) {
     ));
   };
 
+  // Speichere Änderungen am currentUser automatisch
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(currentUser));
+    }
+  }, [currentUser]);
+
   return (
-    <UserContext.Provider value={{ users, currentUser, toggleVerification }}>
+    <UserContext.Provider value={{ users, currentUser, updateCurrentUser, toggleVerification }}>
       {children}
     </UserContext.Provider>
   );
