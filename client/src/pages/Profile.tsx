@@ -15,6 +15,7 @@ import { de } from 'date-fns/locale';
 import { useUsers } from "../contexts/UserContext";
 import { UserAvatar } from "@/components/UserAvatar";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { getChatId } from "../lib/chatService";
 
 export default function Profile() {
   const { id } = useParams();
@@ -56,8 +57,9 @@ export default function Profile() {
     setLocation(`/challenges/${challengeId}`);
   };
 
-  const navigateToGroup = (groupId: number) => {
-    setLocation(`/groups/${groupId}`);
+  const navigateToGroupChat = (groupId: number) => {
+    const chatId = getChatId(groupId);
+    setLocation(`/chat/${chatId}`);
   };
 
   return (
@@ -213,13 +215,13 @@ export default function Profile() {
                 <Card 
                   key={group.id}
                   className="cursor-pointer hover:shadow-lg transition-shadow"
-                  onClick={() => navigateToGroup(group.id)}
+                  onClick={() => navigateToGroupChat(group.id)}
                 >
                   <CardContent className="p-4">
                     <div className="flex items-center gap-4">
-                      {group.avatar ? (
+                      {group.image ? (
                         <img 
-                          src={group.avatar} 
+                          src={group.image} 
                           alt={group.name}
                           className="w-16 h-16 rounded-full object-cover"
                         />
@@ -266,7 +268,7 @@ export default function Profile() {
                             </span>
                           </div>
                           <Button variant="ghost" size="sm" className="gap-1">
-                            Details <ArrowRight className="h-4 w-4" />
+                            Chat öffnen <ArrowRight className="h-4 w-4" />
                           </Button>
                         </div>
                       </div>
