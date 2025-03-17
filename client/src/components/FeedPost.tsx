@@ -1,22 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { 
-  Heart, 
-  MessageCircle, 
-  Share2, 
-  MoreHorizontal, 
-  AlertTriangle, 
-  Send, 
-  Pencil, 
-  Trash2,
-  ChevronLeft,
-  ChevronRight 
-} from "lucide-react";
+import { Heart, MessageCircle, Share2, MoreHorizontal, AlertTriangle, Send, Pencil, Trash2 } from "lucide-react";
 import { Post } from "@shared/schema";
 import { mockUsers } from "../data/mockData";
-import { format } from 'date-fns';
-import { de } from 'date-fns/locale';
+import { format } from "date-fns";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,84 +27,27 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { UserAvatar } from "@/components/UserAvatar";
 import DailyGoalDisplay from './DailyGoalDisplay';
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
 
 interface FeedPostProps {
   post: Post;
 }
 
-export default function FeedPost({ post: initialPost }: FeedPostProps) {
+export default function FeedPost({ post }: FeedPostProps) {
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [reportReason, setReportReason] = useState("");
-  const [editContent, setEditContent] = useState(initialPost.content);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [editContent, setEditContent] = useState(post.content);
   const [showAllComments, setShowAllComments] = useState(false);
   const [newComment, setNewComment] = useState("");
   const { toast } = useToast();
   const { currentUser } = useUsers();
   const postStore = usePostStore();
-  const queryClient = useQueryClient();
-
-  // Lade den Post aus der Datenbank
-  const { data: post = initialPost, isLoading } = useQuery({
-    queryKey: ['/api/posts', initialPost.id],
-    queryFn: async () => {
-      try {
-        const response = await fetch(`/api/posts/${initialPost.id}`);
-        if (!response.ok) {
-          if (response.status === 404) {
-            // Post wurde gelöscht, aus dem Store und Cache entfernen
-            postStore.deletePost(initialPost.id);
-            queryClient.setQueryData(['/api/posts'], (oldData: Post[] = []) => 
-              oldData.filter(p => p.id !== initialPost.id)
-            );
-            return null;
-          }
-          throw new Error('Failed to fetch post');
-        }
-        const data = await response.json();
-        return data;
-      } catch (error) {
-        console.error("Error fetching post:", error);
-        return null; // Bei Fehler null zurückgeben
-      }
-    },
-    retry: false, // Keine Wiederholungsversuche bei Fehlern
-    staleTime: 30000, // Cache für 30 Sekunden behalten
-  });
-
-  const isLiked = postStore.hasLiked(post?.id || initialPost.id, currentUser?.id || 1);
-  const likes = postStore.getLikes(post?.id || initialPost.id);
-  const comments = postStore.getComments(post?.id || initialPost.id);
-  const user = mockUsers.find(u => u.id === (post?.userId || initialPost.userId));
-  const isOwnPost = currentUser?.id === (post?.userId || initialPost.userId);
-
-  useEffect(() => {
-    if (post) {
-      setEditContent(post.content);
-    }
-  }, [post]);
-
-  // Wenn der Post nicht mehr existiert, nichts anzeigen
-  if (!post) {
-    return null;
-  }
-
-  const formatDate = (date: Date | string) => {
-    try {
-      const dateObj = typeof date === 'string' ? new Date(date) : date;
-      if (isNaN(dateObj.getTime())) {
-        return 'Ungültiges Datum';
-      }
-      return format(dateObj, "dd. MMM yyyy", { locale: de });
-    } catch (error) {
-      console.error("Fehler beim Formatieren des Datums:", error);
-      return 'Ungültiges Datum';
-    }
-  };
+  const isLiked = postStore.hasLiked(post.id, currentUser?.id || 1);
+  const likes = postStore.getLikes(post.id);
+  const comments = postStore.getComments(post.id);
+  const user = mockUsers.find(u => u.id === post.userId);
+  const isOwnPost = currentUser?.id === post.userId;
 
   const handleLike = () => {
     const userId = currentUser?.id || 1;
@@ -131,73 +62,22 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
     }
   };
 
-  const handleEdit = async () => {
-    try {
-      const response = await apiRequest("PATCH", `/api/posts/${post.id}`, {
-        content: editContent
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update post');
-      }
-
-      const updatedPost = await response.json();
-
-      // Update sowohl im Store als auch im Cache
-      postStore.updatePost(post.id, editContent);
-      queryClient.setQueryData(['/api/posts', post.id], updatedPost);
-
-      // Invalidiere auch die Posts-Liste
-      await queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
-
-      setIsEditDialogOpen(false);
-      toast({
-        title: "Post bearbeitet",
-        description: "Dein Post wurde erfolgreich aktualisiert.",
-      });
-    } catch (error) {
-      console.error('Error updating post:', error);
-      toast({
-        title: "Fehler",
-        description: "Dein Post konnte nicht aktualisiert werden.",
-        variant: "destructive",
-      });
-    }
+  const handleEdit = () => {
+    postStore.updatePost(post.id, editContent);
+    setIsEditDialogOpen(false);
+    toast({
+      title: "Post bearbeitet",
+      description: "Dein Post wurde erfolgreich aktualisiert.",
+    });
   };
 
-  const handleDelete = async () => {
-    try {
-      const response = await apiRequest("DELETE", `/api/posts/${post.id}`);
-
-      // Wenn der Post nicht gefunden wird (404), nehmen wir an, dass er bereits gelöscht wurde
-      if (!response.ok && response.status !== 404) {
-        throw new Error('Failed to delete post');
-      }
-
-      // Post aus dem Store und Query-Cache entfernen
-      postStore.deletePost(post.id);
-
-      // Aktualisiere die Postliste im Cache
-      queryClient.setQueryData(['/api/posts'], (oldData: Post[] = []) => 
-        oldData.filter(p => p.id !== post.id)
-      );
-
-      // Entferne den einzelnen Post aus dem Cache
-      queryClient.removeQueries({ queryKey: ['/api/posts', post.id] });
-
-      setIsDeleteDialogOpen(false);
-      toast({
-        title: "Post gelöscht",
-        description: "Dein Post wurde erfolgreich gelöscht.",
-      });
-    } catch (error) {
-      console.error('Error deleting post:', error);
-      toast({
-        title: "Fehler",
-        description: "Dein Post konnte nicht gelöscht werden.",
-        variant: "destructive",
-      });
-    }
+  const handleDelete = () => {
+    postStore.deletePost(post.id);
+    setIsDeleteDialogOpen(false);
+    toast({
+      title: "Post gelöscht",
+      description: "Dein Post wurde erfolgreich gelöscht.",
+    });
   };
 
   const handleComment = (e: React.FormEvent) => {
@@ -219,18 +99,7 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
     });
   };
 
-  const nextImage = () => {
-    if (post.images && currentImageIndex < post.images.length - 1) {
-      setCurrentImageIndex(prev => prev + 1);
-    }
-  };
-
-  const prevImage = () => {
-    if (currentImageIndex > 0) {
-      setCurrentImageIndex(prev => prev - 1);
-    }
-  };
-
+  // Nehme die letzten 2 Kommentare für die Vorschau
   const previewComments = comments.slice(-2);
 
   return (
@@ -248,7 +117,7 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
           <div>
             <h3 className="font-semibold">{user?.username}</h3>
             <p className="text-sm text-muted-foreground">
-              {formatDate(post.createdAt)}
+              {format(post.createdAt, "dd. MMM yyyy")}
             </p>
           </div>
         </div>
@@ -281,66 +150,18 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
         </DropdownMenu>
       </CardHeader>
 
+      {post.image && (
+        <CardContent className="p-0">
+          <img
+            src={post.image}
+            alt=""
+            className="w-full aspect-square object-cover"
+          />
+        </CardContent>
+      )}
+
       <CardContent className="p-4 space-y-4">
-        <div className="space-y-1">
-          <p>
-            <span className="font-semibold mr-2">{user?.username}</span>
-            {post.content}
-          </p>
-        </div>
-
-        {post.dailyGoal && (
-          <div className="mt-4">
-            <DailyGoalDisplay
-              goal={post.dailyGoal}
-              userId={post.userId}
-              variant="compact"
-            />
-          </div>
-        )}
-
-        {post.images && post.images.length > 0 && (
-          <div className="relative">
-            <img
-              src={post.images[currentImageIndex]}
-              alt=""
-              className="w-full aspect-square object-cover rounded-lg"
-            />
-            {post.images.length > 1 && (
-              <>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/20 hover:bg-black/40 text-white rounded-full"
-                  onClick={prevImage}
-                  disabled={currentImageIndex === 0}
-                >
-                  <ChevronLeft className="h-6 w-6" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/20 hover:bg-black/40 text-white rounded-full"
-                  onClick={nextImage}
-                  disabled={currentImageIndex === post.images.length - 1}
-                >
-                  <ChevronRight className="h-6 w-6" />
-                </Button>
-                <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-1">
-                  {post.images.map((_, index) => (
-                    <div
-                      key={index}
-                      className={`w-2 h-2 rounded-full ${
-                        index === currentImageIndex ? "bg-white" : "bg-white/50"
-                      }`}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        )}
-
+        {/* Interaktions-Buttons */}
         <div className="flex gap-4 items-center -ml-2">
           <Button
             variant="ghost"
@@ -351,8 +172,8 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
             <Heart className={`h-6 w-6 transition-transform hover:scale-110 ${isLiked ? "fill-current" : ""}`} />
           </Button>
 
-          <Button
-            variant="ghost"
+          <Button 
+            variant="ghost" 
             size="sm"
             onClick={() => setShowAllComments(true)}
           >
@@ -364,16 +185,37 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
           </Button>
         </div>
 
+        {/* Likes Anzeige */}
         {likes.length > 0 && (
           <p className="font-semibold text-sm">
             {likes.length} {likes.length === 1 ? "Like" : "Likes"}
           </p>
         )}
 
+        {/* Post Inhalt */}
+        <div className="space-y-1">
+          <p>
+            <span className="font-semibold mr-2">{user?.username}</span>
+            {post.content}
+          </p>
+        </div>
+
+        {/* Tagesziel Anzeige wenn vorhanden */}
+        {post.dailyGoal && (
+          <div className="mt-4">
+            <DailyGoalDisplay 
+              goal={post.dailyGoal} 
+              userId={post.userId}
+              variant="compact" 
+            />
+          </div>
+        )}
+
+        {/* Kommentar Vorschau */}
         {comments.length > 0 && (
           <div className="space-y-2">
             {comments.length > 2 && (
-              <button
+              <button 
                 className="text-muted-foreground text-sm"
                 onClick={() => setShowAllComments(true)}
               >
@@ -392,6 +234,7 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
           </div>
         )}
 
+        {/* Kommentar Input */}
         <form onSubmit={handleComment} className="flex gap-2 pt-2">
           <Input
             value={newComment}
@@ -405,6 +248,7 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
         </form>
       </CardContent>
 
+      {/* Alle Kommentare Dialog */}
       <Dialog open={showAllComments} onOpenChange={setShowAllComments}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -429,7 +273,7 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
                         <div className="flex items-center gap-2">
                           <span className="font-semibold text-sm">{commentUser?.username}</span>
                           <span className="text-xs text-muted-foreground">
-                            {formatDate(comment.timestamp)}
+                            {format(new Date(comment.timestamp), "dd. MMM")}
                           </span>
                         </div>
                         <p className="text-sm">{comment.content}</p>
@@ -454,6 +298,7 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
         </DialogContent>
       </Dialog>
 
+      {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -477,6 +322,7 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
         </DialogContent>
       </Dialog>
 
+      {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -496,6 +342,7 @@ export default function FeedPost({ post: initialPost }: FeedPostProps) {
         </DialogContent>
       </Dialog>
 
+      {/* Report Dialog */}
       <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
         <DialogContent>
           <DialogHeader>

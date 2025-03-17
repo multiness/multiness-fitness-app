@@ -18,10 +18,8 @@ export const posts = pgTable("posts", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
   content: text("content").notNull(),
-  images: text("images").array(),
-  dailyGoal: jsonb("daily_goal").default(null),
+  image: text("image"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const challenges = pgTable("challenges", {
@@ -307,22 +305,3 @@ export const insertEventExternalRegistrationSchema = createInsertSchema(eventExt
 export type InsertEvent = z.infer<typeof insertEventSchema>;
 export type InsertEventComment = z.infer<typeof insertEventCommentSchema>;
 export type InsertEventExternalRegistration = z.infer<typeof insertEventExternalRegistrationSchema>;
-
-export const dailyGoalSchema = z.object({
-  type: z.enum(['water', 'steps', 'distance', 'custom']),
-  target: z.number(),
-  unit: z.string(),
-  progress: z.number(),
-  completed: z.boolean(),
-  customName: z.string().optional(),
-  createdAt: z.string().or(z.date())
-});
-
-
-export const insertPostSchema = createInsertSchema(posts)
-  .extend({
-    dailyGoal: dailyGoalSchema.optional()
-  });
-
-export type DailyGoal = z.infer<typeof dailyGoalSchema>;
-export type InsertPost = z.infer<typeof insertPostSchema>;

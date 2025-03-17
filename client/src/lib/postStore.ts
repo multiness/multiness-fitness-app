@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Post } from '@shared/schema';
-import { apiRequest, queryClient } from '@/lib/queryClient';
 
 export type DailyGoal = {
   type: 'water' | 'steps' | 'distance' | 'custom';
@@ -26,17 +25,15 @@ type PostStore = {
   comments: Record<number, Comment[]>;
   dailyGoals: Record<number, DailyGoal>;
   goalParticipants: Record<number, number[]>;
-  posts: Record<number, Post>;
+  posts: Record<number, Post>;  // Neue Eigenschaft für Posts
   addLike: (postId: number, userId: number) => void;
   removeLike: (postId: number, userId: number) => void;
   hasLiked: (postId: number, userId: number) => boolean;
   getLikes: (postId: number) => number[];
   addComment: (postId: number, userId: number, content: string) => void;
   getComments: (postId: number) => Comment[];
-  getPost: (postId: number) => Post | undefined;
-  updatePost: (postId: number, content: string) => Promise<void>;
-  deletePost: (postId: number) => Promise<void>;
-  initializePost: (post: Post) => void;
+  updatePost: (postId: number, content: string) => void;  // Neue Funktion
+  deletePost: (postId: number) => void;  // Neue Funktion
   setDailyGoal: (userId: number, goal: DailyGoal) => { hasExistingGoal: boolean };
   getDailyGoal: (userId: number) => DailyGoal | undefined;
   updateDailyGoalProgress: (userId: number, progress: number) => void;
@@ -45,7 +42,6 @@ type PostStore = {
   getGoalParticipants: (userId: number) => number[];
   checkExpiredGoals: () => void;
   hasActiveGoal: (userId: number) => boolean;
-  migrateExistingPosts: () => Promise<void>;
 };
 
 export const usePostStore = create<PostStore>()(
@@ -55,58 +51,7 @@ export const usePostStore = create<PostStore>()(
       comments: {},
       dailyGoals: {},
       goalParticipants: {},
-      posts: {},
-
-      initializePost: (post: Post) => {
-        console.log('Initializing post:', post);
-        set((state) => {
-          // Aktualisiere den Cache
-          queryClient.setQueryData(['/api/posts'], (oldData: Post[] = []) => {
-            return [post, ...oldData];
-          });
-
-          return {
-            posts: {
-              ...state.posts,
-              [post.id]: post
-            }
-          };
-        });
-      },
-
-      migrateExistingPosts: async () => {
-        try {
-          const existingPosts = Object.values(get().posts);
-          console.log('Starting migration with posts:', existingPosts);
-
-          if (existingPosts.length === 0) {
-            console.log('No posts to migrate');
-            return;
-          }
-
-          const response = await apiRequest('POST', '/api/posts/migrate', { posts: existingPosts });
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to migrate posts');
-          }
-
-          const migratedPosts = await response.json();
-          console.log('Successfully migrated posts:', migratedPosts);
-
-          // Aktualisiere den Cache
-          queryClient.setQueryData(['/api/posts'], migratedPosts);
-
-          const postsMap = migratedPosts.reduce((acc: Record<number, Post>, post: Post) => {
-            acc[post.id] = post;
-            return acc;
-          }, {});
-
-          set({ posts: postsMap });
-        } catch (error) {
-          console.error('Error migrating posts:', error);
-          throw error;
-        }
-      },
+      posts: {},  // Initialisierung der Posts
 
       addLike: (postId, userId) =>
         set((state) => ({
@@ -149,54 +94,32 @@ export const usePostStore = create<PostStore>()(
       getComments: (postId) =>
         get().comments[postId] || [],
 
-      getPost: (postId) =>
-        get().posts[postId],
-
-      updatePost: async (postId, content) => {
-        try {
-          const response = await apiRequest('PATCH', `/api/posts/${postId}`, { content });
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to update post');
-          }
-          const updatedPost = await response.json();
-
-          set((state) => ({
-            posts: {
-              ...state.posts,
-              [postId]: updatedPost
+      // Neue Funktion zum Aktualisieren eines Posts
+      updatePost: (postId, content) =>
+        set((state) => ({
+          posts: {
+            ...state.posts,
+            [postId]: {
+              ...state.posts[postId],
+              content,
+              updatedAt: new Date()
             }
-          }));
+          }
+        })),
 
-          queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
-        } catch (error) {
-          console.error('Error updating post:', error);
-          throw error;
-        }
-      },
+      // Neue Funktion zum Löschen eines Posts
+      deletePost: (postId) =>
+        set((state) => {
+          const { [postId]: deletedPost, ...remainingPosts } = state.posts;
+          const { [postId]: deletedLikes, ...remainingLikes } = state.likes;
+          const { [postId]: deletedComments, ...remainingComments } = state.comments;
 
-      deletePost: async (postId) => {
-        try {
-          await apiRequest('DELETE', `/api/posts/${postId}`);
-
-          set((state) => {
-            const { [postId]: deletedPost, ...remainingPosts } = state.posts;
-            const { [postId]: deletedLikes, ...remainingLikes } = state.likes;
-            const { [postId]: deletedComments, ...remainingComments } = state.comments;
-
-            return {
-              posts: remainingPosts,
-              likes: remainingLikes,
-              comments: remainingComments
-            };
-          });
-
-          queryClient.invalidateQueries({ queryKey: ['/api/posts'] });
-        } catch (error) {
-          console.error('Error deleting post:', error);
-          throw error;
-        }
-      },
+          return {
+            posts: remainingPosts,
+            likes: remainingLikes,
+            comments: remainingComments
+          };
+        }),
 
       setDailyGoal: (userId, goal) => {
         const existingGoal = get().getDailyGoal(userId);
@@ -310,14 +233,6 @@ export const usePostStore = create<PostStore>()(
     {
       name: 'post-interaction-storage',
       version: 1,
-      onRehydrateStorage: () => {
-        return (state) => {
-          if (state) {
-            console.log('Storage rehydrated, attempting to migrate posts');
-            state.migrateExistingPosts().catch(console.error);
-          }
-        };
-      }
     }
   )
 );

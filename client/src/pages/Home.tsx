@@ -5,14 +5,11 @@ import GroupPreview from "@/components/GroupPreview";
 import ChallengeCard from "@/components/ChallengeCard";
 import FeedPost from "@/components/FeedPost";
 import EventSlider from "@/components/EventSlider";
-import { ArrowRight, Crown, Heart, Share2, Users, Trophy, Package } from "lucide-react";
-import { mockGroups, mockChallenges, mockUsers, mockProducts } from "../data/mockData";
+import { ArrowRight, Crown, Heart, Share2, Users, Trophy, Package } from "lucide-react"; // Added Package import
+import { mockGroups, mockChallenges, mockPosts, mockUsers, mockProducts } from "../data/mockData"; // Added mockProducts import
 import { useLocation, Link } from "wouter";
 import { usePostStore } from "../lib/postStore";
 import { getChatId } from "../lib/chatService";
-import { useQuery } from "@tanstack/react-query";
-import { Post } from "@shared/schema";
-import CreatePost from "@/components/CreatePost";
 import {
   Carousel,
   CarouselContent,
@@ -24,7 +21,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import GroupCarousel from "@/components/GroupCarousel";
 import { UserAvatar } from "@/components/UserAvatar";
-import ProductSlider from "@/components/ProductSlider";
+import ProductSlider from "@/components/ProductSlider"; // Added ProductSlider import
+
 
 const format = (date: Date, formatStr: string) => {
   return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -37,17 +35,10 @@ export default function Home() {
     challenge => new Date() <= new Date(challenge.endDate)
   );
 
-  // Fetch posts from API
-  const { data: posts = [], isLoading: postsLoading } = useQuery<Post[]>({
-    queryKey: ['/api/posts'],
-    queryFn: async () => {
-      const response = await fetch('/api/posts');
-      if (!response.ok) {
-        throw new Error('Failed to fetch posts');
-      }
-      return response.json();
-    },
-  });
+  // Kombiniere Mock-Posts und sortiere sie nach Datum
+  const allPosts = [...mockPosts].sort((a, b) =>
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
 
   const navigateToGroupChat = (groupId: number) => {
     const chatId = getChatId(groupId);
@@ -153,7 +144,7 @@ export default function Home() {
         <ProductSlider products={mockProducts} />
       </section>
 
-      {/* Aktive Challenges */}
+      {/* Aktive Challenges - Hervorgehobenes Design */}
       <section className="mb-12">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
@@ -277,26 +268,13 @@ export default function Home() {
 
       {/* Feed */}
       <section>
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold">Neueste Beiträge</h2>
-          <CreatePost />
-        </div>
+        <h2 className="text-2xl font-bold mb-6">Neueste Beiträge</h2>
         <div className="space-y-6 w-full">
-          {postsLoading ? (
-            <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          {allPosts.map(post => (
+            <div key={post.id} className="w-full max-w-xl mx-auto">
+              <FeedPost post={post} />
             </div>
-          ) : posts.length > 0 ? (
-            posts.map(post => (
-              <div key={post.id} className="w-full max-w-xl mx-auto">
-                <FeedPost post={post} />
-              </div>
-            ))
-          ) : (
-            <div className="text-center text-muted-foreground py-8">
-              Noch keine Beiträge vorhanden
-            </div>
-          )}
+          ))}
         </div>
       </section>
     </div>
