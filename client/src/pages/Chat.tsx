@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -7,20 +7,16 @@ import { Search, Send, Image as ImageIcon, ArrowLeft, Users2, Plus, FileText, Vi
 import { useUsers } from "../contexts/UserContext";
 import { format } from "date-fns";
 import { useChatStore, getChatId } from "../lib/chatService";
-import { usePostStore } from "../lib/postStore";
-import { UserAvatar } from "@/components/UserAvatar";
-import { Progress } from "@/components/ui/progress";
-import { useLocation, useParams } from "wouter";
 import { useGroupStore } from "../lib/groupStore";
+import { UserAvatar } from "@/components/UserAvatar";
+import { useLocation, useParams } from "wouter";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import AddGroupGoalModal from "@/components/AddGroupGoalModal";
-import AddGroupProgress from "@/components/AddGroupProgress";
-import PerformanceBoard from "@/components/PerformanceBoard";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Chat() {
   const { id } = useParams();
@@ -30,6 +26,12 @@ export default function Chat() {
   const [messageInput, setMessageInput] = useState("");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
+
+  // Check if we're in direct chat mode
+  const isDirect = window.location.pathname.endsWith('/direct');
+  const directUserId = isDirect ? parseInt(id?.replace('chat-', '') || '0') : null;
+  const directUser = directUserId ? users.find(u => u.id === directUserId) : null;
 
   // Get all chats including direct chats and groups
   const allChats = [
@@ -48,11 +50,6 @@ export default function Chat() {
       groupId: group.id
     }))
   ];
-
-  // If we're in direct chat mode, automatically select the chat with the specified user
-  const isDirect = window.location.pathname.endsWith('/direct');
-  const directUserId = isDirect ? parseInt(id?.replace('chat-', '') || '0') : null;
-  const directUser = directUserId ? users.find(u => u.id === directUserId) : null;
 
   // Get the current chat based on the URL parameters
   const [selectedChat, setSelectedChat] = useState(
@@ -86,87 +83,16 @@ export default function Chat() {
   const handleFileSelect = (type: 'image' | 'file' | 'video') => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.id = type + '-upload';
     input.accept = type === 'image' ? 'image/*' :
                   type === 'video' ? 'video/*' :
                   '*/*';
     input.onchange = (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        if (type === 'image') {
-          setSelectedImage(file);
-        }
+      if (file && type === 'image') {
+        setSelectedImage(file);
       }
     };
     input.click();
-  };
-
-  const [isGroupGoalModalOpen, setIsGroupGoalModalOpen] = useState(false);
-  const [isAddProgressModalOpen, setIsAddProgressModalOpen] = useState(false);
-  const [isPerformanceBoardOpen, setIsPerformanceBoardOpen] = useState(false);
-  const currentGroupGoal = selectedChat?.isGroup ? chatStore.getGroupGoal(selectedChat.id) : undefined;
-
-  const handleAddGroupGoal = (data: { 
-    title: string; 
-    description?: string; 
-    targetDate: string;
-    targetValue: number;
-    unit: string;
-  }) => {
-    if (!selectedChat?.isGroup) return;
-
-    const goal = {
-      id: Date.now(),
-      groupId: selectedChat.groupId,
-      title: data.title,
-      description: data.description,
-      targetDate: data.targetDate,
-      targetValue: data.targetValue,
-      unit: data.unit,
-      progress: 0,
-      createdAt: new Date().toISOString(),
-      createdBy: currentUser?.id,
-      contributions: [],
-    };
-
-    chatStore.setGroupGoal(selectedChat.id, goal);
-
-    const message = {
-      id: Date.now(),
-      userId: currentUser?.id || 0,
-      content: `🎯 Neues Gruppenziel erstellt: ${data.title} (${data.targetValue} ${data.unit})`,
-      timestamp: new Date().toISOString(),
-      groupId: selectedChat.groupId,
-    };
-
-    chatStore.addMessage(selectedChat.id, message);
-    setIsGroupGoalModalOpen(false);
-  };
-
-  const handleAddGroupProgress = (value: number) => {
-    if (!selectedChat?.isGroup || !currentGroupGoal) return;
-
-    const progress = (value / currentGroupGoal.targetValue) * 100;
-
-    const contribution = {
-      userId: currentUser?.id || 0,
-      value: value,
-      progress: progress,
-      timestamp: new Date().toISOString(),
-    };
-
-    chatStore.updateGroupGoalProgress(selectedChat.id, contribution);
-
-    const message = {
-      id: Date.now(),
-      userId: currentUser?.id || 0,
-      content: `📈 Hat ${value} ${currentGroupGoal.unit} zum Gruppenziel "${currentGroupGoal.title}" beigetragen!`,
-      timestamp: new Date().toISOString(),
-      groupId: selectedChat.groupId,
-    };
-
-    chatStore.addMessage(selectedChat.id, message);
-    setIsAddProgressModalOpen(false);
   };
 
   return (
@@ -199,10 +125,8 @@ export default function Chat() {
                   >
                     <div className="flex items-center gap-3">
                       {chat.isGroup ? (
-                        <div className="relative">
-                          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-                            <Users2 className="h-5 w-5 text-muted-foreground" />
-                          </div>
+                        <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                          <Users2 className="h-5 w-5 text-muted-foreground" />
                         </div>
                       ) : (
                         <UserAvatar
@@ -261,73 +185,6 @@ export default function Chat() {
                 </div>
               </div>
             </div>
-
-            {/* Group Goal Section */}
-            {selectedChat.isGroup && currentGroupGoal && (
-              <div className="p-4 border-b space-y-2">
-                <div className="bg-muted/30 rounded-lg p-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">{currentGroupGoal.title}</span>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setIsGroupGoalModalOpen(true)}
-                    >
-                      <Plus className="h-4 w-4 mr-1" />
-                      Neues Ziel
-                    </Button>
-                  </div>
-                  {currentGroupGoal.description && (
-                    <p className="text-xs text-muted-foreground">{currentGroupGoal.description}</p>
-                  )}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">
-                          {(currentGroupGoal.contributions || []).reduce((sum, c) => sum + c.value, 0).toFixed(1)} {currentGroupGoal.unit}
-                          von {currentGroupGoal.targetValue} {currentGroupGoal.unit}
-                          ({currentGroupGoal.progress}%)
-                        </span>
-                        {currentGroupGoal.progress >= 100 && (
-                          <span className="text-yellow-500">
-                            🎉 Ziel erreicht!
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7"
-                          onClick={() => setIsPerformanceBoardOpen(true)}
-                        >
-                          👥 Performance
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7"
-                          onClick={() => setIsAddProgressModalOpen(true)}
-                        >
-                          <Plus className="h-3 w-3 mr-1" />
-                          Fortschritt
-                        </Button>
-                      </div>
-                    </div>
-                    <Progress 
-                      value={currentGroupGoal.progress} 
-                      className={`h-1.5 ${
-                        currentGroupGoal.progress >= 100 
-                          ? "bg-yellow-500" 
-                          : ""
-                      }`}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
 
             <ScrollArea className="flex-1 p-4">
               <div className="space-y-4">
@@ -399,12 +256,6 @@ export default function Chat() {
                       <Video className="h-4 w-4 mr-2" />
                       <span>Video senden</span>
                     </DropdownMenuItem>
-                    {selectedChat.isGroup && (
-                      <DropdownMenuItem onClick={() => setIsGroupGoalModalOpen(true)}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        <span>Gruppenziel hinzufügen</span>
-                      </DropdownMenuItem>
-                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
 
@@ -438,35 +289,6 @@ export default function Chat() {
           </div>
         )}
       </div>
-
-      {selectedChat?.isGroup && (
-        <>
-          <AddGroupGoalModal
-            open={isGroupGoalModalOpen}
-            onOpenChange={setIsGroupGoalModalOpen}
-            onSave={handleAddGroupGoal}
-          />
-          {currentGroupGoal && (
-            <>
-              <AddGroupProgress
-                open={isAddProgressModalOpen}
-                onOpenChange={setIsAddProgressModalOpen}
-                onSave={handleAddGroupProgress}
-                currentProgress={currentGroupGoal.progress}
-                goalTitle={currentGroupGoal.title}
-                targetValue={currentGroupGoal.targetValue}
-                unit={currentGroupGoal.unit}
-                currentValue={(currentGroupGoal.contributions || []).reduce((sum, c) => sum + c.value, 0)}
-              />
-              <PerformanceBoard
-                open={isPerformanceBoardOpen}
-                onOpenChange={setIsPerformanceBoardOpen}
-                goal={currentGroupGoal}
-              />
-            </>
-          )}
-        </>
-      )}
     </div>
   );
 }
