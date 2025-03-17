@@ -20,25 +20,34 @@ import {
 } from "@/components/ui/dropdown-menu";
 import AddGroupGoalModal from "@/components/AddGroupGoalModal";
 import AddGroupProgress from "@/components/AddGroupProgress";
-import PerformanceBoard from "@/components/PerformanceBoard"; // Import the PerformanceBoard component
-
+import PerformanceBoard from "@/components/PerformanceBoard";
 
 export default function Chat() {
   const { id } = useParams();
   const chatStore = useChatStore();
   const { users, currentUser } = useUsers();
+  const groupStore = useGroupStore();
   const [messageInput, setMessageInput] = useState("");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [, setLocation] = useLocation();
 
   // Get all chats including direct chats and groups
-  const allChats = [...users.map(user => ({
-    id: getChatId(user.id),
-    name: user.username,
-    avatar: user.avatar,
-    isGroup: false,
-    userId: user.id
-  }))];
+  const allChats = [
+    ...users.map(user => ({
+      id: getChatId(user.id),
+      name: user.username,
+      avatar: user.avatar,
+      isGroup: false,
+      userId: user.id
+    })),
+    ...Object.values(groupStore.groups).map(group => ({
+      id: getChatId(group.id),
+      name: group.name,
+      avatar: group.image,
+      isGroup: true,
+      groupId: group.id
+    }))
+  ];
 
   // If we're in direct chat mode, automatically select the chat with the specified user
   const isDirect = window.location.pathname.endsWith('/direct');
@@ -66,6 +75,7 @@ export default function Chat() {
       content: messageInput,
       timestamp: new Date().toISOString(),
       imageUrl: selectedImage ? URL.createObjectURL(selectedImage) : undefined,
+      groupId: selectedChat.isGroup ? selectedChat.groupId : undefined
     };
 
     chatStore.addMessage(selectedChat.id, message);
@@ -76,7 +86,7 @@ export default function Chat() {
   const handleFileSelect = (type: 'image' | 'file' | 'video') => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.id = type + '-upload'; // added id for image upload
+    input.id = type + '-upload';
     input.accept = type === 'image' ? 'image/*' :
                   type === 'video' ? 'video/*' :
                   '*/*';
@@ -86,72 +96,9 @@ export default function Chat() {
         if (type === 'image') {
           setSelectedImage(file);
         }
-        // Hier können weitere Datei-Typ-Handler hinzugefügt werden
       }
     };
     input.click();
-  };
-
-  const handleAddGroupGoal = (data: { 
-    title: string; 
-    description?: string; 
-    targetDate: string;
-    targetValue: number;
-    unit: string;
-  }) => {
-    if (!selectedChat?.isGroup) return;
-
-    const goal = {
-      id: Date.now(),
-      groupId: selectedChat.id,
-      title: data.title,
-      description: data.description,
-      targetDate: data.targetDate,
-      targetValue: data.targetValue,
-      unit: data.unit,
-      progress: 0,
-      createdAt: new Date().toISOString(),
-      createdBy: currentUser.id,
-      contributions: [],
-    };
-
-    chatStore.setGroupGoal(selectedChat.id, goal);
-
-    const message = {
-      id: Date.now(),
-      userId: currentUser.id,
-      content: `🎯 Neues Gruppenziel erstellt: ${data.title} (${data.targetValue} ${data.unit})`,
-      timestamp: new Date().toISOString(),
-      groupId: parseInt(selectedChat.id.replace('group-', '')),
-    };
-
-    chatStore.addMessage(selectedChat.id, message);
-    setIsGroupGoalModalOpen(false);
-  };
-
-  const handleAddGroupProgress = (value: number) => {
-    if (!selectedChat?.isGroup || !currentGroupGoal) return;
-
-    const progress = (value / currentGroupGoal.targetValue) * 100;
-
-    const contribution = {
-      userId: currentUser.id,
-      value: value,
-      progress: progress,
-      timestamp: new Date().toISOString(),
-    };
-
-    chatStore.updateGroupGoalProgress(selectedChat.id, contribution);
-
-    const message = {
-      id: Date.now(),
-      userId: currentUser.id,
-      content: `📈 Hat ${value} ${currentGroupGoal.unit} zum Gruppenziel "${currentGroupGoal.title}" beigetragen!`,
-      timestamp: new Date().toISOString(),
-      groupId: parseInt(selectedChat.id.replace('group-', '')),
-    };
-
-    chatStore.addMessage(selectedChat.id, message);
   };
 
   const [isGroupGoalModalOpen, setIsGroupGoalModalOpen] = useState(false);
@@ -188,11 +135,19 @@ export default function Chat() {
                     onClick={() => setSelectedChat(chat)}
                   >
                     <div className="flex items-center gap-3">
-                      <UserAvatar
-                        userId={chat.userId}
-                        size="md"
-                        clickable={false}
-                      />
+                      {chat.isGroup ? (
+                        <div className="relative">
+                          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                            <Users2 className="h-5 w-5 text-muted-foreground" />
+                          </div>
+                        </div>
+                      ) : (
+                        <UserAvatar
+                          userId={chat.userId}
+                          size="md"
+                          clickable={false}
+                        />
+                      )}
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{chat.name}</p>
                         {lastMessage && (
@@ -224,15 +179,21 @@ export default function Chat() {
                 >
                   <ArrowLeft className="h-4 w-4" />
                 </Button>
-                <UserAvatar
-                  userId={selectedChat.userId}
-                  size="sm"
-                  clickable={true}
-                />
+                {selectedChat.isGroup ? (
+                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                    <Users2 className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                ) : (
+                  <UserAvatar
+                    userId={selectedChat.userId}
+                    size="sm"
+                    clickable={true}
+                  />
+                )}
                 <div>
                   <h2 className="font-semibold">{selectedChat.name}</h2>
                   <p className="text-sm text-muted-foreground">
-                    Online
+                    {selectedChat.isGroup ? 'Gruppen-Chat' : 'Online'}
                   </p>
                 </div>
               </div>
