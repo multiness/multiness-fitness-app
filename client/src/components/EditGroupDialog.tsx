@@ -14,8 +14,10 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { UserAvatar } from "./UserAvatar";
 import { Switch } from "@/components/ui/switch";
-import { mockUsers } from "../data/mockData";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { mockUsers } from "../data/mockData";
+import { Badge } from "@/components/ui/badge";
+import { Shield } from "lucide-react";
 
 interface EditGroupDialogProps {
   open: boolean;
@@ -27,6 +29,7 @@ interface EditGroupDialogProps {
     image?: string;
     participantIds: number[];
     adminIds: number[];
+    creatorId: number;
   };
   onSave: (groupId: number, updatedData: {
     name: string;
@@ -76,9 +79,20 @@ export default function EditGroupDialog({
       title: "Gruppe aktualisiert",
       description: "Die Änderungen wurden erfolgreich gespeichert.",
     });
+
+    onOpenChange(false);
   };
 
   const toggleAdmin = (userId: number) => {
+    if (userId === group.creatorId) {
+      toast({
+        title: "Nicht möglich",
+        description: "Der Ersteller der Gruppe kann nicht entfernt werden.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setAdminIds(current =>
       current.includes(userId)
         ? current.filter(id => id !== userId)
@@ -124,12 +138,18 @@ export default function EditGroupDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label>Mitglieder & Admins</Label>
+            <Label className="flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              Mitglieder & Admins
+            </Label>
             <ScrollArea className="h-[200px] pr-4">
               <div className="space-y-4">
                 {group.participantIds.map(userId => {
                   const user = mockUsers.find(u => u.id === userId);
                   if (!user) return null;
+
+                  const isCreator = userId === group.creatorId;
+                  const isAdmin = adminIds.includes(userId);
 
                   return (
                     <div key={userId} className="flex items-center justify-between">
@@ -141,7 +161,14 @@ export default function EditGroupDialog({
                           size="sm"
                         />
                         <div className="flex flex-col">
-                          <span className="text-sm font-medium">{user.username}</span>
+                          <span className="text-sm font-medium">
+                            {user.username}
+                            {isCreator && (
+                              <Badge variant="default" className="ml-2">
+                                Ersteller
+                              </Badge>
+                            )}
+                          </span>
                           <span className="text-xs text-muted-foreground">
                             {user.name}
                           </span>
@@ -153,8 +180,9 @@ export default function EditGroupDialog({
                         </Label>
                         <Switch
                           id={`admin-${userId}`}
-                          checked={adminIds.includes(userId)}
+                          checked={isCreator || isAdmin}
                           onCheckedChange={() => toggleAdmin(userId)}
+                          disabled={isCreator}
                         />
                       </div>
                     </div>

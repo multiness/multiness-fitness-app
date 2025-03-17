@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, Users2, Plus } from "lucide-react";
+import { Search, Users2, Plus, Pencil } from "lucide-react";
 import { useUsers } from "../contexts/UserContext";
 import { useGroupStore } from "../lib/groupStore";
 import { Link, useLocation } from "wouter";
@@ -11,12 +11,16 @@ import { getChatId } from "../lib/chatService";
 import { UserAvatar } from "@/components/UserAvatar";
 import { Badge } from "@/components/ui/badge";
 import { mockUsers } from "../data/mockData";
+import EditGroupDialog from "@/components/EditGroupDialog"; // Korrigierter Import-Pfad
+
 
 export default function Groups() {
   const [searchQuery, setSearchQuery] = useState("");
   const { currentUser } = useUsers();
   const groupStore = useGroupStore();
   const [, setLocation] = useLocation();
+  const [selectedGroup, setSelectedGroup] = useState<null | any>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const groups = Object.values(groupStore.groups);
 
   console.log("Available groups:", groups);
@@ -30,6 +34,16 @@ export default function Groups() {
     const chatId = getChatId(groupId);
     console.log('Navigating to group chat:', chatId);
     setLocation(`/chat/${chatId}`);
+  };
+
+  const handleEditGroup = (e: React.MouseEvent, group: any) => {
+    e.stopPropagation();
+    setSelectedGroup(group);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleGroupUpdate = (groupId: number, updatedData: any) => {
+    groupStore.updateGroup(groupId, updatedData);
   };
 
   return (
@@ -92,9 +106,21 @@ export default function Groups() {
                           <h3 className="font-semibold text-lg">{group.name}</h3>
                           <p className="text-sm text-muted-foreground line-clamp-2">{group.description}</p>
                         </div>
-                        <Badge variant={isCreator ? "default" : "secondary"} className="ml-2">
-                          {isCreator ? 'Admin' : (isAdmin ? 'Co-Admin' : 'Mitglied')}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={isCreator ? "default" : "secondary"} className="ml-2">
+                            {isCreator ? 'Admin' : (isAdmin ? 'Co-Admin' : 'Mitglied')}
+                          </Badge>
+                          {(isCreator || isAdmin) && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={(e) => handleEditGroup(e, group)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
 
                       <div className="mt-2 flex items-center justify-between">
@@ -131,6 +157,15 @@ export default function Groups() {
           })}
         </div>
       </ScrollArea>
+
+      {selectedGroup && (
+        <EditGroupDialog
+          open={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+          group={selectedGroup}
+          onSave={handleGroupUpdate}
+        />
+      )}
     </div>
   );
 }

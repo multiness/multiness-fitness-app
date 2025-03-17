@@ -4,22 +4,30 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { mockGroups, mockUsers } from "../data/mockData";
+import { mockUsers } from "../data/mockData";
 import { format } from "date-fns";
-import { Send, ImagePlus } from "lucide-react";
+import { Send, ImagePlus, Pencil } from "lucide-react";
 import { useChatStore, getChatId } from "../lib/chatService";
+import { useGroupStore } from "../lib/groupStore";
+import { useUsers } from "../contexts/UserContext";
+import EditGroupDialog from "@/components/EditGroupDialog";
 
 export default function GroupPage() {
   const { id } = useParams();
-  const group = mockGroups.find(g => g.id === parseInt(id || ""));
+  const { currentUser } = useUsers();
+  const groupStore = useGroupStore();
+  const group = groupStore.groups[parseInt(id || "")];
   const [newMessage, setNewMessage] = useState("");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const currentUser = mockUsers[0]; // Mock current user
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const chatStore = useChatStore();
   const chatId = getChatId(parseInt(id || ""));
   const messages = chatStore.getMessages(chatId);
 
   if (!group) return <div>Gruppe nicht gefunden</div>;
+
+  const isCreator = group.creatorId === currentUser?.id;
+  const isAdmin = group.adminIds?.includes(currentUser?.id || 0);
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +35,7 @@ export default function GroupPage() {
 
     const message = {
       id: messages.length + 1,
-      userId: currentUser.id,
+      userId: currentUser?.id || 0,
       content: newMessage,
       timestamp: new Date().toISOString(),
       imageUrl: selectedImage ? URL.createObjectURL(selectedImage) : undefined,
@@ -45,21 +53,36 @@ export default function GroupPage() {
     }
   };
 
+  const handleGroupUpdate = (groupId: number, updatedData: any) => {
+    groupStore.updateGroup(groupId, updatedData);
+  };
+
   return (
     <div className="container max-w-4xl mx-auto p-4">
       {/* Group Header */}
       <Card className="mb-6">
         <CardHeader>
-          <div className="flex items-center gap-4">
-            <img
-              src={group.image || "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=800&auto=format"}
-              alt={group.name}
-              className="w-16 h-16 rounded-lg object-cover"
-            />
-            <div>
-              <CardTitle>{group.name}</CardTitle>
-              <p className="text-sm text-muted-foreground">{group.description}</p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <img
+                src={group.image || "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=800&auto=format"}
+                alt={group.name}
+                className="w-16 h-16 rounded-lg object-cover"
+              />
+              <div>
+                <CardTitle>{group.name}</CardTitle>
+                <p className="text-sm text-muted-foreground">{group.description}</p>
+              </div>
             </div>
+            {(isCreator || isAdmin) && (
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setIsEditDialogOpen(true)}
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </CardHeader>
       </Card>
@@ -71,7 +94,7 @@ export default function GroupPage() {
           <div className="space-y-4 mb-4 h-[400px] overflow-y-auto">
             {messages.map(message => {
               const user = mockUsers.find(u => u.id === message.userId);
-              const isCurrentUser = message.userId === currentUser.id;
+              const isCurrentUser = message.userId === currentUser?.id;
 
               return (
                 <div key={message.id} className={`flex gap-3 ${isCurrentUser ? 'flex-row-reverse' : ''}`}>
@@ -143,6 +166,16 @@ export default function GroupPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Group Dialog */}
+      {group && (
+        <EditGroupDialog
+          open={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+          group={group}
+          onSave={handleGroupUpdate}
+        />
+      )}
     </div>
   );
 }
