@@ -88,7 +88,17 @@ export default function Profile() {
     <div className="container max-w-4xl mx-auto p-4">
       {/* Profile Header */}
       <div className="relative mb-8">
-        <div className="h-32 bg-gradient-to-r from-primary/20 to-primary/10 rounded-t-lg" />
+        <div className="h-32 overflow-hidden rounded-t-lg">
+          {user.bannerImage ? (
+            <img
+              src={user.bannerImage}
+              alt="Profile Banner"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="h-full bg-gradient-to-r from-primary/20 to-primary/10" />
+          )}
+        </div>
 
         <div className="flex flex-col items-center -mt-12">
           <div className="relative">
@@ -172,7 +182,7 @@ export default function Profile() {
                 console.log(`Group ${group.name} - Creator: ${isCreator}, Admin: ${isAdmin}`);
 
                 return (
-                  <Card 
+                  <Card
                     key={group.id}
                     className="cursor-pointer hover:shadow-lg transition-shadow"
                     onClick={() => navigateToGroupChat(group.id)}
@@ -180,8 +190,8 @@ export default function Profile() {
                     <CardContent className="p-4">
                       <div className="flex items-center gap-4">
                         {group.image ? (
-                          <img 
-                            src={group.image} 
+                          <img
+                            src={group.image}
                             alt={group.name}
                             className="w-16 h-16 rounded-full object-cover"
                           />

@@ -17,6 +17,7 @@ const profileSchema = z.object({
   name: z.string().min(2, "Name muss mindestens 2 Zeichen lang sein"),
   bio: z.string().optional(),
   avatar: z.string().optional(),
+  bannerImage: z.string().optional(),
   teamRole: z.string().optional(),
 });
 
@@ -38,6 +39,7 @@ interface EditProfileDialogProps {
 
 export default function EditProfileDialog({ user, open, onOpenChange, onSave }: EditProfileDialogProps) {
   const [avatarPreview, setAvatarPreview] = useState<string | undefined>(user.avatar || undefined);
+  const [bannerPreview, setBannerPreview] = useState<string | undefined>(user.bannerImage || undefined);
 
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -45,6 +47,7 @@ export default function EditProfileDialog({ user, open, onOpenChange, onSave }: 
       name: user.name,
       bio: user.bio || "",
       avatar: user.avatar || undefined,
+      bannerImage: user.bannerImage || undefined,
       teamRole: user.teamRole || undefined,
     },
   });
@@ -57,6 +60,19 @@ export default function EditProfileDialog({ user, open, onOpenChange, onSave }: 
         const result = reader.result as string;
         setAvatarPreview(result);
         form.setValue("avatar", result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleBannerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        setBannerPreview(result);
+        form.setValue("bannerImage", result);
       };
       reader.readAsDataURL(file);
     }
@@ -75,6 +91,39 @@ export default function EditProfileDialog({ user, open, onOpenChange, onSave }: 
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            {/* Banner Upload */}
+            <div className="space-y-2">
+              <Label>Profilbanner</Label>
+              <div className="relative">
+                <div className="w-full h-24 bg-muted rounded-lg overflow-hidden">
+                  {bannerPreview ? (
+                    <img 
+                      src={bannerPreview} 
+                      alt="Banner Vorschau"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <ImagePlus className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleBannerChange}
+                  className="hidden"
+                  id="banner-upload"
+                />
+                <Label
+                  htmlFor="banner-upload"
+                  className="absolute bottom-2 right-2 bg-background/80 backdrop-blur-sm px-2 py-1 rounded-md cursor-pointer hover:bg-background"
+                >
+                  <ImagePlus className="h-4 w-4" />
+                </Label>
+              </div>
+            </div>
+
             {/* Avatar Upload */}
             <div className="flex flex-col items-center gap-4">
               <Avatar className="h-24 w-24">
@@ -132,7 +181,6 @@ export default function EditProfileDialog({ user, open, onOpenChange, onSave }: 
               )}
             />
 
-            {/* Team Role Selection (nur für verifizierte Mitglieder/Admins) */}
             {(user.isVerified || user.isAdmin || user.isTeamMember) && (
               <FormField
                 control={form.control}
