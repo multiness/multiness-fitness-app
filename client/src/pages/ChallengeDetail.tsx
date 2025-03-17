@@ -10,6 +10,9 @@ import { mockChallenges, mockUsers } from "../data/mockData";
 import { de } from "date-fns/locale";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { UserAvatar } from "@/components/UserAvatar";
+import { useEffect } from "react";
+
 
 interface WorkoutExercise {
   name: string;
@@ -28,7 +31,7 @@ export default function ChallengeDetail() {
   const { toast } = useToast();
   const challenge = mockChallenges.find(c => c.id === parseInt(id || ""));
   const creator = challenge ? mockUsers.find(u => u.id === challenge.creatorId) : null;
-  const currentUser = mockUsers[0]; // Simuliert den eingeloggten User
+  const currentUser = mockUsers[0];
 
   const [isParticipating, setIsParticipating] = useState(false);
   const [showResultForm, setShowResultForm] = useState(false);
@@ -41,13 +44,12 @@ export default function ChallengeDetail() {
   const isEnded = currentDate > challenge.endDate;
   const workoutDetails = challenge.workoutDetails as WorkoutDetails;
 
-  // Simulierte Teilnehmerliste mit Punkten
   const participants = mockUsers.map(user => ({
     ...user,
     points: Math.floor(Math.random() * 1000),
   })).sort((a, b) => b.points - a.points);
 
-  const winners = participants.slice(0, 3); // Top 3 Gewinner
+  const winners = participants.slice(0, 3);
 
   const handleJoinChallenge = () => {
     if (isEnded) {
@@ -118,10 +120,11 @@ export default function ChallengeDetail() {
       {/* Creator Info */}
       <Card className="mb-6">
         <CardContent className="flex items-center gap-4 py-4">
-          <Avatar className="h-12 w-12">
-            <AvatarImage src={creator.avatar || undefined} />
-            <AvatarFallback>{creator.username[0]}</AvatarFallback>
-          </Avatar>
+          <UserAvatar
+            userId={creator.id}
+            size="md"
+            clickable={true}
+          />
           <div>
             <div className="font-semibold">{creator.name}</div>
             <div className="text-sm text-muted-foreground">@{creator.username}</div>
@@ -156,10 +159,11 @@ export default function ChallengeDetail() {
                   <div className="flex items-center gap-3">
                     <div className="relative">
                       {index === 0 && <Crown className="absolute -top-2 -left-2 h-5 w-5 text-yellow-400" />}
-                      <Avatar className="h-12 w-12 ring-2 ring-primary">
-                        <AvatarImage src={winner.avatar || undefined} />
-                        <AvatarFallback>{winner.username[0]}</AvatarFallback>
-                      </Avatar>
+                      <UserAvatar
+                        userId={winner.id}
+                        size="md"
+                        clickable={true}
+                      />
                     </div>
                     <div>
                       <p className="font-bold text-lg">{winner.username}</p>
@@ -255,10 +259,11 @@ export default function ChallengeDetail() {
                     {index === 0 && <Crown className="absolute -top-2 -left-2 h-4 w-4 text-yellow-400" />}
                     {index === 1 && <Crown className="absolute -top-2 -left-2 h-4 w-4 text-gray-400" />}
                     {index === 2 && <Crown className="absolute -top-2 -left-2 h-4 w-4 text-amber-700" />}
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={participant.avatar || undefined} />
-                      <AvatarFallback>{participant.username[0]}</AvatarFallback>
-                    </Avatar>
+                    <UserAvatar
+                      userId={participant.id}
+                      size="sm"
+                      clickable={true}
+                    />
                   </div>
                   <div>
                     <p className="font-medium">{participant.username}</p>
