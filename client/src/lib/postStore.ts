@@ -25,15 +25,15 @@ type PostStore = {
   comments: Record<number, Comment[]>;
   dailyGoals: Record<number, DailyGoal>;
   goalParticipants: Record<number, number[]>;
-  posts: Record<number, Post>;  //Re-added from original
+  posts: Record<number, Post>;
   addLike: (postId: number, userId: number) => void;
   removeLike: (postId: number, userId: number) => void;
   hasLiked: (postId: number, userId: number) => boolean;
   getLikes: (postId: number) => number[];
   addComment: (postId: number, userId: number, content: string) => void;
   getComments: (postId: number) => Comment[];
-  updatePost: (postId: number, content: string) => void; //Re-added from original
-  deletePost: (postId: number) => void; //Re-added from original
+  updatePost: (postId: number, content: string) => void;
+  deletePost: (postId: number) => void;
   setDailyGoal: (userId: number, goal: DailyGoal) => { hasExistingGoal: boolean };
   getDailyGoal: (userId: number) => DailyGoal | undefined;
   updateDailyGoalProgress: (userId: number, progress: number) => void;
@@ -42,6 +42,7 @@ type PostStore = {
   getGoalParticipants: (userId: number) => number[];
   checkExpiredGoals: () => void;
   hasActiveGoal: (userId: number) => boolean;
+  createPostWithGoal: (userId: number, content: string, goal: DailyGoal) => void; // Neue Funktion
 };
 
 export const usePostStore = create<PostStore>()(
@@ -51,7 +52,7 @@ export const usePostStore = create<PostStore>()(
       comments: {},
       dailyGoals: {},
       goalParticipants: {},
-      posts: {},  //Re-added from original
+      posts: {},
 
       addLike: (postId, userId) =>
         set((state) => ({
@@ -93,6 +94,28 @@ export const usePostStore = create<PostStore>()(
 
       getComments: (postId) =>
         get().comments[postId] || [],
+
+      createPostWithGoal: (userId, content, goal) => {
+        const postId = Date.now();
+        const post: Post = {
+          id: postId,
+          userId,
+          content,
+          createdAt: new Date(),
+          dailyGoal: goal
+        };
+
+        set((state) => ({
+          posts: {
+            ...state.posts,
+            [postId]: post
+          },
+          dailyGoals: {
+            ...state.dailyGoals,
+            [userId]: goal
+          }
+        }));
+      },
 
       setDailyGoal: (userId, goal) => {
         const existingGoal = get().getDailyGoal(userId);
@@ -141,6 +164,31 @@ export const usePostStore = create<PostStore>()(
 
         return goalWithDate;
       },
+
+      updatePost: (postId, content) =>
+        set((state) => ({
+          posts: {
+            ...state.posts,
+            [postId]: {
+              ...state.posts[postId],
+              content,
+              updatedAt: new Date()
+            }
+          }
+        })),
+
+      deletePost: (postId) =>
+        set((state) => {
+          const { [postId]: deletedPost, ...remainingPosts } = state.posts;
+          const { [postId]: deletedLikes, ...remainingLikes } = state.likes;
+          const { [postId]: deletedComments, ...remainingComments } = state.comments;
+
+          return {
+            posts: remainingPosts,
+            likes: remainingLikes,
+            comments: remainingComments
+          };
+        }),
 
       hasActiveGoal: (userId) => {
         return Boolean(get().getDailyGoal(userId));
@@ -201,32 +249,7 @@ export const usePostStore = create<PostStore>()(
             });
           }
         });
-      },
-      //Re-added from original
-      updatePost: (postId, content) =>
-        set((state) => ({
-          posts: {
-            ...state.posts,
-            [postId]: {
-              ...state.posts[postId],
-              content,
-              updatedAt: new Date()
-            }
-          }
-        })),
-      //Re-added from original
-      deletePost: (postId) =>
-        set((state) => {
-          const { [postId]: deletedPost, ...remainingPosts } = state.posts;
-          const { [postId]: deletedLikes, ...remainingLikes } = state.likes;
-          const { [postId]: deletedComments, ...remainingComments } = state.comments;
-
-          return {
-            posts: remainingPosts,
-            likes: remainingLikes,
-            comments: remainingComments
-          };
-        })
+      }
     }),
     {
       name: 'post-interaction-storage',
