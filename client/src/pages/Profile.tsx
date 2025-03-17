@@ -1,9 +1,9 @@
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { useState, useEffect } from "react";
-import { useParams } from "wouter";
+import { useParams, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageSquare, Trophy, Users2 } from "lucide-react";
+import { MessageSquare, Trophy, Users2, ArrowRight } from "lucide-react";
 import FeedPost from "@/components/FeedPost";
 import { mockUsers, mockChallenges, mockGroups } from "../data/mockData";
 import { Badge } from "@/components/ui/badge";
@@ -14,10 +14,12 @@ import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { useUsers } from "../contexts/UserContext";
 import { UserAvatar } from "@/components/UserAvatar";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 export default function Profile() {
   const { id } = useParams();
   const { currentUser } = useUsers();
+  const [, setLocation] = useLocation();
   const userId = parseInt(id || "1");
   const [user, setUser] = useState(() => mockUsers.find(u => u.id === userId));
   const postStore = usePostStore();
@@ -50,6 +52,14 @@ export default function Profile() {
     });
   };
 
+  const navigateToChallenge = (challengeId: number) => {
+    setLocation(`/challenges/${challengeId}`);
+  };
+
+  const navigateToGroup = (groupId: number) => {
+    setLocation(`/groups/${groupId}`);
+  };
+
   return (
     <div className="container max-w-4xl mx-auto p-4">
       {/* Profile Header */}
@@ -65,9 +75,6 @@ export default function Profile() {
               size="lg"
               showActiveGoal={true}
             />
-            {user.isVerified && (
-              <VerifiedBadge className="absolute bottom-0 right-0" />
-            )}
           </div>
 
           <h1 className="text-2xl font-bold mt-4">{user.name}</h1>
@@ -146,15 +153,51 @@ export default function Profile() {
         {/* Challenges Tab */}
         <TabsContent value="challenges" className="space-y-4">
           {userChallenges.length > 0 ? (
-            <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+            <div className="grid gap-4 grid-cols-1">
               {userChallenges.map(challenge => (
-                <div key={challenge.id} className="bg-card rounded-lg p-4">
-                  <h3 className="font-semibold">{challenge.title}</h3>
-                  <p className="text-sm text-muted-foreground">{challenge.description}</p>
-                  <Badge variant="secondary" className="mt-2">
-                    {challenge.creatorId === userId ? 'Ersteller' : 'Teilnehmer'}
-                  </Badge>
-                </div>
+                <Card 
+                  key={challenge.id}
+                  className="cursor-pointer hover:shadow-lg transition-shadow"
+                  onClick={() => navigateToChallenge(challenge.id)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-4">
+                      {challenge.image ? (
+                        <img 
+                          src={challenge.image} 
+                          alt={challenge.title}
+                          className="w-24 h-24 object-cover rounded-lg"
+                        />
+                      ) : (
+                        <div className="w-24 h-24 bg-muted rounded-lg flex items-center justify-center">
+                          <Trophy className="h-8 w-8 text-muted-foreground" />
+                        </div>
+                      )}
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h3 className="font-semibold text-lg">{challenge.title}</h3>
+                            <p className="text-sm text-muted-foreground line-clamp-2">{challenge.description}</p>
+                          </div>
+                          <Badge variant={challenge.creatorId === userId ? "default" : "secondary"} className="ml-2">
+                            {challenge.creatorId === userId ? 'Ersteller' : 'Teilnehmer'}
+                          </Badge>
+                        </div>
+
+                        <div className="mt-4 flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Trophy className="h-4 w-4" />
+                            <span>{challenge.prize}</span>
+                          </div>
+                          <Button variant="ghost" size="sm" className="gap-1">
+                            Details <ArrowRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           ) : (
@@ -165,15 +208,71 @@ export default function Profile() {
         {/* Groups Tab */}
         <TabsContent value="groups" className="space-y-4">
           {userGroups.length > 0 ? (
-            <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+            <div className="grid gap-4 grid-cols-1">
               {userGroups.map(group => (
-                <div key={group.id} className="bg-card rounded-lg p-4">
-                  <h3 className="font-semibold">{group.name}</h3>
-                  <p className="text-sm text-muted-foreground">{group.description}</p>
-                  <Badge variant="secondary" className="mt-2">
-                    {group.creatorId === userId ? 'Admin' : 'Mitglied'}
-                  </Badge>
-                </div>
+                <Card 
+                  key={group.id}
+                  className="cursor-pointer hover:shadow-lg transition-shadow"
+                  onClick={() => navigateToGroup(group.id)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-4">
+                      {group.avatar ? (
+                        <img 
+                          src={group.avatar} 
+                          alt={group.name}
+                          className="w-16 h-16 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
+                          <Users2 className="h-8 w-8 text-muted-foreground" />
+                        </div>
+                      )}
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h3 className="font-semibold text-lg">{group.name}</h3>
+                            <p className="text-sm text-muted-foreground line-clamp-2">{group.description}</p>
+                          </div>
+                          <Badge variant={group.creatorId === userId ? "default" : "secondary"} className="ml-2">
+                            {group.creatorId === userId ? 'Admin' : 'Mitglied'}
+                          </Badge>
+                        </div>
+
+                        <div className="mt-2 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="flex -space-x-2">
+                              {group.participantIds?.slice(0, 3).map((participantId) => {
+                                const participant = mockUsers.find(u => u.id === participantId);
+                                return participant ? (
+                                  <UserAvatar
+                                    key={participant.id}
+                                    userId={participant.id}
+                                    avatar={participant.avatar}
+                                    username={participant.username}
+                                    size="sm"
+                                  />
+                                ) : null;
+                              })}
+                              {(group.participantIds?.length || 0) > 3 && (
+                                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm">
+                                  +{(group.participantIds?.length || 0) - 3}
+                                </div>
+                              )}
+                            </div>
+                            <span className="text-sm text-muted-foreground">
+                              {group.participantIds?.length || 0} Mitglieder
+                            </span>
+                          </div>
+                          <Button variant="ghost" size="sm" className="gap-1">
+                            Details <ArrowRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           ) : (
