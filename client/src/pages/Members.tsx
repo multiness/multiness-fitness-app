@@ -3,20 +3,27 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, MessageSquare, UserPlus } from "lucide-react";
-import { Link } from "wouter";
+import { Search, MessageSquare } from "lucide-react";
+import { Link, useLocation } from "wouter";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { useUsers } from "../contexts/UserContext";
 import { UserAvatar } from "@/components/UserAvatar";
+import { getChatId } from "../lib/chatService";
 
 export default function Members() {
   const [searchQuery, setSearchQuery] = useState("");
-  const { users } = useUsers();
+  const { users, currentUser } = useUsers();
+  const [, setLocation] = useLocation();
 
   const filteredUsers = users.filter(user =>
     user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleMessageClick = (userId: number) => {
+    const chatId = getChatId(userId);
+    setLocation(`/chat/${chatId}`);
+  };
 
   return (
     <div className="container mx-auto p-4 md:p-6">
@@ -87,14 +94,17 @@ export default function Members() {
                   )}
 
                   <div className="flex flex-wrap gap-2 mt-3">
-                    <Button variant="outline" size="sm" className="flex items-center gap-1 min-w-[100px]">
-                      <UserPlus className="h-4 w-4" />
-                      <span className="hidden sm:inline">Folgen</span>
-                    </Button>
-                    <Button variant="outline" size="sm" className="flex items-center gap-1 min-w-[100px]">
-                      <MessageSquare className="h-4 w-4" />
-                      <span className="hidden sm:inline">Nachricht</span>
-                    </Button>
+                    {currentUser?.id !== user.id && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex items-center gap-2"
+                        onClick={() => handleMessageClick(user.id)}
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                        Nachricht senden
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>
