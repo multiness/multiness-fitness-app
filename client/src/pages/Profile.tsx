@@ -63,7 +63,9 @@ export default function Profile() {
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   const userChallenges = mockChallenges.filter(c => c.creatorId === userId || c.participantIds?.includes(userId));
-  const userGroups = mockGroups.filter(g => g.creatorId === userId || g.participantIds?.includes(userId));
+  // Verwende Gruppen aus dem groupStore statt mockGroups
+  const userGroups = Object.values(groupStore.groups)
+    .filter(g => g.creatorId === userId || g.participantIds?.includes(userId));
   const activeUserChallenges = userChallenges.filter(c => new Date() <= new Date(c.endDate));
 
   const handleEditGroup = (group: any, event: React.MouseEvent) => {
@@ -226,7 +228,9 @@ export default function Profile() {
           {userGroups.length > 0 ? (
             <div className="grid gap-4 grid-cols-1">
               {userGroups.map(group => {
-                const isAdmin = groupStore.isGroupAdmin(group.id, userId);
+                // Prüfe, ob der aktuelle User der Creator oder Admin ist
+                const isCreatorOrAdmin = group.creatorId === userId || (group.adminIds && group.adminIds.includes(userId));
+
                 return (
                   <Card 
                     key={group.id}
@@ -257,7 +261,7 @@ export default function Profile() {
                               <Badge variant={group.creatorId === userId ? "default" : "secondary"} className="ml-2">
                                 {group.creatorId === userId ? 'Admin' : 'Mitglied'}
                               </Badge>
-                              {isAdmin && (
+                              {isCreatorOrAdmin && (
                                 <Button
                                   variant="ghost"
                                   size="sm"
