@@ -2,41 +2,21 @@ import { useQuery } from "@tanstack/react-query";
 import { Post } from "@shared/schema";
 import FeedPost from "@/components/FeedPost";
 import CreatePost from "@/components/CreatePost";
-import { useEffect } from "react";
 
 export default function HomePage() {
-  const { data: posts, isLoading, error, refetch } = useQuery<Post[]>({
+  const { data: posts, isLoading, error } = useQuery<Post[]>({
     queryKey: ['/api/posts'],
     queryFn: async () => {
-      try {
-        console.log("Fetching posts...");
-        const response = await fetch('/api/posts');
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch posts');
-        }
-
-        const data = await response.json();
-        console.log("Received posts:", data);
-        return data;
-      } catch (error) {
-        console.error("Error fetching posts:", error);
-        throw error;
+      const response = await fetch('/api/posts');
+      if (!response.ok) {
+        throw new Error('Failed to fetch posts');
       }
+      const data = await response.json();
+      console.log("Received posts in HomePage:", data);
+      return data;
     },
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
-    staleTime: 0
+    refetchInterval: 3000, // Automatische Aktualisierung alle 3 Sekunden
   });
-
-  // Automatische Aktualisierung
-  useEffect(() => {
-    const interval = setInterval(() => {
-      refetch();
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, [refetch]);
 
   if (isLoading) {
     return (
@@ -49,13 +29,7 @@ export default function HomePage() {
   if (error) {
     return (
       <div className="text-center text-red-500 p-4">
-        <p>Fehler beim Laden der Beiträge</p>
-        <button 
-          onClick={() => refetch()} 
-          className="mt-2 px-4 py-2 bg-primary text-white rounded-md"
-        >
-          Erneut versuchen
-        </button>
+        Fehler beim Laden der Beiträge. Bitte aktualisieren Sie die Seite.
       </div>
     );
   }
