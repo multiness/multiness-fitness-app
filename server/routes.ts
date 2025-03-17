@@ -10,10 +10,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Posts API endpoints
   app.get("/api/posts", async (req, res) => {
     try {
+      console.log("Fetching all posts...");
       const allPosts = await db
         .select()
         .from(posts)
         .orderBy(desc(posts.createdAt));
+
+      console.log("Found posts:", allPosts);
       res.json(allPosts);
     } catch (error) {
       console.error("Error fetching posts:", error);
@@ -21,23 +24,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/posts/user/:userId", async (req, res) => {
-    try {
-      const userPosts = await db
-        .select()
-        .from(posts)
-        .where(eq(posts.userId, parseInt(req.params.userId)))
-        .orderBy(desc(posts.createdAt));
-      res.json(userPosts);
-    } catch (error) {
-      console.error("Error fetching user posts:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
-
   app.post("/api/posts", async (req, res) => {
     try {
       const { userId, content, images, dailyGoal } = req.body;
+      console.log("Creating post with data:", { userId, content, hasImages: !!images?.length });
 
       if (!userId || !content) {
         return res.status(400).json({ error: "Missing required fields" });
@@ -52,10 +42,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         updatedAt: new Date()
       }).returning();
 
+      console.log("Created new post:", newPost);
       res.status(201).json(newPost);
     } catch (error) {
       console.error("Error creating post:", error);
       res.status(500).json({ error: "Failed to create post" });
+    }
+  });
+
+  app.get("/api/posts/user/:userId", async (req, res) => {
+    try {
+      const userPosts = await db
+        .select()
+        .from(posts)
+        .where(eq(posts.userId, parseInt(req.params.userId)))
+        .orderBy(desc(posts.createdAt));
+      res.json(userPosts);
+    } catch (error) {
+      console.error("Error fetching user posts:", error);
+      res.status(500).json({ error: "Internal server error" });
     }
   });
 
