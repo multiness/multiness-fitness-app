@@ -4,35 +4,35 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Search, Users, Plus, Pin } from "lucide-react";
 import GroupPreview from "@/components/GroupPreview";
-import { mockGroups } from "../data/mockData";
-import { Link } from "wouter";
 import { useUsers } from "../contexts/UserContext";
+import { useGroupStore } from "../lib/groupStore";
+import { Link } from "wouter";
 
 export default function Groups() {
   const [searchQuery, setSearchQuery] = useState("");
   const { currentUser } = useUsers();
-  const [groups, setGroups] = useState(mockGroups);
+  const groupStore = useGroupStore();
+  const groups = Object.values(groupStore.groups);
+
+  console.log("Available groups:", groups);
 
   // Featured Group wird als erste Gruppe angezeigt
   const featuredGroup = groups.find(g => g.isFeatured);
   const regularGroups = groups.filter(g => !g.isFeatured);
 
   const handleToggleFeatured = (groupId: number) => {
-    setGroups(prevGroups => {
+    const group = groupStore.groups[groupId];
+    if (group) {
       // Entferne den Featured-Status von allen anderen Gruppen
-      const updatedGroups = prevGroups.map(g => ({
-        ...g,
-        isFeatured: false
-      }));
+      Object.values(groupStore.groups).forEach(g => {
+        if (g.id !== groupId && g.isFeatured) {
+          groupStore.updateGroup(g.id, { isFeatured: false });
+        }
+      });
 
       // Setze den Featured-Status für die ausgewählte Gruppe
-      const groupIndex = updatedGroups.findIndex(g => g.id === groupId);
-      if (groupIndex !== -1) {
-        updatedGroups[groupIndex].isFeatured = true;
-      }
-
-      return updatedGroups;
-    });
+      groupStore.updateGroup(groupId, { isFeatured: !group.isFeatured });
+    }
   };
 
   const filteredGroups = regularGroups.filter(group =>
@@ -48,10 +48,12 @@ export default function Groups() {
           <Users className="h-6 w-6 text-primary" />
           <h1 className="text-2xl font-bold">Gruppen</h1>
         </div>
-        <Button onClick={() => window.location.href = "/create/group"}>
-          <Plus className="h-4 w-4 mr-2" />
-          Gruppe erstellen
-        </Button>
+        <Link href="/create/group">
+          <Button>
+            <Plus className="h-4 w-4 mr-2" />
+            Gruppe erstellen
+          </Button>
+        </Link>
       </div>
 
       {/* Search Bar */}
