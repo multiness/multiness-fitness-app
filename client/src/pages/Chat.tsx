@@ -3,8 +3,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, Send, Image as ImageIcon, ArrowLeft, Users2, Plus, FileText, Video, Target } from "lucide-react";
-import { mockUsers } from "../data/mockData";
+import { Search, Send, Image as ImageIcon, ArrowLeft, Users2, Plus, FileText, Video } from "lucide-react";
+import { useUsers } from "../contexts/UserContext";
 import { format } from "date-fns";
 import { useChatStore, getChatId } from "../lib/chatService";
 import { usePostStore } from "../lib/postStore";
@@ -23,85 +23,38 @@ import AddGroupProgress from "@/components/AddGroupProgress";
 import PerformanceBoard from "@/components/PerformanceBoard"; // Import the PerformanceBoard component
 
 
-interface Message {
-  id: number;
-  userId: number;
-  content: string;
-  timestamp: string;
-  imageUrl?: string;
-  groupId?: number;
-}
-
-interface ChatPreview {
-  id: string;
-  name: string;
-  avatar?: string;
-  isGroup: boolean;
-  isOnline?: boolean;
-  lastMessage?: Message;
-  unreadCount?: number;
-}
-
 export default function Chat() {
   const { id } = useParams();
   const chatStore = useChatStore();
-  const postStore = usePostStore();
-  const groupStore = useGroupStore();
-  const currentUser = mockUsers[0];
-
+  const { users, currentUser } = useUsers();
   const [messageInput, setMessageInput] = useState("");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [isGroupGoalModalOpen, setIsGroupGoalModalOpen] = useState(false);
-  const [isAddProgressModalOpen, setIsAddProgressModalOpen] = useState(false);
-  const [isPerformanceBoardOpen, setIsPerformanceBoardOpen] = useState(false);
+  const [, setLocation] = useLocation();
 
-  // Get all groups from groupStore
-  const groups = Object.values(groupStore.groups);
-  console.log("Available groups in chat:", groups);
+  // Get all chats including direct chats and groups
+  const allChats = [...users.map(user => ({
+    id: getChatId(user.id),
+    name: user.username,
+    avatar: user.avatar,
+    isGroup: false,
+    userId: user.id
+  }))];
 
-  // Create chat previews from real groups and mock users
-  const chatPreviews = [
-    ...mockUsers.slice(1).map(user => {
-      const chatId = user.id.toString();
-      const messages = chatStore.getMessages(chatId);
-      const unreadCount = messages.filter(m => m.userId !== currentUser.id).length;
-      return {
-        id: chatId,
-        name: user.username,
-        avatar: user.avatar || undefined,
-        isGroup: false,
-        isOnline: true,
-        lastMessage: messages[messages.length - 1],
-        unreadCount,
-      };
-    }),
-    ...groups.map(group => {
-      const chatId = getChatId(group.id);
-      const messages = chatStore.getMessages(chatId);
-      const unreadCount = messages.filter(m => m.userId !== currentUser.id).length;
-      return {
-        id: chatId,
-        name: group.name,
-        avatar: group.image || undefined,
-        isGroup: true,
-        lastMessage: messages[messages.length - 1],
-        unreadCount,
-      };
-    }),
-  ];
+  // If we're in direct chat mode, automatically select the chat with the specified user
+  const isDirect = window.location.pathname.endsWith('/direct');
+  const directUserId = isDirect ? parseInt(id?.replace('chat-', '') || '0') : null;
+  const directUser = directUserId ? users.find(u => u.id === directUserId) : null;
 
-  const [selectedChat, setSelectedChat] = useState<ChatPreview | null>(
-    id ? chatPreviews.find(c => c.id === id) || null : null
+  // Get the current chat based on the URL parameters
+  const [selectedChat, setSelectedChat] = useState(
+    id ? (directUser ? {
+      id: getChatId(directUser.id),
+      name: directUser.username,
+      avatar: directUser.avatar,
+      isGroup: false,
+      userId: directUser.id
+    } : allChats.find(c => c.id === id)) : null
   );
-
-  useEffect(() => {
-    if (id && (!selectedChat || selectedChat.id !== id)) {
-      const chat = chatPreviews.find(c => c.id === id);
-      if (chat) {
-        setSelectedChat(chat);
-      }
-    }
-  }, [id]);
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,11 +62,10 @@ export default function Chat() {
 
     const message = {
       id: Date.now(),
-      userId: currentUser.id,
+      userId: currentUser?.id || 0,
       content: messageInput,
       timestamp: new Date().toISOString(),
       imageUrl: selectedImage ? URL.createObjectURL(selectedImage) : undefined,
-      groupId: selectedChat.isGroup ? parseInt(selectedChat.id.replace('group-', '')) : undefined,
     };
 
     chatStore.addMessage(selectedChat.id, message);
@@ -124,9 +76,10 @@ export default function Chat() {
   const handleFileSelect = (type: 'image' | 'file' | 'video') => {
     const input = document.createElement('input');
     input.type = 'file';
+    input.id = type + '-upload'; // added id for image upload
     input.accept = type === 'image' ? 'image/*' :
-                   type === 'video' ? 'video/*' :
-                   '*/*';
+                  type === 'video' ? 'video/*' :
+                  '*/*';
     input.onchange = (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
@@ -201,241 +154,130 @@ export default function Chat() {
     chatStore.addMessage(selectedChat.id, message);
   };
 
+  const [isGroupGoalModalOpen, setIsGroupGoalModalOpen] = useState(false);
+  const [isAddProgressModalOpen, setIsAddProgressModalOpen] = useState(false);
+  const [isPerformanceBoardOpen, setIsPerformanceBoardOpen] = useState(false);
   const currentGroupGoal = selectedChat?.isGroup ? chatStore.getGroupGoal(selectedChat.id) : undefined;
 
   return (
     <div className="h-[calc(100vh-4rem)] flex">
-      <div className={`w-full md:w-[320px] md:border-r ${selectedChat ? 'hidden md:block' : 'block'}`}>
-        <div className="flex-1 flex flex-col bg-background">
-          <div className="p-4 border-b">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="Nach Nachrichten suchen..."
-                className="pl-9"
-              />
+      {/* Chat List Sidebar - Only show if not in direct chat mode */}
+      {!isDirect && (
+        <div className={`w-full md:w-[320px] md:border-r ${selectedChat ? 'hidden md:block' : 'block'}`}>
+          <div className="flex-1 flex flex-col bg-background">
+            <div className="p-4 border-b">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Nach Nachrichten suchen..."
+                  className="pl-9"
+                />
+              </div>
             </div>
-          </div>
-          <ScrollArea className="flex-1">
-            {chatPreviews.map(chat => (
-              <button
-                key={chat.id}
-                className={`w-full text-left p-4 hover:bg-muted/50 transition-colors ${
-                  selectedChat?.id === chat.id ? 'bg-muted' : ''
-                }`}
-                onClick={() => setSelectedChat(chat)}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <UserAvatar
-                      userId={parseInt(chat.id)}
-                      avatar={chat.avatar}
-                      username={chat.name}
-                      size="md"
-                      isGroup={chat.isGroup}
-                      clickable={!chat.isGroup}
-                    />
-                    {chat.isGroup && (
-                      <span className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-1">
-                        <Users2 className="h-3 w-3 text-white" />
-                      </span>
-                    )}
-                    {!chat.isGroup && chat.isOnline && (
-                      <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-blue-500 ring-2 ring-background" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <p className="font-medium truncate">{chat.name}</p>
-                      {chat.lastMessage && (
-                        <span className="text-xs text-muted-foreground">
-                          {format(new Date(chat.lastMessage.timestamp), 'HH:mm')}
-                        </span>
-                      )}
-                    </div>
-                    {chat.lastMessage && (
-                      <p className={`text-sm truncate ${
-                        chat.unreadCount && chat.unreadCount > 0 ? 'font-semibold text-foreground' : 'text-muted-foreground'
-                      }`}>
-                        {chat.lastMessage.userId === currentUser.id ? 'Du: ' : ''}{chat.lastMessage.content}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </button>
-            ))}
-          </ScrollArea>
-        </div>
-      </div>
+            <ScrollArea className="flex-1">
+              {allChats.map(chat => {
+                const messages = chatStore.getMessages(chat.id);
+                const lastMessage = messages[messages.length - 1];
 
+                return (
+                  <button
+                    key={chat.id}
+                    className={`w-full text-left p-4 hover:bg-muted/50 transition-colors ${
+                      selectedChat?.id === chat.id ? 'bg-muted' : ''
+                    }`}
+                    onClick={() => setSelectedChat(chat)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <UserAvatar
+                        userId={chat.userId}
+                        size="md"
+                        clickable={false}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{chat.name}</p>
+                        {lastMessage && (
+                          <p className="text-sm truncate text-muted-foreground">
+                            {lastMessage.content}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </ScrollArea>
+          </div>
+        </div>
+      )}
+
+      {/* Chat Area */}
       <div className={`flex-1 ${!selectedChat ? 'hidden md:block' : 'block'}`}>
         {selectedChat ? (
           <div className="flex-1 flex flex-col bg-background h-full">
-            <div className="p-4 border-b space-y-2">
+            <div className="p-4 border-b">
               <div className="flex items-center gap-3">
                 <Button
                   variant="ghost"
                   size="icon"
                   className="md:hidden"
-                  onClick={() => setSelectedChat(null)}
+                  onClick={() => isDirect ? setLocation('/chat') : setSelectedChat(null)}
                 >
                   <ArrowLeft className="h-4 w-4" />
                 </Button>
-                <div className="relative">
-                  <UserAvatar
-                    userId={parseInt(selectedChat.id)}
-                    avatar={selectedChat.avatar}
-                    username={selectedChat.name}
-                    size="sm"
-                    isGroup={selectedChat.isGroup}
-                    clickable={!selectedChat.isGroup}
-                  />
-                </div>
+                <UserAvatar
+                  userId={selectedChat.userId}
+                  size="sm"
+                  clickable={true}
+                />
                 <div>
                   <h2 className="font-semibold">{selectedChat.name}</h2>
                   <p className="text-sm text-muted-foreground">
-                    {selectedChat.isGroup ? 'Gruppen-Chat' : 'Online'}
+                    Online
                   </p>
                 </div>
               </div>
-
-              {selectedChat.isGroup && (
-                <div className="p-4 border-b space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Target className="h-4 w-4 text-primary" />
-                      <span className="text-sm font-medium">Gruppenziele</span>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-7"
-                      onClick={() => setIsGroupGoalModalOpen(true)}
-                    >
-                      <Plus className="h-3 w-3 mr-1" />
-                      Neues Ziel
-                    </Button>
-                  </div>
-
-                  {currentGroupGoal && (
-                    <div className="bg-muted/30 rounded-lg p-3 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Target className="h-4 w-4 text-primary" />
-                          <span className="text-sm font-medium">{currentGroupGoal.title}</span>
-                        </div>
-                        <span className="text-xs text-muted-foreground">
-                          Ziel bis {format(new Date(currentGroupGoal.targetDate), 'dd.MM.yyyy')}
-                        </span>
-                      </div>
-                      {currentGroupGoal.description && (
-                        <p className="text-xs text-muted-foreground">{currentGroupGoal.description}</p>
-                      )}
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">
-                              {(currentGroupGoal.contributions || []).reduce((sum, c) => sum + c.value, 0).toFixed(1)} {currentGroupGoal.unit}
-                              von {currentGroupGoal.targetValue} {currentGroupGoal.unit}
-                              ({currentGroupGoal.progress}%)
-                            </span>
-                            {currentGroupGoal.progress >= 100 && (
-                              <span className="text-yellow-500">
-                                🎉 Ziel erreicht!
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-7"
-                              onClick={() => setIsPerformanceBoardOpen(true)}
-                            >
-                              👥 Performance
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-7"
-                              onClick={() => setIsAddProgressModalOpen(true)}
-                            >
-                              <Plus className="h-3 w-3 mr-1" />
-                              Fortschritt
-                            </Button>
-                          </div>
-                        </div>
-                        <Progress 
-                          value={currentGroupGoal.progress} 
-                          className={`h-1.5 ${
-                            currentGroupGoal.progress >= 100 
-                              ? "bg-yellow-500" 
-                              : ""
-                          }`}
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
 
             <ScrollArea className="flex-1 p-4">
               <div className="space-y-4">
                 {chatStore.getMessages(selectedChat.id).map(message => {
-                  const isCurrentUser = message.userId === currentUser.id;
-                  const sender = mockUsers.find(u => u.id === message.userId);
+                  const isCurrentUser = message.userId === currentUser?.id;
+                  const sender = users.find(u => u.id === message.userId);
+
                   return (
-                    message.content.startsWith('🎉 Großartig!') ? (
-                      <div className={`flex justify-center my-4`}>
-                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-6 py-4 max-w-[80%]">
-                          <p className="text-center font-medium text-yellow-800">{message.content}</p>
-                          <Button
-                            variant="outline"
+                    <div
+                      key={message.id}
+                      className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div className={`flex gap-2 max-w-[70%] ${isCurrentUser ? 'flex-row-reverse' : ''}`}>
+                        {!isCurrentUser && sender && (
+                          <UserAvatar
+                            userId={message.userId}
                             size="sm"
-                            className="mt-2 w-full border-yellow-200 text-yellow-700 hover:bg-yellow-100"
-                            onClick={() => setIsPerformanceBoardOpen(true)}
-                          >
-                            👥 Performance Board anzeigen
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div
-                        key={message.id}
-                        className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
-                      >
-                        <div className={`flex gap-2 max-w-[70%] ${isCurrentUser ? 'flex-row-reverse' : ''}`}>
-                          {!isCurrentUser && sender && (
-                            <UserAvatar
-                              userId={message.userId}
-                              avatar={sender.avatar}
-                              username={sender.username}
-                              size="sm"
-                            />
-                          )}
-                          <div>
-                            <div className={`rounded-lg px-4 py-2 ${
-                              isCurrentUser ? 'bg-primary text-primary-foreground' : 'bg-muted'
-                            }`}>
-                              {message.imageUrl && (
-                                <img
-                                  src={message.imageUrl}
-                                  alt="Shared"
-                                  className="rounded-md mb-2 max-w-full"
-                                />
-                              )}
-                              <p className="break-words">{message.content}</p>
-                            </div>
-                            <p className={`text-xs text-muted-foreground mt-1 ${
-                              isCurrentUser ? 'text-right' : ''
-                            }`}>
-                              {format(new Date(message.timestamp), 'HH:mm')}
-                            </p>
+                            clickable={true}
+                          />
+                        )}
+                        <div>
+                          <div className={`rounded-lg px-4 py-2 ${
+                            isCurrentUser ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                          }`}>
+                            {message.imageUrl && (
+                              <img
+                                src={message.imageUrl}
+                                alt="Shared"
+                                className="rounded-md mb-2 max-w-full"
+                              />
+                            )}
+                            <p className="break-words">{message.content}</p>
                           </div>
+                          <p className={`text-xs text-muted-foreground mt-1 ${
+                            isCurrentUser ? 'text-right' : ''
+                          }`}>
+                            {format(new Date(message.timestamp), 'HH:mm')}
+                          </p>
                         </div>
                       </div>
-                    )
+                    </div>
                   );
                 })}
               </div>
@@ -456,22 +298,16 @@ export default function Chat() {
                   <DropdownMenuContent>
                     <DropdownMenuItem onClick={() => handleFileSelect('image')}>
                       <ImageIcon className="h-4 w-4 mr-2" />
-                      <span>Bild hochladen</span>
+                      <span>Bild senden</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleFileSelect('file')}>
                       <FileText className="h-4 w-4 mr-2" />
-                      <span>Datei hochladen</span>
+                      <span>Datei senden</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleFileSelect('video')}>
                       <Video className="h-4 w-4 mr-2" />
-                      <span>Video hochladen</span>
+                      <span>Video senden</span>
                     </DropdownMenuItem>
-                    {selectedChat?.isGroup && (
-                      <DropdownMenuItem onClick={() => setIsGroupGoalModalOpen(true)}>
-                        <Target className="h-4 w-4 mr-2" />
-                        <span>Gruppenziel hinzufügen</span>
-                      </DropdownMenuItem>
-                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
 
@@ -505,7 +341,6 @@ export default function Chat() {
           </div>
         )}
       </div>
-
       {selectedChat?.isGroup && (
         <>
           <AddGroupGoalModal
