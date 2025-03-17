@@ -13,7 +13,7 @@ interface ImageModalProps {
 export default function ImageModal({ src, alt, open, onClose }: ImageModalProps) {
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-screen-xl w-[95vw] p-4 flex items-center justify-center bg-background/80 backdrop-blur-sm border-none">
+      <DialogContent className="max-w-screen-xl w-[95vw] p-4 flex items-center justify-center">
         <div className="relative w-full h-full flex items-center justify-center">
           <img
             src={src}
