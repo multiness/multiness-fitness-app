@@ -29,7 +29,15 @@ import { UserAvatar } from "@/components/UserAvatar";
 import DailyGoalDisplay from './DailyGoalDisplay';
 
 interface FeedPostProps {
-  post: Post;
+  post: Post & { dailyGoal?: {
+    type: 'water' | 'steps' | 'distance' | 'custom';
+    target: number;
+    unit: string;
+    progress: number;
+    completed: boolean;
+    customName?: string;
+    createdAt: Date;
+  }};
 }
 
 export default function FeedPost({ post }: FeedPostProps) {

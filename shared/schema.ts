@@ -20,6 +20,7 @@ export const posts = pgTable("posts", {
   content: text("content").notNull(),
   image: text("image"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  dailyGoal: jsonb("daily_goal"),  // Add dailyGoal column to store goal data
 });
 
 export const challenges = pgTable("challenges", {
