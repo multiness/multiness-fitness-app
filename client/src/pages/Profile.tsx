@@ -43,7 +43,6 @@ export default function Profile() {
 
   const userChallenges = mockChallenges.filter(c => c.creatorId === userId || c.participantIds?.includes(userId));
 
-  // Hole die Gruppen aus dem groupStore
   const userGroups = Object.values(groupStore.groups)
     .filter(g => g.creatorId === userId || g.participantIds?.includes(userId));
 
@@ -52,6 +51,8 @@ export default function Profile() {
   console.log('All groups in store:', groupStore.groups);
 
   const activeUserChallenges = userChallenges.filter(c => new Date() <= new Date(c.endDate));
+
+  if (!user) return <div>Benutzer nicht gefunden</div>;
 
   const handleProfileUpdate = (updatedData: { name: string; bio?: string; avatar?: string }) => {
     setUser(currentUser => {
@@ -85,7 +86,66 @@ export default function Profile() {
 
   return (
     <div className="container max-w-4xl mx-auto p-4">
-      {/* Profile Header und andere Tabs bleiben unverändert */}
+      {/* Profile Header */}
+      <div className="relative mb-8">
+        <div className="h-32 bg-gradient-to-r from-primary/20 to-primary/10 rounded-t-lg" />
+
+        <div className="flex flex-col items-center -mt-12">
+          <div className="relative">
+            <UserAvatar
+              userId={userId}
+              avatar={user.avatar}
+              username={user.username}
+              size="lg"
+              showActiveGoal={true}
+            />
+          </div>
+
+          <h1 className="text-2xl font-bold mt-4">{user.name}</h1>
+          <h2 className="text-lg text-muted-foreground">@{user.username}</h2>
+
+          {user.bio && (
+            <p className="text-center mt-2 max-w-md text-muted-foreground">{user.bio}</p>
+          )}
+
+          {/* Stats */}
+          <div className="flex gap-4 mt-4">
+            <div className="text-center">
+              <span className="text-lg font-semibold">{userPosts.length}</span>
+              <p className="text-sm text-muted-foreground">Beiträge</p>
+            </div>
+            <div className="text-center">
+              <span className="text-lg font-semibold">{activeUserChallenges.length}</span>
+              <p className="text-sm text-muted-foreground">Aktive Challenges</p>
+            </div>
+            <div className="text-center">
+              <span className="text-lg font-semibold">{userGroups.length}</span>
+              <p className="text-sm text-muted-foreground">Gruppen</p>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-2 mt-4">
+            {currentUser?.id === userId ? (
+              <Button onClick={() => setIsEditDialogOpen(true)}>Profil bearbeiten</Button>
+            ) : (
+              <Button>Folgen</Button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Active Goal Display */}
+      {activeGoal && (
+        <div className="mb-6">
+          <DailyGoalDisplay
+            goal={activeGoal}
+            userId={userId}
+            variant="profile"
+          />
+        </div>
+      )}
+
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="mt-6">
         <TabsList className="grid w-full grid-cols-3 mb-4">
           <TabsTrigger value="posts" className="flex items-center gap-2">
