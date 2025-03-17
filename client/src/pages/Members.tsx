@@ -9,11 +9,13 @@ import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { useUsers } from "../contexts/UserContext";
 import { UserAvatar } from "@/components/UserAvatar";
 import { getChatId } from "../lib/chatService";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Members() {
   const [searchQuery, setSearchQuery] = useState("");
   const { users, currentUser } = useUsers();
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
 
   const filteredUsers = users.filter(user =>
     user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -23,6 +25,10 @@ export default function Members() {
   const handleMessageClick = (userId: number) => {
     const chatId = getChatId(userId);
     setLocation(`/chat/${chatId}`);
+    toast({
+      title: "Chat geöffnet",
+      description: "Sie können jetzt eine Nachricht senden."
+    });
   };
 
   return (
