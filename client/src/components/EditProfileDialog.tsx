@@ -12,9 +12,11 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { User } from "@shared/schema";
 import { ImagePlus } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const profileSchema = z.object({
   name: z.string().min(2, "Name muss mindestens 2 Zeichen lang sein"),
+  username: z.string().min(2, "Benutzername muss mindestens 2 Zeichen lang sein"),
   bio: z.string().optional(),
   avatar: z.string().optional(),
   bannerImage: z.string().optional(),
@@ -45,6 +47,7 @@ export default function EditProfileDialog({ user, open, onOpenChange, onSave }: 
     resolver: zodResolver(profileSchema),
     defaultValues: {
       name: user.name,
+      username: user.username,
       bio: user.bio || "",
       avatar: user.avatar || undefined,
       bannerImage: user.bannerImage || undefined,
@@ -85,144 +88,162 @@ export default function EditProfileDialog({ user, open, onOpenChange, onSave }: 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>Profil bearbeiten</DialogTitle>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Banner Upload */}
-            <div className="space-y-2">
-              <Label>Profilbanner</Label>
-              <div className="relative">
-                <div className="w-full h-24 bg-muted rounded-lg overflow-hidden">
-                  {bannerPreview ? (
-                    <img 
-                      src={bannerPreview} 
-                      alt="Banner Vorschau"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <ImagePlus className="h-8 w-8 text-muted-foreground" />
-                    </div>
-                  )}
+        <ScrollArea className="max-h-[calc(90vh-8rem)] px-1">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* Banner Upload */}
+              <div className="space-y-2">
+                <Label>Profilbanner</Label>
+                <div className="relative">
+                  <div className="w-full h-24 bg-muted rounded-lg overflow-hidden">
+                    {bannerPreview ? (
+                      <img 
+                        src={bannerPreview} 
+                        alt="Banner Vorschau"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <ImagePlus className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                    )}
+                  </div>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleBannerChange}
+                    className="hidden"
+                    id="banner-upload"
+                  />
+                  <Label
+                    htmlFor="banner-upload"
+                    className="absolute bottom-2 right-2 bg-background/80 backdrop-blur-sm px-2 py-1 rounded-md cursor-pointer hover:bg-background"
+                  >
+                    <ImagePlus className="h-4 w-4" />
+                  </Label>
                 </div>
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleBannerChange}
-                  className="hidden"
-                  id="banner-upload"
-                />
-                <Label
-                  htmlFor="banner-upload"
-                  className="absolute bottom-2 right-2 bg-background/80 backdrop-blur-sm px-2 py-1 rounded-md cursor-pointer hover:bg-background"
-                >
-                  <ImagePlus className="h-4 w-4" />
-                </Label>
               </div>
-            </div>
 
-            {/* Avatar Upload */}
-            <div className="flex flex-col items-center gap-4">
-              <Avatar className="h-24 w-24">
-                <AvatarImage src={avatarPreview} />
-                <AvatarFallback>{user.username[0].toUpperCase()}</AvatarFallback>
-              </Avatar>
-              <div className="relative">
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarChange}
-                  className="hidden"
-                  id="avatar-upload"
-                />
-                <Label
-                  htmlFor="avatar-upload"
-                  className="flex items-center gap-2 cursor-pointer hover:text-primary"
-                >
-                  <ImagePlus className="h-4 w-4" />
-                  Profilbild ändern
-                </Label>
+              {/* Avatar Upload */}
+              <div className="flex flex-col items-center gap-4">
+                <div className="relative w-24 h-24">
+                  <Avatar className="w-full h-full">
+                    <AvatarImage src={avatarPreview} className="object-cover" />
+                    <AvatarFallback>{user.username[0].toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                </div>
+                <div className="relative">
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarChange}
+                    className="hidden"
+                    id="avatar-upload"
+                  />
+                  <Label
+                    htmlFor="avatar-upload"
+                    className="flex items-center gap-2 cursor-pointer hover:text-primary"
+                  >
+                    <ImagePlus className="h-4 w-4" />
+                    Profilbild ändern
+                  </Label>
+                </div>
               </div>
-            </div>
 
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="bio"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Bio</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      {...field}
-                      placeholder="Erzähle etwas über dich..."
-                      className="resize-none"
-                      rows={4}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {(user.isVerified || user.isAdmin || user.isTeamMember) && (
               <FormField
                 control={form.control}
-                name="teamRole"
+                name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Position im Team</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Wähle deine Position" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {teamRoles.map(role => (
-                          <SelectItem key={role.value} value={role.value}>
-                            {role.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            )}
 
-            <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
-                Abbrechen
-              </Button>
-              <Button type="submit">Speichern</Button>
-            </div>
-          </form>
-        </Form>
+              <FormField
+                control={form.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Benutzername</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="bio"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Bio</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        placeholder="Erzähle etwas über dich..."
+                        className="resize-none"
+                        rows={4}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {(user.isVerified || user.isAdmin || user.isTeamMember) && (
+                <FormField
+                  control={form.control}
+                  name="teamRole"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Position im Team</FormLabel>
+                      <Select 
+                        onValueChange={field.onChange} 
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Wähle deine Position" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {teamRoles.map(role => (
+                            <SelectItem key={role.value} value={role.value}>
+                              {role.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
+              <div className="flex justify-end gap-2 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                >
+                  Abbrechen
+                </Button>
+                <Button type="submit">Speichern</Button>
+              </div>
+            </form>
+          </Form>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );

@@ -18,6 +18,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { getChatId } from "../lib/chatService";
 import { useGroupStore } from "../lib/groupStore";
 import EditGroupDialog from "@/components/EditGroupDialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
 
 export default function Profile() {
   const { id } = useParams();
@@ -54,7 +56,13 @@ export default function Profile() {
 
   if (!user) return <div>Benutzer nicht gefunden</div>;
 
-  const handleProfileUpdate = (updatedData: { name: string; bio?: string; avatar?: string }) => {
+  const handleProfileUpdate = (updatedData: { 
+    name: string; 
+    username: string;
+    bio?: string; 
+    avatar?: string;
+    bannerImage?: string;
+  }) => {
     setUser(currentUser => {
       if (!currentUser) return currentUser;
       return {
@@ -156,6 +164,7 @@ export default function Profile() {
         </div>
       )}
 
+      <ScrollArea className="max-h-[90vh]">
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="mt-6">
         <TabsList className="grid w-full grid-cols-3 mb-4">
           <TabsTrigger value="posts" className="flex items-center gap-2">
@@ -281,7 +290,7 @@ export default function Profile() {
           ))}
         </TabsContent>
       </Tabs>
-
+      </ScrollArea>
       <EditProfileDialog
         open={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
