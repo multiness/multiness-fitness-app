@@ -22,8 +22,8 @@ export default function UserSlider() {
     >
       <CarouselContent>
         {users.map((user) => (
-          <CarouselItem key={user.id} className="basis-1/5 md:basis-1/6 lg:basis-1/8">
-            <div className="flex flex-col items-center gap-1">
+          <CarouselItem key={user.id} className="basis-1/4 md:basis-1/5 lg:basis-1/6">
+            <div className="flex flex-col items-center gap-2">
               <UserAvatar
                 userId={user.id}
                 size="md"
@@ -31,7 +31,7 @@ export default function UserSlider() {
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="text-sm truncate max-w-full p-1 h-auto"
+                className="text-xs leading-tight min-h-[2.5rem] px-1 h-auto w-full whitespace-normal text-center"
                 onClick={() => toggleVerification(user.id)}
               >
                 {user.username}
