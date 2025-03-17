@@ -15,10 +15,16 @@ import { ImagePlus } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 
-const MAX_IMAGE_SIZE = 800; // Maximum dimension (width or height) in pixels
+const MAX_IMAGE_SIZE = 400; // Reduzierte maximale Dimension
+const MAX_FILE_SIZE = 500 * 1024; // 500KB maximale Dateigröße
 
 const compressImage = (file: File, maxSize: number): Promise<string> => {
   return new Promise((resolve, reject) => {
+    if (file.size > MAX_FILE_SIZE) {
+      reject(new Error("Datei ist zu groß (max. 500KB)"));
+      return;
+    }
+
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = (event) => {
@@ -43,8 +49,8 @@ const compressImage = (file: File, maxSize: number): Promise<string> => {
         const ctx = canvas.getContext('2d');
         ctx?.drawImage(img, 0, 0, width, height);
 
-        // Convert to WebP format for better compression
-        const compressedImage = canvas.toDataURL('image/webp', 0.8);
+        // Stärkere Kompression mit WebP
+        const compressedImage = canvas.toDataURL('image/webp', 0.6);
         resolve(compressedImage);
       };
       img.onerror = reject;
@@ -52,7 +58,6 @@ const compressImage = (file: File, maxSize: number): Promise<string> => {
     reader.onerror = reject;
   });
 };
-
 
 const profileSchema = z.object({
   name: z.string().min(2, "Name muss mindestens 2 Zeichen lang sein"),
@@ -109,7 +114,7 @@ export default function EditProfileDialog({ user, open, onOpenChange, onSave }: 
     } catch (error) {
       toast({
         title: "Fehler beim Bildupload",
-        description: "Bitte versuche es mit einem kleineren Bild.",
+        description: error instanceof Error ? error.message : "Bitte versuche es mit einem kleineren Bild (max. 500KB).",
         variant: "destructive",
       });
     }
@@ -174,6 +179,9 @@ export default function EditProfileDialog({ user, open, onOpenChange, onSave }: 
                     <ImagePlus className="h-4 w-4" />
                   </Label>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Maximale Dateigröße: 500KB
+                </p>
               </div>
 
               {/* Avatar Upload */}
@@ -199,6 +207,9 @@ export default function EditProfileDialog({ user, open, onOpenChange, onSave }: 
                     <ImagePlus className="h-4 w-4" />
                     Profilbild ändern
                   </Label>
+                  <p className="text-xs text-muted-foreground text-center mt-1">
+                    Maximale Dateigröße: 500KB
+                  </p>
                 </div>
               </div>
 
