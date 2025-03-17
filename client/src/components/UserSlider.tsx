@@ -6,9 +6,9 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { Button } from "@/components/ui/button";
+import { VerifiedBadge } from "./VerifiedBadge";
 import { useUsers } from "../contexts/UserContext";
 import { UserAvatar } from "./UserAvatar";
-import { UsernameWithVerification } from "./UserAvatar";
 
 export default function UserSlider() {
   const { users, toggleVerification } = useUsers();
@@ -25,30 +25,27 @@ export default function UserSlider() {
         {users.map((user) => (
           <CarouselItem key={user.id} className="basis-1/5 md:basis-1/6 lg:basis-1/8">
             <div className="flex flex-col items-center gap-1">
-              <UserAvatar
-                userId={user.id}
-                size="md"
-                className="w-12 h-12"
-              />
-              <div className="flex items-center gap-1">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="text-[10px] truncate max-w-[60px] p-1 h-auto hover:bg-transparent"
-                  onClick={() => toggleVerification(user.id)}
-                >
-                  <span className="truncate">{user.username}</span>
-                </Button>
+              <div className="relative">
+                <UserAvatar
+                  userId={user.id}
+                  avatar={user.avatar}
+                  username={user.username}
+                  size="md"
+                />
                 {user.isVerified && (
-                  <svg
-                    className="w-3 h-3 text-primary flex-shrink-0"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
-                  </svg>
+                  <div className="absolute -bottom-1 -right-1">
+                    <VerifiedBadge />
+                  </div>
                 )}
               </div>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-sm truncate max-w-full p-1 h-auto"
+                onClick={() => toggleVerification(user.id)}
+              >
+                {user.username}
+              </Button>
             </div>
           </CarouselItem>
         ))}

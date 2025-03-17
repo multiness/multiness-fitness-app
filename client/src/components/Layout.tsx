@@ -108,7 +108,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     userId={currentUser.id}
                     size="sm"
                     showActiveGoal={false}
-                    showUsername={false}
                     hideVerifiedBadge={true}
                   />
                 </Button>
