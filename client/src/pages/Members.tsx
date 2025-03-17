@@ -24,10 +24,11 @@ export default function Members() {
 
   const handleMessageClick = (userId: number) => {
     const chatId = getChatId(userId);
-    setLocation(`/chat/${chatId}`);
+    // Direkt zum Chat mit der entsprechenden ID navigieren
+    setLocation(`/chat/${chatId}/direct`);
     toast({
       title: "Chat geöffnet",
-      description: "Sie können jetzt eine Nachricht senden."
+      description: "Der Chat wurde geöffnet. Sie können jetzt Nachrichten austauschen."
     });
   };
 
