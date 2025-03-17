@@ -7,15 +7,20 @@ export default function HomePage() {
   const { data: posts, isLoading, error } = useQuery<Post[]>({
     queryKey: ['/api/posts'],
     queryFn: async () => {
-      const response = await fetch('/api/posts');
-      if (!response.ok) {
-        throw new Error('Failed to fetch posts');
+      try {
+        const response = await fetch('/api/posts');
+        if (!response.ok) {
+          throw new Error('Failed to fetch posts');
+        }
+        const data = await response.json();
+        // Debug Logging
+        console.log("Posts received:", data);
+        return data;
+      } catch (error) {
+        console.error("Error fetching posts:", error);
+        throw error;
       }
-      const data = await response.json();
-      console.log("Received posts in HomePage:", data);
-      return data;
     },
-    refetchInterval: 3000, // Automatische Aktualisierung alle 3 Sekunden
   });
 
   if (isLoading) {
@@ -27,6 +32,7 @@ export default function HomePage() {
   }
 
   if (error) {
+    console.error("Error in HomePage:", error);
     return (
       <div className="text-center text-red-500 p-4">
         Fehler beim Laden der Beiträge. Bitte aktualisieren Sie die Seite.

@@ -7,17 +7,22 @@ import { posts } from "@shared/schema";
 import { eq, desc } from "drizzle-orm";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Posts API endpoints
   app.get("/api/posts", async (req, res) => {
     try {
+      // Debug Logging
+      console.log("GET /api/posts called");
+
       // Einfache, direkte Abfrage
       const allPosts = await db
         .select()
         .from(posts)
         .orderBy(desc(posts.createdAt));
 
-      console.log("Sending posts to client:", allPosts);
-      return res.json(allPosts);
+      // Debug Logging
+      console.log("Posts fetched from database:", allPosts);
+
+      // Sende den Response
+      return res.status(200).json(allPosts);
     } catch (error) {
       console.error("Error fetching posts:", error);
       return res.status(500).json({ error: "Internal server error" });
@@ -40,6 +45,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdAt: new Date(),
         updatedAt: new Date()
       }).returning();
+
+      // Debug Logging
+      console.log("New post created:", newPost);
 
       return res.status(201).json(newPost);
     } catch (error) {
