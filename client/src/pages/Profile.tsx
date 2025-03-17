@@ -1,6 +1,6 @@
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { useState, useEffect } from "react";
-import { useParams } from "wouter";
+import { useParams, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MessageSquare, Trophy, Users2, ArrowRight, Pencil } from "lucide-react";
@@ -21,6 +21,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function Profile() {
   const { id } = useParams();
+  const [, setLocation] = useLocation();
   const { currentUser, updateCurrentUser, users } = useUsers();
   const userId = parseInt(id || "1");
   const [user, setUser] = useState(() =>
@@ -78,13 +79,13 @@ export default function Profile() {
   };
 
   const navigateToChallenge = (challengeId: number) => {
-    //setLocation(`/challenges/${challengeId}`);
+    setLocation(`/challenges/${challengeId}`);
   };
 
   const navigateToGroupChat = (groupId: number) => {
     const chatId = getChatId(groupId);
     console.log('Navigating to group chat:', chatId);
-    //setLocation(`/chat/${chatId}`);
+    setLocation(`/chat/${chatId}`);
   };
 
   const handleEditGroup = (group: any, event: React.MouseEvent) => {
