@@ -58,6 +58,12 @@ interface Participant {
   lastUpdate?: Date;
 }
 
+interface ExerciseResult {
+  name: string;
+  value: string | number;
+  unit?: string;
+}
+
 export default function ChallengeDetail() {
   const { id } = useParams();
   const { toast } = useToast();
@@ -71,6 +77,7 @@ export default function ChallengeDetail() {
   const [showParticipants, setShowParticipants] = useState(false);
   const [result, setResult] = useState("");
   const [participants, setParticipants] = useState<Participant[]>([]);
+  const [exerciseResults, setExerciseResults] = useState<Record<string, ExerciseResult>>({});
 
   useEffect(() => {
     if (challenge) {
@@ -145,14 +152,20 @@ export default function ChallengeDetail() {
     setShowResultForm(false);
   };
 
-  const handleSubmitExerciseResult = (result: { name: string; value: string | number; unit?: string }) => {
-    // Später: Implementiere die Punkteberechnung basierend auf den Anforderungen
-    const points = 100; // Beispielwert
+  const handleSubmitExerciseResult = (result: ExerciseResult) => {
+    // Update exercise results
+    setExerciseResults(prev => ({
+      ...prev,
+      [result.name]: result
+    }));
 
-    // Aktualisiere die Teilnehmerliste mit den neuen Ergebnissen
+    // Calculate total points based on all completed exercises
+    const totalPoints = Object.values(exerciseResults).length * 100; // Simple calculation for now
+
+    // Update participants list with new points
     setParticipants(prev => prev.map(p =>
       p.id === (currentUser?.id || 0)
-        ? { ...p, points: points, lastUpdate: new Date() }
+        ? { ...p, points: totalPoints, lastUpdate: new Date() }
         : p
     ).sort((a, b) => b.points - a.points));
 
@@ -254,6 +267,7 @@ export default function ChallengeDetail() {
                   icon={getExerciseIcon(req.name)}
                   isParticipating={isParticipating}
                   onSubmitResult={handleSubmitExerciseResult}
+                  currentResult={exerciseResults[req.name]}
                 />
               ))}
             </div>
@@ -319,6 +333,7 @@ export default function ChallengeDetail() {
                       }}
                       isParticipating={isParticipating}
                       onSubmitResult={handleSubmitExerciseResult}
+                      currentResult={exerciseResults[exercise.name]}
                     />
                   ))}
                 </div>
