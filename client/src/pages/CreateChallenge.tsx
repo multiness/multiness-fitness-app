@@ -64,6 +64,7 @@ export default function CreateChallenge() {
     { value: "emom", label: "EMOM (Every Minute On the Minute)" },
     { value: "fortime", label: "For Time" },
     { value: "distance", label: "Laufdistanz" },
+    { value: "custom", label: "Eigenes Workout" },
   ];
 
   const handleAddExercise = () => {
@@ -93,18 +94,18 @@ Dauer: ${template.duration} Minuten
 Schwierigkeit: ${template.difficulty}
 
 Übungen:
-${template.workoutDetails.exercises.map((exercise: any) => 
-  `- ${exercise.name}: ${exercise.reps || exercise.time}${exercise.reps ? ' Wiederholungen' : ' Sekunden'}
+${template.workoutDetails.exercises.map((exercise: any) =>
+      `- ${exercise.name}: ${exercise.reps || exercise.time}${exercise.reps ? ' Wiederholungen' : ' Sekunden'}
    ${exercise.description ? `  ${exercise.description}` : ''}
    ${exercise.weight ? `  Gewicht: ${exercise.weight}kg` : ''}`
-).join('\n')}
+    ).join('\n')}
 
 Durchführung:
-${template.workoutType === 'amrap' ? 
-  `So viele Runden wie möglich in ${template.duration} Minuten.` :
-  template.workoutType === 'emom' ?
-  `Alle ${template.workoutDetails.timePerRound} Sekunden eine neue Runde für ${template.workoutDetails.rounds} Runden.` :
-  `${template.workoutDetails.rounds} Runden, ${template.workoutDetails.timePerRound} Sekunden pro Runde.`}
+${template.workoutType === 'amrap' ?
+      `So viele Runden wie möglich in ${template.duration} Minuten.` :
+      template.workoutType === 'emom' ?
+        `Alle ${template.workoutDetails.timePerRound} Sekunden eine neue Runde für ${template.workoutDetails.rounds} Runden.` :
+        `${template.workoutDetails.rounds} Runden, ${template.workoutDetails.timePerRound} Sekunden pro Runde.`}
 `.trim();
 
     setChallengeDescription(workoutDescription);
@@ -129,6 +130,9 @@ ${template.workoutType === 'amrap' ?
         break;
       case "distance":
         details += `Distanz: ${distance}km\n`;
+        break;
+      case "custom":
+        details += "Freies Workout\n";
         break;
     }
 
@@ -297,7 +301,7 @@ ${template.workoutType === 'amrap' ?
                 {workoutType === "amrap" && (
                   <div>
                     <Label>Zeitlimit (Minuten)</Label>
-                    <Input 
+                    <Input
                       type="number"
                       value={timeLimit}
                       onChange={(e) => setTimeLimit(e.target.value)}
@@ -310,7 +314,7 @@ ${template.workoutType === 'amrap' ?
                   <>
                     <div>
                       <Label>Anzahl Runden</Label>
-                      <Input 
+                      <Input
                         type="number"
                         value={rounds}
                         onChange={(e) => setRounds(e.target.value)}
@@ -319,7 +323,7 @@ ${template.workoutType === 'amrap' ?
                     </div>
                     <div>
                       <Label>Zeit pro Runde (Sekunden)</Label>
-                      <Input 
+                      <Input
                         type="number"
                         value={timePerRound}
                         onChange={(e) => setTimePerRound(e.target.value)}
@@ -332,7 +336,7 @@ ${template.workoutType === 'amrap' ?
                 {workoutType === "fortime" && (
                   <div>
                     <Label>Anzahl Runden</Label>
-                    <Input 
+                    <Input
                       type="number"
                       value={rounds}
                       onChange={(e) => setRounds(e.target.value)}
@@ -344,7 +348,7 @@ ${template.workoutType === 'amrap' ?
                 {workoutType === "distance" && (
                   <div>
                     <Label>Distanz (km)</Label>
-                    <Input 
+                    <Input
                       type="number"
                       value={distance}
                       onChange={(e) => setDistance(e.target.value)}
@@ -353,7 +357,7 @@ ${template.workoutType === 'amrap' ?
                   </div>
                 )}
 
-                {workoutType && (
+                {(workoutType === "custom" || workoutType) && (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <Label>Übungen</Label>
@@ -455,7 +459,7 @@ ${template.workoutType === 'amrap' ?
         <div className="space-y-4">
           <div>
             <Label>Titel</Label>
-            <Input 
+            <Input
               placeholder="Gib einen Titel für deine Challenge ein"
               value={challengeTitle}
               onChange={(e) => setChallengeTitle(e.target.value)}
@@ -463,7 +467,7 @@ ${template.workoutType === 'amrap' ?
           </div>
           <div>
             <Label>Beschreibung</Label>
-            <Textarea 
+            <Textarea
               placeholder="Beschreibe deine Challenge"
               value={challengeDescription || generateWorkoutDescription()}
               onChange={(e) => setChallengeDescription(e.target.value)}
@@ -473,12 +477,12 @@ ${template.workoutType === 'amrap' ?
           <div>
             <Label>Zeitraum</Label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input 
-                type="date" 
+              <Input
+                type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
               />
-              <Input 
+              <Input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
@@ -495,7 +499,7 @@ ${template.workoutType === 'amrap' ?
         <div className="space-y-4">
           <div>
             <Label>Gewinn-Titel</Label>
-            <Input 
+            <Input
               placeholder="z.B. Premium Protein Paket"
               value={prize}
               onChange={(e) => setPrize(e.target.value)}
@@ -503,7 +507,7 @@ ${template.workoutType === 'amrap' ?
           </div>
           <div>
             <Label>Gewinn-Beschreibung</Label>
-            <Textarea 
+            <Textarea
               placeholder="Beschreibe den Gewinn im Detail"
               value={prizeDescription}
               onChange={(e) => setPrizeDescription(e.target.value)}
