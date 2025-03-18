@@ -57,8 +57,15 @@ export default function ChallengeCard({ challenge, variant = "full" }: Challenge
   };
 
   const handleShare = (id: number) => {
-    // TODO: Implement actual sharing logic
+    // Die eigentliche Sharing-Logik wird jetzt im ShareDialog implementiert
     console.log(`Sharing challenge ${challenge.id} to ${shareType} ${id}`);
+  };
+
+  const sharedContent = {
+    type: 'challenge' as const,
+    id: challenge.id,
+    title: challenge.title,
+    preview: `Aktive Challenge bis ${format(new Date(challenge.endDate), "dd.MM.yyyy")}`
   };
 
   return (
@@ -189,6 +196,7 @@ export default function ChallengeCard({ challenge, variant = "full" }: Challenge
         type={shareType}
         title={shareType === 'chat' ? 'An Chat senden' : 'In Gruppe teilen'}
         onShare={handleShare}
+        content={sharedContent}
       />
     </>
   );

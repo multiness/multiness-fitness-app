@@ -12,6 +12,9 @@ import { UserAvatar } from "./UserAvatar";
 import { Search, Users2 } from "lucide-react";
 import { useUsers } from "../contexts/UserContext";
 import { useGroupStore } from "../lib/groupStore";
+import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
+import { useChatStore } from "../lib/chatService";
 
 interface ShareDialogProps {
   open: boolean;
@@ -19,6 +22,12 @@ interface ShareDialogProps {
   type: 'chat' | 'group';
   title: string;
   onShare: (id: number) => void;
+  content?: {
+    id: number;
+    type: 'challenge' | 'event' | 'post';
+    title: string;
+    preview?: string;
+  };
 }
 
 export default function ShareDialog({
@@ -27,11 +36,15 @@ export default function ShareDialog({
   type,
   title,
   onShare,
+  content
 }: ShareDialogProps) {
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const { users, currentUser } = useUsers();
   const groupStore = useGroupStore();
+  const chatStore = useChatStore();
+  const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   // Filtere die Benutzer/Gruppen basierend auf der Suche
   const items = type === 'chat'
@@ -49,9 +62,24 @@ export default function ShareDialog({
       );
 
   const handleShare = () => {
-    if (selectedId) {
-      onShare(selectedId);
+    if (selectedId && currentUser && content) {
+      // Chat-ID generieren
+      const chatId = type === 'group' ? `group-${selectedId}` : `chat-${selectedId}`;
+
+      // Inhalt im Chat speichern
+      chatStore.shareContent(chatId, currentUser.id, content);
+
+      // Toast anzeigen
+      toast({
+        title: "Erfolgreich geteilt!",
+        description: `Der Inhalt wurde ${type === 'chat' ? 'an den Chat' : 'in die Gruppe'} gesendet.`,
+      });
+
+      // Dialog schließen
       onOpenChange(false);
+
+      // Zum Chat navigieren
+      setLocation(`/chat/${chatId}`);
     }
   };
 

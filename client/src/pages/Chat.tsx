@@ -21,6 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import AddGroupGoalModal from "@/components/AddGroupGoalModal";
 import AddGroupProgress from "@/components/AddGroupProgress";
 import PerformanceBoard from "@/components/PerformanceBoard";
+import SharedContent from "@/components/SharedContent";
 
 export default function Chat() {
   const { id } = useParams();
@@ -325,6 +326,11 @@ export default function Chat() {
                               />
                             )}
                             <p className="break-words">{message.content}</p>
+                            {message.sharedContent && (
+                              <div className="mt-2">
+                                <SharedContent content={message.sharedContent} />
+                              </div>
+                            )}
                           </div>
                           <p className={`text-xs text-muted-foreground mt-1 ${
                             isCurrentUser ? 'text-right' : ''
