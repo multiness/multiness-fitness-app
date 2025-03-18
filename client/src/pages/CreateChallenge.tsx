@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Gift, Dumbbell, ChevronRight, ChevronLeft, Clock, RefreshCw, Plus, X } from "lucide-react";
+import { Gift, Dumbbell, ChevronRight, ChevronLeft, Clock, RefreshCw, Plus, X, Award } from "lucide-react";
 import WorkoutGenerator from "@/components/WorkoutGenerator";
 import { useToast } from "@/hooks/use-toast";
 import { format, addDays } from "date-fns";
@@ -49,7 +49,6 @@ interface BadgeTest {
   }[];
 }
 
-
 export default function CreateChallenge() {
   const { toast } = useToast();
   const [selectedWorkout, setSelectedWorkout] = useState<any>(null);
@@ -61,7 +60,7 @@ export default function CreateChallenge() {
   const [prizeDescription, setPrizeDescription] = useState("");
   const [showWorkoutDialog, setShowWorkoutDialog] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
-  const [creationMethod, setCreationMethod] = useState<"manual" | "generator" | null>(null);
+  const [creationMethod, setCreationMethod] = useState<"manual" | "generator" | "badge" | null>(null);
 
   // Neue States für manuelle Workout-Erstellung
   const [workoutType, setWorkoutType] = useState<string>("");
@@ -77,7 +76,6 @@ export default function CreateChallenge() {
     { value: "emom", label: "EMOM (Every Minute On the Minute)" },
     { value: "fortime", label: "For Time" },
     { value: "distance", label: "Laufdistanz" },
-    { value: "badge", label: "Fitness Abzeichen / Tests" },
     { value: "custom", label: "Eigenes Workout" },
   ];
 
@@ -97,7 +95,6 @@ export default function CreateChallenge() {
 
   const handleWorkoutSelect = (template: any) => {
     setSelectedWorkout(template);
-    // Nur beim Generator den Titel automatisch setzen
     setChallengeTitle(`${template.name} Challenge`);
 
     const workoutDescription = `
@@ -127,6 +124,25 @@ ${template.workoutType === 'amrap' ?
     setShowWorkoutDialog(false);
   };
 
+  const handleBadgeSelect = (badgeId: string) => {
+    const selectedTest = badgeTests.find(t => t.id === badgeId);
+    if (selectedTest) {
+      setSelectedBadgeTest(badgeId);
+      setChallengeTitle(`${selectedTest.name} Challenge`);
+      const description = `${selectedTest.description}\n\nAnforderungen:\n${selectedTest.requirements
+        .map(req => {
+          if ('levels' in req && req.levels) {
+            return `\n${req.name}:\n${req.levels
+              .map(level => `- ${level.level}: ${level.requirement}`)
+              .join('\n')}`;
+          }
+          return `\n${req.name}: ${req.requirement}`;
+        })
+        .join('\n')}`;
+      setChallengeDescription(description);
+    }
+  };
+
   const generateWorkoutDescription = () => {
     if (!workoutType) return "";
 
@@ -146,30 +162,12 @@ ${template.workoutType === 'amrap' ?
       case "distance":
         details += `Distanz: ${distance}km\n`;
         break;
-      case "badge":
-        const selectedTest = badgeTests.find(t => t.id === selectedBadgeTest);
-        if (selectedTest) {
-          details = `${selectedTest.name}\n\n`;
-          details += `${selectedTest.description}\n\n`;
-          details += "Anforderungen:\n";
-          selectedTest.requirements.forEach(req => {
-            details += `\n${req.name}:\n`;
-            if ('levels' in req) {
-              req.levels.forEach(level => {
-                details += `- ${level.level}: ${level.requirement}\n`;
-              });
-            } else {
-              details += `${req.requirement}\n`;
-            }
-          });
-        }
-        break;
       case "custom":
         details += "Freies Workout\n";
         break;
     }
 
-    if (workoutType !== "badge" && exercises.length > 0) {
+    if (exercises.length > 0) {
       details += "\nÜbungen:\n";
       exercises.forEach((exercise, index) => {
         details += `${index + 1}. ${exercise.name}: ${exercise.reps}x`;
@@ -183,7 +181,7 @@ ${template.workoutType === 'amrap' ?
   };
 
   const handleCreateChallenge = () => {
-    if (!selectedWorkout && creationMethod === "generator") {
+    if (creationMethod === "generator" && !selectedWorkout) {
       toast({
         title: "Kein Workout ausgewählt",
         description: "Bitte generiere zuerst ein Workout für deine Challenge.",
@@ -196,6 +194,15 @@ ${template.workoutType === 'amrap' ?
       toast({
         title: "Unvollständige Workout-Details",
         description: "Bitte fülle alle Workout-Details aus und füge mindestens eine Übung hinzu.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (creationMethod === "badge" && !selectedBadgeTest) {
+      toast({
+        title: "Kein Test ausgewählt",
+        description: "Bitte wähle einen Fitness-Test aus.",
         variant: "destructive",
       });
       return;
@@ -215,7 +222,10 @@ ${template.workoutType === 'amrap' ?
       timePerRound: Number(timePerRound) || undefined,
       rounds: Number(rounds) || undefined,
       exercises: exercises
-    } : selectedWorkout.workoutDetails;
+    } : creationMethod === "generator" ? selectedWorkout.workoutDetails : {
+      type: "badge",
+      exercises: []
+    };
 
     const newChallenge = {
       id: mockChallenges.length + 1,
@@ -225,7 +235,8 @@ ${template.workoutType === 'amrap' ?
       endDate: new Date(endDate),
       prize,
       prizeDescription,
-      workoutType: creationMethod === "manual" ? workoutType : selectedWorkout.workoutType,
+      workoutType: creationMethod === "manual" ? workoutType : 
+                  creationMethod === "generator" ? selectedWorkout.workoutType : "badge",
       workoutDetails,
       creatorId: 1,
       image: null,
@@ -267,7 +278,25 @@ ${template.workoutType === 'amrap' ?
           <p className="text-muted-foreground">
             Wähle aus, wie du deine Challenge erstellen möchtest
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card
+              className={cn(
+                "cursor-pointer transition-all hover:border-primary",
+                creationMethod === "manual" && "border-primary"
+              )}
+              onClick={() => setCreationMethod("manual")}
+            >
+              <CardContent className="p-6 flex flex-col items-center text-center">
+                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                  <Plus className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="font-semibold mb-2">Eigenes Workout</h3>
+                <p className="text-sm text-muted-foreground">
+                  Erstelle dein eigenes Workout von Grund auf
+                </p>
+              </CardContent>
+            </Card>
+
             <Card
               className={cn(
                 "cursor-pointer transition-all hover:border-primary",
@@ -284,7 +313,7 @@ ${template.workoutType === 'amrap' ?
                 </div>
                 <h3 className="font-semibold mb-2">Workout Generator</h3>
                 <p className="text-sm text-muted-foreground">
-                  Erstelle ein vorgefertigtes Workout mit unserem Generator
+                  Nutze unseren Generator für vorgefertigte Workouts
                 </p>
               </CardContent>
             </Card>
@@ -292,17 +321,17 @@ ${template.workoutType === 'amrap' ?
             <Card
               className={cn(
                 "cursor-pointer transition-all hover:border-primary",
-                creationMethod === "manual" && "border-primary"
+                creationMethod === "badge" && "border-primary"
               )}
-              onClick={() => setCreationMethod("manual")}
+              onClick={() => setCreationMethod("badge")}
             >
               <CardContent className="p-6 flex flex-col items-center text-center">
                 <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                  <Plus className="h-6 w-6 text-primary" />
+                  <Award className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="font-semibold mb-2">Manuell erstellen</h3>
+                <h3 className="font-semibold mb-2">Fitness-Test</h3>
                 <p className="text-sm text-muted-foreground">
-                  Erstelle deine eigene Challenge von Grund auf
+                  Wähle einen standardisierten Fitness-Test oder Abzeichen
                 </p>
               </CardContent>
             </Card>
@@ -312,7 +341,9 @@ ${template.workoutType === 'amrap' ?
     },
     {
       title: "Challenge Details",
-      isComplete: creationMethod === "generator" ? !!selectedWorkout : !!workoutType && exercises.length > 0,
+      isComplete: creationMethod === "generator" ? !!selectedWorkout : 
+                 creationMethod === "manual" ? !!workoutType && exercises.length > 0 :
+                 creationMethod === "badge" ? !!selectedBadgeTest : false,
       content: (
         <div className="space-y-6">
           {creationMethod === "manual" && (
@@ -401,65 +432,7 @@ ${template.workoutType === 'amrap' ?
                   </div>
                 )}
 
-                {workoutType === "badge" && (
-                  <div className="space-y-4">
-                    <div>
-                      <Label>Wähle einen Test</Label>
-                      <Select value={selectedBadgeTest} onValueChange={setSelectedBadgeTest}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Wähle einen Fitness-Test" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {badgeTests.map((test) => (
-                            <SelectItem key={test.id} value={test.id}>
-                              {test.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {selectedBadgeTest && (
-                      <Card className="mt-4">
-                        <CardHeader>
-                          <CardTitle>{badgeTests.find(t => t.id === selectedBadgeTest)?.name}</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-4">
-                            <p className="text-muted-foreground">
-                              {badgeTests.find(t => t.id === selectedBadgeTest)?.description}
-                            </p>
-                            <div className="space-y-2">
-                              {badgeTests
-                                .find(t => t.id === selectedBadgeTest)
-                                ?.requirements.map((req, index) => (
-                                  <div key={index} className="p-3 bg-muted/50 rounded-lg">
-                                    <h4 className="font-medium">{req.name}</h4>
-                                    {'levels' in req ? (
-                                      <div className="mt-2 space-y-1">
-                                        {req.levels.map((level, i) => (
-                                          <div key={i} className="flex justify-between text-sm">
-                                            <span className="text-muted-foreground">{level.level}:</span>
-                                            <span>{level.requirement}</span>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    ) : (
-                                      <p className="text-sm text-muted-foreground mt-1">
-                                        {req.requirement}
-                                      </p>
-                                    )}
-                                  </div>
-                                ))}
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
-                  </div>
-                )}
-
-                {(workoutType === "custom" || workoutType) && (
+                {workoutType && (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <Label>Übungen</Label>
@@ -525,31 +498,111 @@ ${template.workoutType === 'amrap' ?
           )}
 
           {creationMethod === "generator" && selectedWorkout && (
-            <Card>
-              <CardContent className="p-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Dumbbell className="h-4 w-4 text-primary" />
-                    <span className="font-medium">{selectedWorkout.name}</span>
+            <>
+              <div>
+                <Label>Challenge Titel</Label>
+                <Input
+                  placeholder="Gib einen Titel für deine Challenge ein"
+                  value={challengeTitle}
+                  onChange={(e) => setChallengeTitle(e.target.value)}
+                />
+              </div>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Dumbbell className="h-4 w-4 text-primary" />
+                      <span className="font-medium">{selectedWorkout.name}</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{selectedWorkout.description}</p>
+                    <div className="grid grid-cols-3 gap-2 text-sm">
+                      <div>
+                        <span className="font-medium">Typ:</span>
+                        <p className="text-muted-foreground">{selectedWorkout.workoutType}</p>
+                      </div>
+                      <div>
+                        <span className="font-medium">Dauer:</span>
+                        <p className="text-muted-foreground">{selectedWorkout.duration} Min</p>
+                      </div>
+                      <div>
+                        <span className="font-medium">Level:</span>
+                        <p className="text-muted-foreground">{selectedWorkout.difficulty}</p>
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-sm text-muted-foreground">{selectedWorkout.description}</p>
-                  <div className="grid grid-cols-3 gap-2 text-sm">
-                    <div>
-                      <span className="font-medium">Typ:</span>
-                      <p className="text-muted-foreground">{selectedWorkout.workoutType}</p>
+                </CardContent>
+              </Card>
+              <Button variant="outline" onClick={() => setShowWorkoutDialog(true)}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Anderes Workout wählen
+              </Button>
+            </>
+          )}
+
+          {creationMethod === "badge" && (
+            <div className="space-y-4">
+              <div>
+                <Label>Challenge Titel</Label>
+                <Input
+                  placeholder="Gib einen Titel für deine Challenge ein"
+                  value={challengeTitle}
+                  onChange={(e) => setChallengeTitle(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label>Wähle einen Test</Label>
+                <Select value={selectedBadgeTest} onValueChange={handleBadgeSelect}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Wähle einen Fitness-Test" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {badgeTests.map((test) => (
+                      <SelectItem key={test.id} value={test.id}>
+                        {test.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {selectedBadgeTest && (
+                <Card className="mt-4">
+                  <CardHeader>
+                    <CardTitle>{badgeTests.find(t => t.id === selectedBadgeTest)?.name}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <p className="text-muted-foreground">
+                        {badgeTests.find(t => t.id === selectedBadgeTest)?.description}
+                      </p>
+                      <div className="space-y-2">
+                        {badgeTests
+                          .find(t => t.id === selectedBadgeTest)
+                          ?.requirements.map((req, index) => (
+                            <div key={index} className="p-3 bg-muted/50 rounded-lg">
+                              <h4 className="font-medium">{req.name}</h4>
+                              {'levels' in req && req.levels ? (
+                                <div className="mt-2 space-y-1">
+                                  {req.levels.map((level, i) => (
+                                    <div key={i} className="flex justify-between text-sm">
+                                      <span className="text-muted-foreground">{level.level}:</span>
+                                      <span>{level.requirement}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  {req.requirement}
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                      </div>
                     </div>
-                    <div>
-                      <span className="font-medium">Dauer:</span>
-                      <p className="text-muted-foreground">{selectedWorkout.duration} Min</p>
-                    </div>
-                    <div>
-                      <span className="font-medium">Level:</span>
-                      <p className="text-muted-foreground">{selectedWorkout.difficulty}</p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           )}
         </div>
       ),
@@ -559,16 +612,6 @@ ${template.workoutType === 'amrap' ?
       isComplete: !!challengeTitle && !!challengeDescription,
       content: (
         <div className="space-y-4">
-          {creationMethod === "generator" && (
-            <div>
-              <Label>Titel</Label>
-              <Input
-                placeholder="Gib einen Titel für deine Challenge ein"
-                value={challengeTitle}
-                onChange={(e) => setChallengeTitle(e.target.value)}
-              />
-            </div>
-          )}
           <div>
             <Label>Beschreibung</Label>
             <Textarea
