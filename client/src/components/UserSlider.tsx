@@ -49,7 +49,7 @@ function UserCard({ user, onVerify }: { user: any, onVerify: (id: number) => voi
         <div className="flex flex-col items-center gap-2">
           <UserAvatar
             userId={user.id}
-            size="md"
+            size="lg"
           />
           <Button 
             variant="ghost" 
