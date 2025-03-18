@@ -210,10 +210,10 @@ ${template.workoutType === 'amrap' ?
       return;
     }
 
-    if (!challengeTitle || !challengeDescription || !prize || !prizeDescription) {
+    if (!challengeTitle || !challengeDescription) {
       toast({
         title: "Fehlende Informationen",
-        description: "Bitte fülle alle Pflichtfelder aus.",
+        description: "Bitte gib einen Titel und eine Beschreibung für deine Challenge ein.",
         variant: "destructive",
       });
       return;
@@ -235,8 +235,8 @@ ${template.workoutType === 'amrap' ?
       description: challengeDescription,
       startDate: new Date(startDate),
       endDate: new Date(endDate),
-      prize,
-      prizeDescription,
+      prize: prize || null,
+      prizeDescription: prizeDescription || null,
       workoutType: creationMethod === "manual" ? workoutType :
                   creationMethod === "generator" ? selectedWorkout.workoutType : "badge",
       workoutDetails,
@@ -641,11 +641,14 @@ ${template.workoutType === 'amrap' ?
     },
     {
       title: "Gewinn Details",
-      isComplete: !!prize && !!prizeDescription,
+      isComplete: true, // Always complete since prize is optional
       content: (
         <div className="space-y-4">
+          <p className="text-sm text-muted-foreground mb-4">
+            Optional: Füge einen Gewinn für die Challenge hinzu
+          </p>
           <div>
-            <Label>Gewinn-Titel</Label>
+            <Label>Gewinn-Titel (Optional)</Label>
             <Input
               placeholder="z.B. Premium Protein Paket"
               value={prize}
@@ -653,7 +656,7 @@ ${template.workoutType === 'amrap' ?
             />
           </div>
           <div>
-            <Label>Gewinn-Beschreibung</Label>
+            <Label>Gewinn-Beschreibung (Optional)</Label>
             <Textarea
               placeholder="Beschreibe den Gewinn im Detail"
               value={prizeDescription}
@@ -662,7 +665,7 @@ ${template.workoutType === 'amrap' ?
             />
           </div>
           <div>
-            <Label>Gewinn-Bild</Label>
+            <Label>Gewinn-Bild (Optional)</Label>
             <div className="mt-2">
               <Button variant="outline">Bild hochladen</Button>
             </div>
