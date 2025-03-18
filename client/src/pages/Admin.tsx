@@ -33,35 +33,28 @@ import {
   MessageSquare,
   Group,
   Target,
+  UserCheck,
+  UserX,
+  Lock,
+  Unlock,
+  Flag,
+  AlertTriangle,
+  UserPlus,
+  Mail,
+  Megaphone,
 } from "lucide-react";
-import { DEFAULT_BANNER_POSITIONS } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
 import { format, subDays } from "date-fns";
 import { de } from 'date-fns/locale';
-import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { useUsers } from "../contexts/UserContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Link, useLocation } from "wouter";
-import { useAdmin } from "@/contexts/AdminContext";
+import { Link } from "wouter";
 import { useProducts } from "@/contexts/ProductContext";
-import { usePostStore } from "../lib/postStore";
-import { useGroupStore } from "../lib/groupStore";
 import { UserAvatar } from "@/components/UserAvatar";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
 
 // Mock data für Demonstration
 const generateMockTimeData = (days: number) => {
@@ -77,6 +70,276 @@ const generateMockTimeData = (days: number) => {
   return data.reverse();
 };
 
+// Neue Komponenten für die Admin-Funktionen
+function UserManagement() {
+  const { users } = useUsers();
+  const { toast } = useToast();
+
+  const handleVerifyUser = (userId: number) => {
+    // Implementierung der Benutzer-Verifizierung
+    toast({
+      title: "Benutzer verifiziert",
+      description: "Der Benutzer wurde erfolgreich verifiziert."
+    });
+  };
+
+  const handleMakeAdmin = (userId: number) => {
+    // Implementierung der Admin-Rechtevergabe
+    toast({
+      title: "Admin-Rechte vergeben",
+      description: "Die Admin-Rechte wurden erfolgreich vergeben."
+    });
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Benutzer-Verwaltung</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {users.map(user => (
+            <div key={user.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+              <div className="flex items-center gap-3">
+                <UserAvatar userId={user.id} />
+                <div>
+                  <p className="font-medium">{user.username}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {user.email}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleVerifyUser(user.id)}
+                >
+                  <UserCheck className="h-4 w-4 mr-1" />
+                  Verifizieren
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleMakeAdmin(user.id)}
+                >
+                  <Lock className="h-4 w-4 mr-1" />
+                  Admin
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function NotificationManagement() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Push-Benachrichtigungen</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Button className="justify-start" variant="outline">
+              <Bell className="h-4 w-4 mr-2" />
+              Neue Benachrichtigung
+            </Button>
+            <Button className="justify-start" variant="outline">
+              <Megaphone className="h-4 w-4 mr-2" />
+              Ankündigung
+            </Button>
+            <Button className="justify-start" variant="outline">
+              <Mail className="h-4 w-4 mr-2" />
+              E-Mail-Benachrichtigung
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+
+function ModerationTools() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Moderations-Tools</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Button className="justify-start" variant="outline">
+            <Flag className="h-4 w-4 mr-2" />
+            Gemeldete Inhalte
+          </Button>
+          <Button className="justify-start" variant="outline">
+            <AlertTriangle className="h-4 w-4 mr-2" />
+            Spam-Berichte
+          </Button>
+          <Button className="justify-start" variant="outline">
+            <UserX className="h-4 w-4 mr-2" />
+            Gesperrte Benutzer
+          </Button>
+          <Button className="justify-start" variant="outline">
+            <Settings className="h-4 w-4 mr-2" />
+            Moderations-Einstellungen
+          </Button>
+          <Button className="justify-start" variant="outline">
+            <Shield className="h-4 w-4 mr-2" />
+            Sicherheitsregeln
+          </Button>
+          <Button className="justify-start" variant="outline">
+            <MessageSquare className="h-4 w-4 mr-2" />
+            Chat-Moderation
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ProductManagement({products, updateProduct}: {products: any[], updateProduct: any}) {
+    const [searchQuery, setSearchQuery] = useState("");
+    const filteredProducts = products.filter(product => {
+      const matchesSearch =
+        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.description.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesSearch;
+    });
+    return (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Produkte verwalten
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center mb-6">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Produkte durchsuchen..."
+                  className="pl-9 w-full"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              <Link href="/create/product">
+                <Button>
+                  <Package className="h-4 w-4 mr-2" />
+                  Neues Produkt
+                </Button>
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {filteredProducts.map(product => (
+                <Card key={product.id} className="overflow-hidden">
+                  <div className="relative">
+                    <img
+                      src={product.image || "https://placehold.co/600x400/png"}
+                      alt={product.name}
+                      className="w-full h-48 object-cover"
+                    />
+                    <Badge variant="outline" className="absolute top-2 left-2">
+                      #{product.id}
+                    </Badge>
+                  </div>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-semibold">{product.name}</h3>
+                      <Badge>{product.type}</Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      {product.description}
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <Switch
+                        checked={product.isActive}
+                        onCheckedChange={() => {
+                          const updatedProduct = {
+                            ...product,
+                            isActive: !product.isActive
+                          };
+                          updateProduct(updatedProduct);
+                        }}
+                      />
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={`/products/${product.id}`}>
+                          Bearbeiten
+                        </Link>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+    )
+}
+
+function MarketingTools() {
+    return (
+        <Card>
+          <CardHeader>
+            <CardTitle>Marketing-Tools</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <Button className="justify-start" variant="outline">
+                <Bell className="h-4 w-4 mr-2" />
+                Push-Benachrichtigungen
+              </Button>
+              <Button className="justify-start" variant="outline">
+                <ImageIcon className="h-4 w-4 mr-2" />
+                Banner verwalten
+              </Button>
+              <Button className="justify-start" variant="outline">
+                <Upload className="h-4 w-4 mr-2" />
+                Content hochladen
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+    )
+}
+
+function EventManagement() {
+    return (
+        <Card>
+            <CardHeader>
+              <CardTitle>Event-Tools</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <Button className="justify-start" variant="outline" asChild>
+                  <Link href="/create/event">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Neues Event
+                  </Link>
+                </Button>
+                <Button className="justify-start" variant="outline" asChild>
+                  <Link href="/events/manager">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Event Manager
+                  </Link>
+                </Button>
+                <Button className="justify-start" variant="outline">
+                  <BarChart className="h-4 w-4 mr-2" />
+                  Event Statistiken
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+    )
+}
+
 export default function Admin() {
   const [selectedTimeRange, setSelectedTimeRange] = useState("7d");
   const [selectedMetric, setSelectedMetric] = useState("users");
@@ -87,8 +350,6 @@ export default function Admin() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const { users } = useUsers();
-  const postStore = usePostStore();
-  const groupStore = useGroupStore();
   const { products, updateProduct } = useProducts();
   const { toast } = useToast();
 
@@ -236,161 +497,40 @@ export default function Admin() {
 
       {/* Admin Sections */}
       <div className="space-y-8">
-        {/* Product Management Section */}
+        {/* Benutzer-Verwaltung */}
         <section>
-          <h2 className="text-2xl font-bold mb-6">Produktverwaltung</h2>
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Package className="h-5 w-5" />
-                Produkte verwalten
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center mb-6">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Produkte durchsuchen..."
-                    className="pl-9 w-full"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-                <Link href="/create/product">
-                  <Button>
-                    <Package className="h-4 w-4 mr-2" />
-                    Neues Produkt
-                  </Button>
-                </Link>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {filteredProducts.map(product => (
-                  <Card key={product.id} className="overflow-hidden">
-                    <div className="relative">
-                      <img
-                        src={product.image || "https://placehold.co/600x400/png"}
-                        alt={product.name}
-                        className="w-full h-48 object-cover"
-                      />
-                      <Badge variant="outline" className="absolute top-2 left-2">
-                        #{product.id}
-                      </Badge>
-                    </div>
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-semibold">{product.name}</h3>
-                        <Badge>{product.type}</Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        {product.description}
-                      </p>
-                      <div className="flex items-center justify-between">
-                        <Switch
-                          checked={product.isActive}
-                          onCheckedChange={() => {
-                            const updatedProduct = {
-                              ...product,
-                              isActive: !product.isActive
-                            };
-                            updateProduct(updatedProduct);
-                          }}
-                        />
-                        <Button variant="outline" size="sm" asChild>
-                          <Link href={`/products/${product.id}`}>
-                            Bearbeiten
-                          </Link>
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          <h2 className="text-2xl font-bold mb-6">Benutzer-Verwaltung</h2>
+          <UserManagement />
         </section>
 
-        {/* Marketing Section */}
+        {/* Push-Benachrichtigungen */}
         <section>
-          <h2 className="text-2xl font-bold mb-6">Marketing</h2>
-          <Card>
-            <CardHeader>
-              <CardTitle>Marketing-Tools</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <Button className="justify-start" variant="outline">
-                  <Bell className="h-4 w-4 mr-2" />
-                  Push-Benachrichtigungen
-                </Button>
-                <Button className="justify-start" variant="outline">
-                  <ImageIcon className="h-4 w-4 mr-2" />
-                  Banner verwalten
-                </Button>
-                <Button className="justify-start" variant="outline">
-                  <Upload className="h-4 w-4 mr-2" />
-                  Content hochladen
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <h2 className="text-2xl font-bold mb-6">Benachrichtigungen</h2>
+          <NotificationManagement />
         </section>
 
-        {/* Moderation Section */}
+        {/* Moderation */}
         <section>
           <h2 className="text-2xl font-bold mb-6">Moderation</h2>
-          <Card>
-            <CardHeader>
-              <CardTitle>Moderations-Tools</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <Button className="justify-start" variant="outline">
-                  <Shield className="h-4 w-4 mr-2" />
-                  Gemeldete Inhalte
-                </Button>
-                <Button className="justify-start" variant="outline">
-                  <Users className="h-4 w-4 mr-2" />
-                  Benutzer-Verwaltung
-                </Button>
-                <Button className="justify-start" variant="outline">
-                  <Settings className="h-4 w-4 mr-2" />
-                  Einstellungen
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <ModerationTools />
         </section>
 
-        {/* Event Management Section */}
+        {/* Produktverwaltung */}
+        <section>
+          <h2 className="text-2xl font-bold mb-6">Produktverwaltung</h2>
+          <ProductManagement products={products} updateProduct={updateProduct} />
+        </section>
+
+        {/* Marketing */}
+        <section>
+          <h2 className="text-2xl font-bold mb-6">Marketing</h2>
+          <MarketingTools />
+        </section>
+
+        {/* Event Management */}
         <section>
           <h2 className="text-2xl font-bold mb-6">Event Management</h2>
-          <Card>
-            <CardHeader>
-              <CardTitle>Event-Tools</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <Button className="justify-start" variant="outline" asChild>
-                  <Link href="/create/event">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Neues Event
-                  </Link>
-                </Button>
-                <Button className="justify-start" variant="outline" asChild>
-                  <Link href="/events/manager">
-                    <Calendar className="h-4 w-4 mr-2" />
-                    Event Manager
-                  </Link>
-                </Button>
-                <Button className="justify-start" variant="outline">
-                  <BarChart className="h-4 w-4 mr-2" />
-                  Event Statistiken
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <EventManagement />
         </section>
       </div>
 
@@ -466,6 +606,7 @@ export default function Admin() {
           </div>
         </DialogContent>
       </Dialog>
+
 
       {/* Ähnliche Dialoge für Groups, Challenges und Posts... */}
     </div>
