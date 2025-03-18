@@ -622,8 +622,7 @@ export const mockProducts: Product[] = [
       nutritionFacts: {
         "Protein pro Portion": "30g",
         "Kohlenhydrate": "3g",
-        "Fett": "1.5g",
-      }
+        "Fett": "1.5g",      }
     }
   },
   {
@@ -680,7 +679,7 @@ export const badgeTests = [
     requirements: [
       {
         name: "Pendellauf",
-        requirement: "Unter 32 Sekunden (4x10m)",
+        requirement: "4x10m Pendellauf",
         gender_specific: {
           male: "Maximal 28 Sekunden",
           female: "Maximal 32 Sekunden"
@@ -725,10 +724,38 @@ export const badgeTests = [
     name: "Bundeswehr Basis-Fitness-Test",
     description: "Standard Fitness-Test der Bundeswehr",
     requirements: [
-      { name: "Pendellauf", requirement: "11x10m in maximal 60 Sekunden" },
-      { name: "Liegestütze", requirement: "15 Wiederholungen in 2 Minuten" },
-      { name: "Sit-ups", requirement: "25 Wiederholungen in 2 Minuten" },
-      { name: "3000m Lauf", requirement: "Unter 15 Minuten" }
+      { 
+        name: "Pendellauf", 
+        requirement: "11x10m in maximal 60 Sekunden",
+        gender_specific: {
+          male: "Maximal 58 Sekunden",
+          female: "Maximal 60 Sekunden"
+        }
+      },
+      { 
+        name: "Liegestütze", 
+        requirement: "In 2 Minuten",
+        gender_specific: {
+          male: "15 Wiederholungen",
+          female: "12 Wiederholungen"
+        }
+      },
+      { 
+        name: "Sit-ups", 
+        requirement: "In 2 Minuten",
+        gender_specific: {
+          male: "25 Wiederholungen",
+          female: "20 Wiederholungen"
+        }
+      },
+      { 
+        name: "3000m Lauf", 
+        requirement: "Maximale Zeit",
+        gender_specific: {
+          male: "Unter 15:00 Minuten",
+          female: "Unter 17:00 Minuten"
+        }
+      }
     ]
   },
   {
@@ -736,80 +763,144 @@ export const badgeTests = [
     name: "US Army Fitness-Test (ACFT)",
     description: "Army Combat Fitness Test - Standardisierter Militär-Fitness-Test der US-Armee",
     requirements: [
-      { name: "Kreuzheben (Deadlift)", requirement: "63-154 kg (140-340 lbs)" },
-      { name: "Medizinballwurf rückwärts (Standing Power Throw)", requirement: "8,5 Meter (27.9 ft)" },
-      { name: "Liegestütze mit Abheben (Hand Release Push-ups)", requirement: "30 Wiederholungen in 2 Minuten" },
-      { name: "Sprint-Zug-Trage-Kombination (Sprint-Drag-Carry)", requirement: "Unter 3 Minuten" },
-      { name: "Beinheben/Unterarmstütz (Leg Tuck/Plank)", requirement: "20 Wiederholungen oder 2:09 Minuten" },
-      { name: "2-Meilen Lauf (2-Mile Run)", requirement: "3,2 km in unter 21 Minuten" }
+      {
+        name: "Kreuzheben (Deadlift)",
+        requirement: "3 Wiederholungen",
+        gender_specific: {
+          male: "140-180 kg (310-400 lbs) für höchste Punktzahl\n100-120 kg (220-265 lbs) für Bestehen",
+          female: "120-140 kg (265-310 lbs) für höchste Punktzahl\n70-90 kg (155-200 lbs) für Bestehen"
+        }
+      },
+      {
+        name: "Medizinballwurf rückwärts (Standing Power Throw)",
+        requirement: "Maximale Distanz aus 3 Versuchen",
+        gender_specific: {
+          male: "Mindestens 8,5 Meter (27.9 ft)\n12,5 Meter (41 ft) für höchste Punktzahl",
+          female: "Mindestens 4,5 Meter (14.8 ft)\n8,5 Meter (27.9 ft) für höchste Punktzahl"
+        }
+      },
+      {
+        name: "Liegestütze mit Abheben (Hand Release Push-ups)",
+        requirement: "In 2 Minuten",
+        gender_specific: {
+          male: "30 Wiederholungen für Bestehen\n60 Wiederholungen für höchste Punktzahl",
+          female: "20 Wiederholungen für Bestehen\n35 Wiederholungen für höchste Punktzahl"
+        }
+      },
+      {
+        name: "Sprint-Zug-Trage-Kombination (Sprint-Drag-Carry)",
+        requirement: "5x50m Sprint, Ziehen, Seitwärtslauf, Tragen",
+        gender_specific: {
+          male: "Unter 2:10 Minuten für höchste Punktzahl\nUnter 3:00 Minuten für Bestehen",
+          female: "Unter 2:30 Minuten für höchste Punktzahl\nUnter 3:30 Minuten für Bestehen"
+        }
+      },
+      {
+        name: "Beinheben/Unterarmstütz (Leg Tuck/Plank)",
+        requirement: "Maximale Wiederholungen oder Haltezeit",
+        gender_specific: {
+          male: "20 Wiederholungen oder 3:30 Min Plank für höchste Punktzahl\n5 Wiederholungen oder 2:09 Min Plank für Bestehen",
+          female: "15 Wiederholungen oder 3:20 Min Plank für höchste Punktzahl\n3 Wiederholungen oder 2:09 Min Plank für Bestehen"
+        }
+      },
+      {
+        name: "2-Meilen Lauf (2-Mile Run)",
+        requirement: "3,2 km Lauf",
+        gender_specific: {
+          male: "Unter 13:30 Minuten für höchste Punktzahl\nUnter 21:00 Minuten für Bestehen",
+          female: "Unter 15:30 Minuten für höchste Punktzahl\nUnter 23:00 Minuten für Bestehen"
+        }
+      }
     ]
   },
   {
     id: "cooper",
     name: "Cooper Test",
-    description: "12-Minuten Ausdauertest nach Kenneth Cooper",
+    description: "12-Minuten Ausdauertest nach Kenneth Cooper - Ein standardisierter Test zur Beurteilung der kardiorespiratorischen Fitness",
     requirements: [
       { 
         name: "12-Minuten Lauf",
-        levels: [
-          { level: "Sehr gut", requirement: "> 2800m" },
-          { level: "Gut", requirement: "2400-2800m" },
-          { level: "Durchschnitt", requirement: "2200-2399m" },
-          { level: "Ausreichend", requirement: "1600-2199m" }
-        ]
+        requirement: "Maximale Distanz in 12 Minuten",
+        gender_specific: {
+          male: "Sehr gut: > 2800m\nGut: 2400-2800m\nDurchschnitt: 2200-2399m\nAusreichend: 1600-2199m",
+          female: "Sehr gut: > 2500m\nGut: 2200-2500m\nDurchschnitt: 1900-2199m\nAusreichend: 1500-1899m"
+        }
       }
     ]
   },
   {
     id: "marathon",
     name: "Marathon Challenge",
-    description: "Volle Marathon-Distanz (42,195 km)",
+    description: "Volle Marathon-Distanz (42,195 km) - Ein Test für Ausdauer und mentale Stärke",
     requirements: [
-      { name: "Marathon", requirement: "42,195 km" },
       { 
-        name: "Zeitlimits",
-        levels: [
-          { level: "Elite", requirement: "< 2:30:00" },
-          { level: "Fortgeschritten (Advanced)", requirement: "< 3:00:00" },
-          { level: "Mittelstufe (Intermediate)", requirement: "< 4:00:00" },
-          { level: "Anfänger (Beginner)", requirement: "< 6:00:00" }
-        ]
+        name: "Marathon Distanz",
+        requirement: "42,195 km",
+        gender_specific: {
+          male: "Elite: < 2:30:00\nFortgeschritten: < 3:00:00\nMittelstufe: < 4:00:00\nAnfänger: < 5:30:00",
+          female: "Elite: < 2:45:00\nFortgeschritten: < 3:30:00\nMittelstufe: < 4:30:00\nAnfänger: < 6:00:00"
+        }
+      },
+      {
+        name: "Qualifikationskriterien",
+        requirement: "Empfohlene Voraussetzungen",
+        description: "- Mindestens 6 Monate regelmäßiges Lauftraining\n- Mindestens einen Halbmarathon absolviert\n- Wöchentliches Laufpensum von 40-60 km in der Vorbereitung\n- Ärztliche Freigabe empfohlen"
       }
     ]
   },
   {
     id: "half_marathon",
     name: "Halbmarathon Challenge",
-    description: "Halbe Marathon-Distanz (21,0975 km)",
+    description: "Halbe Marathon-Distanz (21,0975 km) - Idealer Einstieg in die Langstreckendistanz",
     requirements: [
-      { name: "Halbmarathon", requirement: "21,0975 km" },
       { 
-        name: "Zeitlimits",
-        levels: [
-          { level: "Elite", requirement: "< 1:15:00" },
-          { level: "Fortgeschritten (Advanced)", requirement: "< 1:30:00" },
-          { level: "Mittelstufe (Intermediate)", requirement: "< 2:00:00" },
-          { level: "Anfänger (Beginner)", requirement: "< 3:00:00" }
-        ]
+        name: "Halbmarathon Distanz",
+        requirement: "21,0975 km",
+        gender_specific: {
+          male: "Elite: < 1:15:00\nFortgeschritten: < 1:30:00\nMittelstufe: < 1:45:00\nAnfänger: < 2:15:00",
+          female: "Elite: < 1:25:00\nFortgeschritten: < 1:45:00\nMittelstufe: < 2:00:00\nAnfänger: < 2:30:00"
+        }
+      },
+      {
+        name: "Qualifikationskriterien",
+        requirement: "Empfohlene Voraussetzungen",
+        description: "- Mindestens 3 Monate regelmäßiges Lauftraining\n- 10km Distanz problemlos laufen können\n- Wöchentliches Laufpensum von 25-40 km in der Vorbereitung\n- Ärztliche Freigabe empfohlen"
       }
     ]
   },
   {
     id: "triathlon_sprint",
     name: "Sprint Triathlon",
-    description: "Sprint-Distanz Triathlon",
+    description: "Sprint-Distanz Triathlon - Die perfekte Einsteigerdistanz für Multisport-Athleten",
     requirements: [
-      { name: "Schwimmen", requirement: "750m" },
-      { name: "Radfahren", requirement: "20km" },
-      { name: "Laufen", requirement: "5km" },
+      { 
+        name: "Schwimmen",
+        requirement: "750m (offenes Gewässer oder Schwimmbad)",
+        gender_specific: {
+          male: "Elite: < 12:00 Min\nFortgeschritten: < 15:00 Min\nMittelstufe: < 18:00 Min\nAnfänger: < 25:00 Min",
+          female: "Elite: < 13:00 Min\nFortgeschritten: < 16:00 Min\nMittelstufe: < 20:00 Min\nAnfänger: < 28:00 Min"
+        }
+      },
+      { 
+        name: "Radfahren",
+        requirement: "20km",
+        gender_specific: {
+          male: "Elite: < 32:00 Min\nFortgeschritten: < 38:00 Min\nMittelstufe: < 45:00 Min\nAnfänger: < 55:00 Min",
+          female: "Elite: < 35:00 Min\nFortgeschritten: < 42:00 Min\nMittelstufe: < 50:00 Min\nAnfänger: < 60:00 Min"
+        }
+      },
+      { 
+        name: "Laufen",
+        requirement: "5km",
+        gender_specific: {
+          male: "Elite: < 20:00 Min\nFortgeschritten: < 25:00 Min\nMittelstufe: < 30:00 Min\nAnfänger: < 35:00 Min",
+          female: "Elite: < 22:00 Min\nFortgeschritten: < 28:00 Min\nMittelstufe: < 33:00 Min\nAnfänger: < 38:00 Min"
+        }
+      },
       {
-        name: "Gesamtzeit",
-        levels: [
-          { level: "Elite", requirement: "< 1:00:00" },
-          { level: "Fortgeschritten (Advanced)", requirement: "< 1:15:00" },
-          { level: "Mittelstufe (Intermediate)", requirement: "< 1:30:00" },
-          { level: "Anfänger (Beginner)", requirement: "< 2:00:00" }
-        ]
+        name: "Qualifikationskriterien",
+        requirement: "Empfohlene Voraussetzungen",
+        description: "- Sicheres Schwimmen in offenen Gewässern\n- Erfahrung mit Rennrad/Zeitfahrrad\n- Grundlegende Ausdauer für alle drei Disziplinen\n- Ärztliche Freigabe empfohlen"
       }
     ]
   }
