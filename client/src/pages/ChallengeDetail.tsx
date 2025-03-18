@@ -22,35 +22,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-interface WorkoutExercise {
-  name: string;
-  reps: number;
-  weight?: number;
-  description?: string;
-}
-
-interface WorkoutDetails {
-  type: string;
-  timePerRound?: number;
-  rounds?: number;
-  exercises: WorkoutExercise[];
-}
-
-interface Challenge {
-  id: number;
-  title: string;
-  description: string;
-  startDate: string;
-  endDate: string;
-  prize: string | null;
-  prizeDescription: string | null;
-  workoutType: string;
-  workoutDetails: WorkoutDetails;
-  creatorId: number;
-  image: string | null;
-  prizeImage: string | null;
-}
-
 interface Participant {
   id: number;
   username: string;
@@ -66,20 +37,57 @@ interface ExerciseResult {
   achievementLevel?: string;
 }
 
+interface WorkoutExercise {
+  name: string;
+  description: string;
+  reps?: number;
+  weight?: number;
+}
+
 export default function ChallengeDetail() {
   const { id } = useParams();
   const { toast } = useToast();
   const { users, currentUser } = useUsers();
-  const challenge = mockChallenges.find(c => c.id === parseInt(id || "")) as Challenge | undefined;
-  const creator = users.find(u => u.id === challenge?.creatorId);
-
   const [isParticipating, setIsParticipating] = useState(false);
   const [showResultForm, setShowResultForm] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showParticipants, setShowParticipants] = useState(false);
   const [exerciseResults, setExerciseResults] = useState<Record<string, ExerciseResult>>({});
+  const [participants, setParticipants] = useState<Participant[]>([]);
 
-  // Berechne die Gesamtpunktzahl und das Abzeichen-Level
+  const challenge = mockChallenges.find(c => c.id === parseInt(id || ""));
+  const creator = users.find(u => u.id === challenge?.creatorId);
+
+  useEffect(() => {
+    if (challenge) {
+      // Initialize mock participants
+      const mockParticipants: Participant[] = users
+        .slice(0, Math.floor(Math.random() * 8) + 3)
+        .map(user => ({
+          id: user.id,
+          username: user.username,
+          points: Math.floor(Math.random() * 1000),
+          lastUpdate: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000)
+        }));
+      setParticipants(mockParticipants.sort((a, b) => b.points - a.points));
+
+      // Check if current user is already participating
+      const isCurrentUserParticipating = mockParticipants.some(p => p.id === currentUser?.id);
+      setIsParticipating(isCurrentUserParticipating);
+    }
+  }, [challenge, users, currentUser?.id]);
+
+  // Early return if challenge or creator not found
+  if (!challenge || !creator) {
+    return <div>Challenge nicht gefunden</div>;
+  }
+
+  const currentDate = new Date();
+  const startDate = new Date(challenge.startDate);
+  const endDate = new Date(challenge.endDate);
+  const isActive = currentDate >= startDate && currentDate <= endDate;
+  const isEnded = currentDate > endDate;
+
   const calculateTotalPoints = () => {
     const results = Object.values(exerciseResults);
     if (results.length === 0) return { total: 0, level: null };
@@ -115,28 +123,6 @@ export default function ChallengeDetail() {
     });
   };
 
-  useEffect(() => {
-    if (challenge) {
-      const mockParticipants: Participant[] = users
-        .slice(0, Math.floor(Math.random() * 8) + 3)
-        .map(user => ({
-          id: user.id,
-          username: user.username,
-          points: Math.floor(Math.random() * 1000),
-          lastUpdate: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000)
-        }));
-      setParticipants(mockParticipants.sort((a, b) => b.points - a.points));
-    }
-  }, [challenge]);
-
-  if (!challenge || !creator) return <div>Challenge nicht gefunden</div>;
-
-  const currentDate = new Date();
-  const startDate = new Date(challenge.startDate);
-  const endDate = new Date(challenge.endDate);
-  const isActive = currentDate >= startDate && currentDate <= endDate;
-  const isEnded = currentDate > endDate;
-
   const handleJoinChallenge = () => {
     if (isEnded) {
       toast({
@@ -148,46 +134,25 @@ export default function ChallengeDetail() {
     }
 
     setIsParticipating(true);
-    setParticipants(prev => [
-      ...prev,
-      {
-        id: currentUser?.id || 0,
-        username: currentUser?.username || "",
-        points: 0,
-        lastUpdate: new Date()
-      }
-    ]);
+
+    // Add current user to participants if not already present
+    if (!participants.some(p => p.id === currentUser?.id)) {
+      setParticipants(prev => [
+        ...prev,
+        {
+          id: currentUser?.id || 0,
+          username: currentUser?.username || "",
+          points: 0,
+          lastUpdate: new Date()
+        }
+      ]);
+    }
 
     toast({
       title: "Erfolgreich beigetreten!",
       description: "Du nimmst jetzt an der Challenge teil.",
     });
   };
-
-  const handleSubmitResult = (results: any) => {
-    if (!results) {
-      toast({
-        title: "Fehler",
-        description: "Bitte gib ein Ergebnis ein.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Aktualisiere die Teilnehmerliste mit den neuen Ergebnissen
-    setParticipants(prev => prev.map(p =>
-      p.id === (currentUser?.id || 0)
-        ? { ...p, points: results.points, lastUpdate: new Date() }
-        : p
-    ).sort((a, b) => b.points - a.points));
-
-    toast({
-      title: "Ergebnis gespeichert!",
-      description: "Dein Ergebnis wurde erfolgreich eingetragen.",
-    });
-    setShowResultForm(false);
-  };
-
 
   const getExerciseIcon = (name: string) => {
     const lowerName = name.toLowerCase();
@@ -198,7 +163,7 @@ export default function ChallengeDetail() {
     return <Dumbbell className="h-5 w-5 text-primary" />;
   };
 
-  const badgeDetails = challenge?.workoutType === 'badge'
+  const badgeDetails = challenge.workoutType === 'badge'
     ? badgeTests.find(test => test.name === challenge.title.replace(' Challenge', ''))
     : null;
 
@@ -417,32 +382,7 @@ export default function ChallengeDetail() {
             <Button className="flex-1" size="lg" onClick={handleJoinChallenge}>
               An Challenge teilnehmen
             </Button>
-          ) : (
-            <>
-              <Button
-                className="flex-1"
-                size="lg"
-                variant={showResultForm ? "secondary" : "default"}
-                onClick={() => setShowResultForm(!showResultForm)}
-              >
-                {showResultForm ? "Abbrechen" : "Ergebnis eintragen"}
-              </Button>
-              {showResultForm && (
-                <Dialog open={showResultForm} onOpenChange={setShowResultForm}>
-                  <DialogContent className="sm:max-w-lg">
-                    <DialogHeader>
-                      <DialogTitle>Ergebnis eintragen</DialogTitle>
-                    </DialogHeader>
-                    <ResultForm
-                      challenge={challenge}
-                      onSubmit={handleSubmitResult}
-                      onCancel={() => setShowResultForm(false)}
-                    />
-                  </DialogContent>
-                </Dialog>
-              )}
-            </>
-          )}
+          ) : null}
         </div>
       )}
 
