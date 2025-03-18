@@ -47,14 +47,11 @@ function UserCard({ user, onVerify }: { user: any, onVerify: (id: number) => voi
     <Card className="border-primary/10 hover:border-primary/20 transition-colors">
       <CardContent className="p-3">
         <div className="flex flex-col items-center gap-2">
-          {/* Angepasste Avatar-Größe */}
-          <div className="w-20 h-20">
-            <UserAvatar
-              userId={user.id}
-              size="md"
-              className="w-full h-full"
-            />
-          </div>
+          <UserAvatar
+            userId={user.id}
+            size="lg"
+            className="w-full h-full"
+          />
           <Button 
             variant="ghost" 
             size="sm" 
