@@ -4,11 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Gift, Dumbbell, ChevronRight, ChevronLeft, Clock, RefreshCw, Plus, X, Timer } from "lucide-react";
+import { Gift, Dumbbell, ChevronRight, ChevronLeft, Clock, RefreshCw, Plus, X } from "lucide-react";
 import WorkoutGenerator from "@/components/WorkoutGenerator";
 import { useToast } from "@/hooks/use-toast";
 import { format, addDays } from "date-fns";
-import { mockChallenges } from "../data/mockData";
+import { mockChallenges, badgeTests } from "../data/mockData";
 import {
   Dialog,
   DialogContent,
@@ -48,27 +48,6 @@ interface BadgeTest {
     levels?: { level: string; requirement: string }[];
   }[];
 }
-
-
-const badgeTests: BadgeTest[] = [
-  // Add your badge test data here.  Example:
-  {
-    id: "test1",
-    name: "Test 1",
-    description: "Description of Test 1",
-    requirements: [
-      { name: "Requirement 1", requirement: "Do 10 pushups" },
-      {
-        name: "Requirement 2",
-        levels: [
-          { level: "Beginner", requirement: "Run 1km" },
-          { level: "Advanced", requirement: "Run 5km" },
-        ],
-      },
-    ],
-  },
-  // Add more badge tests as needed
-];
 
 
 export default function CreateChallenge() {
