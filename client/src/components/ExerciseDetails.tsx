@@ -53,20 +53,53 @@ export const ExerciseDetails = ({
       onSubmitResult({
         name,
         value: resultValue,
-        unit: name.toLowerCase().includes('zeit') ? 'Zeit' : 'Wiederholungen'
+        unit: getUnitForExercise(name)
       });
       setShowResultDialog(false);
       setResultValue("");
     }
   };
 
+  const getUnitForExercise = (exerciseName: string) => {
+    const lowerName = exerciseName.toLowerCase();
+    if (lowerName.includes('lauf') && lowerName.includes('mile')) return 'Meilen';
+    if (lowerName.includes('lauf') && lowerName.includes('meter')) return 'Meter';
+    if (lowerName.includes('zeit') || lowerName.includes('time')) return 'Zeit';
+    if (lowerName.includes('gewicht') || lowerName.includes('weight')) return 'kg';
+    if (lowerName.includes('distanz') || lowerName.includes('distance')) return 'km';
+    if (lowerName.includes('sprint')) return 'Sekunden';
+    return 'Wiederholungen';
+  };
+
+  const getInputType = (exerciseName: string) => {
+    const lowerName = exerciseName.toLowerCase();
+    if (lowerName.includes('zeit') || lowerName.includes('time') || 
+        lowerName.includes('sprint') || lowerName.includes('lauf')) {
+      return 'time';
+    }
+    return 'number';
+  };
+
+  const getPlaceholder = (exerciseName: string) => {
+    const unit = getUnitForExercise(exerciseName);
+    switch (unit) {
+      case 'Zeit': return 'MM:SS';
+      case 'Sekunden': return 'Sekunden';
+      case 'Meilen': return 'Meilen';
+      case 'Meter': return 'Meter';
+      case 'km': return 'Kilometer';
+      case 'kg': return 'Kilogramm';
+      default: return 'Anzahl eingeben';
+    }
+  };
+
   return (
     <>
       <div className="w-full bg-muted/50 rounded-lg transition-all">
-        <div className="flex items-center gap-4 p-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 p-4">
           <Button
             variant="ghost"
-            className="flex-1 flex items-center justify-between p-4 hover:no-underline text-left h-auto"
+            className="flex-1 flex items-center justify-between p-4 hover:no-underline text-left h-auto w-full"
             onClick={() => setIsOpen(!isOpen)}
           >
             <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -81,10 +114,10 @@ export const ExerciseDetails = ({
           </Button>
 
           {isParticipating && (
-            <div className="flex items-center gap-2 min-w-[200px]">
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
               {currentResult ? (
-                <>
-                  <Badge variant="outline" className="flex gap-2 items-center">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Badge variant="outline" className="flex gap-2 items-center whitespace-nowrap">
                     <Check className="h-3 w-3" />
                     {currentResult.value} {currentResult.unit}
                   </Badge>
@@ -95,13 +128,13 @@ export const ExerciseDetails = ({
                   >
                     <Edit2 className="h-4 w-4" />
                   </Button>
-                </>
+                </div>
               ) : (
                 <Button
                   variant="outline"
                   size="sm"
-                  className="ml-auto"
                   onClick={() => setShowResultDialog(true)}
+                  className="w-full sm:w-auto"
                 >
                   <Timer className="h-4 w-4 mr-2" />
                   Ergebnis eintragen
@@ -182,11 +215,14 @@ export const ExerciseDetails = ({
             <div>
               <Label>Dein Ergebnis</Label>
               <Input
-                type={name.toLowerCase().includes('zeit') ? 'time' : 'number'}
-                placeholder={name.toLowerCase().includes('zeit') ? 'MM:SS' : 'Anzahl eingeben'}
+                type={getInputType(name)}
+                placeholder={getPlaceholder(name)}
                 value={resultValue}
                 onChange={(e) => setResultValue(e.target.value)}
               />
+              <p className="text-sm text-muted-foreground mt-1">
+                Einheit: {getUnitForExercise(name)}
+              </p>
             </div>
             <div className="flex gap-2">
               <Button onClick={handleSubmitResult} className="flex-1">
