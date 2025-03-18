@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Calendar, Users } from "lucide-react";
+import { Trophy, Calendar, Users, ArrowRight } from "lucide-react";
 import { useLocation } from "wouter";
 import { UserAvatar } from "./UserAvatar";
 import { mockUsers } from "../data/mockData";
@@ -26,59 +26,61 @@ export default function SharedContent({ content }: SharedContentProps) {
   };
 
   return (
-    <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={handleClick}>
-      <CardContent className="p-3">
-        <div className="flex flex-col gap-2">
-          {/* Header mit Icon und Status */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="p-2 rounded-lg bg-primary/10">
-                {content.type === 'challenge' && <Trophy className="h-4 w-4 text-primary" />}
-              </div>
-              <div>
-                <h4 className="text-sm font-medium">{content.title}</h4>
-                {content.preview && (
-                  <p className="text-xs text-muted-foreground flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    {content.preview}
-                  </p>
-                )}
-              </div>
+    <Card className="cursor-pointer overflow-hidden hover:bg-muted/50 transition-all" onClick={handleClick}>
+      <CardContent className="p-0">
+        {/* Header Banner */}
+        <div className="bg-gradient-to-r from-primary/10 to-primary/5 p-4">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 rounded-full bg-primary/20">
+              <Trophy className="h-5 w-5 text-primary" />
             </div>
-            <Badge variant="secondary" className="text-xs">
-              Challenge
+            <Badge variant="secondary" className="text-xs font-medium">
+              Neue Challenge
             </Badge>
           </div>
+          <h3 className="text-lg font-semibold mb-1">{content.title}</h3>
+          {content.preview && (
+            <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+              <Calendar className="h-4 w-4" />
+              {content.preview}
+            </p>
+          )}
+        </div>
 
-          {/* Teilnehmer */}
-          <div className="flex items-center gap-2">
-            <div className="flex -space-x-2">
-              {participants.slice(0, 3).map((user, i) => (
-                <UserAvatar
-                  key={i}
-                  userId={user.id}
-                  size="sm"
-                  className="-ml-2 first:ml-0"
-                />
-              ))}
+        {/* Social Proof Section */}
+        <div className="p-4 bg-background">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="flex -space-x-2">
+                {participants.slice(0, 3).map((user, i) => (
+                  <UserAvatar
+                    key={i}
+                    userId={user.id}
+                    size="sm"
+                    className="-ml-2 first:ml-0"
+                  />
+                ))}
+              </div>
               {participants.length > 3 && (
-                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium -ml-2">
-                  +{participants.length - 3}
-                </div>
+                <span className="text-sm text-muted-foreground">
+                  +{participants.length - 3} weitere
+                </span>
               )}
             </div>
-            <span className="text-sm text-muted-foreground flex items-center gap-1">
+            <div className="flex items-center gap-1 text-sm text-muted-foreground">
               <Users className="h-4 w-4" />
-              {participants.length} Teilnehmer
-            </span>
+              <span>{participants.length} Teilnehmer</span>
+            </div>
           </div>
 
-          {/* Action Button */}
-          <div className="flex justify-end mt-1">
-            <Button size="sm" variant="ghost" className="h-7 text-xs">
-              Challenge öffnen
-            </Button>
-          </div>
+          {/* Call to Action */}
+          <Button 
+            className="w-full group" 
+            variant="default"
+          >
+            <span className="mr-2">Sei dabei und starte die Challenge</span>
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+          </Button>
         </div>
       </CardContent>
     </Card>
