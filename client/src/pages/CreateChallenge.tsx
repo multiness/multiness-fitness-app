@@ -83,6 +83,7 @@ export default function CreateChallenge() {
 
   const handleWorkoutSelect = (template: any) => {
     setSelectedWorkout(template);
+    // Nur beim Generator den Titel automatisch setzen
     setChallengeTitle(`${template.name} Challenge`);
 
     const workoutDescription = `
@@ -283,6 +284,14 @@ ${template.workoutType === 'amrap' ?
             <>
               <div className="space-y-4">
                 <div>
+                  <Label>Challenge Titel</Label>
+                  <Input
+                    placeholder="Gib einen Titel für deine Challenge ein"
+                    value={challengeTitle}
+                    onChange={(e) => setChallengeTitle(e.target.value)}
+                  />
+                </div>
+                <div>
                   <Label>Workout Typ</Label>
                   <Select value={workoutType} onValueChange={setWorkoutType}>
                     <SelectTrigger>
@@ -457,14 +466,16 @@ ${template.workoutType === 'amrap' ?
       isComplete: !!challengeTitle && !!challengeDescription,
       content: (
         <div className="space-y-4">
-          <div>
-            <Label>Titel</Label>
-            <Input
-              placeholder="Gib einen Titel für deine Challenge ein"
-              value={challengeTitle}
-              onChange={(e) => setChallengeTitle(e.target.value)}
-            />
-          </div>
+          {creationMethod === "generator" && (
+            <div>
+              <Label>Titel</Label>
+              <Input
+                placeholder="Gib einen Titel für deine Challenge ein"
+                value={challengeTitle}
+                onChange={(e) => setChallengeTitle(e.target.value)}
+              />
+            </div>
+          )}
           <div>
             <Label>Beschreibung</Label>
             <Textarea
