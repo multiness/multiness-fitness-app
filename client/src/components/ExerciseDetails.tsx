@@ -38,16 +38,16 @@ export const ExerciseDetails = ({
       <CollapsibleTrigger asChild>
         <Button
           variant="ghost"
-          className="w-full flex items-center justify-between p-4 hover:no-underline"
+          className="w-full flex items-center justify-between p-4 hover:no-underline text-left"
         >
-          <div className="flex items-center gap-2">
-            {icon && <div className="text-primary">{icon}</div>}
-            <span className="font-medium">{name}</span>
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            {icon && <div className="text-primary flex-shrink-0">{icon}</div>}
+            <span className="font-medium truncate">{name}</span>
           </div>
           {isOpen ? (
-            <ChevronUp className="h-4 w-4" />
+            <ChevronUp className="h-4 w-4 flex-shrink-0 ml-2" />
           ) : (
-            <ChevronDown className="h-4 w-4" />
+            <ChevronDown className="h-4 w-4 flex-shrink-0 ml-2" />
           )}
         </Button>
       </CollapsibleTrigger>
@@ -55,29 +55,29 @@ export const ExerciseDetails = ({
         {description && (
           <div>
             <h4 className="text-sm font-medium mb-1">Beschreibung</h4>
-            <p className="text-sm text-muted-foreground">{description}</p>
+            <p className="text-sm text-muted-foreground break-words">{description}</p>
           </div>
         )}
         {instruction && (
           <div>
             <h4 className="text-sm font-medium mb-1">Ausführung</h4>
-            <p className="text-sm text-muted-foreground">{instruction}</p>
+            <p className="text-sm text-muted-foreground whitespace-pre-line">{instruction}</p>
           </div>
         )}
         {requirements && (
           <div>
             <h4 className="text-sm font-medium mb-1">Anforderungen</h4>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {requirements.male && (
                 <div className="text-sm">
                   <span className="text-muted-foreground">Männer: </span>
-                  {requirements.male}
+                  <span className="break-words">{requirements.male}</span>
                 </div>
               )}
               {requirements.female && (
                 <div className="text-sm">
                   <span className="text-muted-foreground">Frauen: </span>
-                  {requirements.female}
+                  <span className="break-words">{requirements.female}</span>
                 </div>
               )}
             </div>
@@ -86,9 +86,12 @@ export const ExerciseDetails = ({
         {tips && tips.length > 0 && (
           <div>
             <h4 className="text-sm font-medium mb-1">Tipps</h4>
-            <ul className="list-disc list-inside text-sm text-muted-foreground">
+            <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
               {tips.map((tip, index) => (
-                <li key={index}>{tip}</li>
+                <li key={index} className="break-words">
+                  <span className="ml-[-1.25rem]">•</span>
+                  <span className="ml-2">{tip}</span>
+                </li>
               ))}
             </ul>
           </div>
