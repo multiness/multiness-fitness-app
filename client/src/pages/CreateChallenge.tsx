@@ -8,6 +8,7 @@ import { Gift } from "lucide-react";
 import WorkoutGenerator from "@/components/WorkoutGenerator";
 import { useToast } from "@/hooks/use-toast";
 import { format, addDays } from "date-fns";
+import { mockChallenges } from "../data/mockData";
 
 export default function CreateChallenge() {
   const { toast } = useToast();
@@ -22,12 +23,32 @@ export default function CreateChallenge() {
   const handleWorkoutSelect = (template: any) => {
     setSelectedWorkout(template);
     setChallengeTitle(`${template.name} Challenge`);
-    setChallengeDescription(
-      `${template.description}\n\n` +
-      `Workout-Typ: ${template.workoutType.toUpperCase()}\n` +
-      `Dauer: ${template.duration} Minuten\n` +
-      `Schwierigkeit: ${template.difficulty}`
-    );
+
+    // Erstelle eine detaillierte Beschreibung mit Workout-Details
+    const workoutDescription = `
+${template.description}
+
+Workout Details:
+Typ: ${template.workoutType.toUpperCase()}
+Dauer: ${template.duration} Minuten
+Schwierigkeit: ${template.difficulty}
+
+Übungen:
+${template.workoutDetails.exercises.map((exercise: any) => 
+  `- ${exercise.name}: ${exercise.reps || exercise.time}${exercise.reps ? ' Wiederholungen' : ' Sekunden'}
+   ${exercise.description ? `  ${exercise.description}` : ''}
+   ${exercise.weight ? `  Gewicht: ${exercise.weight}kg` : ''}`
+).join('\n')}
+
+Durchführung:
+${template.workoutType === 'amrap' ? 
+  `So viele Runden wie möglich in ${template.duration} Minuten.` :
+  template.workoutType === 'emom' ?
+  `Alle ${template.workoutDetails.timePerRound} Sekunden eine neue Runde für ${template.workoutDetails.rounds} Runden.` :
+  `${template.workoutDetails.rounds} Runden, ${template.workoutDetails.timePerRound} Sekunden pro Runde.`}
+`.trim();
+
+    setChallengeDescription(workoutDescription);
   };
 
   const handleCreateChallenge = () => {
@@ -49,7 +70,8 @@ export default function CreateChallenge() {
       return;
     }
 
-    const challenge = {
+    const newChallenge = {
+      id: mockChallenges.length + 1,
       title: challengeTitle,
       description: challengeDescription,
       startDate: new Date(startDate),
@@ -59,14 +81,28 @@ export default function CreateChallenge() {
       workoutType: selectedWorkout.workoutType,
       workoutDetails: selectedWorkout.workoutDetails,
       creatorId: 1, // In einer echten App würde dies der eingeloggte User sein
+      image: null,
+      prizeImage: null
     };
 
-    console.log("Neue Challenge:", challenge);
+    // Füge die neue Challenge zu den mockChallenges hinzu
+    mockChallenges.push(newChallenge);
+
+    console.log("Neue Challenge:", newChallenge);
 
     toast({
       title: "Challenge erstellt!",
       description: "Deine Challenge wurde erfolgreich erstellt.",
     });
+
+    // Zurücksetzen der Formularfelder
+    setSelectedWorkout(null);
+    setChallengeTitle("");
+    setChallengeDescription("");
+    setPrize("");
+    setPrizeDescription("");
+    setStartDate(format(new Date(), "yyyy-MM-dd"));
+    setEndDate(format(addDays(new Date(), 30), "yyyy-MM-dd"));
   };
 
   return (
@@ -103,7 +139,7 @@ export default function CreateChallenge() {
               placeholder="Beschreibe deine Challenge"
               value={challengeDescription}
               onChange={(e) => setChallengeDescription(e.target.value)}
-              className="min-h-[100px]"
+              className="min-h-[200px]"
             />
           </div>
           <div>
