@@ -3,14 +3,18 @@ import { useParams } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Gift, Trophy, Timer, Users, Calendar, Crown, MessageCircle, Dumbbell, Clock, RefreshCw } from "lucide-react";
+import { 
+  Gift, Trophy, Users, Calendar, Crown, MessageCircle, 
+  Dumbbell, Waves, Bike, Timer, Award, ChevronRight
+} from "lucide-react";
 import { format } from "date-fns";
-import { mockChallenges } from "../data/mockData";
+import { mockChallenges, badgeTests, exerciseDatabase } from "../data/mockData";
 import { de } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { UserAvatar } from "@/components/UserAvatar";
 import { useUsers } from "../contexts/UserContext";
 import { Badge } from "@/components/ui/badge";
+import { ExerciseDetails } from "@/components/ExerciseDetails";
 import {
   Dialog,
   DialogContent,
@@ -27,9 +31,24 @@ interface WorkoutExercise {
 
 interface WorkoutDetails {
   type: string;
-  timePerRound: number;
-  rounds: number;
+  timePerRound?: number;
+  rounds?: number;
   exercises: WorkoutExercise[];
+}
+
+interface Challenge {
+  id: number;
+  title: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+  prize: string | null;
+  prizeDescription: string | null;
+  workoutType: string;
+  workoutDetails: WorkoutDetails;
+  creatorId: number;
+  image: string | null;
+  prizeImage: string | null;
 }
 
 interface Participant {
@@ -43,7 +62,7 @@ export default function ChallengeDetail() {
   const { id } = useParams();
   const { toast } = useToast();
   const { users, currentUser } = useUsers();
-  const challenge = mockChallenges.find(c => c.id === parseInt(id || ""));
+  const challenge = mockChallenges.find(c => c.id === parseInt(id || "")) as Challenge | undefined;
   const creator = users.find(u => u.id === challenge?.creatorId);
 
   const [isParticipating, setIsParticipating] = useState(false);
@@ -136,6 +155,21 @@ export default function ChallengeDetail() {
     setResult("");
   };
 
+  // Helper function to get the appropriate icon for exercise type
+  const getExerciseIcon = (name: string) => {
+    const lowerName = name.toLowerCase();
+    if (lowerName.includes('schwimm')) return <Waves className="h-5 w-5 text-primary" />;
+    if (lowerName.includes('lauf') || lowerName.includes('sprint')) return <ChevronRight className="h-5 w-5 text-primary" />;
+    if (lowerName.includes('rad') || lowerName.includes('bike')) return <Bike className="h-5 w-5 text-primary" />;
+    if (lowerName.includes('zeit') || lowerName.includes('time')) return <Timer className="h-5 w-5 text-primary" />;
+    return <Dumbbell className="h-5 w-5 text-primary" />;
+  };
+
+  // Find additional test details if it's a badge challenge
+  const badgeDetails = challenge?.workoutType === 'badge' 
+    ? badgeTests.find(test => test.name === challenge.title.replace(' Challenge', ''))
+    : null;
+
   return (
     <div className="container max-w-2xl mx-auto p-4">
       <div className="relative aspect-video rounded-lg overflow-hidden mb-6">
@@ -178,7 +212,7 @@ export default function ChallengeDetail() {
             <div className="font-semibold">{creator.name}</div>
             <div className="text-sm text-muted-foreground">@{creator.username}</div>
           </div>
-          <Button variant="secondary" className="ml-auto" onClick={() => console.log('Send message to creator')}>
+          <Button variant="secondary" className="ml-auto">
             <MessageCircle className="h-4 w-4 mr-2" />
             Nachricht
           </Button>
@@ -190,87 +224,38 @@ export default function ChallengeDetail() {
           <CardTitle>Über diese Challenge</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground">{challenge.description}</p>
+          <p className="text-muted-foreground whitespace-pre-line">{challenge.description}</p>
         </CardContent>
       </Card>
 
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-primary" />
-              Teilnehmer ({participants.length})
+      {/* Challenge Type Specific Details */}
+      {challenge.workoutType === 'badge' && badgeDetails && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Award className="h-5 w-5 text-primary" />
+              Test Details
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-muted-foreground">{badgeDetails.description}</p>
+            <div className="space-y-3">
+              {badgeDetails.requirements.map((req, index) => (
+                <ExerciseDetails
+                  key={index}
+                  name={req.name}
+                  description={req.requirement}
+                  requirements={req.gender_specific}
+                  icon={getExerciseIcon(req.name)}
+                />
+              ))}
             </div>
-            <Button variant="outline" size="sm" onClick={() => setShowParticipants(true)}>
-              Alle anzeigen
-            </Button>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2">
-            {participants.slice(0, 8).map((participant) => (
-              <UserAvatar
-                key={participant.id}
-                userId={participant.id}
-                size="sm"
-                clickable={true}
-              />
-            ))}
-            {participants.length > 8 && (
-              <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm">
-                +{participants.length - 8}
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Trophy className="h-5 w-5 text-primary" />
-            Rangliste
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {participants.map((participant, index) => (
-              <div key={participant.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50 hover:bg-muted/70 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    {index === 0 && <Crown className="absolute -top-2 -left-2 h-4 w-4 text-yellow-400" />}
-                    {index === 1 && <Crown className="absolute -top-2 -left-2 h-4 w-4 text-gray-400" />}
-                    {index === 2 && <Crown className="absolute -top-2 -left-2 h-4 w-4 text-amber-700" />}
-                    <UserAvatar
-                      userId={participant.id}
-                      size="sm"
-                      clickable={true}
-                    />
-                  </div>
-                  <div>
-                    <p className="font-medium">{participant.username}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {index === 0 ? "🥇 " : index === 1 ? "🥈 " : index === 2 ? "🥉 " : `${index + 1}. `}
-                      Platz
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="font-bold">{participant.points}</p>
-                  <p className="text-sm text-muted-foreground">Punkte</p>
-                </div>
-              </div>
-            ))}
-            <div className="text-center pt-2">
-              <Button variant="outline" onClick={() => setShowLeaderboard(true)}>
-                Vollständige Rangliste anzeigen
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {challenge.workoutType && (
+      {/* Workout Details */}
+      {challenge.workoutDetails?.exercises && (
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -289,94 +274,79 @@ export default function ChallengeDetail() {
                       {challenge.workoutType.toUpperCase()}
                     </span>
                   </div>
-                  <div className="flex flex-col items-center p-3 bg-background rounded-lg">
-                    <Clock className="h-5 w-5 text-primary mb-2" />
-                    <span className="text-sm font-medium">Zeit/Runde</span>
-                    <span className="text-sm text-muted-foreground">
-                      {challenge.workoutDetails?.timePerRound || 0} Sek
-                    </span>
-                  </div>
-                  <div className="flex flex-col items-center p-3 bg-background rounded-lg">
-                    <RefreshCw className="h-5 w-5 text-primary mb-2" />
-                    <span className="text-sm font-medium">Runden</span>
-                    <span className="text-sm text-muted-foreground">
-                      {challenge.workoutDetails?.rounds || 0}
-                    </span>
-                  </div>
+                  {challenge.workoutDetails?.timePerRound && (
+                    <div className="flex flex-col items-center p-3 bg-background rounded-lg">
+                      <Timer className="h-5 w-5 text-primary mb-2" />
+                      <span className="text-sm font-medium">Zeit/Runde</span>
+                      <span className="text-sm text-muted-foreground">
+                        {challenge.workoutDetails.timePerRound} Sek
+                      </span>
+                    </div>
+                  )}
+                  {challenge.workoutDetails?.rounds && (
+                    <div className="flex flex-col items-center p-3 bg-background rounded-lg">
+                      <ChevronRight className="h-5 w-5 text-primary mb-2" />
+                      <span className="text-sm font-medium">Runden</span>
+                      <span className="text-sm text-muted-foreground">
+                        {challenge.workoutDetails.rounds}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {challenge.workoutDetails?.exercises && (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Übungen</h3>
-                  <div className="space-y-3">
-                    {challenge.workoutDetails.exercises.map((exercise: WorkoutExercise, index: number) => (
-                      <div key={index} className="flex items-center gap-4 p-3 bg-muted/50 rounded-lg">
-                        <div className="flex-1">
-                          <h4 className="font-medium">{exercise.name}</h4>
-                          {exercise.description && (
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {exercise.description}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <div className="text-right">
-                            <span className="text-sm text-muted-foreground">Wiederholungen</span>
-                            <p className="font-medium">{exercise.reps}x</p>
-                          </div>
-                          {exercise.weight && (
-                            <div className="text-right">
-                              <span className="text-sm text-muted-foreground">Gewicht</span>
-                              <p className="font-medium">{exercise.weight}kg</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Übungen</h3>
+                <div className="space-y-3">
+                  {challenge.workoutDetails.exercises.map((exercise: WorkoutExercise, index: number) => (
+                    <ExerciseDetails
+                      key={index}
+                      name={exercise.name}
+                      description={exercise.description}
+                      instruction={exerciseDatabase.exercises[exercise.name.toLowerCase()]?.instruction}
+                      tips={exerciseDatabase.exercises[exercise.name.toLowerCase()]?.tips}
+                      icon={getExerciseIcon(exercise.name)}
+                      requirements={{
+                        reps: exercise.reps,
+                        weight: exercise.weight
+                      }}
+                    />
+                  ))}
                 </div>
-              )}
-
-              {isParticipating && !showResultForm && (
-                <div className="pt-4">
-                  <Button 
-                    onClick={() => setShowResultForm(true)}
-                    className="w-full"
-                  >
-                    Ergebnis eintragen
-                  </Button>
-                </div>
-              )}
+              </div>
             </div>
           </CardContent>
         </Card>
       )}
 
-      <Card className="mb-6">
-        <CardHeader className="flex flex-row items-center gap-2">
-          <Gift className="h-5 w-5 text-primary" />
-          <CardTitle>Gewinn</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-start gap-4">
-            {challenge.prizeImage && (
-              <img
-                src={challenge.prizeImage}
-                alt={challenge.prize}
-                className="w-24 h-24 object-cover rounded-lg"
-              />
-            )}
-            <div>
-              <h3 className="font-semibold text-lg mb-1">{challenge.prize}</h3>
-              <p className="text-muted-foreground">{challenge.prizeDescription}</p>
+      {/* Prize Section */}
+      {(challenge.prize || challenge.prizeDescription) && (
+        <Card className="mb-6">
+          <CardHeader className="flex flex-row items-center gap-2">
+            <Gift className="h-5 w-5 text-primary" />
+            <CardTitle>Gewinn</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-start gap-4">
+              {challenge.prizeImage && (
+                <img
+                  src={challenge.prizeImage}
+                  alt={challenge.prize || ""}
+                  className="w-24 h-24 object-cover rounded-lg"
+                />
+              )}
+              <div>
+                <h3 className="font-semibold text-lg mb-1">{challenge.prize}</h3>
+                <p className="text-muted-foreground">{challenge.prizeDescription}</p>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
+      {/* Action Buttons */}
       {!isEnded && (
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-3">
           {!isParticipating ? (
             <Button className="flex-1" size="lg" onClick={handleJoinChallenge}>
               An Challenge teilnehmen
@@ -431,6 +401,7 @@ export default function ChallengeDetail() {
         </div>
       )}
 
+      {/* Dialogs */}
       <Dialog open={showLeaderboard} onOpenChange={setShowLeaderboard}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
