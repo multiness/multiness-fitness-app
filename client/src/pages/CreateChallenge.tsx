@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Gift, Dumbbell, ChevronRight, ChevronLeft, Clock, RefreshCw, Plus } from "lucide-react";
+import { Gift, Dumbbell, ChevronRight, ChevronLeft, Clock, RefreshCw, Plus, X, Timer } from "lucide-react";
 import WorkoutGenerator from "@/components/WorkoutGenerator";
 import { useToast } from "@/hooks/use-toast";
 import { format, addDays } from "date-fns";
@@ -15,7 +15,28 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+
+interface Exercise {
+  name: string;
+  reps: number;
+  weight?: number;
+  description?: string;
+}
+
+interface WorkoutDetails {
+  type: string;
+  timePerRound?: number;
+  rounds?: number;
+  exercises: Exercise[];
+}
 
 export default function CreateChallenge() {
   const { toast } = useToast();
@@ -29,6 +50,35 @@ export default function CreateChallenge() {
   const [showWorkoutDialog, setShowWorkoutDialog] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [creationMethod, setCreationMethod] = useState<"manual" | "generator" | null>(null);
+
+  // Neue States für manuelle Workout-Erstellung
+  const [workoutType, setWorkoutType] = useState<string>("");
+  const [timePerRound, setTimePerRound] = useState<string>("");
+  const [rounds, setRounds] = useState<string>("");
+  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [distance, setDistance] = useState<string>("");
+  const [timeLimit, setTimeLimit] = useState<string>("");
+
+  const workoutTypes = [
+    { value: "amrap", label: "AMRAP (As Many Rounds As Possible)" },
+    { value: "emom", label: "EMOM (Every Minute On the Minute)" },
+    { value: "fortime", label: "For Time" },
+    { value: "distance", label: "Laufdistanz" },
+  ];
+
+  const handleAddExercise = () => {
+    setExercises([...exercises, { name: "", reps: 0 }]);
+  };
+
+  const handleRemoveExercise = (index: number) => {
+    setExercises(exercises.filter((_, i) => i !== index));
+  };
+
+  const handleExerciseChange = (index: number, field: keyof Exercise, value: string | number) => {
+    const newExercises = [...exercises];
+    newExercises[index] = { ...newExercises[index], [field]: value };
+    setExercises(newExercises);
+  };
 
   const handleWorkoutSelect = (template: any) => {
     setSelectedWorkout(template);
@@ -61,11 +111,52 @@ ${template.workoutType === 'amrap' ?
     setShowWorkoutDialog(false);
   };
 
+  const generateWorkoutDescription = () => {
+    if (!workoutType) return "";
+
+    let details = `Workout Typ: ${workoutType.toUpperCase()}\n\n`;
+
+    switch (workoutType) {
+      case "amrap":
+        details += `AMRAP ${timeLimit} Minuten:\n`;
+        break;
+      case "emom":
+        details += `EMOM ${rounds} Runden:\n`;
+        details += `${timePerRound} Sekunden pro Runde\n`;
+        break;
+      case "fortime":
+        details += `Für Zeit:\n${rounds} Runden\n`;
+        break;
+      case "distance":
+        details += `Distanz: ${distance}km\n`;
+        break;
+    }
+
+    details += "\nÜbungen:\n";
+    exercises.forEach((exercise, index) => {
+      details += `${index + 1}. ${exercise.name}: ${exercise.reps}x`;
+      if (exercise.weight) details += ` (${exercise.weight}kg)`;
+      if (exercise.description) details += `\n   ${exercise.description}`;
+      details += "\n";
+    });
+
+    return details;
+  };
+
   const handleCreateChallenge = () => {
     if (!selectedWorkout && creationMethod === "generator") {
       toast({
         title: "Kein Workout ausgewählt",
         description: "Bitte generiere zuerst ein Workout für deine Challenge.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (creationMethod === "manual" && (!workoutType || exercises.length === 0)) {
+      toast({
+        title: "Unvollständige Workout-Details",
+        description: "Bitte fülle alle Workout-Details aus und füge mindestens eine Übung hinzu.",
         variant: "destructive",
       });
       return;
@@ -80,6 +171,13 @@ ${template.workoutType === 'amrap' ?
       return;
     }
 
+    const workoutDetails: WorkoutDetails = creationMethod === "manual" ? {
+      type: workoutType,
+      timePerRound: Number(timePerRound) || undefined,
+      rounds: Number(rounds) || undefined,
+      exercises: exercises
+    } : selectedWorkout.workoutDetails;
+
     const newChallenge = {
       id: mockChallenges.length + 1,
       title: challengeTitle,
@@ -88,8 +186,8 @@ ${template.workoutType === 'amrap' ?
       endDate: new Date(endDate),
       prize,
       prizeDescription,
-      workoutType: selectedWorkout?.workoutType || "custom",
-      workoutDetails: selectedWorkout?.workoutDetails || null,
+      workoutType: creationMethod === "manual" ? workoutType : selectedWorkout.workoutType,
+      workoutDetails,
       creatorId: 1,
       image: null,
       prizeImage: null
@@ -112,6 +210,12 @@ ${template.workoutType === 'amrap' ?
     setEndDate(format(addDays(new Date(), 30), "yyyy-MM-dd"));
     setCurrentStep(1);
     setCreationMethod(null);
+    setWorkoutType("");
+    setTimePerRound("");
+    setRounds("");
+    setExercises([]);
+    setDistance("");
+    setTimeLimit("");
   };
 
   const steps = [
@@ -168,6 +272,184 @@ ${template.workoutType === 'amrap' ?
     },
     {
       title: "Challenge Details",
+      isComplete: creationMethod === "generator" ? !!selectedWorkout : !!workoutType && exercises.length > 0,
+      content: (
+        <div className="space-y-6">
+          {creationMethod === "manual" && (
+            <>
+              <div className="space-y-4">
+                <div>
+                  <Label>Workout Typ</Label>
+                  <Select value={workoutType} onValueChange={setWorkoutType}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Wähle einen Workout-Typ" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {workoutTypes.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {workoutType === "amrap" && (
+                  <div>
+                    <Label>Zeitlimit (Minuten)</Label>
+                    <Input 
+                      type="number"
+                      value={timeLimit}
+                      onChange={(e) => setTimeLimit(e.target.value)}
+                      placeholder="z.B. 20"
+                    />
+                  </div>
+                )}
+
+                {workoutType === "emom" && (
+                  <>
+                    <div>
+                      <Label>Anzahl Runden</Label>
+                      <Input 
+                        type="number"
+                        value={rounds}
+                        onChange={(e) => setRounds(e.target.value)}
+                        placeholder="z.B. 10"
+                      />
+                    </div>
+                    <div>
+                      <Label>Zeit pro Runde (Sekunden)</Label>
+                      <Input 
+                        type="number"
+                        value={timePerRound}
+                        onChange={(e) => setTimePerRound(e.target.value)}
+                        placeholder="z.B. 60"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {workoutType === "fortime" && (
+                  <div>
+                    <Label>Anzahl Runden</Label>
+                    <Input 
+                      type="number"
+                      value={rounds}
+                      onChange={(e) => setRounds(e.target.value)}
+                      placeholder="z.B. 5"
+                    />
+                  </div>
+                )}
+
+                {workoutType === "distance" && (
+                  <div>
+                    <Label>Distanz (km)</Label>
+                    <Input 
+                      type="number"
+                      value={distance}
+                      onChange={(e) => setDistance(e.target.value)}
+                      placeholder="z.B. 5"
+                    />
+                  </div>
+                )}
+
+                {workoutType && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <Label>Übungen</Label>
+                      <Button type="button" onClick={handleAddExercise} variant="outline" size="sm">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Übung hinzufügen
+                      </Button>
+                    </div>
+                    <div className="space-y-4">
+                      {exercises.map((exercise, index) => (
+                        <div key={index} className="flex gap-4 items-start p-4 bg-muted/50 rounded-lg relative">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-2 top-2 h-6 w-6 p-0"
+                            onClick={() => handleRemoveExercise(index)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <Label>Name</Label>
+                              <Input
+                                value={exercise.name}
+                                onChange={(e) => handleExerciseChange(index, "name", e.target.value)}
+                                placeholder="z.B. Burpees"
+                              />
+                            </div>
+                            <div>
+                              <Label>Wiederholungen</Label>
+                              <Input
+                                type="number"
+                                value={exercise.reps}
+                                onChange={(e) => handleExerciseChange(index, "reps", Number(e.target.value))}
+                                placeholder="z.B. 10"
+                              />
+                            </div>
+                            <div>
+                              <Label>Gewicht (kg, optional)</Label>
+                              <Input
+                                type="number"
+                                value={exercise.weight || ""}
+                                onChange={(e) => handleExerciseChange(index, "weight", Number(e.target.value))}
+                                placeholder="z.B. 20"
+                              />
+                            </div>
+                            <div>
+                              <Label>Beschreibung (optional)</Label>
+                              <Input
+                                value={exercise.description || ""}
+                                onChange={(e) => handleExerciseChange(index, "description", e.target.value)}
+                                placeholder="z.B. Mit Pushup"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {creationMethod === "generator" && selectedWorkout && (
+            <Card>
+              <CardContent className="p-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Dumbbell className="h-4 w-4 text-primary" />
+                    <span className="font-medium">{selectedWorkout.name}</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{selectedWorkout.description}</p>
+                  <div className="grid grid-cols-3 gap-2 text-sm">
+                    <div>
+                      <span className="font-medium">Typ:</span>
+                      <p className="text-muted-foreground">{selectedWorkout.workoutType}</p>
+                    </div>
+                    <div>
+                      <span className="font-medium">Dauer:</span>
+                      <p className="text-muted-foreground">{selectedWorkout.duration} Min</p>
+                    </div>
+                    <div>
+                      <span className="font-medium">Level:</span>
+                      <p className="text-muted-foreground">{selectedWorkout.difficulty}</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      ),
+    },
+    {
+      title: "Challenge Info",
       isComplete: !!challengeTitle && !!challengeDescription,
       content: (
         <div className="space-y-4">
@@ -183,7 +465,7 @@ ${template.workoutType === 'amrap' ?
             <Label>Beschreibung</Label>
             <Textarea 
               placeholder="Beschreibe deine Challenge"
-              value={challengeDescription}
+              value={challengeDescription || generateWorkoutDescription()}
               onChange={(e) => setChallengeDescription(e.target.value)}
               className="min-h-[200px]"
             />
@@ -250,7 +532,7 @@ ${template.workoutType === 'amrap' ?
             <div
               key={index}
               className="flex flex-col items-center relative z-10"
-              style={{ width: "33.333%" }}
+              style={{ width: "25%" }}
             >
               <div
                 className={cn(
