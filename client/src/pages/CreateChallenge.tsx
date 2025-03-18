@@ -8,7 +8,7 @@ import { Gift, Dumbbell, ChevronRight, ChevronLeft, Clock, RefreshCw, Plus, X, A
 import WorkoutGenerator from "@/components/WorkoutGenerator";
 import { useToast } from "@/hooks/use-toast";
 import { format, addDays } from "date-fns";
-import { mockChallenges, badgeTests } from "../data/mockData";
+import { mockChallenges, badgeTests, exerciseDatabase } from "../data/mockData";
 import {
   Dialog,
   DialogContent,
@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { ExerciseDetails } from "@/components/ExerciseDetails";
 
 interface Exercise {
   name: string;
@@ -46,6 +47,7 @@ interface BadgeTest {
     name: string;
     requirement: string;
     levels?: { level: string; requirement: string }[];
+    gender_specific?: any;
   }[];
 }
 
@@ -235,7 +237,7 @@ ${template.workoutType === 'amrap' ?
       endDate: new Date(endDate),
       prize,
       prizeDescription,
-      workoutType: creationMethod === "manual" ? workoutType : 
+      workoutType: creationMethod === "manual" ? workoutType :
                   creationMethod === "generator" ? selectedWorkout.workoutType : "badge",
       workoutDetails,
       creatorId: 1,
@@ -341,7 +343,7 @@ ${template.workoutType === 'amrap' ?
     },
     {
       title: "Challenge Details",
-      isComplete: creationMethod === "generator" ? !!selectedWorkout : 
+      isComplete: creationMethod === "generator" ? !!selectedWorkout :
                  creationMethod === "manual" ? !!workoutType && exercises.length > 0 :
                  creationMethod === "badge" ? !!selectedBadgeTest : false,
       content: (
@@ -536,6 +538,15 @@ ${template.workoutType === 'amrap' ?
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Anderes Workout wählen
               </Button>
+              {selectedWorkout.workoutDetails.exercises.map((exercise: any, index: number) => (
+                <ExerciseDetails
+                  key={index}
+                  name={exercise.name}
+                  description={exercise.description}
+                  instruction={exerciseDatabase.exercises[exercise.name.toLowerCase()]?.instruction}
+                  tips={exerciseDatabase.exercises[exercise.name.toLowerCase()]?.tips}
+                />
+              ))}
             </>
           )}
 
@@ -579,23 +590,12 @@ ${template.workoutType === 'amrap' ?
                         {badgeTests
                           .find(t => t.id === selectedBadgeTest)
                           ?.requirements.map((req, index) => (
-                            <div key={index} className="p-3 bg-muted/50 rounded-lg">
-                              <h4 className="font-medium">{req.name}</h4>
-                              {'levels' in req && req.levels ? (
-                                <div className="mt-2 space-y-1">
-                                  {req.levels.map((level, i) => (
-                                    <div key={i} className="flex justify-between text-sm">
-                                      <span className="text-muted-foreground">{level.level}:</span>
-                                      <span>{level.requirement}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              ) : (
-                                <p className="text-sm text-muted-foreground mt-1">
-                                  {req.requirement}
-                                </p>
-                              )}
-                            </div>
+                            <ExerciseDetails
+                              key={index}
+                              name={req.name}
+                              description={req.requirement}
+                              requirements={req.gender_specific}
+                            />
                           ))}
                       </div>
                     </div>

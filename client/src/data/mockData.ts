@@ -497,6 +497,42 @@ export const mockWorkoutTemplates = [
 
 // Füge Übungsdatenbank hinzu
 export const exerciseDatabase = {
+  exercises: {
+    pushups: {
+      name: "Liegestütze",
+      description: "Eine grundlegende Übung für die Brust-, Schulter- und Armmuskulatur",
+      instruction: "1. Stützposition einnehmen, Hände schulterbreit\n2. Körper gerade halten\n3. Ellbogen beugen, bis Brust fast den Boden berührt\n4. Kontrolliert hochdrücken",
+      requirements: {
+        male: "Komplette Liegestütze mit gerader Körperhaltung",
+        female: "Modifizierte Liegestütze mit Knien möglich"
+      },
+      tips: [
+        "Auf gerade Körperhaltung achten",
+        "Gleichmäßiges Tempo",
+        "Nicht durchhängen lassen"
+      ]
+    },
+    situps: {
+      name: "Sit-ups",
+      description: "Klassische Übung für die Bauchmuskulatur",
+      instruction: "1. Rückenlage, Beine angewinkelt\n2. Hände hinter dem Kopf\n3. Oberkörper aufrollen\n4. Kontrolliert absenken",
+      tips: [
+        "Nicht am Kopf ziehen",
+        "Lendenwirbelsäule am Boden lassen",
+        "Gleichmäßig atmen"
+      ]
+    },
+    burpees: {
+      name: "Burpees",
+      description: "Intensive Ganzkörperübung für Kraft und Ausdauer",
+      instruction: "1. Stand\n2. In Liegestützposition springen\n3. Liegestütz ausführen\n4. Füße nach vorne springen\n5. Hochspringen mit gestreckten Armen",
+      tips: [
+        "Tempo dem Fitnesslevel anpassen",
+        "Auf saubere Ausführung achten",
+        "Kontrollierte Landung beim Sprung"
+      ]
+    }
+  },
   emom: [
     { name: "Burpees", reps: [8, 10, 12], description: "Vollständige Bewegung mit Pushup" },
     { name: "Kettlebell Swings", reps: [12, 15, 20], description: "Explosiv aus der Hüfte" },
@@ -642,11 +678,46 @@ export const badgeTests = [
     name: "Polizei Sporttest",
     description: "Offizieller sportmotorischer Test für den Polizeidienst",
     requirements: [
-      { name: "Pendellauf", requirement: "Unter 32 Sekunden (4x10m)" },
-      { name: "Liegestütze", requirement: "15 Wiederholungen in 2 Minuten" },
-      { name: "Sit-ups", requirement: "20 Wiederholungen in 2 Minuten" },
-      { name: "Cooper-Test", requirement: "2400m in 12 Minuten" },
-      { name: "100m Schwimmen", requirement: "Unter 1:45 Minuten" }
+      {
+        name: "Pendellauf",
+        requirement: "Unter 32 Sekunden (4x10m)",
+        gender_specific: {
+          male: "Maximal 28 Sekunden",
+          female: "Maximal 32 Sekunden"
+        }
+      },
+      {
+        name: "Liegestütze",
+        requirement: "In 2 Minuten",
+        gender_specific: {
+          male: "20 Wiederholungen",
+          female: "15 Wiederholungen"
+        }
+      },
+      {
+        name: "Sit-ups",
+        requirement: "In 2 Minuten",
+        gender_specific: {
+          male: "25 Wiederholungen",
+          female: "20 Wiederholungen"
+        }
+      },
+      {
+        name: "Cooper-Test",
+        requirement: "12 Minuten Lauf",
+        gender_specific: {
+          male: "2800m",
+          female: "2400m"
+        }
+      },
+      {
+        name: "100m Schwimmen",
+        requirement: "Beliebiger Stil",
+        gender_specific: {
+          male: "1:40 Minuten",
+          female: "1:45 Minuten"
+        }
+      }
     ]
   },
   {
