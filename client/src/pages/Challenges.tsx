@@ -11,16 +11,29 @@ import { mockChallenges, mockUsers } from "../data/mockData";
 export default function Challenges() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("active");
-
   const currentDate = new Date();
-  const activeChallenges = mockChallenges.filter(
-    challenge => currentDate >= challenge.startDate && currentDate <= challenge.endDate
-  );
-  const pastChallenges = mockChallenges.filter(
-    challenge => currentDate > challenge.endDate
-  );
 
-  const filteredActiveChallenges = activeChallenges.filter(challenge =>
+  // Ensure dates are properly compared
+  const activeChallenges = mockChallenges.filter(challenge => {
+    const startDate = new Date(challenge.startDate);
+    const endDate = new Date(challenge.endDate);
+    return currentDate >= startDate && currentDate <= endDate;
+  });
+
+  const pastChallenges = mockChallenges.filter(challenge => {
+    const endDate = new Date(challenge.endDate);
+    return currentDate > endDate;
+  });
+
+  const futureStartingChallenges = mockChallenges.filter(challenge => {
+    const startDate = new Date(challenge.startDate);
+    return currentDate < startDate;
+  });
+
+  // Combine active and future challenges for the active tab
+  const allActiveChallenges = [...activeChallenges, ...futureStartingChallenges];
+
+  const filteredActiveChallenges = allActiveChallenges.filter(challenge =>
     challenge.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -55,7 +68,7 @@ export default function Challenges() {
       {/* Tabs and Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-2 mb-6">
-          <TabsTrigger value="active">Aktive Challenges</TabsTrigger>
+          <TabsTrigger value="active">Aktive & Kommende Challenges</TabsTrigger>
           <TabsTrigger value="past">Vergangene Challenges</TabsTrigger>
         </TabsList>
 
@@ -69,6 +82,11 @@ export default function Challenges() {
                   variant="full"
                 />
               ))}
+              {filteredActiveChallenges.length === 0 && (
+                <div className="text-center text-muted-foreground py-8">
+                  Keine aktiven Challenges gefunden
+                </div>
+              )}
             </div>
           </ScrollArea>
         </TabsContent>
@@ -83,6 +101,11 @@ export default function Challenges() {
                   variant="full"
                 />
               ))}
+              {filteredPastChallenges.length === 0 && (
+                <div className="text-center text-muted-foreground py-8">
+                  Keine vergangenen Challenges gefunden
+                </div>
+              )}
             </div>
           </ScrollArea>
         </TabsContent>
