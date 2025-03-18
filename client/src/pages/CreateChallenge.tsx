@@ -38,6 +38,39 @@ interface WorkoutDetails {
   exercises: Exercise[];
 }
 
+interface BadgeTest {
+  id: string;
+  name: string;
+  description: string;
+  requirements: {
+    name: string;
+    requirement: string;
+    levels?: { level: string; requirement: string }[];
+  }[];
+}
+
+
+const badgeTests: BadgeTest[] = [
+  // Add your badge test data here.  Example:
+  {
+    id: "test1",
+    name: "Test 1",
+    description: "Description of Test 1",
+    requirements: [
+      { name: "Requirement 1", requirement: "Do 10 pushups" },
+      {
+        name: "Requirement 2",
+        levels: [
+          { level: "Beginner", requirement: "Run 1km" },
+          { level: "Advanced", requirement: "Run 5km" },
+        ],
+      },
+    ],
+  },
+  // Add more badge tests as needed
+];
+
+
 export default function CreateChallenge() {
   const { toast } = useToast();
   const [selectedWorkout, setSelectedWorkout] = useState<any>(null);
@@ -58,12 +91,14 @@ export default function CreateChallenge() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [distance, setDistance] = useState<string>("");
   const [timeLimit, setTimeLimit] = useState<string>("");
+  const [selectedBadgeTest, setSelectedBadgeTest] = useState<string>("");
 
   const workoutTypes = [
     { value: "amrap", label: "AMRAP (As Many Rounds As Possible)" },
     { value: "emom", label: "EMOM (Every Minute On the Minute)" },
     { value: "fortime", label: "For Time" },
     { value: "distance", label: "Laufdistanz" },
+    { value: "badge", label: "Fitness Abzeichen / Tests" },
     { value: "custom", label: "Eigenes Workout" },
   ];
 
@@ -132,18 +167,38 @@ ${template.workoutType === 'amrap' ?
       case "distance":
         details += `Distanz: ${distance}km\n`;
         break;
+      case "badge":
+        const selectedTest = badgeTests.find(t => t.id === selectedBadgeTest);
+        if (selectedTest) {
+          details = `${selectedTest.name}\n\n`;
+          details += `${selectedTest.description}\n\n`;
+          details += "Anforderungen:\n";
+          selectedTest.requirements.forEach(req => {
+            details += `\n${req.name}:\n`;
+            if ('levels' in req) {
+              req.levels.forEach(level => {
+                details += `- ${level.level}: ${level.requirement}\n`;
+              });
+            } else {
+              details += `${req.requirement}\n`;
+            }
+          });
+        }
+        break;
       case "custom":
         details += "Freies Workout\n";
         break;
     }
 
-    details += "\nÜbungen:\n";
-    exercises.forEach((exercise, index) => {
-      details += `${index + 1}. ${exercise.name}: ${exercise.reps}x`;
-      if (exercise.weight) details += ` (${exercise.weight}kg)`;
-      if (exercise.description) details += `\n   ${exercise.description}`;
-      details += "\n";
-    });
+    if (workoutType !== "badge" && exercises.length > 0) {
+      details += "\nÜbungen:\n";
+      exercises.forEach((exercise, index) => {
+        details += `${index + 1}. ${exercise.name}: ${exercise.reps}x`;
+        if (exercise.weight) details += ` (${exercise.weight}kg)`;
+        if (exercise.description) details += `\n   ${exercise.description}`;
+        details += "\n";
+      });
+    }
 
     return details;
   };
@@ -221,6 +276,7 @@ ${template.workoutType === 'amrap' ?
     setExercises([]);
     setDistance("");
     setTimeLimit("");
+    setSelectedBadgeTest("");
   };
 
   const steps = [
@@ -363,6 +419,64 @@ ${template.workoutType === 'amrap' ?
                       onChange={(e) => setDistance(e.target.value)}
                       placeholder="z.B. 5"
                     />
+                  </div>
+                )}
+
+                {workoutType === "badge" && (
+                  <div className="space-y-4">
+                    <div>
+                      <Label>Wähle einen Test</Label>
+                      <Select value={selectedBadgeTest} onValueChange={setSelectedBadgeTest}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Wähle einen Fitness-Test" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {badgeTests.map((test) => (
+                            <SelectItem key={test.id} value={test.id}>
+                              {test.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {selectedBadgeTest && (
+                      <Card className="mt-4">
+                        <CardHeader>
+                          <CardTitle>{badgeTests.find(t => t.id === selectedBadgeTest)?.name}</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-4">
+                            <p className="text-muted-foreground">
+                              {badgeTests.find(t => t.id === selectedBadgeTest)?.description}
+                            </p>
+                            <div className="space-y-2">
+                              {badgeTests
+                                .find(t => t.id === selectedBadgeTest)
+                                ?.requirements.map((req, index) => (
+                                  <div key={index} className="p-3 bg-muted/50 rounded-lg">
+                                    <h4 className="font-medium">{req.name}</h4>
+                                    {'levels' in req ? (
+                                      <div className="mt-2 space-y-1">
+                                        {req.levels.map((level, i) => (
+                                          <div key={i} className="flex justify-between text-sm">
+                                            <span className="text-muted-foreground">{level.level}:</span>
+                                            <span>{level.requirement}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <p className="text-sm text-muted-foreground mt-1">
+                                        {req.requirement}
+                                      </p>
+                                    )}
+                                  </div>
+                                ))}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
                   </div>
                 )}
 

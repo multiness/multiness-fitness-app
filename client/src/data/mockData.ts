@@ -635,3 +635,111 @@ export const mockProducts: Product[] = [
     }
   }
 ];
+
+export const badgeTests = [
+  {
+    id: "police",
+    name: "Polizei Sporttest",
+    description: "Offizieller sportmotorischer Test für den Polizeidienst",
+    requirements: [
+      { name: "Pendellauf", requirement: "Unter 32 Sekunden (4x10m)" },
+      { name: "Liegestütze", requirement: "15 Wiederholungen in 2 Minuten" },
+      { name: "Sit-ups", requirement: "20 Wiederholungen in 2 Minuten" },
+      { name: "Cooper-Test", requirement: "2400m in 12 Minuten" },
+      { name: "100m Schwimmen", requirement: "Unter 1:45 Minuten" }
+    ]
+  },
+  {
+    id: "military",
+    name: "Bundeswehr Basis-Fitness-Test",
+    description: "Standard Fitness-Test der Bundeswehr",
+    requirements: [
+      { name: "11x10m Pendellauf", requirement: "Maximal 60 Sekunden" },
+      { name: "Liegestütze", requirement: "15 Wiederholungen in 2 Minuten" },
+      { name: "Sit-ups", requirement: "25 Wiederholungen in 2 Minuten" },
+      { name: "3000m Lauf", requirement: "Unter 15 Minuten" }
+    ]
+  },
+  {
+    id: "us_army",
+    name: "US Army Physical Fitness Test",
+    description: "Army Combat Fitness Test (ACFT)",
+    requirements: [
+      { name: "Deadlift", requirement: "140-340 Pfund" },
+      { name: "Standing Power Throw", requirement: "8.5 Meter" },
+      { name: "Hand Release Push-ups", requirement: "30 Wiederholungen in 2 Minuten" },
+      { name: "Sprint-Drag-Carry", requirement: "Unter 3 Minuten" },
+      { name: "Leg Tuck/Plank", requirement: "20 Wiederholungen oder 2:09 Minuten" },
+      { name: "2-Meilen Lauf", requirement: "Unter 21 Minuten" }
+    ]
+  },
+  {
+    id: "cooper",
+    name: "Cooper Test",
+    description: "12-Minuten Ausdauertest nach Kenneth Cooper",
+    requirements: [
+      { 
+        name: "12-Minuten Lauf",
+        levels: [
+          { level: "Sehr gut", requirement: "> 2800m" },
+          { level: "Gut", requirement: "2400-2800m" },
+          { level: "Durchschnitt", requirement: "2200-2399m" },
+          { level: "Ausreichend", requirement: "1600-2199m" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "marathon",
+    name: "Marathon Challenge",
+    description: "Volle Marathon-Distanz (42,195 km)",
+    requirements: [
+      { name: "Marathon", requirement: "42,195 km" },
+      { 
+        name: "Zeitlimits",
+        levels: [
+          { level: "Elite", requirement: "< 2:30:00" },
+          { level: "Advanced", requirement: "< 3:00:00" },
+          { level: "Intermediate", requirement: "< 4:00:00" },
+          { level: "Beginner", requirement: "< 6:00:00" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "half_marathon",
+    name: "Halbmarathon Challenge",
+    description: "Halbe Marathon-Distanz (21,0975 km)",
+    requirements: [
+      { name: "Halbmarathon", requirement: "21,0975 km" },
+      { 
+        name: "Zeitlimits",
+        levels: [
+          { level: "Elite", requirement: "< 1:15:00" },
+          { level: "Advanced", requirement: "< 1:30:00" },
+          { level: "Intermediate", requirement: "< 2:00:00" },
+          { level: "Beginner", requirement: "< 3:00:00" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "triathlon_sprint",
+    name: "Sprint Triathlon",
+    description: "Sprint-Distanz Triathlon",
+    requirements: [
+      { name: "Schwimmen", requirement: "750m" },
+      { name: "Radfahren", requirement: "20km" },
+      { name: "Laufen", requirement: "5km" },
+      {
+        name: "Gesamtzeit",
+        levels: [
+          { level: "Elite", requirement: "< 1:00:00" },
+          { level: "Advanced", requirement: "< 1:15:00" },
+          { level: "Intermediate", requirement: "< 1:30:00" },
+          { level: "Beginner", requirement: "< 2:00:00" }
+        ]
+      }
+    ]
+  }
+];
