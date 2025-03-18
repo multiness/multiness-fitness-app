@@ -3,7 +3,7 @@ import { useParams } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Gift, Trophy, Timer, Users, Calendar, Crown, MessageCircle } from "lucide-react";
+import { Gift, Trophy, Timer, Users, Calendar, Crown, MessageCircle, Dumbbell, Clock, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { mockChallenges } from "../data/mockData";
 import { de } from "date-fns/locale";
@@ -16,9 +16,21 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
-  DialogFooter,
 } from "@/components/ui/dialog";
+
+interface WorkoutExercise {
+  name: string;
+  reps: number;
+  weight?: number;
+  description?: string;
+}
+
+interface WorkoutDetails {
+  type: string;
+  timePerRound: number;
+  rounds: number;
+  exercises: WorkoutExercise[];
+}
 
 interface Participant {
   id: number;
@@ -261,41 +273,79 @@ export default function ChallengeDetail() {
       {challenge.workoutType && (
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>Workout Details</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Dumbbell className="h-5 w-5 text-primary" />
+              Workout Details
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="p-4 bg-muted rounded-lg">
-                <h3 className="font-semibold mb-2">Workout Typ: {challenge.workoutType.toUpperCase()}</h3>
-                {challenge.workoutDetails && (
-                  <>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      {challenge.workoutDetails.timePerRound} Sekunden pro Runde
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {challenge.workoutDetails.rounds} Runden
-                    </p>
-                  </>
-                )}
+            <div className="space-y-6">
+              <div className="bg-muted/50 rounded-lg p-4">
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="flex flex-col items-center p-3 bg-background rounded-lg">
+                    <Dumbbell className="h-5 w-5 text-primary mb-2" />
+                    <span className="text-sm font-medium">Typ</span>
+                    <span className="text-sm text-muted-foreground">
+                      {challenge.workoutType.toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-center p-3 bg-background rounded-lg">
+                    <Clock className="h-5 w-5 text-primary mb-2" />
+                    <span className="text-sm font-medium">Zeit/Runde</span>
+                    <span className="text-sm text-muted-foreground">
+                      {challenge.workoutDetails?.timePerRound || 0} Sek
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-center p-3 bg-background rounded-lg">
+                    <RefreshCw className="h-5 w-5 text-primary mb-2" />
+                    <span className="text-sm font-medium">Runden</span>
+                    <span className="text-sm text-muted-foreground">
+                      {challenge.workoutDetails?.rounds || 0}
+                    </span>
+                  </div>
+                </div>
               </div>
+
               {challenge.workoutDetails?.exercises && (
-                <div>
-                  <h4 className="font-semibold mb-2">Übungen:</h4>
-                  <ul className="space-y-2">
-                    {challenge.workoutDetails.exercises.map((exercise: any, index: number) => (
-                      <li key={index} className="p-3 border rounded-lg">
-                        <div className="font-medium">{exercise.name}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {exercise.reps} Wiederholungen
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Übungen</h3>
+                  <div className="space-y-3">
+                    {challenge.workoutDetails.exercises.map((exercise: WorkoutExercise, index: number) => (
+                      <div key={index} className="flex items-center gap-4 p-3 bg-muted/50 rounded-lg">
+                        <div className="flex-1">
+                          <h4 className="font-medium">{exercise.name}</h4>
+                          {exercise.description && (
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {exercise.description}
+                            </p>
+                          )}
                         </div>
-                        {exercise.description && (
-                          <div className="text-sm text-muted-foreground mt-1">
-                            {exercise.description}
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <span className="text-sm text-muted-foreground">Wiederholungen</span>
+                            <p className="font-medium">{exercise.reps}x</p>
                           </div>
-                        )}
-                      </li>
+                          {exercise.weight && (
+                            <div className="text-right">
+                              <span className="text-sm text-muted-foreground">Gewicht</span>
+                              <p className="font-medium">{exercise.weight}kg</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
+                </div>
+              )}
+
+              {isParticipating && !showResultForm && (
+                <div className="pt-4">
+                  <Button 
+                    onClick={() => setShowResultForm(true)}
+                    className="w-full"
+                  >
+                    Ergebnis eintragen
+                  </Button>
                 </div>
               )}
             </div>
@@ -342,37 +392,39 @@ export default function ChallengeDetail() {
                 {showResultForm ? "Abbrechen" : "Ergebnis eintragen"}
               </Button>
               {showResultForm && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-                  <Card className="w-full max-w-md">
-                    <CardHeader>
-                      <CardTitle>Ergebnis eintragen</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div>
-                          <Input
-                            type="number"
-                            placeholder="Dein Ergebnis"
-                            value={result}
-                            onChange={(e) => setResult(e.target.value)}
-                          />
-                        </div>
-                        <div className="flex gap-2">
-                          <Button onClick={handleSubmitResult} className="flex-1">
-                            Speichern
-                          </Button>
-                          <Button
-                            variant="outline"
-                            onClick={() => setShowResultForm(false)}
-                            className="flex-1"
-                          >
-                            Abbrechen
-                          </Button>
-                        </div>
+                <Dialog open={showResultForm} onOpenChange={setShowResultForm}>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Ergebnis eintragen</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 p-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Dein Ergebnis</label>
+                        <Input
+                          type="number"
+                          placeholder="Punkte eingeben"
+                          value={result}
+                          onChange={(e) => setResult(e.target.value)}
+                        />
+                        <p className="text-sm text-muted-foreground">
+                          Gib deine erreichten Punkte ein. Bei AMRAP die Anzahl der Runden, bei For Time die Zeit in Sekunden.
+                        </p>
                       </div>
-                    </CardContent>
-                  </Card>
-                </div>
+                      <div className="flex gap-2 pt-2">
+                        <Button onClick={handleSubmitResult} className="flex-1">
+                          Speichern
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => setShowResultForm(false)}
+                          className="flex-1"
+                        >
+                          Abbrechen
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               )}
             </>
           )}
