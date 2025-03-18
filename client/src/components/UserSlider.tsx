@@ -48,7 +48,7 @@ function UserCard({ user, onVerify }: { user: any, onVerify: (id: number) => voi
       <CardContent className="p-3">
         <div className="flex flex-col items-center gap-2">
           {/* Angepasste Avatar-Größe */}
-          <div className="w-14 h-14">
+          <div className="w-20 h-20">
             <UserAvatar
               userId={user.id}
               size="md"
