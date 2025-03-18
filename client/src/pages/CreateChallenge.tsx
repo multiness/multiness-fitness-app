@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Gift, Dumbbell, ChevronRight, ChevronLeft } from "lucide-react";
+import { Gift, Dumbbell, ChevronRight, ChevronLeft, Clock, RefreshCw, Plus } from "lucide-react";
 import WorkoutGenerator from "@/components/WorkoutGenerator";
 import { useToast } from "@/hooks/use-toast";
 import { format, addDays } from "date-fns";
@@ -28,6 +28,7 @@ export default function CreateChallenge() {
   const [prizeDescription, setPrizeDescription] = useState("");
   const [showWorkoutDialog, setShowWorkoutDialog] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const [creationMethod, setCreationMethod] = useState<"manual" | "generator" | null>(null);
 
   const handleWorkoutSelect = (template: any) => {
     setSelectedWorkout(template);
@@ -61,7 +62,7 @@ ${template.workoutType === 'amrap' ?
   };
 
   const handleCreateChallenge = () => {
-    if (!selectedWorkout) {
+    if (!selectedWorkout && creationMethod === "generator") {
       toast({
         title: "Kein Workout ausgewählt",
         description: "Bitte generiere zuerst ein Workout für deine Challenge.",
@@ -87,8 +88,8 @@ ${template.workoutType === 'amrap' ?
       endDate: new Date(endDate),
       prize,
       prizeDescription,
-      workoutType: selectedWorkout.workoutType,
-      workoutDetails: selectedWorkout.workoutDetails,
+      workoutType: selectedWorkout?.workoutType || "custom",
+      workoutDetails: selectedWorkout?.workoutDetails || null,
       creatorId: 1,
       image: null,
       prizeImage: null
@@ -110,53 +111,58 @@ ${template.workoutType === 'amrap' ?
     setStartDate(format(new Date(), "yyyy-MM-dd"));
     setEndDate(format(addDays(new Date(), 30), "yyyy-MM-dd"));
     setCurrentStep(1);
+    setCreationMethod(null);
   };
 
   const steps = [
     {
-      title: "Workout auswählen",
-      isComplete: !!selectedWorkout,
+      title: "Art wählen",
+      isComplete: !!creationMethod,
       content: (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold">Workout Details</h3>
-              <p className="text-sm text-muted-foreground">
-                Wähle ein Workout für deine Challenge aus
-              </p>
-            </div>
-            <Button onClick={() => setShowWorkoutDialog(true)}>
-              <Dumbbell className="h-4 w-4 mr-2" />
-              Workout Generator
-            </Button>
-          </div>
-          {selectedWorkout && (
-            <Card>
-              <CardContent className="p-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Dumbbell className="h-4 w-4 text-primary" />
-                    <span className="font-medium">{selectedWorkout.name}</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">{selectedWorkout.description}</p>
-                  <div className="grid grid-cols-3 gap-2 text-sm">
-                    <div>
-                      <span className="font-medium">Typ:</span>
-                      <p className="text-muted-foreground">{selectedWorkout.workoutType}</p>
-                    </div>
-                    <div>
-                      <span className="font-medium">Dauer:</span>
-                      <p className="text-muted-foreground">{selectedWorkout.duration} Min</p>
-                    </div>
-                    <div>
-                      <span className="font-medium">Level:</span>
-                      <p className="text-muted-foreground">{selectedWorkout.difficulty}</p>
-                    </div>
-                  </div>
+        <div className="space-y-6">
+          <p className="text-muted-foreground">
+            Wähle aus, wie du deine Challenge erstellen möchtest
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card
+              className={cn(
+                "cursor-pointer transition-all hover:border-primary",
+                creationMethod === "generator" && "border-primary"
+              )}
+              onClick={() => {
+                setCreationMethod("generator");
+                setShowWorkoutDialog(true);
+              }}
+            >
+              <CardContent className="p-6 flex flex-col items-center text-center">
+                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                  <Dumbbell className="h-6 w-6 text-primary" />
                 </div>
+                <h3 className="font-semibold mb-2">Workout Generator</h3>
+                <p className="text-sm text-muted-foreground">
+                  Erstelle ein vorgefertigtes Workout mit unserem Generator
+                </p>
               </CardContent>
             </Card>
-          )}
+
+            <Card
+              className={cn(
+                "cursor-pointer transition-all hover:border-primary",
+                creationMethod === "manual" && "border-primary"
+              )}
+              onClick={() => setCreationMethod("manual")}
+            >
+              <CardContent className="p-6 flex flex-col items-center text-center">
+                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                  <Plus className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="font-semibold mb-2">Manuell erstellen</h3>
+                <p className="text-sm text-muted-foreground">
+                  Erstelle deine eigene Challenge von Grund auf
+                </p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       ),
     },
@@ -239,7 +245,7 @@ ${template.workoutType === 'amrap' ?
 
       {/* Progress Steps */}
       <div className="mb-8">
-        <div className="flex items-center justify-between relative">
+        <div className="hidden sm:flex items-center justify-between relative">
           {steps.map((step, index) => (
             <div
               key={index}
@@ -265,6 +271,11 @@ ${template.workoutType === 'amrap' ?
             className="absolute top-4 left-0 h-[2px] bg-muted-foreground"
             style={{ width: "100%", zIndex: 0 }}
           />
+        </div>
+
+        {/* Mobile Steps */}
+        <div className="sm:hidden text-sm text-muted-foreground mb-4">
+          Schritt {currentStep} von {steps.length}: {steps[currentStep - 1].title}
         </div>
       </div>
 
