@@ -2,7 +2,7 @@ import { Progress } from "@/components/ui/progress";
 import { DailyGoal } from "../lib/postStore";
 import { Droplet, Footprints, Route, Target, Users, Plus, Trophy, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { usePostStore } from "../lib/postStore";
 import { useUsers } from "../contexts/UserContext";
@@ -25,19 +25,22 @@ interface DailyGoalDisplayProps {
 }
 
 export default function DailyGoalDisplay({
-  goal,
+  goal: initialGoal,
   userId,
   variant = "full",
   onProgressUpdate
 }: DailyGoalDisplayProps) {
   const [showProgressInput, setShowProgressInput] = useState(false);
   const [progressInput, setProgressInput] = useState("");
-  const progress = (goal.progress / goal.target) * 100;
   const postStore = usePostStore();
   const { currentUser } = useUsers();
   const { toast } = useToast();
   const participants = postStore.getGoalParticipants(userId);
   const isOwner = currentUser?.id === userId;
+
+  // Hole das aktuelle Ziel aus dem Store statt die Props zu verwenden
+  const currentGoal = postStore.getDailyGoal(userId) || initialGoal;
+  const progress = (currentGoal.progress / currentGoal.target) * 100;
 
   const goalIcons = {
     water: Droplet,
@@ -50,10 +53,10 @@ export default function DailyGoalDisplay({
     water: "Wasser trinken",
     steps: "Schritte gehen",
     distance: "Strecke laufen",
-    custom: goal.customName || "Eigenes Ziel"
+    custom: currentGoal.customName || "Eigenes Ziel"
   };
 
-  const Icon = goalIcons[goal.type];
+  const Icon = goalIcons[currentGoal.type];
 
   const handleProgressUpdate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,11 +64,11 @@ export default function DailyGoalDisplay({
     if (isNaN(newProgress) || newProgress < 0) return;
 
     // Überprüfe, dass der neue Fortschritt das Ziel nicht überschreitet
-    const totalProgress = goal.progress + newProgress;
-    if (totalProgress > goal.target) {
+    const totalProgress = currentGoal.progress + newProgress;
+    if (totalProgress > currentGoal.target) {
       toast({
         title: "Ungültiger Wert",
-        description: `Der Gesamtfortschritt kann nicht größer als ${goal.target} ${goal.unit} sein.`,
+        description: `Der Gesamtfortschritt kann nicht größer als ${currentGoal.target} ${currentGoal.unit} sein.`,
         variant: "destructive"
       });
       return;
@@ -77,7 +80,7 @@ export default function DailyGoalDisplay({
     setProgressInput("");
     setShowProgressInput(false);
 
-    if (totalProgress >= goal.target) {
+    if (totalProgress >= currentGoal.target) {
       toast({
         title: "🎉 Glückwunsch!",
         description: "Du hast dein Tagesziel erreicht!",
@@ -85,7 +88,7 @@ export default function DailyGoalDisplay({
     } else {
       toast({
         title: "Fortschritt aktualisiert",
-        description: `Noch ${goal.target - totalProgress} ${goal.unit} bis zum Ziel!`,
+        description: `Noch ${currentGoal.target - totalProgress} ${currentGoal.unit} bis zum Ziel!`,
       });
     }
   };
@@ -103,7 +106,7 @@ export default function DailyGoalDisplay({
     }
   };
 
-  const timeLeft = formatDistanceToNow(new Date(goal.createdAt).getTime() + 24 * 60 * 60 * 1000, { locale: de });
+  const timeLeft = formatDistanceToNow(new Date(currentGoal.createdAt).getTime() + 24 * 60 * 60 * 1000, { locale: de });
 
   // Profilseiten-Variante
   if (variant === "profile") {
@@ -112,7 +115,7 @@ export default function DailyGoalDisplay({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Icon className="h-5 w-5 text-primary" />
-            <h3 className="font-medium">Aktuelles Tagesziel: {goalTypes[goal.type]}</h3>
+            <h3 className="font-medium">Aktuelles Tagesziel: {goalTypes[currentGoal.type]}</h3>
           </div>
           <div className="flex items-center gap-2">
             {isOwner && (
@@ -146,7 +149,7 @@ export default function DailyGoalDisplay({
         <div className="relative h-2 overflow-hidden rounded-full bg-primary/10">
           <div
             className={`h-full transition-all duration-500 ease-in-out ${
-              goal.completed
+              currentGoal.completed
                 ? 'bg-yellow-500' // Gelbgold wenn komplett
                 : 'bg-blue-500'   // Blau während des Fortschritts
             }`}
@@ -157,9 +160,9 @@ export default function DailyGoalDisplay({
         <div className="flex justify-between text-sm">
           <div className="flex items-center gap-2">
             <span className="text-muted-foreground">
-              {goal.progress} von {goal.target} {goal.unit}
+              {currentGoal.progress} von {currentGoal.target} {currentGoal.unit}
             </span>
-            {goal.completed && (
+            {currentGoal.completed && (
               <span className="text-yellow-500 flex items-center gap-1">
                 <Trophy className="h-4 w-4" /> Ziel erreicht!
               </span>
@@ -177,7 +180,7 @@ export default function DailyGoalDisplay({
           <form onSubmit={handleProgressUpdate} className="flex gap-2 mt-2">
             <Input
               type="number"
-              placeholder={`Fortschritt in ${goal.unit}`}
+              placeholder={`Fortschritt in ${currentGoal.unit}`}
               value={progressInput}
               onChange={(e) => setProgressInput(e.target.value)}
               className="flex-1"
@@ -196,7 +199,7 @@ export default function DailyGoalDisplay({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Icon className="h-4 w-4 text-primary" />
-            <span className="font-medium text-sm">{goalTypes[goal.type]}</span>
+            <span className="font-medium text-sm">{goalTypes[currentGoal.type]}</span>
           </div>
           {isOwner && (
             <div className="flex items-center gap-2">
@@ -228,7 +231,7 @@ export default function DailyGoalDisplay({
         <div className="relative h-2 overflow-hidden rounded-full bg-primary/10">
           <div
             className={`h-full transition-all duration-500 ease-in-out ${
-              goal.completed
+              currentGoal.completed
                 ? 'bg-yellow-500' // Gelbgold wenn komplett
                 : 'bg-blue-500'   // Blau während des Fortschritts
             }`}
@@ -239,9 +242,9 @@ export default function DailyGoalDisplay({
         <div className="flex items-center justify-between text-xs">
           <div className="flex items-center gap-2">
             <span>
-              {goal.progress} von {goal.target} {goal.unit}
+              {currentGoal.progress} von {currentGoal.target} {currentGoal.unit}
             </span>
-            {goal.completed && (
+            {currentGoal.completed && (
               <span className="text-yellow-500 flex items-center gap-1">
                 <Trophy className="h-3 w-3" />
               </span>
@@ -266,7 +269,7 @@ export default function DailyGoalDisplay({
           <form onSubmit={handleProgressUpdate} className="flex gap-2">
             <Input
               type="number"
-              placeholder={`Neuer Fortschritt in ${goal.unit}`}
+              placeholder={`Neuer Fortschritt in ${currentGoal.unit}`}
               value={progressInput}
               onChange={(e) => setProgressInput(e.target.value)}
               className="h-8 text-sm"
@@ -286,7 +289,7 @@ export default function DailyGoalDisplay({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Icon className="h-5 w-5 text-primary" />
-          <h3 className="font-medium">{goalTypes[goal.type]}</h3>
+          <h3 className="font-medium">{goalTypes[currentGoal.type]}</h3>
         </div>
         <div className="flex items-center gap-2">
           {isOwner && (
@@ -329,7 +332,7 @@ export default function DailyGoalDisplay({
       <div className="relative h-2.5 overflow-hidden rounded-full bg-primary/10">
         <div
           className={`h-full transition-all duration-500 ease-in-out ${
-            goal.completed
+            currentGoal.completed
               ? 'bg-yellow-500' // Gelbgold wenn komplett
               : 'bg-blue-500'   // Blau während des Fortschritts
           }`}
@@ -339,8 +342,8 @@ export default function DailyGoalDisplay({
 
       <div className="flex justify-between items-center">
         <span className="text-sm">
-          {goal.progress} von {goal.target} {goal.unit}
-          {goal.completed && (
+          {currentGoal.progress} von {currentGoal.target} {currentGoal.unit}
+          {currentGoal.completed && (
             <span className="ml-2 text-yellow-500 flex items-center gap-1 inline-flex">
               <Trophy className="h-4 w-4" /> Geschafft!
             </span>
@@ -365,7 +368,7 @@ export default function DailyGoalDisplay({
         <form onSubmit={handleProgressUpdate} className="flex gap-2">
           <Input
             type="number"
-            placeholder={`Neuer Fortschritt in ${goal.unit}`}
+            placeholder={`Neuer Fortschritt in ${currentGoal.unit}`}
             value={progressInput}
             onChange={(e) => setProgressInput(e.target.value)}
             className="flex-1"
