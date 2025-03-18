@@ -21,7 +21,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ResultForm } from "@/components/ResultForm";
 
 interface WorkoutExercise {
   name: string;
@@ -146,7 +145,23 @@ export default function ChallengeDetail() {
     setShowResultForm(false);
   };
 
-  // Helper function to get the appropriate icon for exercise type
+  const handleSubmitExerciseResult = (result: { name: string; value: string | number; unit?: string }) => {
+    // Später: Implementiere die Punkteberechnung basierend auf den Anforderungen
+    const points = 100; // Beispielwert
+
+    // Aktualisiere die Teilnehmerliste mit den neuen Ergebnissen
+    setParticipants(prev => prev.map(p =>
+      p.id === (currentUser?.id || 0)
+        ? { ...p, points: points, lastUpdate: new Date() }
+        : p
+    ).sort((a, b) => b.points - a.points));
+
+    toast({
+      title: "Ergebnis gespeichert!",
+      description: `Dein Ergebnis für ${result.name} wurde erfolgreich eingetragen.`,
+    });
+  };
+
   const getExerciseIcon = (name: string) => {
     const lowerName = name.toLowerCase();
     if (lowerName.includes('schwimm')) return <Waves className="h-5 w-5 text-primary" />;
@@ -156,7 +171,6 @@ export default function ChallengeDetail() {
     return <Dumbbell className="h-5 w-5 text-primary" />;
   };
 
-  // Find additional test details if it's a badge challenge
   const badgeDetails = challenge?.workoutType === 'badge'
     ? badgeTests.find(test => test.name === challenge.title.replace(' Challenge', ''))
     : null;
@@ -238,6 +252,8 @@ export default function ChallengeDetail() {
                   description={req.requirement}
                   requirements={req.gender_specific}
                   icon={getExerciseIcon(req.name)}
+                  isParticipating={isParticipating}
+                  onSubmitResult={handleSubmitExerciseResult}
                 />
               ))}
             </div>
@@ -301,6 +317,8 @@ export default function ChallengeDetail() {
                         reps: exercise.reps,
                         weight: exercise.weight
                       }}
+                      isParticipating={isParticipating}
+                      onSubmitResult={handleSubmitExerciseResult}
                     />
                   ))}
                 </div>
@@ -310,7 +328,6 @@ export default function ChallengeDetail() {
         </Card>
       )}
 
-      {/* Prize Section */}
       {(challenge.prize || challenge.prizeDescription) && (
         <Card className="mb-6">
           <CardHeader className="flex flex-row items-center gap-2">
@@ -335,7 +352,6 @@ export default function ChallengeDetail() {
         </Card>
       )}
 
-      {/* Action Buttons */}
       {!isEnded && (
         <div className="flex flex-col sm:flex-row gap-3">
           {!isParticipating ? (
@@ -371,7 +387,6 @@ export default function ChallengeDetail() {
         </div>
       )}
 
-      {/* Dialogs */}
       <Dialog open={showLeaderboard} onOpenChange={setShowLeaderboard}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
