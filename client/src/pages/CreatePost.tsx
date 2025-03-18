@@ -92,6 +92,7 @@ export default function CreatePost() {
         createdAt: new Date()
       };
 
+      // Only create a post with goal, don't create a separate regular post
       postStore.createPostWithGoal(
         currentUser.id,
         content.trim() || `Neues Tagesziel: ${goalType === 'custom' ? customGoalName : goalType}`,
