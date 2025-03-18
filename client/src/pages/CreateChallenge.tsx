@@ -4,11 +4,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Gift } from "lucide-react";
+import { Gift, Dumbbell, ChevronRight, ChevronLeft } from "lucide-react";
 import WorkoutGenerator from "@/components/WorkoutGenerator";
 import { useToast } from "@/hooks/use-toast";
 import { format, addDays } from "date-fns";
 import { mockChallenges } from "../data/mockData";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 
 export default function CreateChallenge() {
   const { toast } = useToast();
@@ -19,12 +26,13 @@ export default function CreateChallenge() {
   const [endDate, setEndDate] = useState(format(addDays(new Date(), 30), "yyyy-MM-dd"));
   const [prize, setPrize] = useState("");
   const [prizeDescription, setPrizeDescription] = useState("");
+  const [showWorkoutDialog, setShowWorkoutDialog] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
 
   const handleWorkoutSelect = (template: any) => {
     setSelectedWorkout(template);
     setChallengeTitle(`${template.name} Challenge`);
 
-    // Erstelle eine detaillierte Beschreibung mit Workout-Details
     const workoutDescription = `
 ${template.description}
 
@@ -49,6 +57,7 @@ ${template.workoutType === 'amrap' ?
 `.trim();
 
     setChallengeDescription(workoutDescription);
+    setShowWorkoutDialog(false);
   };
 
   const handleCreateChallenge = () => {
@@ -80,22 +89,19 @@ ${template.workoutType === 'amrap' ?
       prizeDescription,
       workoutType: selectedWorkout.workoutType,
       workoutDetails: selectedWorkout.workoutDetails,
-      creatorId: 1, // In einer echten App würde dies der eingeloggte User sein
+      creatorId: 1,
       image: null,
       prizeImage: null
     };
 
-    // Füge die neue Challenge zu den mockChallenges hinzu
     mockChallenges.push(newChallenge);
-
-    console.log("Neue Challenge:", newChallenge);
 
     toast({
       title: "Challenge erstellt!",
       description: "Deine Challenge wurde erfolgreich erstellt.",
     });
 
-    // Zurücksetzen der Formularfelder
+    // Reset form
     setSelectedWorkout(null);
     setChallengeTitle("");
     setChallengeDescription("");
@@ -103,28 +109,62 @@ ${template.workoutType === 'amrap' ?
     setPrizeDescription("");
     setStartDate(format(new Date(), "yyyy-MM-dd"));
     setEndDate(format(addDays(new Date(), 30), "yyyy-MM-dd"));
+    setCurrentStep(1);
   };
 
-  return (
-    <div className="container py-6 px-4 sm:px-6 max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Neue Challenge erstellen</h1>
-
-      {/* Workout Generator */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Workout Generator</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <WorkoutGenerator onSelectWorkout={handleWorkoutSelect} />
-        </CardContent>
-      </Card>
-
-      {/* Challenge Details */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Challenge Details</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+  const steps = [
+    {
+      title: "Workout auswählen",
+      isComplete: !!selectedWorkout,
+      content: (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold">Workout Details</h3>
+              <p className="text-sm text-muted-foreground">
+                Wähle ein Workout für deine Challenge aus
+              </p>
+            </div>
+            <Button onClick={() => setShowWorkoutDialog(true)}>
+              <Dumbbell className="h-4 w-4 mr-2" />
+              Workout Generator
+            </Button>
+          </div>
+          {selectedWorkout && (
+            <Card>
+              <CardContent className="p-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Dumbbell className="h-4 w-4 text-primary" />
+                    <span className="font-medium">{selectedWorkout.name}</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{selectedWorkout.description}</p>
+                  <div className="grid grid-cols-3 gap-2 text-sm">
+                    <div>
+                      <span className="font-medium">Typ:</span>
+                      <p className="text-muted-foreground">{selectedWorkout.workoutType}</p>
+                    </div>
+                    <div>
+                      <span className="font-medium">Dauer:</span>
+                      <p className="text-muted-foreground">{selectedWorkout.duration} Min</p>
+                    </div>
+                    <div>
+                      <span className="font-medium">Level:</span>
+                      <p className="text-muted-foreground">{selectedWorkout.difficulty}</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      ),
+    },
+    {
+      title: "Challenge Details",
+      isComplete: !!challengeTitle && !!challengeDescription,
+      content: (
+        <div className="space-y-4">
           <div>
             <Label>Titel</Label>
             <Input 
@@ -157,18 +197,14 @@ ${template.workoutType === 'amrap' ?
               />
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Preis-Details */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Gift className="h-5 w-5" />
-            Gewinn Details
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+        </div>
+      ),
+    },
+    {
+      title: "Gewinn Details",
+      isComplete: !!prize && !!prizeDescription,
+      content: (
+        <div className="space-y-4">
           <div>
             <Label>Gewinn-Titel</Label>
             <Input 
@@ -192,12 +228,95 @@ ${template.workoutType === 'amrap' ?
               <Button variant="outline">Bild hochladen</Button>
             </div>
           </div>
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <div className="container py-6 px-4 sm:px-6 max-w-2xl mx-auto">
+      <h1 className="text-2xl font-bold mb-6">Neue Challenge erstellen</h1>
+
+      {/* Progress Steps */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between relative">
+          {steps.map((step, index) => (
+            <div
+              key={index}
+              className="flex flex-col items-center relative z-10"
+              style={{ width: "33.333%" }}
+            >
+              <div
+                className={cn(
+                  "w-8 h-8 rounded-full flex items-center justify-center border-2",
+                  currentStep > index + 1 || step.isComplete
+                    ? "bg-primary border-primary text-primary-foreground"
+                    : currentStep === index + 1
+                    ? "border-primary text-primary"
+                    : "border-muted-foreground text-muted-foreground"
+                )}
+              >
+                {currentStep > index + 1 || step.isComplete ? "✓" : index + 1}
+              </div>
+              <span className="text-xs mt-1 text-center">{step.title}</span>
+            </div>
+          ))}
+          <div
+            className="absolute top-4 left-0 h-[2px] bg-muted-foreground"
+            style={{ width: "100%", zIndex: 0 }}
+          />
+        </div>
+      </div>
+
+      {/* Current Step Content */}
+      <Card className="mb-6">
+        <CardContent className="pt-6">
+          {steps[currentStep - 1].content}
         </CardContent>
       </Card>
 
-      <Button className="w-full" onClick={handleCreateChallenge}>
-        Challenge erstellen
-      </Button>
+      {/* Navigation Buttons */}
+      <div className="flex justify-between gap-4">
+        {currentStep > 1 && (
+          <Button
+            variant="outline"
+            onClick={() => setCurrentStep(currentStep - 1)}
+          >
+            <ChevronLeft className="h-4 w-4 mr-2" />
+            Zurück
+          </Button>
+        )}
+        {currentStep < steps.length ? (
+          <Button
+            className="ml-auto"
+            onClick={() => setCurrentStep(currentStep + 1)}
+            disabled={!steps[currentStep - 1].isComplete}
+          >
+            Weiter
+            <ChevronRight className="h-4 w-4 ml-2" />
+          </Button>
+        ) : (
+          <Button
+            className="ml-auto"
+            onClick={handleCreateChallenge}
+            disabled={!steps.every(step => step.isComplete)}
+          >
+            Challenge erstellen
+          </Button>
+        )}
+      </div>
+
+      {/* Workout Generator Dialog */}
+      <Dialog open={showWorkoutDialog} onOpenChange={setShowWorkoutDialog}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Workout Generator</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[70vh] overflow-y-auto">
+            <WorkoutGenerator onSelectWorkout={handleWorkoutSelect} />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
