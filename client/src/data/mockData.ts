@@ -622,7 +622,7 @@ export const mockProducts: Product[] = [
       nutritionFacts: {
         "Protein pro Portion": "30g",
         "Kohlenhydrate": "3g",
-        "Fett": "1.5g",      }
+"Fett": "1.5g",      }
     }
   },
   {
@@ -900,7 +900,7 @@ export const badgeTests = [
       {
         name: "Qualifikationskriterien",
         requirement: "Empfohlene Voraussetzungen",
-        description: "- Sicheres Schwimmen in offenen Gewässern\n- Erfahrung mit Rennrad/Zeitfahrrad\n- Grundlegende Ausdauer für alle drei Disziplinen\n- Ärztliche Freigabe empfohlen"
+        description: "- Sicheres Schwimmen in offenen Gewässern oder Freischwimmer-Abzeichen\n- Erfahrung mit Rennrad/Zeitfahrrad\n- Grundlegende Ausdauer für alle drei Disziplinen\n- Mindestens 3 Monate regelmäßiges Training in allen drei Disziplinen\n- Schwimmen: 1000m am Stück schwimmen können\n- Radfahren: 30km ohne Pause fahren können\n- Laufen: 7km am Stück laufen können\n- Wettkampftaugliche Ausrüstung (Rad, Helm, Wetsuit etc.)\n- Ärztliche Freigabe empfohlen"
       }
     ]
   }
