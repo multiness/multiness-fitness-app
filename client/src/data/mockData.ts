@@ -627,7 +627,7 @@ export const mockProducts: Product[] = [
       duration: 3,
       callsPerMonth: 4,
       includes: [
-        "Wöchentliche 1:1 Calls",
+        "Wöchentliche 1:1Calls",
         "Technik-Analyse",
         "24/7 WhatsApp Support",
         "Personalisierte Pläne"
@@ -654,7 +654,7 @@ export const badgeTests = [
     name: "Bundeswehr Basis-Fitness-Test",
     description: "Standard Fitness-Test der Bundeswehr",
     requirements: [
-      { name: "11x10m Pendellauf", requirement: "Maximal 60 Sekunden" },
+      { name: "Pendellauf", requirement: "11x10m in maximal 60 Sekunden" },
       { name: "Liegestütze", requirement: "15 Wiederholungen in 2 Minuten" },
       { name: "Sit-ups", requirement: "25 Wiederholungen in 2 Minuten" },
       { name: "3000m Lauf", requirement: "Unter 15 Minuten" }
@@ -662,15 +662,15 @@ export const badgeTests = [
   },
   {
     id: "us_army",
-    name: "US Army Physical Fitness Test",
-    description: "Army Combat Fitness Test (ACFT)",
+    name: "US Army Fitness-Test (ACFT)",
+    description: "Army Combat Fitness Test - Standardisierter Militär-Fitness-Test der US-Armee",
     requirements: [
-      { name: "Deadlift", requirement: "140-340 Pfund" },
-      { name: "Standing Power Throw", requirement: "8.5 Meter" },
-      { name: "Hand Release Push-ups", requirement: "30 Wiederholungen in 2 Minuten" },
-      { name: "Sprint-Drag-Carry", requirement: "Unter 3 Minuten" },
-      { name: "Leg Tuck/Plank", requirement: "20 Wiederholungen oder 2:09 Minuten" },
-      { name: "2-Meilen Lauf", requirement: "Unter 21 Minuten" }
+      { name: "Kreuzheben (Deadlift)", requirement: "63-154 kg (140-340 lbs)" },
+      { name: "Medizinballwurf rückwärts (Standing Power Throw)", requirement: "8,5 Meter (27.9 ft)" },
+      { name: "Liegestütze mit Abheben (Hand Release Push-ups)", requirement: "30 Wiederholungen in 2 Minuten" },
+      { name: "Sprint-Zug-Trage-Kombination (Sprint-Drag-Carry)", requirement: "Unter 3 Minuten" },
+      { name: "Beinheben/Unterarmstütz (Leg Tuck/Plank)", requirement: "20 Wiederholungen oder 2:09 Minuten" },
+      { name: "2-Meilen Lauf (2-Mile Run)", requirement: "3,2 km in unter 21 Minuten" }
     ]
   },
   {
@@ -699,9 +699,9 @@ export const badgeTests = [
         name: "Zeitlimits",
         levels: [
           { level: "Elite", requirement: "< 2:30:00" },
-          { level: "Advanced", requirement: "< 3:00:00" },
-          { level: "Intermediate", requirement: "< 4:00:00" },
-          { level: "Beginner", requirement: "< 6:00:00" }
+          { level: "Fortgeschritten (Advanced)", requirement: "< 3:00:00" },
+          { level: "Mittelstufe (Intermediate)", requirement: "< 4:00:00" },
+          { level: "Anfänger (Beginner)", requirement: "< 6:00:00" }
         ]
       }
     ]
@@ -716,9 +716,9 @@ export const badgeTests = [
         name: "Zeitlimits",
         levels: [
           { level: "Elite", requirement: "< 1:15:00" },
-          { level: "Advanced", requirement: "< 1:30:00" },
-          { level: "Intermediate", requirement: "< 2:00:00" },
-          { level: "Beginner", requirement: "< 3:00:00" }
+          { level: "Fortgeschritten (Advanced)", requirement: "< 1:30:00" },
+          { level: "Mittelstufe (Intermediate)", requirement: "< 2:00:00" },
+          { level: "Anfänger (Beginner)", requirement: "< 3:00:00" }
         ]
       }
     ]
@@ -735,9 +735,9 @@ export const badgeTests = [
         name: "Gesamtzeit",
         levels: [
           { level: "Elite", requirement: "< 1:00:00" },
-          { level: "Advanced", requirement: "< 1:15:00" },
-          { level: "Intermediate", requirement: "< 1:30:00" },
-          { level: "Beginner", requirement: "< 2:00:00" }
+          { level: "Fortgeschritten (Advanced)", requirement: "< 1:15:00" },
+          { level: "Mittelstufe (Intermediate)", requirement: "< 1:30:00" },
+          { level: "Anfänger (Beginner)", requirement: "< 2:00:00" }
         ]
       }
     ]
