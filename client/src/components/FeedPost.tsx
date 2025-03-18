@@ -166,6 +166,7 @@ export default function FeedPost({ post }: FeedPostProps) {
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [showLikesDialog, setShowLikesDialog] = useState(false);
   const [reportReason, setReportReason] = useState("");
   const [editContent, setEditContent] = useState(post.content);
   const [showAllComments, setShowAllComments] = useState(false);
@@ -245,6 +246,41 @@ export default function FeedPost({ post }: FeedPostProps) {
       title: "Kommentar hinzugefügt",
       description: "Dein Kommentar wurde erfolgreich hinzugefügt.",
     });
+  };
+
+  const renderLikesText = () => {
+    if (likes.length === 0) return null;
+
+    const likers = likes.map(userId => users.find(u => u.id === userId))
+      .filter(user => user !== undefined);
+
+    if (likers.length === 0) return null;
+
+    const firstLiker = likers[0];
+
+    if (likers.length === 1) {
+      return (
+        <button 
+          className="text-sm hover:underline"
+          onClick={() => setShowLikesDialog(true)}
+        >
+          Gefällt <span className="font-semibold">{firstLiker?.username}</span>
+        </button>
+      );
+    }
+
+    return (
+      <button 
+        className="text-sm hover:underline"
+        onClick={() => setShowLikesDialog(true)}
+      >
+        Gefällt <span className="font-semibold">{firstLiker?.username}</span>
+        {" "}und{" "}
+        <span className="font-semibold">
+          {likers.length - 1} weiteren {likers.length - 1 === 1 ? "Person" : "Personen"}
+        </span>
+      </button>
+    );
   };
 
   return (
@@ -346,11 +382,8 @@ export default function FeedPost({ post }: FeedPostProps) {
         </div>
 
         {/* Likes Display */}
-        {likes.length > 0 && (
-          <p className="font-semibold text-sm">
-            {likes.length} {likes.length === 1 ? "Like" : "Likes"}
-          </p>
-        )}
+        {renderLikesText()}
+
 
         {/* Comments Section */}
         <div className="space-y-4">
@@ -463,6 +496,36 @@ export default function FeedPost({ post }: FeedPostProps) {
               Melden
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Likes Dialog */}
+      <Dialog open={showLikesDialog} onOpenChange={setShowLikesDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Gefällt</DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="h-[400px] pr-4">
+            <div className="space-y-4">
+              {likes.map(userId => {
+                const user = users.find(u => u.id === userId);
+                if (!user) return null;
+
+                return (
+                  <div key={userId} className="flex items-center gap-3">
+                    <UserAvatar
+                      userId={user.id}
+                      size="sm"
+                    />
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold">{user.username}</p>
+                      <p className="text-xs text-muted-foreground">{user.name}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </ScrollArea>
         </DialogContent>
       </Dialog>
     </Card>
