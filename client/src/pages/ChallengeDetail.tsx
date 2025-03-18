@@ -3,8 +3,8 @@ import { useParams } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  Gift, Trophy, Users, Calendar, Crown, MessageCircle, 
+import {
+  Gift, Trophy, Users, Calendar, Crown, MessageCircle,
   Dumbbell, Waves, Bike, Timer, Award, ChevronRight
 } from "lucide-react";
 import { format } from "date-fns";
@@ -21,6 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ResultForm } from "@/components/ResultForm";
 
 interface WorkoutExercise {
   name: string;
@@ -121,8 +122,8 @@ export default function ChallengeDetail() {
     });
   };
 
-  const handleSubmitResult = () => {
-    if (!result) {
+  const handleSubmitResult = (results: any) => {
+    if (!results) {
       toast({
         title: "Fehler",
         description: "Bitte gib ein Ergebnis ein.",
@@ -131,19 +132,10 @@ export default function ChallengeDetail() {
       return;
     }
 
-    const points = Number(result);
-    if (isNaN(points) || points < 0) {
-      toast({
-        title: "Fehler",
-        description: "Bitte gib eine gültige Zahl ein.",
-        variant: "destructive",
-      });
-      return;
-    }
-
+    // Aktualisiere die Teilnehmerliste mit den neuen Ergebnissen
     setParticipants(prev => prev.map(p =>
       p.id === (currentUser?.id || 0)
-        ? { ...p, points: points, lastUpdate: new Date() }
+        ? { ...p, points: results.points, lastUpdate: new Date() }
         : p
     ).sort((a, b) => b.points - a.points));
 
@@ -152,7 +144,6 @@ export default function ChallengeDetail() {
       description: "Dein Ergebnis wurde erfolgreich eingetragen.",
     });
     setShowResultForm(false);
-    setResult("");
   };
 
   // Helper function to get the appropriate icon for exercise type
@@ -166,7 +157,7 @@ export default function ChallengeDetail() {
   };
 
   // Find additional test details if it's a badge challenge
-  const badgeDetails = challenge?.workoutType === 'badge' 
+  const badgeDetails = challenge?.workoutType === 'badge'
     ? badgeTests.find(test => test.name === challenge.title.replace(' Challenge', ''))
     : null;
 
@@ -363,36 +354,15 @@ export default function ChallengeDetail() {
               </Button>
               {showResultForm && (
                 <Dialog open={showResultForm} onOpenChange={setShowResultForm}>
-                  <DialogContent className="sm:max-w-md">
+                  <DialogContent className="sm:max-w-lg">
                     <DialogHeader>
                       <DialogTitle>Ergebnis eintragen</DialogTitle>
                     </DialogHeader>
-                    <div className="space-y-4 p-4">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Dein Ergebnis</label>
-                        <Input
-                          type="number"
-                          placeholder="Punkte eingeben"
-                          value={result}
-                          onChange={(e) => setResult(e.target.value)}
-                        />
-                        <p className="text-sm text-muted-foreground">
-                          Gib deine erreichten Punkte ein. Bei AMRAP die Anzahl der Runden, bei For Time die Zeit in Sekunden.
-                        </p>
-                      </div>
-                      <div className="flex gap-2 pt-2">
-                        <Button onClick={handleSubmitResult} className="flex-1">
-                          Speichern
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => setShowResultForm(false)}
-                          className="flex-1"
-                        >
-                          Abbrechen
-                        </Button>
-                      </div>
-                    </div>
+                    <ResultForm
+                      challenge={challenge}
+                      onSubmit={handleSubmitResult}
+                      onCancel={() => setShowResultForm(false)}
+                    />
                   </DialogContent>
                 </Dialog>
               )}
