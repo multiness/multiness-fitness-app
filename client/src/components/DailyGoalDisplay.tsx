@@ -1,6 +1,6 @@
 import { Progress } from "@/components/ui/progress";
 import { DailyGoal } from "../lib/postStore";
-import { Droplet, Footprints, Route, Target, Users, Plus, Trophy } from "lucide-react";
+import { Droplet, Footprints, Route, Target, Users, Plus, Trophy, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
@@ -8,8 +8,14 @@ import { usePostStore } from "../lib/postStore";
 import { useUsers } from "../contexts/UserContext";
 import { useToast } from "@/hooks/use-toast";
 import { mockUsers } from "../data/mockData";
-import { format, formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface DailyGoalDisplayProps {
   goal: DailyGoal;
@@ -24,7 +30,6 @@ export default function DailyGoalDisplay({
   variant = "full",
   onProgressUpdate
 }: DailyGoalDisplayProps) {
-  console.log('DailyGoalDisplay rendering with:', { goal, userId, variant });
   const [showProgressInput, setShowProgressInput] = useState(false);
   const [progressInput, setProgressInput] = useState("");
   const progress = (goal.progress / goal.target) * 100;
@@ -55,65 +60,50 @@ export default function DailyGoalDisplay({
     const newProgress = Number(progressInput);
     if (isNaN(newProgress) || newProgress < 0) return;
 
-    if (newProgress > goal.target) {
+    // Überprüfe, dass der neue Fortschritt das Ziel nicht überschreitet
+    const totalProgress = goal.progress + newProgress;
+    if (totalProgress > goal.target) {
       toast({
         title: "Ungültiger Wert",
-        description: `Der Wert kann nicht größer als ${goal.target} ${goal.unit} sein.`,
+        description: `Der Gesamtfortschritt kann nicht größer als ${goal.target} ${goal.unit} sein.`,
         variant: "destructive"
       });
       return;
     }
 
-    postStore.updateDailyGoalProgress(userId, newProgress);
-    onProgressUpdate?.(newProgress);
+    // Aktualisiere den Fortschritt
+    postStore.updateDailyGoalProgress(userId, totalProgress);
+    onProgressUpdate?.(totalProgress);
     setProgressInput("");
     setShowProgressInput(false);
 
-    if (newProgress >= goal.target) {
+    if (totalProgress >= goal.target) {
       toast({
         title: "🎉 Glückwunsch!",
         description: "Du hast dein Tagesziel erreicht!",
       });
+    } else {
+      toast({
+        title: "Fortschritt aktualisiert",
+        description: `Noch ${goal.target - totalProgress} ${goal.unit} bis zum Ziel!`,
+      });
     }
   };
 
-  const handleJoinGoal = () => {
+  const handleDeleteGoal = () => {
     if (!currentUser) return;
 
-    if (participants.includes(currentUser.id)) {
-      postStore.leaveDailyGoal(userId, currentUser.id);
+    const confirmDelete = window.confirm("Möchtest du dieses Tagesziel wirklich löschen?");
+    if (confirmDelete) {
+      postStore.deleteDailyGoal(userId);
       toast({
-        title: "Nicht mehr dabei",
-        description: "Du verfolgst dieses Ziel nicht mehr.",
-      });
-    } else {
-      postStore.joinDailyGoal(userId, currentUser.id);
-      toast({
-        title: "Du machst mit!",
-        description: "Du verfolgst jetzt auch dieses Ziel.",
+        title: "Tagesziel gelöscht",
+        description: "Dein Tagesziel wurde erfolgreich gelöscht.",
       });
     }
   };
 
-  const getTimeLeft = (createdAt: Date | string) => {
-    try {
-      const createdAtDate = typeof createdAt === 'string' ? new Date(createdAt) : createdAt;
-      if (isNaN(createdAtDate.getTime())) return null;
-
-      const now = new Date();
-      const endTime = new Date(createdAtDate);
-      endTime.setHours(endTime.getHours() + 24);
-
-      if (now > endTime) return null;
-
-      return formatDistanceToNow(endTime, { locale: de });
-    } catch (error) {
-      console.error('Error calculating time left:', error);
-      return null;
-    }
-  };
-
-  const timeLeft = getTimeLeft(goal.createdAt);
+  const timeLeft = formatDistanceToNow(new Date(goal.createdAt).getTime() + 24 * 60 * 60 * 1000, { locale: de });
 
   // Profilseiten-Variante
   if (variant === "profile") {
@@ -124,17 +114,33 @@ export default function DailyGoalDisplay({
             <Icon className="h-5 w-5 text-primary" />
             <h3 className="font-medium">Aktuelles Tagesziel: {goalTypes[goal.type]}</h3>
           </div>
-          {isOwner && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-primary hover:text-primary/80"
-              onClick={() => setShowProgressInput(true)}
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              Fortschritt eintragen
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {isOwner && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-primary hover:text-primary/80"
+                  onClick={() => setShowProgressInput(true)}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Fortschritt eintragen
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <MoreHorizontal className="h-5 w-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem className="text-red-500" onClick={handleDeleteGoal}>
+                      Tagesziel löschen
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            )}
+          </div>
         </div>
 
         <div className="relative h-2 overflow-hidden rounded-full bg-primary/10">
@@ -171,12 +177,12 @@ export default function DailyGoalDisplay({
           <form onSubmit={handleProgressUpdate} className="flex gap-2 mt-2">
             <Input
               type="number"
-              placeholder={`Neuer Fortschritt in ${goal.unit}`}
+              placeholder={`Fortschritt in ${goal.unit}`}
               value={progressInput}
               onChange={(e) => setProgressInput(e.target.value)}
               className="flex-1"
             />
-            <Button type="submit">Speichern</Button>
+            <Button type="submit">Hinzufügen</Button>
           </form>
         )}
       </div>
@@ -193,15 +199,29 @@ export default function DailyGoalDisplay({
             <span className="font-medium text-sm">{goalTypes[goal.type]}</span>
           </div>
           {isOwner && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 px-2 text-xs text-primary hover:text-primary/80"
-              onClick={() => setShowProgressInput(true)}
-            >
-              <Plus className="h-3 w-3 mr-1" />
-              Fortschritt
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs text-primary hover:text-primary/80"
+                onClick={() => setShowProgressInput(true)}
+              >
+                <Plus className="h-3 w-3 mr-1" />
+                Fortschritt
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem className="text-red-500" onClick={handleDeleteGoal}>
+                    Tagesziel löschen
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           )}
         </div>
 
@@ -270,14 +290,28 @@ export default function DailyGoalDisplay({
         </div>
         <div className="flex items-center gap-2">
           {isOwner && (
-            <Button
-              variant="ghost"
-              className="text-primary hover:text-primary/80"
-              onClick={() => setShowProgressInput(true)}
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              Fortschritt eintragen
-            </Button>
+            <>
+              <Button
+                variant="ghost"
+                className="text-primary hover:text-primary/80"
+                onClick={() => setShowProgressInput(true)}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Fortschritt eintragen
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <MoreHorizontal className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem className="text-red-500" onClick={handleDeleteGoal}>
+                    Tagesziel löschen
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
           )}
           {currentUser && currentUser.id !== userId && (
             <Button

@@ -50,6 +50,7 @@ type PostStore = {
   hasActiveGoal: (userId: number) => boolean;
   createPostWithGoal: (userId: number, content: string, goal: DailyGoal) => void;
   createPost: (userId: number, content: string, image?: string | null) => void;
+  deleteDailyGoal: (userId: number) => void;
 };
 
 export const usePostStore = create<PostStore>()(
@@ -291,18 +292,22 @@ export const usePostStore = create<PostStore>()(
         return { hasExistingGoal };
       },
 
-      updateDailyGoalProgress: (userId, progress) =>
+      updateDailyGoalProgress: (userId, newProgressValue) =>
         set((state) => {
           const currentGoal = state.dailyGoals[userId];
           if (!currentGoal) return state;
+
+          // Aktualisiere den Fortschritt durch Addition
+          const updatedProgress = currentGoal.progress + newProgressValue;
+          const isCompleted = updatedProgress >= currentGoal.target;
 
           return {
             dailyGoals: {
               ...state.dailyGoals,
               [userId]: {
                 ...currentGoal,
-                progress,
-                completed: progress >= currentGoal.target
+                progress: isCompleted ? currentGoal.target : updatedProgress,
+                completed: isCompleted
               }
             }
           };
@@ -346,7 +351,16 @@ export const usePostStore = create<PostStore>()(
             });
           }
         });
-      }
+      },
+      deleteDailyGoal: (userId: number) =>
+        set((state) => {
+          const { [userId]: _, ...remainingGoals } = state.dailyGoals;
+          const { [userId]: __, ...remainingParticipants } = state.goalParticipants;
+          return {
+            dailyGoals: remainingGoals,
+            goalParticipants: remainingParticipants
+          };
+        }),
     }),
     {
       name: 'post-interaction-storage',
