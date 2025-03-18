@@ -18,6 +18,9 @@ export type Comment = {
   userId: number;
   content: string;
   timestamp: string;
+  parentId?: number; // Für nested comments
+  likes: number[]; // Array von User IDs die den Kommentar geliked haben
+  replies?: number[]; // IDs der Antwort-Kommentare
 };
 
 type PostStore = {
@@ -30,8 +33,11 @@ type PostStore = {
   removeLike: (postId: number, userId: number) => void;
   hasLiked: (postId: number, userId: number) => boolean;
   getLikes: (postId: number) => number[];
-  addComment: (postId: number, userId: number, content: string) => void;
-  getComments: (postId: number) => Comment[];
+  addComment: (postId: number, userId: number, content: string, parentId?: number) => void;
+  getComments: (postId: number, parentId?: number) => Comment[];
+  addCommentLike: (postId: number, commentId: number, userId: number) => void;
+  removeCommentLike: (postId: number, commentId: number, userId: number) => void;
+  hasLikedComment: (postId: number, commentId: number, userId: number) => boolean;
   updatePost: (postId: number, content: string) => void;
   deletePost: (postId: number) => void;
   setDailyGoal: (userId: number, goal: DailyGoal) => { hasExistingGoal: boolean };
@@ -43,7 +49,7 @@ type PostStore = {
   checkExpiredGoals: () => void;
   hasActiveGoal: (userId: number) => boolean;
   createPostWithGoal: (userId: number, content: string, goal: DailyGoal) => void;
-  createPost: (userId: number, content: string, image?: string | null) => void; // Neue Funktion
+  createPost: (userId: number, content: string, image?: string | null) => void;
 };
 
 export const usePostStore = create<PostStore>()(
@@ -77,24 +83,98 @@ export const usePostStore = create<PostStore>()(
       getLikes: (postId) =>
         get().likes[postId] || [],
 
-      addComment: (postId, userId, content) => {
+      addComment: (postId, userId, content, parentId) => {
         const comment: Comment = {
           id: Date.now(),
           postId,
           userId,
           content,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          likes: [],
+          parentId,
+          replies: []
         };
-        set((state) => ({
-          comments: {
-            ...state.comments,
-            [postId]: [...(state.comments[postId] || []), comment]
+
+        set((state) => {
+          const updatedComments = [...(state.comments[postId] || []), comment];
+
+          // Wenn es ein Reply ist, füge die ID zum Parent-Kommentar hinzu
+          if (parentId) {
+            const parentIndex = updatedComments.findIndex(c => c.id === parentId);
+            if (parentIndex !== -1) {
+              updatedComments[parentIndex] = {
+                ...updatedComments[parentIndex],
+                replies: [...(updatedComments[parentIndex].replies || []), comment.id]
+              };
+            }
           }
-        }));
+
+          return {
+            comments: {
+              ...state.comments,
+              [postId]: updatedComments
+            }
+          };
+        });
       },
 
-      getComments: (postId) =>
-        get().comments[postId] || [],
+      getComments: (postId, parentId) => {
+        const comments = get().comments[postId] || [];
+        if (parentId === undefined) {
+          // Hauptkommentare (keine Antworten)
+          return comments.filter(c => !c.parentId);
+        }
+        // Antworten auf einen spezifischen Kommentar
+        return comments.filter(c => c.parentId === parentId);
+      },
+
+      addCommentLike: (postId, commentId, userId) =>
+        set((state) => {
+          const comments = state.comments[postId] || [];
+          const commentIndex = comments.findIndex(c => c.id === commentId);
+
+          if (commentIndex === -1) return state;
+
+          const updatedComments = [...comments];
+          updatedComments[commentIndex] = {
+            ...updatedComments[commentIndex],
+            likes: [...(updatedComments[commentIndex].likes || []), userId]
+          };
+
+          return {
+            comments: {
+              ...state.comments,
+              [postId]: updatedComments
+            }
+          };
+        }),
+
+      removeCommentLike: (postId, commentId, userId) =>
+        set((state) => {
+          const comments = state.comments[postId] || [];
+          const commentIndex = comments.findIndex(c => c.id === commentId);
+
+          if (commentIndex === -1) return state;
+
+          const updatedComments = [...comments];
+          updatedComments[commentIndex] = {
+            ...updatedComments[commentIndex],
+            likes: (updatedComments[commentIndex].likes || []).filter(id => id !== userId)
+          };
+
+          return {
+            comments: {
+              ...state.comments,
+              [postId]: updatedComments
+            }
+          };
+        }),
+
+      hasLikedComment: (postId, commentId, userId) => {
+        const comments = get().comments[postId] || [];
+        const comment = comments.find(c => c.id === commentId);
+        return comment ? (comment.likes || []).includes(userId) : false;
+      },
 
       createPost: (userId, content, image) => {
         const postId = Date.now();
@@ -139,23 +219,33 @@ export const usePostStore = create<PostStore>()(
         }));
       },
 
-      setDailyGoal: (userId, goal) => {
-        const existingGoal = get().getDailyGoal(userId);
-        const hasExistingGoal = Boolean(existingGoal);
-
-        const goalForStorage = {
-          ...goal,
-          createdAt: goal.createdAt.toISOString()
-        };
-
+      updatePost: (postId, content) =>
         set((state) => ({
-          dailyGoals: {
-            ...state.dailyGoals,
-            [userId]: goalForStorage
+          posts: {
+            ...state.posts,
+            [postId]: {
+              ...state.posts[postId],
+              content,
+              updatedAt: new Date()
+            }
           }
-        }));
+        })),
 
-        return { hasExistingGoal };
+      deletePost: (postId) =>
+        set((state) => {
+          const { [postId]: deletedPost, ...remainingPosts } = state.posts;
+          const { [postId]: deletedLikes, ...remainingLikes } = state.likes;
+          const { [postId]: deletedComments, ...remainingComments } = state.comments;
+
+          return {
+            posts: remainingPosts,
+            likes: remainingLikes,
+            comments: remainingComments
+          };
+        }),
+
+      hasActiveGoal: (userId) => {
+        return Boolean(get().getDailyGoal(userId));
       },
 
       getDailyGoal: (userId) => {
@@ -187,33 +277,18 @@ export const usePostStore = create<PostStore>()(
         return goalWithDate;
       },
 
-      updatePost: (postId, content) =>
+      setDailyGoal: (userId, goal) => {
+        const existingGoal = get().getDailyGoal(userId);
+        const hasExistingGoal = Boolean(existingGoal);
+
         set((state) => ({
-          posts: {
-            ...state.posts,
-            [postId]: {
-              ...state.posts[postId],
-              content,
-              updatedAt: new Date()
-            }
+          dailyGoals: {
+            ...state.dailyGoals,
+            [userId]: goal
           }
-        })),
+        }));
 
-      deletePost: (postId) =>
-        set((state) => {
-          const { [postId]: deletedPost, ...remainingPosts } = state.posts;
-          const { [postId]: deletedLikes, ...remainingLikes } = state.likes;
-          const { [postId]: deletedComments, ...remainingComments } = state.comments;
-
-          return {
-            posts: remainingPosts,
-            likes: remainingLikes,
-            comments: remainingComments
-          };
-        }),
-
-      hasActiveGoal: (userId) => {
-        return Boolean(get().getDailyGoal(userId));
+        return { hasExistingGoal };
       },
 
       updateDailyGoalProgress: (userId, progress) =>

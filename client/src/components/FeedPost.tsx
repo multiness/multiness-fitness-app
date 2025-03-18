@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Heart, MessageCircle, Share2, MoreHorizontal, AlertTriangle, Send, Pencil, Trash2 } from "lucide-react";
-import { Post } from "@shared/schema";
+import { Heart, MessageCircle, Share2, MoreHorizontal, AlertTriangle, Send, Pencil, Trash2, X } from "lucide-react";
 import { format } from "date-fns";
+import { de } from "date-fns/locale";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,6 +46,122 @@ interface FeedPostProps {
   };
 }
 
+function CommentItem({ comment, postId, onReplyClick }: any) {
+  const { users, currentUser } = useUsers();
+  const postStore = usePostStore();
+  const { toast } = useToast();
+  const [showReplies, setShowReplies] = useState(false);
+  const [replyContent, setReplyContent] = useState("");
+  const [isReplying, setIsReplying] = useState(false);
+
+  const commentUser = users.find(u => u.id === comment.userId);
+  const replies = postStore.getComments(postId, comment.id);
+  const isLiked = postStore.hasLikedComment(postId, comment.id, currentUser?.id || 1);
+
+  const handleLike = () => {
+    const userId = currentUser?.id || 1;
+    if (isLiked) {
+      postStore.removeCommentLike(postId, comment.id, userId);
+    } else {
+      postStore.addCommentLike(postId, comment.id, userId);
+      toast({
+        title: "Kommentar gefällt dir",
+        description: "Der Kommentar wurde zu deinen Likes hinzugefügt.",
+      });
+    }
+  };
+
+  const handleReply = () => {
+    if (!replyContent.trim()) return;
+    postStore.addComment(postId, currentUser?.id || 1, replyContent, comment.id);
+    setReplyContent("");
+    setIsReplying(false);
+    toast({
+      title: "Antwort hinzugefügt",
+      description: "Deine Antwort wurde erfolgreich hinzugefügt.",
+    });
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex gap-3">
+        <UserAvatar
+          userId={commentUser?.id || 0}
+          size="sm"
+        />
+        <div className="flex-1 space-y-1">
+          <div className="bg-muted p-3 rounded-lg">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-sm">{commentUser?.username}</span>
+              <span className="text-xs text-muted-foreground">
+                {format(new Date(comment.timestamp), "dd. MMM", { locale: de })}
+              </span>
+            </div>
+            <p className="text-sm mt-1">{comment.content}</p>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              className={`px-0 ${isLiked ? 'text-red-500' : ''}`}
+              onClick={handleLike}
+            >
+              <Heart className={`h-4 w-4 mr-1 ${isLiked ? 'fill-current' : ''}`} />
+              {comment.likes?.length || 0}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="px-0"
+              onClick={() => setIsReplying(!isReplying)}
+            >
+              Antworten
+            </Button>
+            {replies.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="px-0"
+                onClick={() => setShowReplies(!showReplies)}
+              >
+                {showReplies ? 'Antworten ausblenden' : `${replies.length} Antworten`}
+              </Button>
+            )}
+          </div>
+
+          {isReplying && (
+            <div className="flex gap-2 mt-2">
+              <Input
+                value={replyContent}
+                onChange={(e) => setReplyContent(e.target.value)}
+                placeholder="Schreibe eine Antwort..."
+                className="flex-1"
+              />
+              <Button onClick={handleReply} size="sm">
+                Senden
+              </Button>
+            </div>
+          )}
+
+          {showReplies && replies.length > 0 && (
+            <div className="ml-8 mt-2 space-y-2">
+              {replies.map((reply) => (
+                <CommentItem
+                  key={reply.id}
+                  comment={reply}
+                  postId={postId}
+                  onReplyClick={onReplyClick}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function FeedPost({ post }: FeedPostProps) {
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -75,6 +191,28 @@ export default function FeedPost({ post }: FeedPostProps) {
         title: "Post gefällt dir",
         description: "Der Post wurde zu deinen Likes hinzugefügt.",
       });
+    }
+  };
+
+  const handleNativeShare = async () => {
+    const shareData = {
+      title: "Post von " + user.username,
+      text: post.content,
+      url: window.location.href
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        toast({
+          title: "Link kopiert",
+          description: "Der Link wurde in die Zwischenablage kopiert.",
+        });
+      }
+    } catch (err) {
+      console.error('Error sharing:', err);
     }
   };
 
@@ -108,15 +246,6 @@ export default function FeedPost({ post }: FeedPostProps) {
       description: "Dein Kommentar wurde erfolgreich hinzugefügt.",
     });
   };
-
-  const handleShare = () => {
-    toast({
-      title: "Link kopiert",
-      description: "Der Link zum Post wurde in die Zwischenablage kopiert.",
-    });
-  };
-
-  const previewComments = comments.slice(-2);
 
   return (
     <Card>
@@ -211,7 +340,7 @@ export default function FeedPost({ post }: FeedPostProps) {
             <MessageCircle className="h-6 w-6" />
           </Button>
 
-          <Button variant="ghost" size="sm" onClick={handleShare}>
+          <Button variant="ghost" size="sm" onClick={handleNativeShare}>
             <Share2 className="h-6 w-6" />
           </Button>
         </div>
@@ -223,44 +352,44 @@ export default function FeedPost({ post }: FeedPostProps) {
           </p>
         )}
 
-        {/* Comments Preview */}
-        {comments.length > 0 && (
-          <div className="space-y-2">
-            {comments.length > 2 && (
-              <button 
-                className="text-muted-foreground text-sm"
-                onClick={() => setShowAllComments(true)}
-              >
-                Alle {comments.length} Kommentare anzeigen
-              </button>
-            )}
-            {previewComments.map(comment => {
-              const commentUser = users.find(u => u.id === comment.userId);
-              return commentUser ? (
-                <p key={comment.id} className="text-sm">
-                  <span className="font-semibold mr-2">{commentUser.username}</span>
-                  {comment.content}
-                </p>
-              ) : null;
-            })}
-          </div>
-        )}
+        {/* Comments Section */}
+        <div className="space-y-4">
+          {comments.length > 0 && (
+            <div>
+              {comments.length > 2 && !showAllComments && (
+                <button 
+                  className="text-muted-foreground text-sm"
+                  onClick={() => setShowAllComments(true)}
+                >
+                  Alle {comments.length} Kommentare anzeigen
+                </button>
+              )}
+              {(showAllComments ? comments : comments.slice(-2)).map(comment => (
+                <CommentItem
+                  key={comment.id}
+                  comment={comment}
+                  postId={post.id}
+                />
+              ))}
+            </div>
+          )}
 
-        {/* Comment Input */}
-        <form onSubmit={handleComment} className="flex gap-2 pt-2">
-          <Input
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            placeholder="Kommentieren..."
-            className="flex-1"
-          />
-          <Button type="submit" size="icon" variant="ghost">
-            <Send className="h-4 w-4" />
-          </Button>
-        </form>
+          {/* Comment Input */}
+          <form onSubmit={handleComment} className="flex gap-2">
+            <Input
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              placeholder="Kommentieren..."
+              className="flex-1"
+            />
+            <Button type="submit" size="icon" variant="ghost">
+              <Send className="h-4 w-4" />
+            </Button>
+          </form>
+        </div>
       </CardContent>
 
-      {/* Edit Dialog */}
+      {/* Dialogs */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -284,7 +413,6 @@ export default function FeedPost({ post }: FeedPostProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -304,53 +432,6 @@ export default function FeedPost({ post }: FeedPostProps) {
         </DialogContent>
       </Dialog>
 
-      {/* All Comments Dialog */}
-      <Dialog open={showAllComments} onOpenChange={setShowAllComments}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Kommentare</DialogTitle>
-          </DialogHeader>
-          <ScrollArea className="h-[400px] pr-4">
-            <div className="space-y-4">
-              {comments.map(comment => {
-                const commentUser = users.find(u => u.id === comment.userId);
-                return commentUser ? (
-                  <div key={comment.id} className="flex gap-3">
-                    <UserAvatar
-                      userId={commentUser.id}
-                      size="sm"
-                    />
-                    <div className="flex-1">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-sm">{commentUser.username}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {format(new Date(comment.timestamp), "dd. MMM")}
-                          </span>
-                        </div>
-                        <p className="text-sm">{comment.content}</p>
-                      </div>
-                    </div>
-                  </div>
-                ) : null;
-              })}
-            </div>
-          </ScrollArea>
-          <div className="flex gap-2 pt-2 border-t">
-            <Input
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              placeholder="Kommentieren..."
-              className="flex-1"
-            />
-            <Button onClick={handleComment} size="icon" variant="ghost">
-              <Send className="h-4 w-4" />
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Report Dialog */}
       <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
         <DialogContent>
           <DialogHeader>
