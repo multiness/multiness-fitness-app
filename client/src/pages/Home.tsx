@@ -156,114 +156,31 @@ export default function Home() {
           </Link>
         </div>
 
-        <Carousel
-          opts={{
-            align: "center",
-            loop: true,
-          }}
-          className="w-full"
-        >
-          <CarouselContent>
-            {activeChallenges.map(challenge => (
-              <CarouselItem key={challenge.id} className="md:basis-3/4 lg:basis-3/4">
-                <Card className="overflow-hidden hover:shadow-lg transition-all border-l-4 border-l-primary bg-gradient-to-br from-primary/5 to-transparent">
-                  <CardContent className="p-4">
-                    {/* Challenge Info Section */}
-                    <div className="flex items-start gap-3 mb-4">
-                      {mockUsers[0] && (
-                        <UserAvatar
-                          userId={mockUsers[0].id}
-                          avatar={mockUsers[0].avatar}
-                          username={mockUsers[0].username}
-                          size="sm"
-                        />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium">{mockUsers[0]?.username}</p>
-                          <Badge variant="secondary" className="ml-2 bg-primary/10 text-primary hover:bg-primary/20">Aktiv</Badge>
-                        </div>
-                        <h3 className="text-lg font-bold truncate">{challenge.title}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Endet am {format(new Date(challenge.endDate), "dd.MM.yyyy")}
-                        </p>
-                      </div>
-                    </div>
+        {/* Mobile: Karussell-Layout */}
+        <div className="block md:hidden">
+          <Carousel
+            opts={{
+              align: "start",
+              loop: true,
+            }}
+            className="w-full"
+          >
+            <CarouselContent className="-ml-2">
+              {activeChallenges.map(challenge => (
+                <CarouselItem key={challenge.id} className="pl-2 basis-[80%]">
+                  <ChallengeCard challenge={challenge} />
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+          </Carousel>
+        </div>
 
-                    {/* Participants & Stats */}
-                    <div className="bg-muted/30 rounded-lg p-3 backdrop-blur-sm">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <div className="flex -space-x-2">
-                            {mockUsers.slice(0, 3).map((user, i) => (
-                              <UserAvatar
-                                key={i}
-                                userId={user.id}
-                                avatar={user.avatar}
-                                username={user.username}
-                                size="sm"
-                                className="-ml-2 first:ml-0"
-                              />
-                            ))}
-                            <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-xs text-primary font-medium">
-                              +{mockUsers.length - 3}
-                            </div>
-                          </div>
-                          <span className="text-sm text-muted-foreground flex items-center gap-1">
-                            <Users className="h-4 w-4" />
-                            {mockUsers.length} Teilnehmer
-                          </span>
-                        </div>
-                        <div className="flex gap-1">
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                            <Heart className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                            <Share2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-
-                      {/* Top 3 Ranking */}
-                      <div className="grid grid-cols-3 gap-2">
-                        {[1, 2, 3].map(rank => (
-                          <div key={rank} className="flex items-center gap-2 bg-background/50 rounded-md p-2">
-                            <div className="relative">
-                              {rank === 1 && <Crown className="absolute -top-2 -left-2 h-4 w-4 text-yellow-400" />}
-                              {rank === 2 && <Crown className="absolute -top-2 -left-2 h-4 w-4 text-gray-400" />}
-                              {rank === 3 && <Crown className="absolute -top-2 -left-2 h-4 w-4 text-amber-700" />}
-                              <UserAvatar
-                                userId={mockUsers[rank]?.id || 0}
-                                avatar={mockUsers[rank]?.avatar}
-                                username={mockUsers[rank]?.username || ''}
-                                size="sm"
-                              />
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-sm font-medium truncate">{mockUsers[rank]?.username}</p>
-                              <p className="text-xs text-muted-foreground">{1000 - (rank * 50)} Punkte</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Action Button */}
-                    <Button
-                      variant="default"
-                      className="w-full mt-4"
-                      onClick={() => setLocation(`/challenges/${challenge.id}`)}
-                    >
-                      Challenge beitreten
-                    </Button>
-                  </CardContent>
-                </Card>
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-          <CarouselPrevious className="hidden md:flex" />
-          <CarouselNext className="hidden md:flex" />
-        </Carousel>
+        {/* Desktop: Grid-Layout */}
+        <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-4">
+          {activeChallenges.slice(0, 6).map(challenge => (
+            <ChallengeCard key={challenge.id} challenge={challenge} />
+          ))}
+        </div>
       </section>
 
       {/* Feed */}
