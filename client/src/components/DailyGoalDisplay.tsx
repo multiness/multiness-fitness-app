@@ -16,6 +16,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import UserAvatar from "@/components/UserAvatar"; // Assuming this component exists
+
 
 interface DailyGoalDisplayProps {
   goal: DailyGoal;
@@ -37,6 +39,7 @@ export default function DailyGoalDisplay({
   const { toast } = useToast();
   const participants = postStore.getGoalParticipants(userId);
   const isOwner = currentUser?.id === userId;
+  const isParticipating = currentUser ? participants.includes(currentUser.id) : false;
 
   // Hole das aktuelle Ziel aus dem Store statt die Props zu verwenden
   const currentGoal = postStore.getDailyGoal(userId) || initialGoal;
@@ -75,8 +78,8 @@ export default function DailyGoalDisplay({
     }
 
     // Aktualisiere den Fortschritt
-    postStore.updateDailyGoalProgress(userId, totalProgress);
-    onProgressUpdate?.(totalProgress);
+    postStore.updateDailyGoalProgress(userId, newProgress);
+    onProgressUpdate?.(newProgress);
     setProgressInput("");
     setShowProgressInput(false);
 
@@ -89,6 +92,41 @@ export default function DailyGoalDisplay({
       toast({
         title: "Fortschritt aktualisiert",
         description: `Noch ${currentGoal.target - totalProgress} ${currentGoal.unit} bis zum Ziel!`,
+      });
+    }
+  };
+
+  const handleJoinGoal = () => {
+    if (!currentUser) return;
+
+    if (isParticipating) {
+      postStore.leaveDailyGoal(userId, currentUser.id);
+      toast({
+        title: "Nicht mehr dabei",
+        description: "Du verfolgst dieses Ziel nicht mehr.",
+      });
+    } else {
+      // Erstelle ein neues Tagesziel für den Teilnehmer
+      const newGoal: DailyGoal = {
+        ...currentGoal,
+        progress: 0,
+        completed: false,
+        createdAt: new Date()
+      };
+
+      // Erstelle einen Post und setze das Ziel
+      postStore.createPostWithGoal(
+        currentUser.id,
+        `Ich mache bei @${users.find(u => u.id === userId)?.username}'s Tagesziel mit: ${goalTypes[currentGoal.type]}`,
+        newGoal
+      );
+
+      // Füge den Teilnehmer zum Original-Ziel hinzu
+      postStore.joinDailyGoal(userId, currentUser.id);
+
+      toast({
+        title: "Du machst mit!",
+        description: "Das Tagesziel wurde zu deinem Profil hinzugefügt.",
       });
     }
   };
@@ -169,10 +207,26 @@ export default function DailyGoalDisplay({
             )}
           </div>
           {participants.length > 0 && (
-            <span className="text-muted-foreground flex items-center gap-1">
-              <Users className="h-4 w-4" />
-              {participants.length} {participants.length === 1 ? "Teilnehmer" : "Teilnehmer"}
-            </span>
+            <div className="flex items-center gap-2">
+              <div className="flex -space-x-2">
+                {participants.slice(0, 3).map((participantId) => (
+                  <UserAvatar
+                    key={participantId}
+                    userId={participantId}
+                    size="sm"
+                    className="-ml-2 first:ml-0"
+                  />
+                ))}
+                {participants.length > 3 && (
+                  <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium -ml-2">
+                    +{participants.length - 3}
+                  </div>
+                )}
+              </div>
+              <span className="text-muted-foreground">
+                {participants.length} {participants.length === 1 ? "Teilnehmer" : "Teilnehmer"}
+              </span>
+            </div>
           )}
         </div>
 
@@ -201,7 +255,7 @@ export default function DailyGoalDisplay({
             <Icon className="h-4 w-4 text-primary" />
             <span className="font-medium text-sm">{goalTypes[currentGoal.type]}</span>
           </div>
-          {isOwner && (
+          {isOwner ? (
             <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
@@ -225,6 +279,15 @@ export default function DailyGoalDisplay({
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
+          ) : (
+            <Button
+              variant={isParticipating ? "secondary" : "default"}
+              size="sm"
+              onClick={handleJoinGoal}
+              className="h-7"
+            >
+              {isParticipating ? "Mache ich auch" : "Mitmachen"}
+            </Button>
           )}
         </div>
 
@@ -232,8 +295,8 @@ export default function DailyGoalDisplay({
           <div
             className={`h-full transition-all duration-500 ease-in-out ${
               currentGoal.completed
-                ? 'bg-yellow-500' // Gelbgold wenn komplett
-                : 'bg-blue-500'   // Blau während des Fortschritts
+                ? 'bg-yellow-500'
+                : 'bg-blue-500'
             }`}
             style={{ width: `${progress}%` }}
           />
@@ -257,10 +320,23 @@ export default function DailyGoalDisplay({
               </span>
             )}
             {participants.length > 0 && (
-              <span className="text-muted-foreground flex items-center gap-1">
-                <Users className="h-3 w-3" />
-                {participants.length}
-              </span>
+              <div className="flex items-center gap-2">
+                <div className="flex -space-x-1">
+                  {participants.slice(0, 3).map((participantId) => (
+                    <UserAvatar
+                      key={participantId}
+                      userId={participantId}
+                      size="xs"
+                      className="-ml-1 first:ml-0"
+                    />
+                  ))}
+                </div>
+                {participants.length > 3 && (
+                  <span className="text-muted-foreground">
+                    +{participants.length - 3}
+                  </span>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -318,12 +394,12 @@ export default function DailyGoalDisplay({
           )}
           {currentUser && currentUser.id !== userId && (
             <Button
-              variant={participants.includes(currentUser.id) ? "secondary" : "outline"}
+              variant={isParticipating ? "secondary" : "outline"}
               size="sm"
               onClick={handleJoinGoal}
-              className={participants.includes(currentUser.id) ? "bg-primary/10" : ""}
+              className={isParticipating ? "bg-primary/10" : ""}
             >
-              {participants.includes(currentUser.id) ? "Mache ich auch" : "Mitmachen"}
+              {isParticipating ? "Mache ich auch" : "Mitmachen"}
             </Button>
           )}
         </div>
@@ -357,7 +433,21 @@ export default function DailyGoalDisplay({
           )}
           {participants.length > 0 && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Users className="h-4 w-4" />
+              <div className="flex -space-x-2">
+                {participants.slice(0, 3).map((participantId) => (
+                  <UserAvatar
+                    key={participantId}
+                    userId={participantId}
+                    size="sm"
+                    className="-ml-2 first:ml-0"
+                  />
+                ))}
+                {participants.length > 3 && (
+                  <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium -ml-2">
+                    +{participants.length - 3}
+                  </div>
+                )}
+              </div>
               <span>{participants.length} {participants.length === 1 ? "Teilnehmer" : "Teilnehmer"}</span>
             </div>
           )}
