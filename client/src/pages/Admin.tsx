@@ -7,26 +7,45 @@ import {
 } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Users,
   Trophy,
   Users2,
   TrendingUp,
-  BarChart2,
+  Image as ImageIcon,
+  Upload,
+  Shield,
+  Search,
+  Link as LinkIcon,
+  Copy,
+  BarChart,
+  Bell,
+  Package,
+  Hash,
+  Clock,
+  Archive,
+  Plus,
+  Settings,
   Calendar,
   Activity,
   Star,
   MessageSquare,
-  Clock,
   Group,
   Target,
-  Calendar as CalendarIcon
 } from "lucide-react";
+import { DEFAULT_BANNER_POSITIONS } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { Switch } from "@/components/ui/switch";
 import { format, subDays } from "date-fns";
 import { de } from 'date-fns/locale';
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { useUsers } from "../contexts/UserContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Link, useLocation } from "wouter";
+import { useAdmin } from "@/contexts/AdminContext";
+import { useProducts } from "@/contexts/ProductContext";
 import { usePostStore } from "../lib/postStore";
 import { useGroupStore } from "../lib/groupStore";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -65,10 +84,13 @@ export default function Admin() {
   const [showGroupStats, setShowGroupStats] = useState(false);
   const [showChallengeStats, setShowChallengeStats] = useState(false);
   const [showPostStats, setShowPostStats] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { users } = useUsers();
   const postStore = usePostStore();
   const groupStore = useGroupStore();
+  const { products, updateProduct } = useProducts();
+  const { toast } = useToast();
 
   // Simulierte Statistiken
   const stats = {
@@ -89,7 +111,7 @@ export default function Admin() {
       topUsers: users.slice(0, 5).map(user => ({
         ...user,
         score: Math.floor(Math.random() * 1000),
-        memberSince: subDays(new Date(), Math.floor(Math.random() * 365)) // Simuliertes Beitrittsdatum
+        memberSince: subDays(new Date(), Math.floor(Math.random() * 365))
       })),
       topChallenges: Array.from({ length: 5 }, (_, i) => ({
         id: i + 1,
@@ -120,269 +142,259 @@ export default function Admin() {
     "12m": generateMockTimeData(12)
   };
 
+  const filteredProducts = products.filter(product => {
+    const matchesSearch =
+      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.description.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSearch;
+  });
+
   return (
     <div className="container py-6">
       <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
 
-      {/* Hauptstatistiken */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-        <Card className="cursor-pointer hover:bg-accent/5" onClick={() => setShowUserStats(true)}>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <Users className="h-8 w-8 text-primary" />
-              <div className="text-right">
-                <p className="text-2xl font-bold">{stats.total.users}</p>
-                <p className="text-sm text-muted-foreground">Gesamt User</p>
+      {/* Community Insights */}
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold mb-4">Community Insights</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <Card className="cursor-pointer hover:bg-accent/5" onClick={() => setShowUserStats(true)}>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <Users className="h-8 w-8 text-primary" />
+                <div className="text-right">
+                  <p className="text-2xl font-bold">{stats.total.users}</p>
+                  <p className="text-sm text-muted-foreground">Gesamt User</p>
+                </div>
               </div>
-            </div>
-            <div className="mt-4 text-sm text-muted-foreground">
-              {stats.total.activeUsers} aktiv in 30 Tagen
-            </div>
-          </CardContent>
-        </Card>
+              <div className="mt-4 text-sm text-muted-foreground">
+                {stats.total.activeUsers} aktiv in 30 Tagen
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card className="cursor-pointer hover:bg-accent/5" onClick={() => setShowGroupStats(true)}>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <Users2 className="h-8 w-8 text-primary" />
-              <div className="text-right">
-                <p className="text-2xl font-bold">{stats.total.groups}</p>
-                <p className="text-sm text-muted-foreground">Gruppen</p>
+          <Card className="cursor-pointer hover:bg-accent/5" onClick={() => setShowGroupStats(true)}>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <Users2 className="h-8 w-8 text-primary" />
+                <div className="text-right">
+                  <p className="text-2xl font-bold">{stats.total.groups}</p>
+                  <p className="text-sm text-muted-foreground">Gruppen</p>
+                </div>
               </div>
-            </div>
-            <div className="mt-4 text-sm text-muted-foreground">
-              12 neue diese Woche
-            </div>
-          </CardContent>
-        </Card>
+              <div className="mt-4 text-sm text-muted-foreground">
+                12 neue diese Woche
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card className="cursor-pointer hover:bg-accent/5" onClick={() => setShowChallengeStats(true)}>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <Trophy className="h-8 w-8 text-primary" />
-              <div className="text-right">
-                <p className="text-2xl font-bold">{stats.total.challenges}</p>
-                <p className="text-sm text-muted-foreground">Challenges</p>
+          <Card className="cursor-pointer hover:bg-accent/5" onClick={() => setShowChallengeStats(true)}>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <Trophy className="h-8 w-8 text-primary" />
+                <div className="text-right">
+                  <p className="text-2xl font-bold">{stats.total.challenges}</p>
+                  <p className="text-sm text-muted-foreground">Challenges</p>
+                </div>
               </div>
-            </div>
-            <div className="mt-4 text-sm text-muted-foreground">
-              8 aktiv, 3 diese Woche
-            </div>
-          </CardContent>
-        </Card>
+              <div className="mt-4 text-sm text-muted-foreground">
+                8 aktiv, 3 diese Woche
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <CalendarIcon className="h-8 w-8 text-primary" />
-              <div className="text-right">
-                <p className="text-2xl font-bold">{stats.total.events}</p>
-                <p className="text-sm text-muted-foreground">Events</p>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <Calendar className="h-8 w-8 text-primary" />
+                <div className="text-right">
+                  <p className="text-2xl font-bold">{stats.total.events}</p>
+                  <p className="text-sm text-muted-foreground">Events</p>
+                </div>
               </div>
-            </div>
-            <div className="mt-4 text-sm text-muted-foreground">
-              5 kommende Events
-            </div>
-          </CardContent>
-        </Card>
+              <div className="mt-4 text-sm text-muted-foreground">
+                5 kommende Events
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card className="cursor-pointer hover:bg-accent/5" onClick={() => setShowPostStats(true)}>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <Activity className="h-8 w-8 text-primary" />
-              <div className="text-right">
-                <p className="text-2xl font-bold">{stats.growth["24h"].interactions}</p>
-                <p className="text-sm text-muted-foreground">Interaktionen heute</p>
+          <Card className="cursor-pointer hover:bg-accent/5" onClick={() => setShowPostStats(true)}>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <Activity className="h-8 w-8 text-primary" />
+                <div className="text-right">
+                  <p className="text-2xl font-bold">{stats.growth["24h"].interactions}</p>
+                  <p className="text-sm text-muted-foreground">Interaktionen heute</p>
+                </div>
               </div>
-            </div>
-            <div className="mt-4 text-sm text-muted-foreground">
-              +{Math.floor(stats.growth["24h"].interactions / stats.growth["7d"].interactions * 100)}% vs. letzte Woche
-            </div>
-          </CardContent>
-        </Card>
+              <div className="mt-4 text-sm text-muted-foreground">
+                +{Math.floor(stats.growth["24h"].interactions / stats.growth["7d"].interactions * 100)}% vs. letzte Woche
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
-      {/* Wachstum & Performance */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* Wachstum */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Community Wachstum
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                <Select value={selectedTimeRange} onValueChange={setSelectedTimeRange}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="24h">Letzte 24 Stunden</SelectItem>
-                    <SelectItem value="7d">Letzte 7 Tage</SelectItem>
-                    <SelectItem value="30d">Letzter Monat</SelectItem>
-                    <SelectItem value="12m">Letztes Jahr</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={selectedMetric} onValueChange={setSelectedMetric}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="users">Neue User</SelectItem>
-                    <SelectItem value="posts">Neue Posts</SelectItem>
-                    <SelectItem value="interactions">Interaktionen</SelectItem>
-                  </SelectContent>
-                </Select>
+      {/* Admin Sections */}
+      <div className="space-y-8">
+        {/* Product Management Section */}
+        <section>
+          <h2 className="text-2xl font-bold mb-6">Produktverwaltung</h2>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                Produkte verwalten
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center mb-6">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Produkte durchsuchen..."
+                    className="pl-9 w-full"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+                <Link href="/create/product">
+                  <Button>
+                    <Package className="h-4 w-4 mr-2" />
+                    Neues Produkt
+                  </Button>
+                </Link>
               </div>
 
-              <div className="h-[300px] mt-4">
-                {/* Hier würde ein Chart Component eingebunden werden */}
-                <div className="w-full h-full bg-muted/20 rounded-lg flex items-center justify-center text-muted-foreground">
-                  Chart Placeholder
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {filteredProducts.map(product => (
+                  <Card key={product.id} className="overflow-hidden">
+                    <div className="relative">
+                      <img
+                        src={product.image || "https://placehold.co/600x400/png"}
+                        alt={product.name}
+                        className="w-full h-48 object-cover"
+                      />
+                      <Badge variant="outline" className="absolute top-2 left-2">
+                        #{product.id}
+                      </Badge>
+                    </div>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-semibold">{product.name}</h3>
+                        <Badge>{product.type}</Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        {product.description}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <Switch
+                          checked={product.isActive}
+                          onCheckedChange={() => {
+                            const updatedProduct = {
+                              ...product,
+                              isActive: !product.isActive
+                            };
+                            updateProduct(updatedProduct);
+                          }}
+                        />
+                        <Button variant="outline" size="sm" asChild>
+                          <Link href={`/products/${product.id}`}>
+                            Bearbeiten
+                          </Link>
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
+            </CardContent>
+          </Card>
+        </section>
 
-              <div className="grid grid-cols-4 gap-4 pt-4">
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="text-2xl font-bold">{stats.growth["24h"][selectedMetric as keyof typeof stats.growth["24h"]]}</div>
-                    <p className="text-sm text-muted-foreground">24 Stunden</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="text-2xl font-bold">{stats.growth["7d"][selectedMetric as keyof typeof stats.growth["7d"]]}</div>
-                    <p className="text-sm text-muted-foreground">7 Tage</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="text-2xl font-bold">{stats.growth["30d"][selectedMetric as keyof typeof stats.growth["30d"]]}</div>
-                    <p className="text-sm text-muted-foreground">30 Tage</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="text-2xl font-bold">{stats.growth["12m"][selectedMetric as keyof typeof stats.growth["12m"]]}</div>
-                    <p className="text-sm text-muted-foreground">12 Monate</p>
-                  </CardContent>
-                </Card>
+        {/* Marketing Section */}
+        <section>
+          <h2 className="text-2xl font-bold mb-6">Marketing</h2>
+          <Card>
+            <CardHeader>
+              <CardTitle>Marketing-Tools</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <Button className="justify-start" variant="outline">
+                  <Bell className="h-4 w-4 mr-2" />
+                  Push-Benachrichtigungen
+                </Button>
+                <Button className="justify-start" variant="outline">
+                  <ImageIcon className="h-4 w-4 mr-2" />
+                  Banner verwalten
+                </Button>
+                <Button className="justify-start" variant="outline">
+                  <Upload className="h-4 w-4 mr-2" />
+                  Content hochladen
+                </Button>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </section>
 
-        {/* Performance */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Star className="h-5 w-5" />
-              Top Performance
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="users">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="users">User</TabsTrigger>
-                <TabsTrigger value="challenges">Challenges</TabsTrigger>
-                <TabsTrigger value="groups">Gruppen</TabsTrigger>
-                <TabsTrigger value="posts">Posts</TabsTrigger>
-              </TabsList>
+        {/* Moderation Section */}
+        <section>
+          <h2 className="text-2xl font-bold mb-6">Moderation</h2>
+          <Card>
+            <CardHeader>
+              <CardTitle>Moderations-Tools</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <Button className="justify-start" variant="outline">
+                  <Shield className="h-4 w-4 mr-2" />
+                  Gemeldete Inhalte
+                </Button>
+                <Button className="justify-start" variant="outline">
+                  <Users className="h-4 w-4 mr-2" />
+                  Benutzer-Verwaltung
+                </Button>
+                <Button className="justify-start" variant="outline">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Einstellungen
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
 
-              <TabsContent value="users" className="mt-4">
-                <div className="space-y-4">
-                  {stats.performance.topUsers.map((user, index) => (
-                    <div key={user.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
-                      <div className="flex items-center gap-3">
-                        <div className="text-muted-foreground">{index + 1}.</div>
-                        <UserAvatar userId={user.id} clickable />
-                        <div>
-                          <p className="font-medium">{user.username}</p>
-                          <p className="text-sm text-muted-foreground">
-                            Mitglied seit {format(user.memberSince, "dd.MM.yyyy", { locale: de })}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold">{user.score}</p>
-                        <p className="text-sm text-muted-foreground">Punkte</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="challenges" className="mt-4">
-                <div className="space-y-4">
-                  {stats.performance.topChallenges.map((challenge, index) => (
-                    <div key={challenge.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
-                      <div className="flex items-center gap-3">
-                        <div className="text-muted-foreground">{index + 1}.</div>
-                        <div>
-                          <p className="font-medium">{challenge.name}</p>
-                          <p className="text-sm text-muted-foreground">{challenge.participants} Teilnehmer</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold">{challenge.completion}%</p>
-                        <p className="text-sm text-muted-foreground">Abschlussrate</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="groups" className="mt-4">
-                <div className="space-y-4">
-                  {stats.performance.topGroups.map((group, index) => (
-                    <div key={group.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
-                      <div className="flex items-center gap-3">
-                        <div className="text-muted-foreground">{index + 1}.</div>
-                        <div>
-                          <p className="font-medium">{group.name}</p>
-                          <p className="text-sm text-muted-foreground">{group.members} Mitglieder</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold">{group.activity}</p>
-                        <p className="text-sm text-muted-foreground">Aktivitätspunkte</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="posts" className="mt-4">
-                <div className="space-y-4">
-                  {stats.performance.topPosts.map((post, index) => (
-                    <div key={post.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
-                      <div className="flex items-center gap-3">
-                        <div className="text-muted-foreground">{index + 1}.</div>
-                        <UserAvatar userId={post.author.id} clickable />
-                        <div>
-                          <p className="font-medium">{post.author.username}</p>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <MessageSquare className="h-3 w-3" /> {post.comments}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold">{post.likes}</p>
-                        <p className="text-sm text-muted-foreground">Likes</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
+        {/* Event Management Section */}
+        <section>
+          <h2 className="text-2xl font-bold mb-6">Event Management</h2>
+          <Card>
+            <CardHeader>
+              <CardTitle>Event-Tools</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <Button className="justify-start" variant="outline" asChild>
+                  <Link href="/create/event">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Neues Event
+                  </Link>
+                </Button>
+                <Button className="justify-start" variant="outline" asChild>
+                  <Link href="/events/manager">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Event Manager
+                  </Link>
+                </Button>
+                <Button className="justify-start" variant="outline">
+                  <BarChart className="h-4 w-4 mr-2" />
+                  Event Statistiken
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
       </div>
 
-      {/* Detail Dialoge */}
+      {/* Statistik-Dialoge */}
       <Dialog open={showUserStats} onOpenChange={setShowUserStats}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
@@ -416,7 +428,7 @@ export default function Admin() {
               </CardHeader>
               <CardContent>
                 <div className="h-[300px]">
-                  {/* Hier würde ein Chart Component eingebunden werden */}
+                  {/* Chart Component */}
                   <div className="w-full h-full bg-muted/20 rounded-lg flex items-center justify-center text-muted-foreground">
                     User Growth Chart Placeholder
                   </div>
