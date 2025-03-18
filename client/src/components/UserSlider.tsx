@@ -47,8 +47,8 @@ function UserCard({ user, onVerify }: { user: any, onVerify: (id: number) => voi
     <Card className="border-primary/10 hover:border-primary/20 transition-colors">
       <CardContent className="p-3">
         <div className="flex flex-col items-center gap-3">
-          {/* Vergrößere den Avatar-Container */}
-          <div className="w-16 h-16">
+          {/* Verkleinere den Avatar-Container */}
+          <div className="w-12 h-12">
             <UserAvatar
               userId={user.id}
               size="lg"
