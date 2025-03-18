@@ -24,7 +24,7 @@ export default function ChallengeCard({ challenge, variant = "full" }: Challenge
         <div className="flex flex-col h-full">
           <div className="flex-1">
             {/* Status Badge */}
-            <div className="flex justify-between items-center mb-3">
+            <div className="flex justify-between items-center mb-2">
               <Badge variant={isActive ? "default" : "secondary"} className="text-xs">
                 {isActive ? "Aktiv" : "Beendet"}
               </Badge>
@@ -34,59 +34,63 @@ export default function ChallengeCard({ challenge, variant = "full" }: Challenge
             <h3 className="font-medium text-sm mb-2">{challenge.title}</h3>
 
             {/* Creator Info */}
-            <div className="flex items-center gap-2 mb-3">
+            <div className="flex items-center gap-1.5 mb-2">
               {creator && (
-                <UserAvatar
-                  userId={creator.id}
-                  size="xs"
-                />
-              )}
-              <div className="min-w-0">
-                <div className="text-xs font-medium truncate">{creator?.username}</div>
-                <div className="text-xs text-muted-foreground">
-                  Endet am {format(new Date(challenge.endDate), "dd.MM.yyyy")}
+                <div className="flex items-center gap-1.5">
+                  <UserAvatar
+                    userId={creator.id}
+                    size="xs"
+                    className="w-4 h-4"
+                  />
+                  <span className="text-xs font-medium truncate">{creator?.username}</span>
+                  <span className="text-xs text-muted-foreground">•</span>
                 </div>
-              </div>
+              )}
+              <span className="text-xs text-muted-foreground">
+                Endet am {format(new Date(challenge.endDate), "dd.MM.yyyy")}
+              </span>
             </div>
 
             {/* Participants Preview */}
-            <div className="flex items-center gap-2 mb-3">
+            <div className="flex items-center gap-1.5 mb-2">
               <div className="flex -space-x-1">
                 {participants.slice(0, 3).map((user, i) => (
                   <UserAvatar
                     key={i}
                     userId={user.id}
                     size="xs"
-                    className="-ml-1 first:ml-0 border-2 border-background"
+                    className="w-4 h-4 -ml-1 first:ml-0 border border-background"
                   />
                 ))}
                 {participants.length > 3 && (
-                  <div className="h-5 w-5 rounded-full bg-muted flex items-center justify-center text-[10px] font-medium -ml-1 border-2 border-background">
+                  <div className="h-4 w-4 rounded-full bg-muted flex items-center justify-center text-[8px] font-medium -ml-1 border border-background">
                     +{participants.length - 3}
                   </div>
                 )}
               </div>
-              <span className="text-xs text-muted-foreground">
-                {participants.length} Teilnehmer
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <Users className="h-3 w-3" />
+                {participants.length}
               </span>
             </div>
 
             {/* Top 3 Ranking */}
-            <div className="grid grid-cols-3 gap-1 mb-3">
+            <div className="grid grid-cols-3 gap-1 mb-2">
               {[1, 2, 3].map(rank => (
                 <div key={rank} className="flex items-center gap-1 bg-muted rounded p-1">
                   <div className="relative">
-                    {rank === 1 && <Crown className="absolute -top-1 -left-1 h-3 w-3 text-yellow-400" />}
-                    {rank === 2 && <Crown className="absolute -top-1 -left-1 h-3 w-3 text-gray-400" />}
-                    {rank === 3 && <Crown className="absolute -top-1 -left-1 h-3 w-3 text-amber-700" />}
+                    {rank === 1 && <Crown className="absolute -top-0.5 -left-0.5 h-2.5 w-2.5 text-yellow-400" />}
+                    {rank === 2 && <Crown className="absolute -top-0.5 -left-0.5 h-2.5 w-2.5 text-gray-400" />}
+                    {rank === 3 && <Crown className="absolute -top-0.5 -left-0.5 h-2.5 w-2.5 text-amber-700" />}
                     <UserAvatar
                       userId={mockUsers[rank]?.id || 0}
                       size="xs"
+                      className="w-4 h-4"
                     />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[10px] font-medium truncate">{mockUsers[rank]?.username}</p>
-                    <p className="text-[8px] text-muted-foreground">{1000 - (rank * 50)}P</p>
+                    <p className="text-[8px] font-medium truncate">{mockUsers[rank]?.username}</p>
+                    <p className="text-[7px] text-muted-foreground">{1000 - (rank * 50)}P</p>
                   </div>
                 </div>
               ))}
@@ -95,15 +99,15 @@ export default function ChallengeCard({ challenge, variant = "full" }: Challenge
             {/* Action Buttons */}
             <div className="flex justify-between items-center">
               <div className="flex gap-1">
-                <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                <Button variant="ghost" size="sm" className="h-5 w-5 p-0">
                   <Heart className="h-3 w-3" />
                 </Button>
-                <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                <Button variant="ghost" size="sm" className="h-5 w-5 p-0">
                   <Share2 className="h-3 w-3" />
                 </Button>
               </div>
               <Link href={`/challenges/${challenge.id}`}>
-                <Button size="sm" className="text-xs py-1 px-2 h-6">
+                <Button size="sm" className="text-xs py-0.5 px-2 h-5">
                   Challenge beitreten
                 </Button>
               </Link>
