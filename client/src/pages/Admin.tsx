@@ -4,7 +4,6 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -45,7 +44,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-// Mock data for demonstration
+// Mock data für Demonstration
 const generateMockTimeData = (days: number) => {
   const data = [];
   for (let i = 0; i < days; i++) {
@@ -75,7 +74,7 @@ export default function Admin() {
   const stats = {
     total: {
       users: users.length,
-      activeUsers: users.filter(u => u.lastLogin && new Date(u.lastLogin) > subDays(new Date(), 30)).length,
+      activeUsers: Math.floor(users.length * 0.7), // Simuliert aktive User
       groups: 45,
       challenges: 28,
       events: 12
@@ -89,7 +88,8 @@ export default function Admin() {
     performance: {
       topUsers: users.slice(0, 5).map(user => ({
         ...user,
-        score: Math.floor(Math.random() * 1000)
+        score: Math.floor(Math.random() * 1000),
+        memberSince: subDays(new Date(), Math.floor(Math.random() * 365)) // Simuliertes Beitrittsdatum
       })),
       topChallenges: Array.from({ length: 5 }, (_, i) => ({
         id: i + 1,
@@ -301,7 +301,9 @@ export default function Admin() {
                         <UserAvatar userId={user.id} clickable />
                         <div>
                           <p className="font-medium">{user.username}</p>
-                          <p className="text-sm text-muted-foreground">Aktiv seit {format(new Date(user.createdAt), "dd.MM.yyyy")}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Mitglied seit {format(user.memberSince, "dd.MM.yyyy", { locale: de })}
+                          </p>
                         </div>
                       </div>
                       <div className="text-right">
@@ -435,7 +437,9 @@ export default function Admin() {
                         <UserAvatar userId={user.id} clickable />
                         <div>
                           <p className="font-medium">{user.username}</p>
-                          <p className="text-sm text-muted-foreground">Aktiv seit {format(new Date(user.createdAt), "dd.MM.yyyy")}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Mitglied seit {format(user.memberSince, "dd.MM.yyyy", { locale: de })}
+                          </p>
                         </div>
                       </div>
                       <div className="text-right">
