@@ -9,11 +9,9 @@ import {
   Carousel,
   CarouselContent,
   CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
 } from "@/components/ui/carousel";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, MapPin, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar, MapPin } from "lucide-react";
 import { Link } from "wouter";
 import { UserAvatar } from "./UserAvatar";
 import { useEvents } from "@/contexts/EventContext";
@@ -42,16 +40,11 @@ export default function EventSlider() {
         >
           <CarouselContent className="-ml-2">
             {activeEvents.map((event) => (
-              <CarouselItem key={event.id} className="pl-2 basis-[85%]">
+              <CarouselItem key={event.id} className="pl-2 basis-[80%]">
                 <EventCard event={event} users={users} />
               </CarouselItem>
             ))}
           </CarouselContent>
-          <div className="mt-2 flex justify-center gap-1">
-            <span className="text-xs text-muted-foreground">←</span>
-            <span className="text-xs text-muted-foreground">Horizontal scrollen für mehr</span>
-            <span className="text-xs text-muted-foreground">→</span>
-          </div>
         </Carousel>
       </div>
 

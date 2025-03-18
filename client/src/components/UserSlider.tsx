@@ -2,13 +2,10 @@ import {
   Carousel,
   CarouselContent,
   CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
 } from "@/components/ui/carousel";
 import { Button } from "@/components/ui/button";
 import { useUsers } from "../contexts/UserContext";
 import { UserAvatar } from "./UserAvatar";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 export default function UserSlider() {
@@ -27,16 +24,11 @@ export default function UserSlider() {
         >
           <CarouselContent className="-ml-2">
             {users.map((user) => (
-              <CarouselItem key={user.id} className="pl-2 basis-1/3">
+              <CarouselItem key={user.id} className="pl-2 basis-[30%]">
                 <UserCard user={user} onVerify={toggleVerification} />
               </CarouselItem>
             ))}
           </CarouselContent>
-          <div className="mt-2 flex justify-center gap-1">
-            <span className="text-xs text-muted-foreground">←</span>
-            <span className="text-xs text-muted-foreground">Horizontal scrollen für mehr</span>
-            <span className="text-xs text-muted-foreground">→</span>
-          </div>
         </Carousel>
       </div>
 
