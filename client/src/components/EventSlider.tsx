@@ -102,7 +102,7 @@ function EventCard({ event, users }: { event: any, users: any[] }) {
             <div className="flex items-center gap-2 mt-2 pt-2 border-t">
               <UserAvatar
                 userId={trainer.id}
-                size="xs"
+                size="sm"
               />
               <div className="min-w-0">
                 <div className="text-xs font-medium truncate">{trainer.name}</div>
