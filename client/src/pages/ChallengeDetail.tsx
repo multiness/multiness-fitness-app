@@ -62,6 +62,8 @@ interface ExerciseResult {
   name: string;
   value: string | number;
   unit?: string;
+  points?: number;
+  achievementLevel?: string;
 }
 
 export default function ChallengeDetail() {
@@ -75,9 +77,43 @@ export default function ChallengeDetail() {
   const [showResultForm, setShowResultForm] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showParticipants, setShowParticipants] = useState(false);
-  const [result, setResult] = useState("");
-  const [participants, setParticipants] = useState<Participant[]>([]);
   const [exerciseResults, setExerciseResults] = useState<Record<string, ExerciseResult>>({});
+
+  // Berechne die Gesamtpunktzahl und das Abzeichen-Level
+  const calculateTotalPoints = () => {
+    const results = Object.values(exerciseResults);
+    if (results.length === 0) return { total: 0, level: null };
+
+    const total = results.reduce((sum, result) => sum + (result.points || 0), 0);
+    const average = total / results.length;
+
+    let level = null;
+    if (average >= 90) level = 'Gold';
+    else if (average >= 75) level = 'Silber';
+    else if (average >= 50) level = 'Bronze';
+
+    return { total, level };
+  };
+
+  const handleSubmitExerciseResult = (result: ExerciseResult) => {
+    setExerciseResults(prev => ({
+      ...prev,
+      [result.name]: result
+    }));
+
+    const { total } = calculateTotalPoints();
+
+    setParticipants(prev => prev.map(p =>
+      p.id === (currentUser?.id || 0)
+        ? { ...p, points: total, lastUpdate: new Date() }
+        : p
+    ).sort((a, b) => b.points - a.points));
+
+    toast({
+      title: "Ergebnis gespeichert!",
+      description: `${result.name}: ${result.value} ${result.unit} (${result.achievementLevel})`,
+    });
+  };
 
   useEffect(() => {
     if (challenge) {
@@ -152,28 +188,6 @@ export default function ChallengeDetail() {
     setShowResultForm(false);
   };
 
-  const handleSubmitExerciseResult = (result: ExerciseResult) => {
-    // Update exercise results
-    setExerciseResults(prev => ({
-      ...prev,
-      [result.name]: result
-    }));
-
-    // Calculate total points based on all completed exercises
-    const totalPoints = Object.values(exerciseResults).length * 100; // Simple calculation for now
-
-    // Update participants list with new points
-    setParticipants(prev => prev.map(p =>
-      p.id === (currentUser?.id || 0)
-        ? { ...p, points: totalPoints, lastUpdate: new Date() }
-        : p
-    ).sort((a, b) => b.points - a.points));
-
-    toast({
-      title: "Ergebnis gespeichert!",
-      description: `Dein Ergebnis für ${result.name} wurde erfolgreich eingetragen.`,
-    });
-  };
 
   const getExerciseIcon = (name: string) => {
     const lowerName = name.toLowerCase();
@@ -257,6 +271,36 @@ export default function ChallengeDetail() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-muted-foreground">{badgeDetails.description}</p>
+            {isParticipating && (
+              <div className="mb-4 p-4 bg-muted/50 rounded-lg">
+                <h3 className="font-medium mb-2">Dein Fortschritt</h3>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <div className="flex justify-between text-sm mb-1">
+                      <span>Gesamtpunktzahl</span>
+                      <span className="font-medium">{calculateTotalPoints().total} Punkte</span>
+                    </div>
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-primary transition-all"
+                        style={{
+                          width: `${Math.min((calculateTotalPoints().total / (Object.keys(exerciseResults).length * 100)) * 100, 100)}%`
+                        }}
+                      />
+                    </div>
+                  </div>
+                  {calculateTotalPoints().level && (
+                    <Badge variant={
+                      calculateTotalPoints().level === 'Gold' ? 'default' :
+                        calculateTotalPoints().level === 'Silber' ? 'secondary' :
+                          'outline'
+                    }>
+                      {calculateTotalPoints().level}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            )}
             <div className="space-y-3">
               {badgeDetails.requirements.map((req, index) => (
                 <ExerciseDetails

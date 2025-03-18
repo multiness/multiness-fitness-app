@@ -26,11 +26,24 @@ interface ExerciseDetailsProps {
     female?: string;
     reps?: number;
     weight?: number;
+    time?: string;
+    distance?: number;
   };
   tips?: string[];
   isParticipating?: boolean;
-  onSubmitResult?: (result: { name: string; value: string | number; unit?: string }) => void;
-  currentResult?: { value: string | number; unit?: string };
+  onSubmitResult?: (result: { 
+    name: string; 
+    value: string | number; 
+    unit?: string;
+    points?: number;
+    achievementLevel?: string;
+  }) => void;
+  currentResult?: { 
+    value: string | number; 
+    unit?: string;
+    points?: number;
+    achievementLevel?: string;
+  };
 }
 
 export const ExerciseDetails = ({
@@ -47,50 +60,107 @@ export const ExerciseDetails = ({
   const [isOpen, setIsOpen] = useState(false);
   const [showResultDialog, setShowResultDialog] = useState(false);
   const [resultValue, setResultValue] = useState(currentResult?.value?.toString() || "");
-
-  const handleSubmitResult = () => {
-    if (onSubmitResult && resultValue) {
-      onSubmitResult({
-        name,
-        value: resultValue,
-        unit: getUnitForExercise(name)
-      });
-      setShowResultDialog(false);
-      setResultValue("");
-    }
-  };
+  const [additionalValue, setAdditionalValue] = useState(""); // Für Gewicht oder zusätzliche Werte
 
   const getUnitForExercise = (exerciseName: string) => {
     const lowerName = exerciseName.toLowerCase();
-    if (lowerName.includes('lauf') && lowerName.includes('mile')) return 'Meilen';
-    if (lowerName.includes('lauf') && lowerName.includes('meter')) return 'Meter';
-    if (lowerName.includes('zeit') || lowerName.includes('time')) return 'Zeit';
-    if (lowerName.includes('gewicht') || lowerName.includes('weight')) return 'kg';
-    if (lowerName.includes('distanz') || lowerName.includes('distance')) return 'km';
-    if (lowerName.includes('sprint')) return 'Sekunden';
+    if (lowerName.includes('kreuzheben') || lowerName.includes('gewicht')) return 'kg';
+    if (lowerName.includes('wurf') || lowerName.includes('throw')) return 'm';
+    if (lowerName.includes('lauf') && lowerName.includes('mile')) return 'min:ss';
+    if (lowerName.includes('sprint')) return 'min:ss';
+    if (lowerName.includes('meter')) return 'm';
+    if (lowerName.includes('pendel')) return 'Sekunden';
+    if (lowerName.includes('plank')) return 'min:ss';
+    if (lowerName.includes('km')) return 'km';
     return 'Wiederholungen';
   };
 
-  const getInputType = (exerciseName: string) => {
+  const calculatePoints = (value: string | number, exerciseName: string): { points: number, achievementLevel: string } => {
     const lowerName = exerciseName.toLowerCase();
-    if (lowerName.includes('zeit') || lowerName.includes('time') || 
-        lowerName.includes('sprint') || lowerName.includes('lauf')) {
-      return 'time';
+    const numericValue = typeof value === 'string' ? parseFloat(value) : value;
+
+    // Beispiel für die Punkteberechnung basierend auf verschiedenen Übungstypen
+    if (lowerName.includes('kreuzheben')) {
+      if (numericValue >= 140) return { points: 100, achievementLevel: 'Gold' };
+      if (numericValue >= 100) return { points: 75, achievementLevel: 'Silber' };
+      return { points: 50, achievementLevel: 'Bronze' };
     }
-    return 'number';
+
+    if (lowerName.includes('liegestütz')) {
+      if (numericValue >= 40) return { points: 100, achievementLevel: 'Gold' };
+      if (numericValue >= 30) return { points: 75, achievementLevel: 'Silber' };
+      return { points: 50, achievementLevel: 'Bronze' };
+    }
+
+    // Zeitbasierte Berechnung (Format: "mm:ss")
+    if (lowerName.includes('lauf') || lowerName.includes('sprint')) {
+      const [minutes, seconds] = value.toString().split(':').map(Number);
+      const totalSeconds = minutes * 60 + seconds;
+
+      if (totalSeconds <= 180) return { points: 100, achievementLevel: 'Gold' };
+      if (totalSeconds <= 240) return { points: 75, achievementLevel: 'Silber' };
+      return { points: 50, achievementLevel: 'Bronze' };
+    }
+
+    // Standardpunkte für andere Übungen
+    return { points: Math.min(Math.round(numericValue / 10) * 10, 100), achievementLevel: 'Standard' };
+  };
+
+  const handleSubmitResult = () => {
+    if (onSubmitResult && resultValue) {
+      const unit = getUnitForExercise(name);
+      let finalValue = resultValue;
+
+      // Kombiniere Werte für Übungen mit mehreren Eingaben (z.B. Gewicht + Wiederholungen)
+      if (additionalValue && unit === 'kg') {
+        finalValue = `${resultValue} x ${additionalValue}kg`;
+      }
+
+      const { points, achievementLevel } = calculatePoints(resultValue, name);
+
+      onSubmitResult({
+        name,
+        value: finalValue,
+        unit,
+        points,
+        achievementLevel
+      });
+      setShowResultDialog(false);
+      setResultValue("");
+      setAdditionalValue("");
+    }
+  };
+
+  const getInputType = (exerciseName: string) => {
+    const unit = getUnitForExercise(exerciseName);
+    switch (unit) {
+      case 'min:ss':
+        return 'time';
+      case 'kg':
+      case 'm':
+      case 'Sekunden':
+        return 'number';
+      default:
+        return 'number';
+    }
   };
 
   const getPlaceholder = (exerciseName: string) => {
     const unit = getUnitForExercise(exerciseName);
     switch (unit) {
-      case 'Zeit': return 'MM:SS';
-      case 'Sekunden': return 'Sekunden';
-      case 'Meilen': return 'Meilen';
-      case 'Meter': return 'Meter';
+      case 'min:ss': return 'MM:SS';
+      case 'kg': return 'Gewicht in kg';
+      case 'm': return 'Meter';
       case 'km': return 'Kilometer';
-      case 'kg': return 'Kilogramm';
-      default: return 'Anzahl eingeben';
+      case 'Sekunden': return 'Sekunden';
+      case 'Wiederholungen': return 'Anzahl';
+      default: return 'Wert eingeben';
     }
+  };
+
+  const needsAdditionalInput = (exerciseName: string) => {
+    const lowerName = exerciseName.toLowerCase();
+    return lowerName.includes('kreuzheben') || lowerName.includes('gewicht');
   };
 
   return (
@@ -121,6 +191,15 @@ export const ExerciseDetails = ({
                     <Check className="h-3 w-3" />
                     {currentResult.value} {currentResult.unit}
                   </Badge>
+                  {currentResult.achievementLevel && (
+                    <Badge variant={
+                      currentResult.achievementLevel === 'Gold' ? 'default' :
+                      currentResult.achievementLevel === 'Silber' ? 'secondary' :
+                      'outline'
+                    }>
+                      {currentResult.achievementLevel}
+                    </Badge>
+                  )}
                   <Button
                     variant="ghost"
                     size="sm"
@@ -133,8 +212,8 @@ export const ExerciseDetails = ({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setShowResultDialog(true)}
                   className="w-full sm:w-auto"
+                  onClick={() => setShowResultDialog(true)}
                 >
                   <Timer className="h-4 w-4 mr-2" />
                   Ergebnis eintragen
@@ -213,13 +292,24 @@ export const ExerciseDetails = ({
           </DialogHeader>
           <div className="space-y-4 pt-4">
             <div>
-              <Label>Dein Ergebnis</Label>
+              <Label>{needsAdditionalInput(name) ? 'Wiederholungen' : 'Dein Ergebnis'}</Label>
               <Input
                 type={getInputType(name)}
                 placeholder={getPlaceholder(name)}
                 value={resultValue}
                 onChange={(e) => setResultValue(e.target.value)}
               />
+              {needsAdditionalInput(name) && (
+                <div className="mt-4">
+                  <Label>Gewicht</Label>
+                  <Input
+                    type="number"
+                    placeholder="Gewicht in kg"
+                    value={additionalValue}
+                    onChange={(e) => setAdditionalValue(e.target.value)}
+                  />
+                </div>
+              )}
               <p className="text-sm text-muted-foreground mt-1">
                 Einheit: {getUnitForExercise(name)}
               </p>
