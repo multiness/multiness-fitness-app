@@ -9,8 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { UserAvatar } from "./UserAvatar";
-import { Search } from "lucide-react";
-import { mockUsers, mockGroups } from "../data/mockData"; // TODO: Replace with real data
+import { Search, Users2 } from "lucide-react";
+import { useUsers } from "../contexts/UserContext";
+import { useGroupStore } from "../lib/groupStore";
 
 interface ShareDialogProps {
   open: boolean;
@@ -29,16 +30,22 @@ export default function ShareDialog({
 }: ShareDialogProps) {
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const { users, currentUser } = useUsers();
+  const groupStore = useGroupStore();
 
-  // Filter items based on search
+  // Filtere die Benutzer/Gruppen basierend auf der Suche
   const items = type === 'chat'
-    ? mockUsers.filter(user =>
-        user.username.toLowerCase().includes(search.toLowerCase()) ||
-        user.name.toLowerCase().includes(search.toLowerCase())
+    ? users.filter(user =>
+        user.id !== currentUser?.id && (
+          user.username.toLowerCase().includes(search.toLowerCase()) ||
+          user.name.toLowerCase().includes(search.toLowerCase())
+        )
       )
-    : mockGroups.filter(group =>
-        group.name.toLowerCase().includes(search.toLowerCase()) ||
-        group.description.toLowerCase().includes(search.toLowerCase())
+    : Object.values(groupStore.groups).filter(group =>
+        group.participantIds?.includes(currentUser?.id || 0) && (
+          group.name.toLowerCase().includes(search.toLowerCase()) ||
+          group.description.toLowerCase().includes(search.toLowerCase())
+        )
       );
 
   const handleShare = () => {
@@ -69,27 +76,45 @@ export default function ShareDialog({
         {/* Items List */}
         <ScrollArea className="h-[300px] pr-4">
           <div className="space-y-2">
-            {items.map(item => (
-              <div
-                key={item.id}
-                className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors
-                  ${selectedId === item.id ? 'bg-primary/10' : 'hover:bg-muted'}`}
-                onClick={() => setSelectedId(item.id)}
-              >
-                <UserAvatar
-                  userId={type === 'chat' ? item.id : item.creatorId}
-                  size="sm"
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">
-                    {type === 'chat' ? item.username : item.name}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {type === 'chat' ? item.name : item.description}
-                  </p>
+            {items.map(item => {
+              const isGroup = type === 'group';
+
+              return (
+                <div
+                  key={item.id}
+                  className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors
+                    ${selectedId === item.id ? 'bg-primary/10' : 'hover:bg-muted'}`}
+                  onClick={() => setSelectedId(item.id)}
+                >
+                  {isGroup ? (
+                    item.image ? (
+                      <img 
+                        src={item.image} 
+                        alt={item.name}
+                        className="w-8 h-8 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
+                        <Users2 className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    )
+                  ) : (
+                    <UserAvatar
+                      userId={item.id}
+                      size="sm"
+                    />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">
+                      {isGroup ? item.name : item.username}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {isGroup ? item.description : item.name}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </ScrollArea>
 

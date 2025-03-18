@@ -8,6 +8,12 @@ export type Message = {
   userId: number;
   imageUrl?: string;
   groupId?: number;
+  sharedContent?: {
+    type: 'challenge' | 'event' | 'post';
+    id: number;
+    title: string;
+    preview?: string;
+  };
 };
 
 export type Contribution = {
@@ -40,6 +46,12 @@ type ChatStore = {
   getGroupGoal: (chatId: string) => GroupGoal | undefined;
   updateGroupGoalProgress: (chatId: string, contribution: Contribution) => void;
   initializeGroupChat: (groupId: number) => void;
+  shareContent: (chatId: string, userId: number, content: {
+    type: 'challenge' | 'event' | 'post';
+    id: number;
+    title: string;
+    preview?: string;
+  }) => void;
 };
 
 export const useChatStore = create<ChatStore>()(
@@ -99,18 +111,6 @@ export const useChatStore = create<ChatStore>()(
           const totalValue = newContributions.reduce((sum, c) => sum + c.value, 0);
           const totalProgress = Math.min(100, (totalValue / currentGoal.targetValue) * 100);
 
-          const wasGoalReached = currentGoal.progress < 100 && totalProgress >= 100;
-          if (wasGoalReached) {
-            const message = {
-              id: Date.now(),
-              userId: contribution.userId,
-              content: `🎉 Großartig! Das Gruppenziel "${currentGoal.title}" wurde erreicht! Herzlichen Glückwunsch an alle Teilnehmer!\n\nZiel: ${currentGoal.title}\n${currentGoal.description ? `Beschreibung: ${currentGoal.description}\n` : ''}\nErreicht am: ${new Date().toLocaleDateString('de-DE')}\n\nGesamtziel: ${currentGoal.targetValue} ${currentGoal.unit}\nErreicht: ${totalValue.toFixed(1)} ${currentGoal.unit}\n\nKlicke unten, um die Beiträge aller Teilnehmer zu sehen!`,
-              timestamp: new Date().toISOString(),
-              groupId: parseInt(chatId.substring(6)),
-            };
-            get().addMessage(chatId, message);
-          }
-
           return {
             groupGoals: {
               ...state.groupGoals,
@@ -122,6 +122,18 @@ export const useChatStore = create<ChatStore>()(
             },
           };
         });
+      },
+
+      shareContent: (chatId: string, userId: number, content) => {
+        const message: Message = {
+          id: Date.now(),
+          userId,
+          content: `Hat eine ${content.type === 'challenge' ? 'Challenge' : content.type === 'event' ? 'Event' : 'Beitrag'} geteilt`,
+          timestamp: new Date().toISOString(),
+          sharedContent: content
+        };
+
+        get().addMessage(chatId, message);
       },
     }),
     {
