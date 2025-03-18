@@ -3,7 +3,7 @@ import { useParams } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Gift, Trophy, Timer, Users, Calendar, Crown } from "lucide-react";
+import { Gift, Trophy, Timer, Users, Calendar, Crown, MessageCircle } from "lucide-react";
 import { format } from "date-fns";
 import { mockChallenges } from "../data/mockData";
 import { de } from "date-fns/locale";
@@ -37,11 +37,11 @@ export default function ChallengeDetail() {
   const [isParticipating, setIsParticipating] = useState(false);
   const [showResultForm, setShowResultForm] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showParticipants, setShowParticipants] = useState(false);
   const [result, setResult] = useState("");
   const [participants, setParticipants] = useState<Participant[]>([]);
 
   useEffect(() => {
-    // Simuliere Teilnehmerdaten - In einer echten App würde dies aus der Datenbank kommen
     if (challenge) {
       const mockParticipants: Participant[] = users
         .slice(0, Math.floor(Math.random() * 8) + 3)
@@ -74,7 +74,6 @@ export default function ChallengeDetail() {
     }
 
     setIsParticipating(true);
-    // Füge den aktuellen Benutzer zu den Teilnehmern hinzu
     setParticipants(prev => [
       ...prev,
       {
@@ -111,8 +110,7 @@ export default function ChallengeDetail() {
       return;
     }
 
-    // Aktualisiere die Punktzahl des Teilnehmers
-    setParticipants(prev => prev.map(p => 
+    setParticipants(prev => prev.map(p =>
       p.id === (currentUser?.id || 0)
         ? { ...p, points: points, lastUpdate: new Date() }
         : p
@@ -128,7 +126,6 @@ export default function ChallengeDetail() {
 
   return (
     <div className="container max-w-2xl mx-auto p-4">
-      {/* Challenge Header */}
       <div className="relative aspect-video rounded-lg overflow-hidden mb-6">
         {challenge.image ? (
           <img
@@ -158,7 +155,6 @@ export default function ChallengeDetail() {
         </div>
       </div>
 
-      {/* Creator Info */}
       <Card className="mb-6">
         <CardContent className="flex items-center gap-4 py-4">
           <UserAvatar
@@ -170,11 +166,13 @@ export default function ChallengeDetail() {
             <div className="font-semibold">{creator.name}</div>
             <div className="text-sm text-muted-foreground">@{creator.username}</div>
           </div>
-          <Button variant="secondary" className="ml-auto">Folgen</Button>
+          <Button variant="secondary" className="ml-auto" onClick={() => console.log('Send message to creator')}>
+            <MessageCircle className="h-4 w-4 mr-2" />
+            Nachricht
+          </Button>
         </CardContent>
       </Card>
 
-      {/* Challenge Beschreibung */}
       <Card className="mb-6">
         <CardHeader>
           <CardTitle>Über diese Challenge</CardTitle>
@@ -184,7 +182,37 @@ export default function ChallengeDetail() {
         </CardContent>
       </Card>
 
-      {/* Rangliste */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-primary" />
+              Teilnehmer ({participants.length})
+            </div>
+            <Button variant="outline" size="sm" onClick={() => setShowParticipants(true)}>
+              Alle anzeigen
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            {participants.slice(0, 8).map((participant) => (
+              <UserAvatar
+                key={participant.id}
+                userId={participant.id}
+                size="sm"
+                clickable={true}
+              />
+            ))}
+            {participants.length > 8 && (
+              <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm">
+                +{participants.length - 8}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       <Card className="mb-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -230,7 +258,6 @@ export default function ChallengeDetail() {
         </CardContent>
       </Card>
 
-      {/* Workout Details */}
       {challenge.workoutType && (
         <Card className="mb-6">
           <CardHeader>
@@ -276,7 +303,6 @@ export default function ChallengeDetail() {
         </Card>
       )}
 
-      {/* Preis Details */}
       <Card className="mb-6">
         <CardHeader className="flex flex-row items-center gap-2">
           <Gift className="h-5 w-5 text-primary" />
@@ -299,7 +325,6 @@ export default function ChallengeDetail() {
         </CardContent>
       </Card>
 
-      {/* Teilnahme und Ergebnis Buttons */}
       {!isEnded && (
         <div className="flex gap-3">
           {!isParticipating ? (
@@ -354,7 +379,6 @@ export default function ChallengeDetail() {
         </div>
       )}
 
-      {/* Vollständige Rangliste Dialog */}
       <Dialog open={showLeaderboard} onOpenChange={setShowLeaderboard}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -386,6 +410,38 @@ export default function ChallengeDetail() {
                     <p className="font-bold">{participant.points}</p>
                     <p className="text-sm text-muted-foreground">Punkte</p>
                   </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showParticipants} onOpenChange={setShowParticipants}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Alle Teilnehmer</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto pr-4">
+            <div className="space-y-3">
+              {participants.map((participant) => (
+                <div key={participant.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+                  <div className="flex items-center gap-3">
+                    <UserAvatar
+                      userId={participant.id}
+                      size="sm"
+                      clickable={true}
+                    />
+                    <div>
+                      <p className="font-medium">{participant.username}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Dabei seit: {format(participant.lastUpdate || new Date(), "dd.MM.yyyy", { locale: de })}
+                      </p>
+                    </div>
+                  </div>
+                  <Button variant="ghost" size="sm">
+                    <MessageCircle className="h-4 w-4" />
+                  </Button>
                 </div>
               ))}
             </div>
