@@ -5,7 +5,6 @@ import { Trophy, Calendar, Users } from "lucide-react";
 import { useLocation } from "wouter";
 import { UserAvatar } from "./UserAvatar";
 import { mockUsers } from "../data/mockData";
-import { format } from "date-fns";
 
 interface SharedContentProps {
   content: {
@@ -58,18 +57,18 @@ export default function SharedContent({ content }: SharedContentProps) {
                 <UserAvatar
                   key={i}
                   userId={user.id}
-                  size="xs"
+                  size="sm"
                   className="-ml-2 first:ml-0"
                 />
               ))}
               {participants.length > 3 && (
-                <div className="h-5 w-5 rounded-full bg-muted flex items-center justify-center text-[10px] font-medium -ml-2">
+                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium -ml-2">
                   +{participants.length - 3}
                 </div>
               )}
             </div>
-            <span className="text-xs text-muted-foreground flex items-center gap-1">
-              <Users className="h-3 w-3" />
+            <span className="text-sm text-muted-foreground flex items-center gap-1">
+              <Users className="h-4 w-4" />
               {participants.length} Teilnehmer
             </span>
           </div>
