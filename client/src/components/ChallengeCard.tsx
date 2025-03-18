@@ -24,23 +24,31 @@ export default function ChallengeCard({ challenge, variant = "full" }: Challenge
   const currentDate = new Date();
   const isActive = currentDate >= challenge.startDate && currentDate <= challenge.endDate;
 
-  const handleShare = (type: 'whatsapp' | 'telegram' | 'chat' | 'group') => {
-    const url = `${window.location.origin}/challenges/${challenge.id}`;
+  const handleNativeShare = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    const shareData = {
+      title: challenge.title,
+      text: `Schau dir diese Challenge an: ${challenge.title}`,
+      url: `${window.location.origin}/challenges/${challenge.id}`,
+    };
 
-    switch (type) {
-      case 'whatsapp':
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        // Fallback für Browser ohne Web Share API
+        const url = `${window.location.origin}/challenges/${challenge.id}`;
         window.open(`https://wa.me/?text=${encodeURIComponent(`${challenge.title} - ${url}`)}`);
-        break;
-      case 'telegram':
-        window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(challenge.title)}`);
-        break;
-      case 'chat':
-        // TODO: Implement in-app chat sharing
-        break;
-      case 'group':
-        // TODO: Implement in-app group sharing
-        break;
+      }
+    } catch (err) {
+      console.error('Error sharing:', err);
     }
+  };
+
+  const handleInternalShare = (type: 'chat' | 'group', e: React.MouseEvent) => {
+    e.preventDefault();
+    // TODO: Implementiere Dialog für Chat/Gruppen-Auswahl
+    console.log('Share to:', type);
   };
 
   return (
@@ -131,26 +139,28 @@ export default function ChallengeCard({ challenge, variant = "full" }: Challenge
               })}
             </div>
 
-            {/* Share Button */}
-            <div className="flex justify-end border-t pt-2">
+            {/* Share Buttons */}
+            <div className="flex justify-end gap-2 border-t pt-2">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-8 w-8 p-0"
+                onClick={handleNativeShare}
+              >
+                <Share2 className="h-4 w-4" />
+              </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild onClick={(e) => e.preventDefault()}>
                   <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                    <Share2 className="h-4 w-4" />
+                    <MessageCircle className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={(e) => { e.preventDefault(); handleShare('whatsapp'); }}>
-                    <span>Via WhatsApp teilen</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={(e) => { e.preventDefault(); handleShare('telegram'); }}>
-                    <span>Via Telegram teilen</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={(e) => { e.preventDefault(); handleShare('chat'); }}>
+                  <DropdownMenuItem onClick={(e) => handleInternalShare('chat', e)}>
                     <MessageCircle className="h-4 w-4 mr-2" />
                     <span>An Chat senden</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={(e) => { e.preventDefault(); handleShare('group'); }}>
+                  <DropdownMenuItem onClick={(e) => handleInternalShare('group', e)}>
                     <Users className="h-4 w-4 mr-2" />
                     <span>In Gruppe teilen</span>
                   </DropdownMenuItem>
