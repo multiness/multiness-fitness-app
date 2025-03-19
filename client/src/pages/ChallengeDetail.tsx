@@ -8,7 +8,7 @@ import {
   Dumbbell, Waves, Bike, Timer, Award, ChevronRight
 } from "lucide-react";
 import { format } from "date-fns";
-import { badgeTests } from "../data/mockData";
+import { mockChallenges, badgeTests, exerciseDatabase } from "../data/mockData";
 import { de } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -21,8 +21,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-//import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useChallengeStore } from "../lib/challengeStore";
 
 interface Participant {
   id: number;
@@ -39,11 +37,17 @@ interface ExerciseResult {
   achievementLevel?: string;
 }
 
+interface WorkoutExercise {
+  name: string;
+  description: string;
+  reps?: number;
+  weight?: number;
+}
+
 export default function ChallengeDetail() {
   const { id } = useParams();
   const { toast } = useToast();
   const { users, currentUser } = useUsers();
-  //const queryClient = useQueryClient();
   const [isParticipating, setIsParticipating] = useState(false);
   const [showResultForm, setShowResultForm] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
@@ -51,8 +55,7 @@ export default function ChallengeDetail() {
   const [exerciseResults, setExerciseResults] = useState<Record<string, ExerciseResult>>({});
   const [participants, setParticipants] = useState<Participant[]>([]);
 
-  const getChallenge = useChallengeStore(state => state.getChallenge);
-  const challenge = getChallenge(parseInt(id || ""));
+  const challenge = mockChallenges.find(c => c.id === parseInt(id || ""));
   const creator = users.find(u => u.id === challenge?.creatorId);
 
   useEffect(() => {
@@ -74,6 +77,7 @@ export default function ChallengeDetail() {
     }
   }, [challenge, users, currentUser?.id]);
 
+  // Early return if challenge or creator not found
   if (!challenge || !creator) {
     return <div>Challenge nicht gefunden</div>;
   }

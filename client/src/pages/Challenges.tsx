@@ -6,27 +6,26 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Search, Trophy } from "lucide-react";
 import ChallengeCard from "@/components/ChallengeCard";
-import { useChallengeStore } from "../lib/challengeStore";
+import { mockChallenges, mockUsers } from "../data/mockData";
 
 export default function Challenges() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("active");
   const currentDate = new Date();
-  const challenges = useChallengeStore(state => state.challenges);
 
   // Ensure dates are properly compared
-  const activeChallenges = challenges.filter(challenge => {
+  const activeChallenges = mockChallenges.filter(challenge => {
     const startDate = new Date(challenge.startDate);
     const endDate = new Date(challenge.endDate);
     return currentDate >= startDate && currentDate <= endDate;
   });
 
-  const pastChallenges = challenges.filter(challenge => {
+  const pastChallenges = mockChallenges.filter(challenge => {
     const endDate = new Date(challenge.endDate);
     return currentDate > endDate;
   });
 
-  const futureStartingChallenges = challenges.filter(challenge => {
+  const futureStartingChallenges = mockChallenges.filter(challenge => {
     const startDate = new Date(challenge.startDate);
     return currentDate < startDate;
   });

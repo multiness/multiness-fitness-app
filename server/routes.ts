@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertProductSchema, insertEventExternalRegistrationSchema, insertChallengeSchema, insertChallengeResultSchema, insertChallengeParticipantSchema } from "@shared/schema";
+import { insertProductSchema, insertEventExternalRegistrationSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Alle Produkte abrufen
@@ -133,6 +133,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update create event route to generate slug -  This section is removed as per the intention.
   app.post("/api/events", async (req, res) => {
     try {
       const event = await storage.createEvent(req.body);
@@ -143,109 +144,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-
-  // Challenge routes
-  app.get("/api/challenges", async (req, res) => {
-    try {
-      const challenges = await storage.getChallenges();
-      res.json(challenges);
-    } catch (error) {
-      console.error("Error fetching challenges:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
-
-  app.get("/api/challenges/:id", async (req, res) => {
-    try {
-      const challenge = await storage.getChallenge(Number(req.params.id));
-      if (!challenge) {
-        return res.status(404).json({ error: "Challenge not found" });
-      }
-      res.json(challenge);
-    } catch (error) {
-      console.error("Error fetching challenge:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
-
-  app.post("/api/challenges", async (req, res) => {
-    try {
-      const challengeData = insertChallengeSchema.parse(req.body);
-      const challenge = await storage.createChallenge(challengeData);
-      res.status(201).json(challenge);
-    } catch (error) {
-      console.error("Error creating challenge:", error);
-      res.status(400).json({ error: "Invalid challenge data" });
-    }
-  });
-
-  // Challenge results routes
-  app.post("/api/challenges/:id/results", async (req, res) => {
-    try {
-      const resultData = insertChallengeResultSchema.parse({
-        ...req.body,
-        challengeId: Number(req.params.id),
-      });
-      const result = await storage.createChallengeResult(resultData);
-      res.status(201).json(result);
-    } catch (error) {
-      console.error("Error creating challenge result:", error);
-      res.status(400).json({ error: "Invalid result data" });
-    }
-  });
-
-  app.get("/api/challenges/:id/results/:userId", async (req, res) => {
-    try {
-      const results = await storage.getChallengeResults(
-        Number(req.params.id),
-        Number(req.params.userId)
-      );
-      res.json(results);
-    } catch (error) {
-      console.error("Error fetching challenge results:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
-
-  // Challenge participants routes
-  app.post("/api/challenges/:id/participants", async (req, res) => {
-    try {
-      const participantData = insertChallengeParticipantSchema.parse({
-        ...req.body,
-        challengeId: Number(req.params.id),
-      });
-      const participant = await storage.createChallengeParticipant(participantData);
-      res.status(201).json(participant);
-    } catch (error) {
-      console.error("Error creating challenge participant:", error);
-      res.status(400).json({ error: "Invalid participant data" });
-    }
-  });
-
-  app.get("/api/challenges/:id/participants", async (req, res) => {
-    try {
-      const participants = await storage.getChallengeParticipants(Number(req.params.id));
-      res.json(participants);
-    } catch (error) {
-      console.error("Error fetching challenge participants:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
-
-  app.patch("/api/challenges/:id/participants/:userId/points", async (req, res) => {
-    try {
-      const { points } = req.body;
-      const participant = await storage.updateChallengeParticipantPoints(
-        Number(req.params.id),
-        Number(req.params.userId),
-        points
-      );
-      res.json(participant);
-    } catch (error) {
-      console.error("Error updating participant points:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
 
   const httpServer = createServer(app);
   return httpServer;

@@ -38,28 +38,6 @@ export const challenges = pgTable("challenges", {
   workoutDetails: jsonb("workout_details").notNull(),
 });
 
-export const challengeResults = pgTable("challenge_results", {
-  id: serial("id").primaryKey(),
-  challengeId: integer("challenge_id").references(() => challenges.id).notNull(),
-  userId: integer("user_id").references(() => users.id).notNull(),
-  exerciseName: text("exercise_name").notNull(),
-  value: text("value").notNull(),
-  unit: text("unit"),
-  points: integer("points"),
-  achievementLevel: text("achievement_level"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-export const challengeParticipants = pgTable("challenge_participants", {
-  id: serial("id").primaryKey(),
-  challengeId: integer("challenge_id").references(() => challenges.id).notNull(),
-  userId: integer("user_id").references(() => users.id).notNull(),
-  points: integer("points").default(0),
-  joinedAt: timestamp("joined_at").defaultNow().notNull(),
-  lastUpdate: timestamp("last_update").defaultNow().notNull(),
-});
-
 export const groups = pgTable("groups", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -328,25 +306,3 @@ export const insertEventExternalRegistrationSchema = createInsertSchema(eventExt
 export type InsertEvent = z.infer<typeof insertEventSchema>;
 export type InsertEventComment = z.infer<typeof insertEventCommentSchema>;
 export type InsertEventExternalRegistration = z.infer<typeof insertEventExternalRegistrationSchema>;
-
-// Add type definitions
-export type ChallengeResult = typeof challengeResults.$inferSelect;
-export type ChallengeParticipant = typeof challengeParticipants.$inferSelect;
-
-// Add insert schemas
-export const insertChallengeResultSchema = createInsertSchema(challengeResults)
-  .omit({
-    id: true,
-    createdAt: true,
-    updatedAt: true,
-  });
-
-export const insertChallengeParticipantSchema = createInsertSchema(challengeParticipants)
-  .omit({
-    id: true,
-    joinedAt: true,
-    lastUpdate: true,
-  });
-
-export type InsertChallengeResult = z.infer<typeof insertChallengeResultSchema>;
-export type InsertChallengeParticipant = z.infer<typeof insertChallengeParticipantSchema>;
