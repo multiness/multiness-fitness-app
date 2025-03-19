@@ -29,6 +29,21 @@ interface Participant {
   lastUpdate?: Date;
 }
 
+interface ExerciseResult {
+  name: string;
+  value: string | number;
+  unit?: string;
+  points?: number;
+  achievementLevel?: string;
+}
+
+interface WorkoutExercise {
+  name: string;
+  description: string;
+  reps?: number;
+  weight?: number;
+}
+
 export default function ChallengeDetail() {
   const { id } = useParams();
   const { toast } = useToast();
@@ -37,7 +52,7 @@ export default function ChallengeDetail() {
   const [showResultForm, setShowResultForm] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showParticipants, setShowParticipants] = useState(false);
-  const [result, setResult] = useState("");
+  const [exerciseResults, setExerciseResults] = useState<Record<string, ExerciseResult>>({});
   const [participants, setParticipants] = useState<Participant[]>([]);
 
   const challenge = mockChallenges.find(c => c.id === parseInt(id || ""));
@@ -73,38 +88,39 @@ export default function ChallengeDetail() {
   const isActive = currentDate >= startDate && currentDate <= endDate;
   const isEnded = currentDate > endDate;
 
-  const handleSubmitResult = () => {
-    if (!result) {
-      toast({
-        title: "Fehler",
-        description: "Bitte gib ein Ergebnis ein.",
-        variant: "destructive",
-      });
-      return;
-    }
+  const calculateTotalPoints = () => {
+    const results = Object.values(exerciseResults);
+    if (results.length === 0) return { total: 0, level: null };
 
-    const points = Number(result);
-    if (isNaN(points) || points < 0) {
-      toast({
-        title: "Fehler",
-        description: "Bitte gib eine gültige Zahl ein.",
-        variant: "destructive",
-      });
-      return;
-    }
+    const total = results.reduce((sum, result) => sum + (result.points || 0), 0);
+    const average = total / results.length;
+
+    let level = null;
+    if (average >= 90) level = 'Gold';
+    else if (average >= 75) level = 'Silber';
+    else if (average >= 50) level = 'Bronze';
+
+    return { total, level };
+  };
+
+  const handleSubmitExerciseResult = (result: ExerciseResult) => {
+    setExerciseResults(prev => ({
+      ...prev,
+      [result.name]: result
+    }));
+
+    const { total } = calculateTotalPoints();
 
     setParticipants(prev => prev.map(p =>
       p.id === (currentUser?.id || 0)
-        ? { ...p, points: points, lastUpdate: new Date() }
+        ? { ...p, points: total, lastUpdate: new Date() }
         : p
     ).sort((a, b) => b.points - a.points));
 
     toast({
       title: "Ergebnis gespeichert!",
-      description: "Dein Ergebnis wurde erfolgreich eingetragen.",
+      description: `${result.name}: ${result.value} ${result.unit} (${result.achievementLevel})`,
     });
-    setShowResultForm(false);
-    setResult("");
   };
 
   const handleJoinChallenge = () => {
@@ -209,6 +225,7 @@ export default function ChallengeDetail() {
         </CardContent>
       </Card>
 
+      {/* Challenge Type Specific Details */}
       {challenge.workoutType === 'badge' && badgeDetails && (
         <Card className="mb-6">
           <CardHeader>
@@ -219,6 +236,36 @@ export default function ChallengeDetail() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-muted-foreground">{badgeDetails.description}</p>
+            {isParticipating && (
+              <div className="mb-4 p-4 bg-muted/50 rounded-lg">
+                <h3 className="font-medium mb-2">Dein Fortschritt</h3>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <div className="flex justify-between text-sm mb-1">
+                      <span>Gesamtpunktzahl</span>
+                      <span className="font-medium">{calculateTotalPoints().total} Punkte</span>
+                    </div>
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-primary transition-all"
+                        style={{
+                          width: `${Math.min((calculateTotalPoints().total / (Object.keys(exerciseResults).length * 100)) * 100, 100)}%`
+                        }}
+                      />
+                    </div>
+                  </div>
+                  {calculateTotalPoints().level && (
+                    <Badge variant={
+                      calculateTotalPoints().level === 'Gold' ? 'default' :
+                        calculateTotalPoints().level === 'Silber' ? 'secondary' :
+                          'outline'
+                    }>
+                      {calculateTotalPoints().level}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            )}
             <div className="space-y-3">
               {badgeDetails.requirements.map((req, index) => (
                 <ExerciseDetails
@@ -227,6 +274,9 @@ export default function ChallengeDetail() {
                   description={req.requirement}
                   requirements={req.gender_specific}
                   icon={getExerciseIcon(req.name)}
+                  isParticipating={isParticipating}
+                  onSubmitResult={handleSubmitExerciseResult}
+                  currentResult={exerciseResults[req.name]}
                 />
               ))}
             </div>
@@ -234,6 +284,7 @@ export default function ChallengeDetail() {
         </Card>
       )}
 
+      {/* Workout Details */}
       {challenge.workoutDetails?.exercises && (
         <Card className="mb-6">
           <CardHeader>
@@ -277,7 +328,7 @@ export default function ChallengeDetail() {
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Übungen</h3>
                 <div className="space-y-3">
-                  {challenge.workoutDetails.exercises.map((exercise, index) => (
+                  {challenge.workoutDetails.exercises.map((exercise: WorkoutExercise, index: number) => (
                     <ExerciseDetails
                       key={index}
                       name={exercise.name}
@@ -289,6 +340,9 @@ export default function ChallengeDetail() {
                         reps: exercise.reps,
                         weight: exercise.weight
                       }}
+                      isParticipating={isParticipating}
+                      onSubmitResult={handleSubmitExerciseResult}
+                      currentResult={exerciseResults[exercise.name]}
                     />
                   ))}
                 </div>
@@ -328,53 +382,7 @@ export default function ChallengeDetail() {
             <Button className="flex-1" size="lg" onClick={handleJoinChallenge}>
               An Challenge teilnehmen
             </Button>
-          ) : (
-            <>
-              <Button
-                className="flex-1"
-                size="lg"
-                variant={showResultForm ? "secondary" : "default"}
-                onClick={() => setShowResultForm(!showResultForm)}
-              >
-                {showResultForm ? "Abbrechen" : "Ergebnis eintragen"}
-              </Button>
-              {showResultForm && (
-                <Dialog open={showResultForm} onOpenChange={setShowResultForm}>
-                  <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>Ergebnis eintragen</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 p-4">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Dein Ergebnis</label>
-                        <Input
-                          type="number"
-                          placeholder="Punkte eingeben"
-                          value={result}
-                          onChange={(e) => setResult(e.target.value)}
-                        />
-                        <p className="text-sm text-muted-foreground">
-                          Gib deine erreichten Punkte ein. Bei AMRAP die Anzahl der Runden, bei For Time die Zeit in Sekunden.
-                        </p>
-                      </div>
-                      <div className="flex gap-2 pt-2">
-                        <Button onClick={handleSubmitResult} className="flex-1">
-                          Speichern
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => setShowResultForm(false)}
-                          className="flex-1"
-                        >
-                          Abbrechen
-                        </Button>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              )}
-            </>
-          )}
+          ) : null}
         </div>
       )}
 
