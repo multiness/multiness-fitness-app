@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Gift, Trophy, Users, Calendar, Crown, MessageCircle,
-  Dumbbell, Waves, Bike, Timer, Award, ChevronRight
+  Dumbbell, Waves, Bike, Timer, Award, ChevronRight, Loader2
 } from "lucide-react";
 import { format } from "date-fns";
-import { mockChallenges, badgeTests, exerciseDatabase } from "../data/mockData";
+import { badgeTests } from "../data/mockData";
 import { de } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -21,6 +21,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+
 
 interface Participant {
   id: number;
@@ -48,39 +51,79 @@ export default function ChallengeDetail() {
   const { id } = useParams();
   const { toast } = useToast();
   const { users, currentUser } = useUsers();
+  const queryClient = useQueryClient();
   const [isParticipating, setIsParticipating] = useState(false);
   const [showResultForm, setShowResultForm] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showParticipants, setShowParticipants] = useState(false);
   const [exerciseResults, setExerciseResults] = useState<Record<string, ExerciseResult>>({});
-  const [participants, setParticipants] = useState<Participant[]>([]);
 
-  const challenge = mockChallenges.find(c => c.id === parseInt(id || ""));
-  const creator = users.find(u => u.id === challenge?.creatorId);
+  // Fetch challenge data
+  const { data: challenge, isLoading: challengeLoading, error: challengeError } = useQuery({
+    queryKey: ['/api/challenges', id],
+    enabled: !!id
+  });
+
+  // Fetch participants
+  const { data: participants = [], isLoading: participantsLoading } = useQuery({
+    queryKey: ['/api/challenges', id, 'participants'],
+    enabled: !!id
+  });
+
+  // Fetch results for current user
+  const { data: results = [] } = useQuery({
+    queryKey: ['/api/challenges', id, 'results', currentUser?.id],
+    enabled: !!id && !!currentUser?.id
+  });
+
+  const joinChallengeMutation = useMutation({
+    mutationFn: (data: { userId: number, challengeId: number }) =>
+      apiRequest(`/api/challenges/${data.challengeId}/participants`, {
+        method: 'POST',
+        body: JSON.stringify({ userId: data.userId })
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/challenges', id, 'participants'] });
+      toast({
+        title: "Erfolgreich beigetreten!",
+        description: "Du nimmst jetzt an der Challenge teil.",
+      });
+      setIsParticipating(true);
+    }
+  });
+
+  const submitResultMutation = useMutation({
+    mutationFn: (result: ExerciseResult & { challengeId: number, userId: number }) =>
+      apiRequest(`/api/challenges/${result.challengeId}/results`, {
+        method: 'POST',
+        body: JSON.stringify(result)
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/challenges', id, 'results'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/challenges', id, 'participants'] });
+    }
+  });
 
   useEffect(() => {
-    if (challenge) {
-      // Initialize mock participants
-      const mockParticipants: Participant[] = users
-        .slice(0, Math.floor(Math.random() * 8) + 3)
-        .map(user => ({
-          id: user.id,
-          username: user.username,
-          points: Math.floor(Math.random() * 1000),
-          lastUpdate: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000)
-        }));
-      setParticipants(mockParticipants.sort((a, b) => b.points - a.points));
-
-      // Check if current user is already participating
-      const isCurrentUserParticipating = mockParticipants.some(p => p.id === currentUser?.id);
-      setIsParticipating(isCurrentUserParticipating);
+    if (participants && currentUser) {
+      setIsParticipating(participants.some(p => p.id === currentUser.id));
     }
-  }, [challenge, users, currentUser?.id]);
+  }, [participants, currentUser]);
 
-  // Early return if challenge or creator not found
-  if (!challenge || !creator) {
+  if (challengeLoading || participantsLoading) {
+    return (
+      <div className="flex items-center justify-center h-[calc(100vh-200px)]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (challengeError || !challenge) {
     return <div>Challenge nicht gefunden</div>;
   }
+
+  const creator = users.find(u => u.id === challenge.creatorId);
+  if (!creator) return <div>Creator nicht gefunden</div>;
 
   const currentDate = new Date();
   const startDate = new Date(challenge.startDate);
@@ -104,18 +147,18 @@ export default function ChallengeDetail() {
   };
 
   const handleSubmitExerciseResult = (result: ExerciseResult) => {
+    if (!currentUser) return;
+
+    submitResultMutation.mutate({
+      ...result,
+      challengeId: Number(id),
+      userId: currentUser.id
+    });
+
     setExerciseResults(prev => ({
       ...prev,
       [result.name]: result
     }));
-
-    const { total } = calculateTotalPoints();
-
-    setParticipants(prev => prev.map(p =>
-      p.id === (currentUser?.id || 0)
-        ? { ...p, points: total, lastUpdate: new Date() }
-        : p
-    ).sort((a, b) => b.points - a.points));
 
     toast({
       title: "Ergebnis gespeichert!",
@@ -124,6 +167,8 @@ export default function ChallengeDetail() {
   };
 
   const handleJoinChallenge = () => {
+    if (!currentUser) return;
+
     if (isEnded) {
       toast({
         title: "Challenge beendet",
@@ -133,24 +178,9 @@ export default function ChallengeDetail() {
       return;
     }
 
-    setIsParticipating(true);
-
-    // Add current user to participants if not already present
-    if (!participants.some(p => p.id === currentUser?.id)) {
-      setParticipants(prev => [
-        ...prev,
-        {
-          id: currentUser?.id || 0,
-          username: currentUser?.username || "",
-          points: 0,
-          lastUpdate: new Date()
-        }
-      ]);
-    }
-
-    toast({
-      title: "Erfolgreich beigetreten!",
-      description: "Du nimmst jetzt an der Challenge teil.",
+    joinChallengeMutation.mutate({
+      userId: currentUser.id,
+      challengeId: Number(id)
     });
   };
 

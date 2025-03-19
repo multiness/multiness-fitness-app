@@ -1,8 +1,12 @@
-import { users, type User, type InsertUser } from "@shared/schema";
+import { 
+  users, type User, challenges, type Challenge, type InsertChallenge,
+  challengeResults, type ChallengeResult, type InsertChallengeResult,
+  challengeParticipants, type ChallengeParticipant, type InsertChallengeParticipant
+} from "@shared/schema";
 import { products, type Product, type InsertProduct } from "@shared/schema";
 import { events, eventExternalRegistrations, type Event, type EventExternalRegistration, type InsertEventExternalRegistration, type InsertEvent } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -22,6 +26,20 @@ export interface IStorage {
   createEvent(event: InsertEvent): Promise<Event>;
   createEventExternalRegistration(registration: InsertEventExternalRegistration): Promise<EventExternalRegistration>;
   getEventExternalRegistrations(eventId: number): Promise<EventExternalRegistration[]>;
+
+  // Challenge methods
+  getChallenge(id: number): Promise<Challenge | undefined>;
+  getChallenges(): Promise<Challenge[]>;
+  createChallenge(challenge: InsertChallenge): Promise<Challenge>;
+
+  // Challenge Results methods
+  getChallengeResults(challengeId: number, userId: number): Promise<ChallengeResult[]>;
+  createChallengeResult(result: InsertChallengeResult): Promise<ChallengeResult>;
+
+  // Challenge Participants methods
+  getChallengeParticipants(challengeId: number): Promise<ChallengeParticipant[]>;
+  createChallengeParticipant(participant: InsertChallengeParticipant): Promise<ChallengeParticipant>;
+  updateChallengeParticipantPoints(challengeId: number, userId: number, points: number): Promise<ChallengeParticipant>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -113,6 +131,66 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(eventExternalRegistrations)
       .where(eq(eventExternalRegistrations.eventId, eventId));
+  }
+
+  // Challenge methods
+  async getChallenge(id: number): Promise<Challenge | undefined> {
+    const [challenge] = await db.select().from(challenges).where(eq(challenges.id, id));
+    return challenge;
+  }
+
+  async getChallenges(): Promise<Challenge[]> {
+    return await db.select().from(challenges);
+  }
+
+  async createChallenge(challenge: InsertChallenge): Promise<Challenge> {
+    const [newChallenge] = await db.insert(challenges).values(challenge).returning();
+    return newChallenge;
+  }
+
+  // Challenge Results methods
+  async getChallengeResults(challengeId: number, userId: number): Promise<ChallengeResult[]> {
+    return await db
+      .select()
+      .from(challengeResults)
+      .where(
+        and(
+          eq(challengeResults.challengeId, challengeId),
+          eq(challengeResults.userId, userId)
+        )
+      );
+  }
+
+  async createChallengeResult(result: InsertChallengeResult): Promise<ChallengeResult> {
+    const [newResult] = await db.insert(challengeResults).values(result).returning();
+    return newResult;
+  }
+
+  // Challenge Participants methods
+  async getChallengeParticipants(challengeId: number): Promise<ChallengeParticipant[]> {
+    return await db
+      .select()
+      .from(challengeParticipants)
+      .where(eq(challengeParticipants.challengeId, challengeId));
+  }
+
+  async createChallengeParticipant(participant: InsertChallengeParticipant): Promise<ChallengeParticipant> {
+    const [newParticipant] = await db.insert(challengeParticipants).values(participant).returning();
+    return newParticipant;
+  }
+
+  async updateChallengeParticipantPoints(challengeId: number, userId: number, points: number): Promise<ChallengeParticipant> {
+    const [updatedParticipant] = await db
+      .update(challengeParticipants)
+      .set({ points, lastUpdate: new Date() })
+      .where(
+        and(
+          eq(challengeParticipants.challengeId, challengeId),
+          eq(challengeParticipants.userId, userId)
+        )
+      )
+      .returning();
+    return updatedParticipant;
   }
 }
 

@@ -6,26 +6,48 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Search, Trophy } from "lucide-react";
 import ChallengeCard from "@/components/ChallengeCard";
-import { mockChallenges, mockUsers } from "../data/mockData";
+import { useQuery } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
 
 export default function Challenges() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("active");
   const currentDate = new Date();
 
+  const { data: challenges = [], isLoading, error } = useQuery({
+    queryKey: ['/api/challenges'],
+    retry: 1
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-[calc(100vh-200px)]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center text-destructive py-8">
+        Fehler beim Laden der Challenges. Bitte versuchen Sie es später erneut.
+      </div>
+    );
+  }
+
   // Ensure dates are properly compared
-  const activeChallenges = mockChallenges.filter(challenge => {
+  const activeChallenges = challenges.filter(challenge => {
     const startDate = new Date(challenge.startDate);
     const endDate = new Date(challenge.endDate);
     return currentDate >= startDate && currentDate <= endDate;
   });
 
-  const pastChallenges = mockChallenges.filter(challenge => {
+  const pastChallenges = challenges.filter(challenge => {
     const endDate = new Date(challenge.endDate);
     return currentDate > endDate;
   });
 
-  const futureStartingChallenges = mockChallenges.filter(challenge => {
+  const futureStartingChallenges = challenges.filter(challenge => {
     const startDate = new Date(challenge.startDate);
     return currentDate < startDate;
   });
