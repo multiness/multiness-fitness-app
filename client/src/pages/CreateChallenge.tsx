@@ -53,6 +53,34 @@ interface BadgeTest {
   }[];
 }
 
+// Zuerst die ImageUploadSection Komponente definieren
+const ImageUploadSection = ({ type, image, onChange }: { type: 'challenge' | 'prize', image: string | null, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) => (
+  <div className="space-y-2">
+    <Label>{type === 'challenge' ? 'Challenge Bild (Optional)' : 'Gewinn Bild (Optional)'}</Label>
+    <div className="flex items-center gap-4">
+      <Input
+        type="file"
+        accept="image/*"
+        onChange={onChange}
+        className="flex-1"
+      />
+      {image && (
+        <div className="relative w-20 h-20">
+          <img src={image} alt="" className="w-full h-full object-cover rounded-lg" />
+          <Button
+            variant="ghost"
+            size="sm"
+            className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+            onClick={() => type === 'challenge' ? setChallengeImage(null) : setPrizeImage(null)}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+    </div>
+  </div>
+);
+
 export default function CreateChallenge() {
   const { toast } = useToast();
   const [selectedWorkout, setSelectedWorkout] = useState<any>(null);
@@ -752,33 +780,6 @@ ${template.workoutType === 'amrap' ?
       ),
     },
   ];
-
-  const ImageUploadSection = ({ type, image, onChange }: { type: 'challenge' | 'prize', image: string | null, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) => (
-    <div className="space-y-2">
-      <Label>{type === 'challenge' ? 'Challenge Bild (Optional)' : 'Gewinn Bild (Optional)'}</Label>
-      <div className="flex items-center gap-4">
-        <Input
-          type="file"
-          accept="image/*"
-          onChange={onChange}
-          className="flex-1"
-        />
-        {image && (
-          <div className="relative w-20 h-20">
-            <img src={image} alt="" className="w-full h-full object-cover rounded-lg" />
-            <Button
-              variant="ghost"
-              size="sm"
-              className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
-              onClick={() => type === 'challenge' ? setChallengeImage(null) : setPrizeImage(null)}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
 
   return (
     <div className="container py-6 px-4 sm:px-6 max-w-2xl mx-auto">
