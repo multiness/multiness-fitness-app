@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useParams } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Gift, Trophy, Users, Calendar, Crown, MessageCircle,
   Dumbbell, Waves, Bike, Timer, Award, ChevronRight
@@ -37,27 +36,48 @@ interface ExerciseResult {
   achievementLevel?: string;
 }
 
-interface WorkoutExercise {
-  name: string;
-  description: string;
-  reps?: number;
-  weight?: number;
-}
-
 export default function ChallengeDetail() {
   const { id } = useParams();
   const { toast } = useToast();
   const { users, currentUser } = useUsers();
+
+  // Initialize all states at the beginning
   const [isParticipating, setIsParticipating] = useState(false);
-  const [showResultForm, setShowResultForm] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showParticipants, setShowParticipants] = useState(false);
   const [exerciseResults, setExerciseResults] = useState<Record<string, ExerciseResult>>({});
   const [participants, setParticipants] = useState<Participant[]>([]);
 
+  // Get challenge and creator
   const challenge = mockChallenges.find(c => c.id === parseInt(id || ""));
-  const creator = users.find(u => u.id === challenge?.creatorId);
+  const creator = challenge ? users.find(u => u.id === challenge.creatorId) : undefined;
 
+  // Helper functions
+  const getExerciseIcon = (name: string) => {
+    const lowerName = name.toLowerCase();
+    if (lowerName.includes('schwimm')) return <Waves className="h-5 w-5 text-primary" />;
+    if (lowerName.includes('lauf') || lowerName.includes('sprint')) return <ChevronRight className="h-5 w-5 text-primary" />;
+    if (lowerName.includes('rad') || lowerName.includes('bike')) return <Bike className="h-5 w-5 text-primary" />;
+    if (lowerName.includes('zeit') || lowerName.includes('time')) return <Timer className="h-5 w-5 text-primary" />;
+    return <Dumbbell className="h-5 w-5 text-primary" />;
+  };
+
+  const calculateTotalPoints = () => {
+    const results = Object.values(exerciseResults);
+    if (results.length === 0) return { total: 0, level: null };
+
+    const total = results.reduce((sum, result) => sum + (result.points || 0), 0);
+    const average = total / results.length;
+
+    let level = null;
+    if (average >= 90) level = 'Gold';
+    else if (average >= 75) level = 'Silber';
+    else if (average >= 50) level = 'Bronze';
+
+    return { total, level };
+  };
+
+  // Effects
   useEffect(() => {
     if (challenge) {
       // Initialize mock participants
@@ -77,32 +97,7 @@ export default function ChallengeDetail() {
     }
   }, [challenge, users, currentUser?.id]);
 
-  // Early return if challenge or creator not found
-  if (!challenge || !creator) {
-    return <div>Challenge nicht gefunden</div>;
-  }
-
-  const currentDate = new Date();
-  const startDate = new Date(challenge.startDate);
-  const endDate = new Date(challenge.endDate);
-  const isActive = currentDate >= startDate && currentDate <= endDate;
-  const isEnded = currentDate > endDate;
-
-  const calculateTotalPoints = () => {
-    const results = Object.values(exerciseResults);
-    if (results.length === 0) return { total: 0, level: null };
-
-    const total = results.reduce((sum, result) => sum + (result.points || 0), 0);
-    const average = total / results.length;
-
-    let level = null;
-    if (average >= 90) level = 'Gold';
-    else if (average >= 75) level = 'Silber';
-    else if (average >= 50) level = 'Bronze';
-
-    return { total, level };
-  };
-
+  // Event handlers
   const handleSubmitExerciseResult = (result: ExerciseResult) => {
     setExerciseResults(prev => ({
       ...prev,
@@ -124,6 +119,12 @@ export default function ChallengeDetail() {
   };
 
   const handleJoinChallenge = () => {
+    if (!challenge) return;
+
+    const currentDate = new Date();
+    const endDate = new Date(challenge.endDate);
+    const isEnded = currentDate > endDate;
+
     if (isEnded) {
       toast({
         title: "Challenge beendet",
@@ -135,7 +136,6 @@ export default function ChallengeDetail() {
 
     setIsParticipating(true);
 
-    // Add current user to participants if not already present
     if (!participants.some(p => p.id === currentUser?.id)) {
       setParticipants(prev => [
         ...prev,
@@ -154,15 +154,19 @@ export default function ChallengeDetail() {
     });
   };
 
-  const getExerciseIcon = (name: string) => {
-    const lowerName = name.toLowerCase();
-    if (lowerName.includes('schwimm')) return <Waves className="h-5 w-5 text-primary" />;
-    if (lowerName.includes('lauf') || lowerName.includes('sprint')) return <ChevronRight className="h-5 w-5 text-primary" />;
-    if (lowerName.includes('rad') || lowerName.includes('bike')) return <Bike className="h-5 w-5 text-primary" />;
-    if (lowerName.includes('zeit') || lowerName.includes('time')) return <Timer className="h-5 w-5 text-primary" />;
-    return <Dumbbell className="h-5 w-5 text-primary" />;
-  };
+  // Early return if no challenge or creator
+  if (!challenge || !creator) {
+    return <div>Challenge nicht gefunden</div>;
+  }
 
+  // Calculate dates and states
+  const currentDate = new Date();
+  const startDate = new Date(challenge.startDate);
+  const endDate = new Date(challenge.endDate);
+  const isActive = currentDate >= startDate && currentDate <= endDate;
+  const isEnded = currentDate > endDate;
+
+  // Get badge details if applicable
   const badgeDetails = challenge.workoutType === 'badge'
     ? badgeTests.find(test => test.name === challenge.title.replace(' Challenge', ''))
     : null;
