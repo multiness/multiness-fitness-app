@@ -6,34 +6,13 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Search, Trophy } from "lucide-react";
 import ChallengeCard from "@/components/ChallengeCard";
-import { useQuery } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
+import { useChallengeStore } from "../lib/challengeStore";
 
 export default function Challenges() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("active");
   const currentDate = new Date();
-
-  const { data: challenges = [], isLoading, error } = useQuery({
-    queryKey: ['/api/challenges'],
-    retry: 1
-  });
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-[calc(100vh-200px)]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="text-center text-destructive py-8">
-        Fehler beim Laden der Challenges. Bitte versuchen Sie es später erneut.
-      </div>
-    );
-  }
+  const challenges = useChallengeStore(state => state.challenges);
 
   // Ensure dates are properly compared
   const activeChallenges = challenges.filter(challenge => {
