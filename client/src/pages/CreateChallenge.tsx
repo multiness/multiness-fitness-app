@@ -183,6 +183,13 @@ ${template.workoutType === 'amrap' ?
 
     let details = `Workout Typ: ${workoutType.toUpperCase()}\n\n`;
 
+    if (workoutType === "distance") {
+      details += targetType === 'distance' 
+        ? `Zieldistanz: ${distance} km\n`
+        : `Zeitlimit: ${distance} Minuten\n`;
+      return details;
+    }
+
     switch (workoutType) {
       case "amrap":
         details += `AMRAP ${timeLimit} Minuten:\n`;
@@ -193,9 +200,6 @@ ${template.workoutType === 'amrap' ?
         break;
       case "fortime":
         details += `Für Zeit:\n${rounds} Runden\n`;
-        break;
-      case "distance":
-        details += `Distanz: ${distance}km\n`;
         break;
       case "custom":
         details += "Freies Workout\n";
@@ -242,11 +246,9 @@ ${template.workoutType === 'amrap' ?
         if (creationMethod === 'generator') return !!selectedWorkout;
         if (creationMethod === 'manual') {
           if (!workoutType) return false;
-          // Nur Übungen prüfen, wenn sie für den Workout-Typ erforderlich sind
           if (needsExercises(workoutType)) {
             return exercises.length > 0;
           }
-          // Für Laufstrecken-Workouts andere Validierung
           if (workoutType === 'distance') {
             return !!distance;
           }
@@ -255,10 +257,12 @@ ${template.workoutType === 'amrap' ?
         if (creationMethod === 'badge') return !!selectedBadgeTest;
         return false;
       case 3:
-        // Nur Titel und Beschreibung sind erforderlich, Bild ist optional
-        return challengeTitle.trim().length > 0 && 
-               (challengeDescription.trim().length > 0 || generateWorkoutDescription().trim().length > 0) &&
-               !!startDate && !!endDate;
+        // Für Schritt 3 reicht es, wenn wir einen Titel haben und entweder eine manuelle Beschreibung
+        // oder eine generierte Beschreibung aus den Workout-Details
+        const hasTitle = challengeTitle.trim().length > 0;
+        const hasDescription = challengeDescription.trim().length > 0 || generateWorkoutDescription().trim().length > 0;
+        const hasDates = startDate && endDate;
+        return hasTitle && hasDescription && hasDates;
       case 4:
         return true; // Gewinn ist optional
       default:
