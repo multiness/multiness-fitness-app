@@ -184,7 +184,7 @@ ${template.workoutType === 'amrap' ?
     let details = `Workout Typ: ${workoutType.toUpperCase()}\n\n`;
 
     if (workoutType === "distance") {
-      details += targetType === 'distance' 
+      details += targetType === 'distance'
         ? `Zieldistanz: ${distance} km\n`
         : `Zeitlimit: ${distance} Minuten\n`;
       return details;
@@ -243,6 +243,8 @@ ${template.workoutType === 'amrap' ?
       case 1:
         return !!creationMethod;
       case 2:
+        if (!challengeTitle.trim()) return false;
+
         if (creationMethod === 'generator') return !!selectedWorkout;
         if (creationMethod === 'manual') {
           if (!workoutType) return false;
@@ -257,12 +259,9 @@ ${template.workoutType === 'amrap' ?
         if (creationMethod === 'badge') return !!selectedBadgeTest;
         return false;
       case 3:
-        // Für Schritt 3 reicht es, wenn wir einen Titel haben und entweder eine manuelle Beschreibung
-        // oder eine generierte Beschreibung aus den Workout-Details
-        const hasTitle = challengeTitle.trim().length > 0;
         const hasDescription = challengeDescription.trim().length > 0 || generateWorkoutDescription().trim().length > 0;
         const hasDates = startDate && endDate;
-        return hasTitle && hasDescription && hasDates;
+        return hasDescription && hasDates;
       case 4:
         return true; // Gewinn ist optional
       default:
@@ -447,12 +446,17 @@ ${template.workoutType === 'amrap' ?
             <>
               <div className="space-y-4">
                 <div>
-                  <Label>Challenge Titel</Label>
+                  <Label>Challenge Titel<span className="text-red-500">*</span></Label>
                   <Input
                     placeholder="Gib einen Titel für deine Challenge ein"
                     value={challengeTitle}
                     onChange={(e) => setChallengeTitle(e.target.value)}
                   />
+                  {!challengeTitle.trim() && (
+                    <p className="text-sm text-red-500 mt-1">
+                      Bitte gib einen Titel für deine Challenge ein
+                    </p>
+                  )}
                 </div>
                 <div>
                   <Label>Workout Typ</Label>
