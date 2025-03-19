@@ -25,19 +25,24 @@ interface ChallengeStore {
 }
 
 // Convert dates to strings when storing
-const serializeChallenge = (challenge: any): Challenge => ({
-  ...challenge,
-  startDate: challenge.startDate instanceof Date ? challenge.startDate.toISOString() : challenge.startDate,
-  endDate: challenge.endDate instanceof Date ? challenge.endDate.toISOString() : challenge.endDate,
-});
+const serializeChallenge = (challenge: any): Challenge => {
+  console.log('Serializing challenge:', challenge);
+  return {
+    ...challenge,
+    startDate: challenge.startDate instanceof Date ? challenge.startDate.toISOString() : challenge.startDate,
+    endDate: challenge.endDate instanceof Date ? challenge.endDate.toISOString() : challenge.endDate,
+  };
+};
 
 // Load challenges from localStorage or use mockChallenges as initial data
 const loadChallenges = (): Challenge[] => {
   const stored = localStorage.getItem('challenges');
   if (stored) {
+    console.log('Loading challenges from localStorage');
     return JSON.parse(stored);
   }
   // Initialize with mock data if nothing is stored
+  console.log('Initializing with mock data');
   const serializedChallenges = mockChallenges.map(serializeChallenge);
   localStorage.setItem('challenges', JSON.stringify(serializedChallenges));
   return serializedChallenges;
@@ -47,10 +52,13 @@ export const useChallengeStore = create<ChallengeStore>((set, get) => ({
   challenges: [],
 
   initialize: () => {
-    set({ challenges: loadChallenges() });
+    const challenges = loadChallenges();
+    console.log('Store initialized with challenges:', challenges);
+    set({ challenges });
   },
 
   addChallenge: (challenge) => {
+    console.log('Adding new challenge:', challenge);
     set((state) => {
       const serializedChallenge = serializeChallenge(challenge);
       const newChallenges = [...state.challenges, serializedChallenge];
@@ -60,6 +68,7 @@ export const useChallengeStore = create<ChallengeStore>((set, get) => ({
   },
 
   updateChallenge: (id, challenge) => {
+    console.log('Updating challenge:', id, challenge);
     set((state) => {
       const newChallenges = state.challenges.map(c => 
         c.id === id ? { ...c, ...serializeChallenge(challenge) } : c
@@ -70,7 +79,9 @@ export const useChallengeStore = create<ChallengeStore>((set, get) => ({
   },
 
   getChallenge: (id) => {
-    return get().challenges.find(c => c.id === id);
+    const challenge = get().challenges.find(c => c.id === id);
+    console.log('Getting challenge:', id, challenge);
+    return challenge;
   }
 }));
 
