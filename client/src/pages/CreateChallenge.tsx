@@ -255,7 +255,10 @@ ${template.workoutType === 'amrap' ?
         if (creationMethod === 'badge') return !!selectedBadgeTest;
         return false;
       case 3:
-        return !!challengeTitle && !!challengeDescription;
+        // Nur Titel und Beschreibung sind erforderlich, Bild ist optional
+        return challengeTitle.trim().length > 0 && 
+               (challengeDescription.trim().length > 0 || generateWorkoutDescription().trim().length > 0) &&
+               !!startDate && !!endDate;
       case 4:
         return true; // Gewinn ist optional
       default:
