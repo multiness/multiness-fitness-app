@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Gift, Dumbbell, ChevronRight, ChevronLeft, Clock, RefreshCw, Plus, X, Award } from "lucide-react";
+import { Gift, Dumbbell, ChevronRight, ChevronLeft, Clock, RefreshCw, Plus, X, Award, Image } from "lucide-react";
 import WorkoutGenerator from "@/components/WorkoutGenerator";
 import { useToast } from "@/hooks/use-toast";
 import { format, addDays } from "date-fns";
@@ -37,6 +37,7 @@ interface WorkoutDetails {
   timePerRound?: number;
   rounds?: number;
   exercises: Exercise[];
+  distance?: number;
 }
 
 interface BadgeTest {
@@ -72,6 +73,8 @@ export default function CreateChallenge() {
   const [distance, setDistance] = useState<string>("");
   const [timeLimit, setTimeLimit] = useState<string>("");
   const [selectedBadgeTest, setSelectedBadgeTest] = useState<string>("");
+  const [challengeImage, setChallengeImage] = useState<string | null>(null);
+  const [prizeImage, setPrizeImage] = useState<string | null>(null);
 
   const workoutTypes = [
     { value: "amrap", label: "AMRAP (As Many Rounds As Possible)" },
@@ -182,6 +185,54 @@ ${template.workoutType === 'amrap' ?
     return details;
   };
 
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>, type: 'challenge' | 'prize') => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (type === 'challenge') {
+          setChallengeImage(reader.result as string);
+        } else {
+          setPrizeImage(reader.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const needsExercises = (type: string) => {
+    return !['distance', 'running', 'custom'].includes(type);
+  };
+
+  const isStepComplete = (step: number) => {
+    switch (step) {
+      case 1:
+        return !!creationMethod;
+      case 2:
+        if (creationMethod === 'generator') return !!selectedWorkout;
+        if (creationMethod === 'manual') {
+          if (!workoutType) return false;
+          // Nur Übungen prüfen, wenn sie für den Workout-Typ erforderlich sind
+          if (needsExercises(workoutType)) {
+            return exercises.length > 0;
+          }
+          // Für Laufstrecken-Workouts andere Validierung
+          if (workoutType === 'distance') {
+            return !!distance;
+          }
+          return true;
+        }
+        if (creationMethod === 'badge') return !!selectedBadgeTest;
+        return false;
+      case 3:
+        return !!challengeTitle && !!challengeDescription;
+      case 4:
+        return true; // Gewinn ist optional
+      default:
+        return false;
+    }
+  };
+
   const handleCreateChallenge = () => {
     if (creationMethod === "generator" && !selectedWorkout) {
       toast({
@@ -192,7 +243,7 @@ ${template.workoutType === 'amrap' ?
       return;
     }
 
-    if (creationMethod === "manual" && (!workoutType || exercises.length === 0)) {
+    if (creationMethod === "manual" && (!workoutType || (needsExercises(workoutType) && exercises.length === 0))) {
       toast({
         title: "Unvollständige Workout-Details",
         description: "Bitte fülle alle Workout-Details aus und füge mindestens eine Übung hinzu.",
@@ -223,7 +274,8 @@ ${template.workoutType === 'amrap' ?
       type: workoutType,
       timePerRound: Number(timePerRound) || undefined,
       rounds: Number(rounds) || undefined,
-      exercises: exercises
+      exercises: exercises,
+      distance: distance ? Number(distance) : undefined,
     } : creationMethod === "generator" ? selectedWorkout.workoutDetails : {
       type: "badge",
       exercises: []
@@ -241,8 +293,8 @@ ${template.workoutType === 'amrap' ?
                   creationMethod === "generator" ? selectedWorkout.workoutType : "badge",
       workoutDetails,
       creatorId: 1, // Current user ID -  Should be replaced with actual user ID
-      image: null,
-      prizeImage: null
+      image: challengeImage,
+      prizeImage: prizeImage
     };
 
     // Save the new challenge to localStorage
@@ -270,6 +322,8 @@ ${template.workoutType === 'amrap' ?
     setDistance("");
     setTimeLimit("");
     setSelectedBadgeTest("");
+    setChallengeImage(null);
+    setPrizeImage(null);
 
     // Optional: Redirect to the challenges page
     window.location.href = '/challenges';
@@ -347,9 +401,7 @@ ${template.workoutType === 'amrap' ?
     },
     {
       title: "Challenge Details",
-      isComplete: creationMethod === "generator" ? !!selectedWorkout :
-                 creationMethod === "manual" ? !!workoutType && exercises.length > 0 :
-                 creationMethod === "badge" ? !!selectedBadgeTest : false,
+      isComplete: isStepComplete(2),
       content: (
         <div className="space-y-6">
           {creationMethod === "manual" && (
@@ -438,7 +490,7 @@ ${template.workoutType === 'amrap' ?
                   </div>
                 )}
 
-                {workoutType && (
+                {workoutType && needsExercises(workoutType) && (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <Label>Übungen</Label>
@@ -613,7 +665,7 @@ ${template.workoutType === 'amrap' ?
     },
     {
       title: "Challenge Info",
-      isComplete: !!challengeTitle && !!challengeDescription,
+      isComplete: isStepComplete(3),
       content: (
         <div className="space-y-4">
           <div>
@@ -640,6 +692,11 @@ ${template.workoutType === 'amrap' ?
               />
             </div>
           </div>
+          <ImageUploadSection
+            type="challenge"
+            image={challengeImage}
+            onChange={(e) => handleImageUpload(e, 'challenge')}
+          />
         </div>
       ),
     },
@@ -668,16 +725,42 @@ ${template.workoutType === 'amrap' ?
               className="min-h-[100px]"
             />
           </div>
-          <div>
-            <Label>Gewinn-Bild (Optional)</Label>
-            <div className="mt-2">
-              <Button variant="outline">Bild hochladen</Button>
-            </div>
-          </div>
+          <ImageUploadSection
+            type="prize"
+            image={prizeImage}
+            onChange={(e) => handleImageUpload(e, 'prize')}
+          />
         </div>
       ),
     },
   ];
+
+  const ImageUploadSection = ({ type, image, onChange }: { type: 'challenge' | 'prize', image: string | null, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) => (
+    <div className="space-y-2">
+      <Label>{type === 'challenge' ? 'Challenge Bild (Optional)' : 'Gewinn Bild (Optional)'}</Label>
+      <div className="flex items-center gap-4">
+        <Input
+          type="file"
+          accept="image/*"
+          onChange={onChange}
+          className="flex-1"
+        />
+        {image && (
+          <div className="relative w-20 h-20">
+            <img src={image} alt="" className="w-full h-full object-cover rounded-lg" />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+              onClick={() => type === 'challenge' ? setChallengeImage(null) : setPrizeImage(null)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 
   return (
     <div className="container py-6 px-4 sm:px-6 max-w-2xl mx-auto">

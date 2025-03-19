@@ -72,6 +72,7 @@ export const ExerciseDetails = ({
     if (lowerName.includes('pendel')) return 'Sekunden';
     if (lowerName.includes('plank')) return 'min:ss';
     if (lowerName.includes('km')) return 'km';
+    if (lowerName.includes('distance') || lowerName.includes('laufstrecke')) return 'km';
     return 'Wiederholungen';
   };
 
@@ -99,6 +100,13 @@ export const ExerciseDetails = ({
 
       if (totalSeconds <= 180) return { points: 100, achievementLevel: 'Gold' };
       if (totalSeconds <= 240) return { points: 75, achievementLevel: 'Silber' };
+      return { points: 50, achievementLevel: 'Bronze' };
+    }
+
+    // Distanzbasierte Berechnung (in km)
+    if (lowerName.includes('distance') || lowerName.includes('laufstrecke')) {
+      if (numericValue >= 10) return { points: 100, achievementLevel: 'Gold' };
+      if (numericValue >= 5) return { points: 75, achievementLevel: 'Silber' };
       return { points: 50, achievementLevel: 'Bronze' };
     }
 
@@ -139,6 +147,7 @@ export const ExerciseDetails = ({
       case 'kg':
       case 'm':
       case 'Sekunden':
+      case 'km':
         return 'number';
       default:
         return 'number';
