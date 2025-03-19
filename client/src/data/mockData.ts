@@ -1,5 +1,163 @@
 import { User, Post, Challenge, Group } from "@shared/schema";
 
+// Lade gespeicherte Challenges aus dem localStorage
+const loadStoredChallenges = (): Challenge[] => {
+  try {
+    const storedChallenges = localStorage.getItem('userChallenges');
+    return storedChallenges ? JSON.parse(storedChallenges) : [];
+  } catch (error) {
+    console.error('Error loading challenges from localStorage:', error);
+    return [];
+  }
+};
+
+// Funktion zum Speichern einer neuen Challenge
+export const saveNewChallenge = (challenge: Challenge) => {
+  try {
+    const storedChallenges = loadStoredChallenges();
+    const updatedChallenges = [...storedChallenges, {...challenge, id: Date.now()}];
+    localStorage.setItem('userChallenges', JSON.stringify(updatedChallenges));
+    // Update auch die in-memory Challenges
+  } catch (error) {
+    console.error('Error saving challenge to localStorage:', error);
+  }
+};
+
+// Kombiniere Mock-Challenges mit gespeicherten Challenges
+const storedChallenges = loadStoredChallenges();
+const mockChallengesData: Challenge[] = [
+  {
+    id: 1,
+    title: "30 Tage Liegestütz-Challenge",
+    description: "Täglich 100 Liegestütze für 30 Tage - Steigere deine Kraft!",
+    image: "https://images.unsplash.com/photo-1598971639058-999901d5a461?w=800&auto=format",
+    creatorId: 1,
+    startDate: new Date(),
+    endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    prize: "Protein Mega Pack",
+    prizeDescription: "Ein Monatsvorrat Premium Protein Shake (2.5kg) + Shaker + Supplement Guide",
+    prizeImage: "https://images.unsplash.com/photo-1579722821273-0f6c7d44362f?w=800&auto=format",
+  },
+  {
+    id: 2,
+    title: "Sommer Transformation",
+    description: "12-Wochen komplette Körpertransformation Challenge",
+    image: "https://images.unsplash.com/photo-1549576490-b0b4831ef60a?w=800&auto=format",
+    creatorId: 3,
+    startDate: new Date(),
+    endDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+    prize: "Jahres-Fitness-Paket",
+    prizeDescription: "1 Jahr Premium Mitgliedschaft + 5 Personal Training Sessions + Ernährungsplan",
+    prizeImage: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&auto=format",
+  },
+  {
+    id: 3,
+    title: "Morgenyoga Challenge",
+    description: "21 Tage Morgenroutine für mehr Energie und Flexibilität",
+    image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&auto=format",
+    creatorId: 2,
+    startDate: new Date(),
+    endDate: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000),
+    prize: "Yoga Starter Kit",
+    prizeDescription: "Premium Yogamatte + Yoga Block Set + 3 Online Kurse",
+    prizeImage: "https://images.unsplash.com/photo-1552286450-4a669f880062?w=800&auto=format",
+  },
+  {
+    id: 4,
+    title: "10k Lauf Vorbereitung",
+    description: "8-Wochen Trainingsplan für deinen ersten 10k Lauf",
+    image: "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=800&auto=format",
+    creatorId: 5,
+    startDate: new Date(),
+    endDate: new Date(Date.now() + 56 * 24 * 60 * 60 * 1000),
+    prize: "Runner's Dream Pack",
+    prizeDescription: "Premium Laufschuhe + Sport Smartwatch + Laufbekleidung Set",
+    prizeImage: "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=800&auto=format",
+  },
+  {
+    id: 5,
+    title: "Clean Eating Challenge",
+    description: "4 Wochen gesunde Ernährung - Rezepte und Meal Prep Tipps",
+    image: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800&auto=format",
+    creatorId: 4,
+    startDate: new Date(),
+    endDate: new Date(Date.now() + 28 * 24 * 60 * 60 * 1000),
+    prize: "Healthy Kitchen Set",
+    prizeDescription: "Hochleistungsmixer + Meal Prep Container Set + Bio-Kochbuch",
+    prizeImage: "https://images.unsplash.com/photo-1495546968767-f0573cca821e?w=800&auto=format",
+  },
+  {
+    id: 6,
+    title: "Winter HIIT Challenge 2024",
+    description: "Intensive HIIT-Workouts für maximale Fettverbrennung",
+    image: "https://images.unsplash.com/photo-1434608519344-49d77a699e1d?w=800&auto=format",
+    creatorId: 1,
+    startDate: new Date('2024-12-01'),
+    endDate: new Date('2024-12-31'),
+    prize: "Premium Fitness Set",
+    prizeDescription: "Komplettes Home-Workout-Set mit Kettlebells, Resistance Bands und digitaler Trainingsplan",
+    prizeImage: "https://images.unsplash.com/photo-1593079831268-3381b0db4a77?w=800&auto=format",
+    workoutType: "hiit",
+    workoutDetails: {
+      intervals: 8,
+      workTime: 40,
+      restTime: 20,
+      exercises: [
+        { name: "Burpees", description: "Explosiv mit Push-up" },
+        { name: "Mountain Climbers", description: "Schnelles Tempo" },
+        { name: "Jump Squats", description: "Maximale Höhe" }
+      ]
+    }
+  },
+  {
+    id: 7,
+    title: "Mobility Master Challenge",
+    description: "30 Tage Beweglichkeit und Flexibilität",
+    image: "https://images.unsplash.com/photo-1552196563-55cd4e45efb3?w=800&auto=format",
+    creatorId: 2,
+    startDate: new Date('2024-11-15'),
+    endDate: new Date('2024-12-15'),
+    prize: "Wellness Paket Deluxe",
+    prizeDescription: "Premium Yoga-Set, Massage Gutschein und 3 Monate Online Yoga Mitgliedschaft",
+    prizeImage: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&auto=format",
+    workoutType: "mobility",
+    workoutDetails: {
+      timePerRound: 60,
+      rounds: 5,
+      exercises: [
+        { name: "Deep Squat Hold", reps: 60, description: "Aktive Haltung" },
+        { name: "Hip Opener Flow", reps: 45, description: "Dynamische Bewegungen" },
+        { name: "Shoulder Mobility", reps: 30, description: "Kontrollierte Ausführung" }
+      ]
+    }
+  },
+  {
+    id: 8,
+    title: "Herbst-Marathon Vorbereitung",
+    description: "8-Wochen Lauftraining für Fortgeschrittene",
+    image: "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=800&auto=format",
+    creatorId: 5,
+    startDate: new Date('2024-09-01'),
+    endDate: new Date('2024-10-31'),
+    prize: "Pro Runner Bundle",
+    prizeDescription: "High-End Laufschuhe, GPS-Smartwatch und professionelle Laufanalyse",
+    prizeImage: "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=800&auto=format",
+    workoutType: "running",
+    workoutDetails: {
+      type: "intervals",
+      timePerRound: 300,
+      rounds: 6,
+      exercises: [
+        { name: "Progressive Tempo Run", reps: 1, description: "5km mit steigender Intensität" },
+        { name: "Hill Sprints", reps: 8, description: "30 Sekunden Sprint, 60 Sekunden Erholung" },
+        { name: "Long Distance", reps: 1, description: "15km steady state" }
+      ]
+    }
+  }
+];
+
+export const mockChallenges: Challenge[] = [...mockChallengesData, ...storedChallenges];
+
 interface Event {
   id: number;
   title: string;
@@ -174,137 +332,6 @@ export const mockPosts: Post[] = [
     content: "Perfektes Wetter für einen Trail Run im Odenwald 🌲 Natur pur!",
     image: "https://images.unsplash.com/photo-1551698618-1dafe1857bd8?w=800&auto=format",
     createdAt: new Date(Date.now() - 150000000), // 41 hours ago
-  }
-];
-
-export const mockChallenges: Challenge[] = [
-  {
-    id: 1,
-    title: "30 Tage Liegestütz-Challenge",
-    description: "Täglich 100 Liegestütze für 30 Tage - Steigere deine Kraft!",
-    image: "https://images.unsplash.com/photo-1598971639058-999901d5a461?w=800&auto=format",
-    creatorId: 1,
-    startDate: new Date(),
-    endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-    prize: "Protein Mega Pack",
-    prizeDescription: "Ein Monatsvorrat Premium Protein Shake (2.5kg) + Shaker + Supplement Guide",
-    prizeImage: "https://images.unsplash.com/photo-1579722821273-0f6c7d44362f?w=800&auto=format",
-  },
-  {
-    id: 2,
-    title: "Sommer Transformation",
-    description: "12-Wochen komplette Körpertransformation Challenge",
-    image: "https://images.unsplash.com/photo-1549576490-b0b4831ef60a?w=800&auto=format",
-    creatorId: 3,
-    startDate: new Date(),
-    endDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
-    prize: "Jahres-Fitness-Paket",
-    prizeDescription: "1 Jahr Premium Mitgliedschaft + 5 Personal Training Sessions + Ernährungsplan",
-    prizeImage: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&auto=format",
-  },
-  {
-    id: 3,
-    title: "Morgenyoga Challenge",
-    description: "21 Tage Morgenroutine für mehr Energie und Flexibilität",
-    image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&auto=format",
-    creatorId: 2,
-    startDate: new Date(),
-    endDate: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000),
-    prize: "Yoga Starter Kit",
-    prizeDescription: "Premium Yogamatte + Yoga Block Set + 3 Online Kurse",
-    prizeImage: "https://images.unsplash.com/photo-1552286450-4a669f880062?w=800&auto=format",
-  },
-  {
-    id: 4,
-    title: "10k Lauf Vorbereitung",
-    description: "8-Wochen Trainingsplan für deinen ersten 10k Lauf",
-    image: "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=800&auto=format",
-    creatorId: 5,
-    startDate: new Date(),
-    endDate: new Date(Date.now() + 56 * 24 * 60 * 60 * 1000),
-    prize: "Runner's Dream Pack",
-    prizeDescription: "Premium Laufschuhe + Sport Smartwatch + Laufbekleidung Set",
-    prizeImage: "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=800&auto=format",
-  },
-  {
-    id: 5,
-    title: "Clean Eating Challenge",
-    description: "4 Wochen gesunde Ernährung - Rezepte und Meal Prep Tipps",
-    image: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800&auto=format",
-    creatorId: 4,
-    startDate: new Date(),
-    endDate: new Date(Date.now() + 28 * 24 * 60 * 60 * 1000),
-    prize: "Healthy Kitchen Set",
-    prizeDescription: "Hochleistungsmixer + Meal Prep Container Set + Bio-Kochbuch",
-    prizeImage: "https://images.unsplash.com/photo-1495546968767-f0573cca821e?w=800&auto=format",
-  },
-  {
-    id: 6,
-    title: "Winter HIIT Challenge 2024",
-    description: "Intensive HIIT-Workouts für maximale Fettverbrennung",
-    image: "https://images.unsplash.com/photo-1434608519344-49d77a699e1d?w=800&auto=format",
-    creatorId: 1,
-    startDate: new Date('2024-12-01'),
-    endDate: new Date('2024-12-31'),
-    prize: "Premium Fitness Set",
-    prizeDescription: "Komplettes Home-Workout-Set mit Kettlebells, Resistance Bands und digitaler Trainingsplan",
-    prizeImage: "https://images.unsplash.com/photo-1593079831268-3381b0db4a77?w=800&auto=format",
-    workoutType: "hiit",
-    workoutDetails: {
-      intervals: 8,
-      workTime: 40,
-      restTime: 20,
-      exercises: [
-        { name: "Burpees", description: "Explosiv mit Push-up" },
-        { name: "Mountain Climbers", description: "Schnelles Tempo" },
-        { name: "Jump Squats", description: "Maximale Höhe" }
-      ]
-    }
-  },
-  {
-    id: 7,
-    title: "Mobility Master Challenge",
-    description: "30 Tage Beweglichkeit und Flexibilität",
-    image: "https://images.unsplash.com/photo-1552196563-55cd4e45efb3?w=800&auto=format",
-    creatorId: 2,
-    startDate: new Date('2024-11-15'),
-    endDate: new Date('2024-12-15'),
-    prize: "Wellness Paket Deluxe",
-    prizeDescription: "Premium Yoga-Set, Massage Gutschein und 3 Monate Online Yoga Mitgliedschaft",
-    prizeImage: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&auto=format",
-    workoutType: "mobility",
-    workoutDetails: {
-      timePerRound: 60,
-      rounds: 5,
-      exercises: [
-        { name: "Deep Squat Hold", reps: 60, description: "Aktive Haltung" },
-        { name: "Hip Opener Flow", reps: 45, description: "Dynamische Bewegungen" },
-        { name: "Shoulder Mobility", reps: 30, description: "Kontrollierte Ausführung" }
-      ]
-    }
-  },
-  {
-    id: 8,
-    title: "Herbst-Marathon Vorbereitung",
-    description: "8-Wochen Lauftraining für Fortgeschrittene",
-    image: "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=800&auto=format",
-    creatorId: 5,
-    startDate: new Date('2024-09-01'),
-    endDate: new Date('2024-10-31'),
-    prize: "Pro Runner Bundle",
-    prizeDescription: "High-End Laufschuhe, GPS-Smartwatch und professionelle Laufanalyse",
-    prizeImage: "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=800&auto=format",
-    workoutType: "running",
-    workoutDetails: {
-      type: "intervals",
-      timePerRound: 300,
-      rounds: 6,
-      exercises: [
-        { name: "Progressive Tempo Run", reps: 1, description: "5km mit steigender Intensität" },
-        { name: "Hill Sprints", reps: 8, description: "30 Sekunden Sprint, 60 Sekunden Erholung" },
-        { name: "Long Distance", reps: 1, description: "15km steady state" }
-      ]
-    }
   }
 ];
 
@@ -621,8 +648,9 @@ export const mockProducts: Product[] = [
       servings: 33,
       nutritionFacts: {
         "Protein pro Portion": "30g",
-        "Kohlenhydrate": "3g",
-"Fett": "1.5g",      }
+        Kohlenhydrate: "3g",
+        Fett: "1.5g",
+      }
     }
   },
   {
@@ -658,7 +686,7 @@ export const mockProducts: Product[] = [
     isActive: true,
     createdAt: new Date(),
     metadata: {
-      type:"coaching",
+      type: "coaching",
       duration: 3,
       callsPerMonth: 4,
       includes: [
@@ -724,32 +752,32 @@ export const badgeTests = [
     name: "Bundeswehr Basis-Fitness-Test",
     description: "Standard Fitness-Test der Bundeswehr",
     requirements: [
-      { 
-        name: "Pendellauf", 
+      {
+        name: "Pendellauf",
         requirement: "11x10m in maximal 60 Sekunden",
         gender_specific: {
           male: "Maximal 58 Sekunden",
           female: "Maximal 60 Sekunden"
         }
       },
-      { 
-        name: "Liegestütze", 
+      {
+        name: "Liegestütze",
         requirement: "In 2 Minuten",
         gender_specific: {
           male: "15 Wiederholungen",
           female: "12 Wiederholungen"
         }
       },
-      { 
-        name: "Sit-ups", 
+      {
+        name: "Sit-ups",
         requirement: "In 2 Minuten",
         gender_specific: {
           male: "25 Wiederholungen",
           female: "20 Wiederholungen"
         }
       },
-      { 
-        name: "3000m Lauf", 
+      {
+        name: "3000m Lauf",
         requirement: "Maximale Zeit",
         gender_specific: {
           male: "Unter 15:00 Minuten",
@@ -818,7 +846,7 @@ export const badgeTests = [
     name: "Cooper Test",
     description: "12-Minuten Ausdauertest nach Kenneth Cooper - Ein standardisierter Test zur Beurteilung der kardiorespiratorischen Fitness",
     requirements: [
-      { 
+      {
         name: "12-Minuten Lauf",
         requirement: "Maximale Distanz in 12 Minuten",
         gender_specific: {
@@ -833,7 +861,7 @@ export const badgeTests = [
     name: "Marathon Challenge",
     description: "Volle Marathon-Distanz (42,195 km) - Ein Test für Ausdauer und mentale Stärke",
     requirements: [
-      { 
+      {
         name: "Marathon Distanz",
         requirement: "42,195 km",
         gender_specific: {
@@ -853,7 +881,7 @@ export const badgeTests = [
     name: "Halbmarathon Challenge",
     description: "Halbe Marathon-Distanz (21,0975 km) - Idealer Einstieg in die Langstreckendistanz",
     requirements: [
-      { 
+      {
         name: "Halbmarathon Distanz",
         requirement: "21,0975 km",
         gender_specific: {
@@ -873,7 +901,7 @@ export const badgeTests = [
     name: "Sprint Triathlon",
     description: "Sprint-Distanz Triathlon - Die perfekte Einsteigerdistanz für Multisport-Athleten",
     requirements: [
-      { 
+      {
         name: "Schwimmen",
         requirement: "750m (offenes Gewässer oder Schwimmbad)",
         gender_specific: {
@@ -881,7 +909,7 @@ export const badgeTests = [
           female: "Elite: < 13:00 Min\nFortgeschritten: < 16:00 Min\nMittelstufe: < 20:00 Min\nAnfänger: < 28:00 Min"
         }
       },
-      { 
+      {
         name: "Radfahren",
         requirement: "20km",
         gender_specific: {
@@ -889,7 +917,7 @@ export const badgeTests = [
           female: "Elite: < 35:00 Min\nFortgeschritten: < 42:00 Min\nMittelstufe: < 50:00 Min\nAnfänger: < 60:00 Min"
         }
       },
-      { 
+      {
         name: "Laufen",
         requirement: "5km",
         gender_specific: {

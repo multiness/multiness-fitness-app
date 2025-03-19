@@ -8,7 +8,7 @@ import { Gift, Dumbbell, ChevronRight, ChevronLeft, Clock, RefreshCw, Plus, X, A
 import WorkoutGenerator from "@/components/WorkoutGenerator";
 import { useToast } from "@/hooks/use-toast";
 import { format, addDays } from "date-fns";
-import { mockChallenges, badgeTests, exerciseDatabase } from "../data/mockData";
+import { mockChallenges, badgeTests, exerciseDatabase, saveNewChallenge } from "../data/mockData";
 import {
   Dialog,
   DialogContent,
@@ -219,7 +219,7 @@ ${template.workoutType === 'amrap' ?
       return;
     }
 
-    const workoutDetails: WorkoutDetails = creationMethod === "manual" ? {
+    const workoutDetails = creationMethod === "manual" ? {
       type: workoutType,
       timePerRound: Number(timePerRound) || undefined,
       rounds: Number(rounds) || undefined,
@@ -230,26 +230,27 @@ ${template.workoutType === 'amrap' ?
     };
 
     const newChallenge = {
-      id: mockChallenges.length + 1,
+      id: Date.now(), // Unique ID based on timestamp
       title: challengeTitle,
       description: challengeDescription,
-      startDate: new Date(startDate),
-      endDate: new Date(endDate),
+      startDate: new Date(startDate).toISOString(),
+      endDate: new Date(endDate).toISOString(),
       prize: prize || null,
       prizeDescription: prizeDescription || null,
       workoutType: creationMethod === "manual" ? workoutType :
                   creationMethod === "generator" ? selectedWorkout.workoutType : "badge",
       workoutDetails,
-      creatorId: 1,
+      creatorId: 1, // Current user ID -  Should be replaced with actual user ID
       image: null,
       prizeImage: null
     };
 
-    mockChallenges.push(newChallenge);
+    // Save the new challenge to localStorage
+    saveNewChallenge(newChallenge);
 
     toast({
       title: "Challenge erstellt!",
-      description: "Deine Challenge wurde erfolgreich erstellt.",
+      description: "Deine Challenge wurde erfolgreich erstellt und gespeichert.",
     });
 
     // Reset form
@@ -269,6 +270,9 @@ ${template.workoutType === 'amrap' ?
     setDistance("");
     setTimeLimit("");
     setSelectedBadgeTest("");
+
+    // Optional: Redirect to the challenges page
+    window.location.href = '/challenges';
   };
 
   const steps = [
