@@ -7,7 +7,7 @@ import {
   Dumbbell, Waves, Bike, Timer, Award, ChevronRight
 } from "lucide-react";
 import { format } from "date-fns";
-import { mockChallenges, badgeTests, exerciseDatabase } from "../data/mockData";
+import { mockChallenges, badgeTests } from "../data/mockData";
 import { de } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -52,32 +52,23 @@ export default function ChallengeDetail() {
   const challenge = mockChallenges.find(c => c.id === parseInt(id || ""));
   const creator = challenge ? users.find(u => u.id === challenge.creatorId) : undefined;
 
-  // Helper functions
-  const getExerciseIcon = (name: string) => {
-    const lowerName = name.toLowerCase();
-    if (lowerName.includes('schwimm')) return <Waves className="h-5 w-5 text-primary" />;
-    if (lowerName.includes('lauf') || lowerName.includes('sprint')) return <ChevronRight className="h-5 w-5 text-primary" />;
-    if (lowerName.includes('rad') || lowerName.includes('bike')) return <Bike className="h-5 w-5 text-primary" />;
-    if (lowerName.includes('zeit') || lowerName.includes('time')) return <Timer className="h-5 w-5 text-primary" />;
-    return <Dumbbell className="h-5 w-5 text-primary" />;
-  };
+  // Early return if no challenge or creator
+  if (!challenge || !creator) {
+    return <div>Challenge nicht gefunden</div>;
+  }
 
-  const calculateTotalPoints = () => {
-    const results = Object.values(exerciseResults);
-    if (results.length === 0) return { total: 0, level: null };
+  // Calculate dates and states
+  const currentDate = new Date();
+  const startDate = new Date(challenge.startDate);
+  const endDate = new Date(challenge.endDate);
+  const isActive = currentDate >= startDate && currentDate <= endDate;
+  const isEnded = currentDate > endDate;
 
-    const total = results.reduce((sum, result) => sum + (result.points || 0), 0);
-    const average = total / results.length;
+  // Get badge details if applicable
+  const badgeDetails = challenge.workoutType === 'badge'
+    ? badgeTests.find(test => test.name === challenge.title.replace(' Challenge', ''))
+    : null;
 
-    let level = null;
-    if (average >= 90) level = 'Gold';
-    else if (average >= 75) level = 'Silber';
-    else if (average >= 50) level = 'Bronze';
-
-    return { total, level };
-  };
-
-  // Effects
   useEffect(() => {
     if (challenge) {
       // Initialize mock participants
@@ -97,7 +88,21 @@ export default function ChallengeDetail() {
     }
   }, [challenge, users, currentUser?.id]);
 
-  // Event handlers
+  const calculateTotalPoints = () => {
+    const results = Object.values(exerciseResults);
+    if (results.length === 0) return { total: 0, level: null };
+
+    const total = results.reduce((sum, result) => sum + (result.points || 0), 0);
+    const average = total / results.length;
+
+    let level = null;
+    if (average >= 90) level = 'Gold';
+    else if (average >= 75) level = 'Silber';
+    else if (average >= 50) level = 'Bronze';
+
+    return { total, level };
+  };
+
   const handleSubmitExerciseResult = (result: ExerciseResult) => {
     setExerciseResults(prev => ({
       ...prev,
@@ -119,12 +124,6 @@ export default function ChallengeDetail() {
   };
 
   const handleJoinChallenge = () => {
-    if (!challenge) return;
-
-    const currentDate = new Date();
-    const endDate = new Date(challenge.endDate);
-    const isEnded = currentDate > endDate;
-
     if (isEnded) {
       toast({
         title: "Challenge beendet",
@@ -154,22 +153,14 @@ export default function ChallengeDetail() {
     });
   };
 
-  // Early return if no challenge or creator
-  if (!challenge || !creator) {
-    return <div>Challenge nicht gefunden</div>;
-  }
-
-  // Calculate dates and states
-  const currentDate = new Date();
-  const startDate = new Date(challenge.startDate);
-  const endDate = new Date(challenge.endDate);
-  const isActive = currentDate >= startDate && currentDate <= endDate;
-  const isEnded = currentDate > endDate;
-
-  // Get badge details if applicable
-  const badgeDetails = challenge.workoutType === 'badge'
-    ? badgeTests.find(test => test.name === challenge.title.replace(' Challenge', ''))
-    : null;
+  const getExerciseIcon = (name: string) => {
+    const lowerName = name.toLowerCase();
+    if (lowerName.includes('schwimm')) return <Waves className="h-5 w-5 text-primary" />;
+    if (lowerName.includes('lauf') || lowerName.includes('sprint')) return <ChevronRight className="h-5 w-5 text-primary" />;
+    if (lowerName.includes('rad') || lowerName.includes('bike')) return <Bike className="h-5 w-5 text-primary" />;
+    if (lowerName.includes('zeit') || lowerName.includes('time')) return <Timer className="h-5 w-5 text-primary" />;
+    return <Dumbbell className="h-5 w-5 text-primary" />;
+  };
 
   return (
     <div className="container max-w-2xl mx-auto p-4">
@@ -332,7 +323,7 @@ export default function ChallengeDetail() {
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Übungen</h3>
                 <div className="space-y-3">
-                  {challenge.workoutDetails.exercises.map((exercise: WorkoutExercise, index: number) => (
+                  {challenge.workoutDetails.exercises.map((exercise: any, index: number) => (
                     <ExerciseDetails
                       key={index}
                       name={exercise.name}
