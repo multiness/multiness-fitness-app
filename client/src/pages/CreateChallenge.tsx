@@ -38,6 +38,7 @@ interface WorkoutDetails {
   rounds?: number;
   exercises: Exercise[];
   distance?: number;
+  targetType?: 'time' | 'distance';
 }
 
 interface BadgeTest {
@@ -75,6 +76,7 @@ export default function CreateChallenge() {
   const [selectedBadgeTest, setSelectedBadgeTest] = useState<string>("");
   const [challengeImage, setChallengeImage] = useState<string | null>(null);
   const [prizeImage, setPrizeImage] = useState<string | null>(null);
+  const [targetType, setTargetType] = useState<'time' | 'distance'>('distance');
 
   const workoutTypes = [
     { value: "amrap", label: "AMRAP (As Many Rounds As Possible)" },
@@ -276,6 +278,7 @@ ${template.workoutType === 'amrap' ?
       rounds: Number(rounds) || undefined,
       exercises: exercises,
       distance: distance ? Number(distance) : undefined,
+      targetType: workoutType === 'distance' ? targetType : undefined
     } : creationMethod === "generator" ? selectedWorkout.workoutDetails : {
       type: "badge",
       exercises: []
@@ -324,6 +327,7 @@ ${template.workoutType === 'amrap' ?
     setSelectedBadgeTest("");
     setChallengeImage(null);
     setPrizeImage(null);
+    setTargetType('distance');
 
     // Optional: Redirect to the challenges page
     window.location.href = '/challenges';
@@ -479,14 +483,28 @@ ${template.workoutType === 'amrap' ?
                 )}
 
                 {workoutType === "distance" && (
-                  <div>
-                    <Label>Distanz (km)</Label>
-                    <Input
-                      type="number"
-                      value={distance}
-                      onChange={(e) => setDistance(e.target.value)}
-                      placeholder="z.B. 5"
-                    />
+                  <div className="space-y-4">
+                    <div>
+                      <Label>Distanz oder Zeit?</Label>
+                      <Select value={targetType} onValueChange={(value: 'time' | 'distance') => setTargetType(value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Wähle die Messmethode" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="distance">Nach Distanz (km)</SelectItem>
+                          <SelectItem value="time">Nach Zeit (Minuten)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>{targetType === 'distance' ? 'Zieldistanz (km)' : 'Zeitlimit (Minuten)'}</Label>
+                      <Input
+                        type="number"
+                        value={distance}
+                        onChange={(e) => setDistance(e.target.value)}
+                        placeholder={targetType === 'distance' ? "z.B. 5" : "z.B. 30"}
+                      />
+                    </div>
                   </div>
                 )}
 

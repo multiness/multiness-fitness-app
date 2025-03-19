@@ -15,6 +15,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ExerciseDetailsProps {
   name: string;
@@ -28,6 +35,7 @@ interface ExerciseDetailsProps {
     weight?: number;
     time?: string;
     distance?: number;
+    targetType?: 'time' | 'distance';
   };
   tips?: string[];
   isParticipating?: boolean;
@@ -60,66 +68,95 @@ export const ExerciseDetails = ({
   const [isOpen, setIsOpen] = useState(false);
   const [showResultDialog, setShowResultDialog] = useState(false);
   const [resultValue, setResultValue] = useState(currentResult?.value?.toString() || "");
-  const [additionalValue, setAdditionalValue] = useState(""); // Für Gewicht oder zusätzliche Werte
+  const [additionalValue, setAdditionalValue] = useState(""); 
+  const [selectedMetric, setSelectedMetric] = useState<'time' | 'distance'>(
+    requirements?.targetType || 'distance'
+  );
 
-  const getUnitForExercise = (exerciseName: string) => {
+  const getUnitForExercise = (exerciseName: string, metric?: 'time' | 'distance') => {
     const lowerName = exerciseName.toLowerCase();
+
+    // Spezielle Behandlung für Laufstrecken
+    if (lowerName.includes('lauf') || lowerName.includes('distance')) {
+      return metric === 'time' ? 'min:ss' : 'km';
+    }
+
+    // Andere Übungstypen
     if (lowerName.includes('kreuzheben') || lowerName.includes('gewicht')) return 'kg';
-    if (lowerName.includes('wurf') || lowerName.includes('throw')) return 'm';
-    if (lowerName.includes('lauf') && lowerName.includes('mile')) return 'min:ss';
+    if (lowerName.includes('wurf')) return 'm';
     if (lowerName.includes('sprint')) return 'min:ss';
     if (lowerName.includes('meter')) return 'm';
     if (lowerName.includes('pendel')) return 'Sekunden';
     if (lowerName.includes('plank')) return 'min:ss';
-    if (lowerName.includes('km')) return 'km';
-    if (lowerName.includes('distance') || lowerName.includes('laufstrecke')) return 'km';
+    if (lowerName.includes('situp') || lowerName.includes('pushup') || lowerName.includes('liegestütz')) return 'Wiederholungen';
+
     return 'Wiederholungen';
   };
 
   const calculatePoints = (value: string | number, exerciseName: string): { points: number, achievementLevel: string } => {
     const lowerName = exerciseName.toLowerCase();
-    const numericValue = typeof value === 'string' ? parseFloat(value) : value;
+    const numericValue = typeof value === 'string' ? 
+      // Für Zeitangaben im Format "mm:ss"
+      lowerName.includes('time') || value.includes(':') ?
+        (() => {
+          const [minutes, seconds] = value.split(':').map(Number);
+          return minutes * 60 + seconds;
+        })() :
+        parseFloat(value) : 
+      value;
 
-    // Beispiel für die Punkteberechnung basierend auf verschiedenen Übungstypen
+    // Zeitbasierte Berechnungen (Format: "mm:ss" oder Sekunden)
+    if (lowerName.includes('lauf') || lowerName.includes('sprint')) {
+      if (selectedMetric === 'time') {
+        // Niedrigere Zeit = bessere Leistung
+        if (numericValue <= 180) return { points: 100, achievementLevel: 'Gold' };
+        if (numericValue <= 240) return { points: 75, achievementLevel: 'Silber' };
+        return { points: 50, achievementLevel: 'Bronze' };
+      } else {
+        // Höhere Distanz = bessere Leistung
+        if (numericValue >= 10) return { points: 100, achievementLevel: 'Gold' };
+        if (numericValue >= 5) return { points: 75, achievementLevel: 'Silber' };
+        return { points: 50, achievementLevel: 'Bronze' };
+      }
+    }
+
+    // Kraftübungen (Liegestütze, Situps etc.)
+    if (lowerName.includes('liegestütz') || lowerName.includes('pushup')) {
+      if (numericValue >= 40) return { points: 100, achievementLevel: 'Gold' };
+      if (numericValue >= 30) return { points: 75, achievementLevel: 'Silber' };
+      return { points: 50, achievementLevel: 'Bronze' };
+    }
+
+    if (lowerName.includes('situp')) {
+      if (numericValue >= 50) return { points: 100, achievementLevel: 'Gold' };
+      if (numericValue >= 35) return { points: 75, achievementLevel: 'Silber' };
+      return { points: 50, achievementLevel: 'Bronze' };
+    }
+
+    // Gewichtsbasierte Übungen
     if (lowerName.includes('kreuzheben')) {
       if (numericValue >= 140) return { points: 100, achievementLevel: 'Gold' };
       if (numericValue >= 100) return { points: 75, achievementLevel: 'Silber' };
       return { points: 50, achievementLevel: 'Bronze' };
     }
 
-    if (lowerName.includes('liegestütz')) {
-      if (numericValue >= 40) return { points: 100, achievementLevel: 'Gold' };
-      if (numericValue >= 30) return { points: 75, achievementLevel: 'Silber' };
-      return { points: 50, achievementLevel: 'Bronze' };
-    }
+    // Standardpunkteberechnung für andere Übungen
+    const maxPoints = 100;
+    const points = Math.min(Math.round((numericValue / 10) * 10), maxPoints);
 
-    // Zeitbasierte Berechnung (Format: "mm:ss")
-    if (lowerName.includes('lauf') || lowerName.includes('sprint')) {
-      const [minutes, seconds] = value.toString().split(':').map(Number);
-      const totalSeconds = minutes * 60 + seconds;
+    let achievementLevel = 'Bronze';
+    if (points >= 90) achievementLevel = 'Gold';
+    else if (points >= 75) achievementLevel = 'Silber';
 
-      if (totalSeconds <= 180) return { points: 100, achievementLevel: 'Gold' };
-      if (totalSeconds <= 240) return { points: 75, achievementLevel: 'Silber' };
-      return { points: 50, achievementLevel: 'Bronze' };
-    }
-
-    // Distanzbasierte Berechnung (in km)
-    if (lowerName.includes('distance') || lowerName.includes('laufstrecke')) {
-      if (numericValue >= 10) return { points: 100, achievementLevel: 'Gold' };
-      if (numericValue >= 5) return { points: 75, achievementLevel: 'Silber' };
-      return { points: 50, achievementLevel: 'Bronze' };
-    }
-
-    // Standardpunkte für andere Übungen
-    return { points: Math.min(Math.round(numericValue / 10) * 10, 100), achievementLevel: 'Standard' };
+    return { points, achievementLevel };
   };
 
   const handleSubmitResult = () => {
     if (onSubmitResult && resultValue) {
-      const unit = getUnitForExercise(name);
+      const unit = getUnitForExercise(name, selectedMetric);
       let finalValue = resultValue;
 
-      // Kombiniere Werte für Übungen mit mehreren Eingaben (z.B. Gewicht + Wiederholungen)
+      // Kombiniere Werte für Übungen mit mehreren Eingaben
       if (additionalValue && unit === 'kg') {
         finalValue = `${resultValue} x ${additionalValue}kg`;
       }
@@ -133,14 +170,15 @@ export const ExerciseDetails = ({
         points,
         achievementLevel
       });
+
       setShowResultDialog(false);
       setResultValue("");
       setAdditionalValue("");
     }
   };
 
-  const getInputType = (exerciseName: string) => {
-    const unit = getUnitForExercise(exerciseName);
+  const getInputType = (exerciseName: string, metric?: 'time' | 'distance') => {
+    const unit = getUnitForExercise(exerciseName, metric);
     switch (unit) {
       case 'min:ss':
         return 'time';
@@ -154,8 +192,8 @@ export const ExerciseDetails = ({
     }
   };
 
-  const getPlaceholder = (exerciseName: string) => {
-    const unit = getUnitForExercise(exerciseName);
+  const getPlaceholder = (exerciseName: string, metric?: 'time' | 'distance') => {
+    const unit = getUnitForExercise(exerciseName, metric);
     switch (unit) {
       case 'min:ss': return 'MM:SS';
       case 'kg': return 'Gewicht in kg';
@@ -170,6 +208,11 @@ export const ExerciseDetails = ({
   const needsAdditionalInput = (exerciseName: string) => {
     const lowerName = exerciseName.toLowerCase();
     return lowerName.includes('kreuzheben') || lowerName.includes('gewicht');
+  };
+
+  const isRunningExercise = (exerciseName: string) => {
+    const lowerName = exerciseName.toLowerCase();
+    return lowerName.includes('lauf') || lowerName.includes('distance');
   };
 
   return (
@@ -300,11 +343,25 @@ export const ExerciseDetails = ({
             <DialogTitle>Ergebnis für {name}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-4">
+            {isRunningExercise(name) && (
+              <div>
+                <Label>Messmethode</Label>
+                <Select value={selectedMetric} onValueChange={(value: 'time' | 'distance') => setSelectedMetric(value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Wähle die Messmethode" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="time">Zeit</SelectItem>
+                    <SelectItem value="distance">Distanz</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div>
               <Label>{needsAdditionalInput(name) ? 'Wiederholungen' : 'Dein Ergebnis'}</Label>
               <Input
-                type={getInputType(name)}
-                placeholder={getPlaceholder(name)}
+                type={getInputType(name, selectedMetric)}
+                placeholder={getPlaceholder(name, selectedMetric)}
                 value={resultValue}
                 onChange={(e) => setResultValue(e.target.value)}
               />
@@ -320,7 +377,7 @@ export const ExerciseDetails = ({
                 </div>
               )}
               <p className="text-sm text-muted-foreground mt-1">
-                Einheit: {getUnitForExercise(name)}
+                Einheit: {getUnitForExercise(name, selectedMetric)}
               </p>
             </div>
             <div className="flex gap-2">
