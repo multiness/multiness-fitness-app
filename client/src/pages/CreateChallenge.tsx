@@ -259,7 +259,9 @@ ${template.workoutType === 'amrap' ?
         if (creationMethod === 'badge') return !!selectedBadgeTest;
         return false;
       case 3:
-        const hasDescription = challengeDescription.trim().length > 0 || generateWorkoutDescription().trim().length > 0;
+        // Prüfen ob die generierte Beschreibung vorhanden ist
+        const generatedDescription = generateWorkoutDescription().trim();
+        const hasDescription = challengeDescription.trim().length > 0 || generatedDescription.length > 0;
         const hasDates = startDate && endDate;
         return hasDescription && hasDates;
       case 4:
@@ -549,12 +551,8 @@ ${template.workoutType === 'amrap' ?
 
                 {workoutType && needsExercises(workoutType) && (
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between">
+                    <div>
                       <Label>Übungen</Label>
-                      <Button type="button" onClick={handleAddExercise} variant="outline" size="sm">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Übung hinzufügen
-                      </Button>
                     </div>
                     <div className="space-y-4">
                       {exercises.map((exercise, index) => (
@@ -605,6 +603,10 @@ ${template.workoutType === 'amrap' ?
                           </div>
                         </div>
                       ))}
+                      <Button type="button" onClick={handleAddExercise} variant="outline" className="w-full">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Übung hinzufügen
+                      </Button>
                     </div>
                   </div>
                 )}

@@ -7,7 +7,7 @@ import {
   Dumbbell, Waves, Bike, Timer, Award, ChevronRight
 } from "lucide-react";
 import { format } from "date-fns";
-import { mockChallenges, badgeTests } from "../data/mockData";
+import { mockChallenges, badgeTests, exerciseDatabase } from "../data/mockData";
 import { de } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -328,12 +328,15 @@ export default function ChallengeDetail() {
                       key={index}
                       name={exercise.name}
                       description={exercise.description}
-                      instruction={exerciseDatabase.exercises[exercise.name.toLowerCase()]?.instruction}
-                      tips={exerciseDatabase.exercises[exercise.name.toLowerCase()]?.tips}
+                      instruction={exercise.instruction || exerciseDatabase.exercises[exercise.name.toLowerCase()]?.instruction}
+                      tips={exercise.tips || exerciseDatabase.exercises[exercise.name.toLowerCase()]?.tips}
                       icon={getExerciseIcon(exercise.name)}
                       requirements={{
                         reps: exercise.reps,
-                        weight: exercise.weight
+                        weight: exercise.weight,
+                        time: exercise.time,
+                        distance: exercise.distance,
+                        targetType: exercise.targetType
                       }}
                       isParticipating={isParticipating}
                       onSubmitResult={handleSubmitExerciseResult}
