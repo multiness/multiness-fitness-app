@@ -17,6 +17,7 @@ import { getChatId } from "../lib/chatService";
 import { useGroupStore } from "../lib/groupStore";
 import EditGroupDialog from "@/components/EditGroupDialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import ChallengeCard from "@/components/ChallengeCard"; // Import ChallengeCard
 
 
 export default function Profile() {
@@ -296,15 +297,23 @@ export default function Profile() {
               <FeedPost key={post.id} post={post} />
             ))}
           </TabsContent>
-          <TabsContent value="challenges">
-            {/* Challenges TabContent */}
-            {activeUserChallenges.map((challenge) => (
-              <div key={challenge.id} className="flex items-center gap-2">
-                <Button onClick={() => navigateToChallenge(challenge.id)}>
-                  {challenge.title}
-                </Button>
+          {/* Challenges TabContent */}
+          <TabsContent value="challenges" className="space-y-4">
+            {activeUserChallenges.length > 0 ? (
+              <div className="grid gap-4">
+                {activeUserChallenges.map((challenge) => (
+                  <ChallengeCard
+                    key={challenge.id}
+                    challenge={challenge}
+                    variant="full"
+                  />
+                ))}
               </div>
-            ))}
+            ) : (
+              <div className="text-center text-muted-foreground py-8">
+                Keine aktiven Challenges gefunden
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </ScrollArea>
