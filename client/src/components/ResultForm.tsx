@@ -27,8 +27,190 @@ export function ResultForm({ challenge, onSubmit, onCancel }: ResultFormProps) {
   };
 
   const calculatePoints = () => {
-    // Hier kommt später die Punkteberechnung basierend auf den Anforderungen
+    if (challenge.workoutType === 'badge') {
+      return calculateBadgePoints();
+    } else if (challenge.workoutType === 'amrap') {
+      return calculateAmrapPoints();
+    } else if (challenge.workoutType === 'custom' && challenge.workoutDetails.isCircuit) {
+      return calculateCircuitPoints();
+    } else if (challenge.workoutType === 'custom') {
+      return calculateCustomWorkoutPoints();
+    } else if (challenge.workoutType === 'time' || challenge.title.toLowerCase().includes('marathon')) {
+      return calculateTimeBasedPoints();
+    }
+    return calculateDefaultPoints();
+  };
+
+  const calculateBadgePoints = () => {
+    let totalPoints = 0;
+    let completedExercises = 0;
+
+    challenge.workoutDetails.exercises.forEach((exercise: any) => {
+      const result = parseFloat(results[exercise.name]);
+      if (!isNaN(result)) {
+        const requirement = exercise.gender_specific[challenge.userGender || 'male'];
+        const points = calculateExercisePoints(exercise.name, result, requirement);
+        totalPoints += points;
+        completedExercises++;
+      }
+    });
+
+    if (completedExercises === 0) return 0;
+    return Math.round(totalPoints / completedExercises);
+  };
+
+  const calculateExercisePoints = (exerciseName: string, result: number, requirement: string) => {
+    const lowerName = exerciseName.toLowerCase();
+
+    // Zeit-basierte Übungen (niedrigere Zeit = besser)
+    if (lowerName.includes('lauf') || lowerName.includes('sprint') || lowerName.includes('pendel')) {
+      const reqTime = parseTimeToSeconds(requirement);
+      const resultTime = parseTimeToSeconds(result.toString());
+
+      if (resultTime <= reqTime) return 100;
+      if (resultTime <= reqTime * 1.1) return 90;
+      if (resultTime <= reqTime * 1.2) return 75;
+      if (resultTime <= reqTime * 1.3) return 60;
+      return 50;
+    }
+
+    // Wiederholungs-basierte Übungen (höhere Anzahl = besser)
+    if (lowerName.includes('liegestütz') || lowerName.includes('sit-up')) {
+      const reqReps = parseInt(requirement);
+
+      if (result >= reqReps * 1.2) return 100;
+      if (result >= reqReps * 1.1) return 90;
+      if (result >= reqReps) return 75;
+      if (result >= reqReps * 0.8) return 60;
+      return 50;
+    }
+
+    // Distanz-basierte Übungen
+    if (lowerName.includes('weitsprung') || lowerName.includes('wurf')) {
+      const reqDistance = parseFloat(requirement);
+
+      if (result >= reqDistance * 1.1) return 100;
+      if (result >= reqDistance) return 90;
+      if (result >= reqDistance * 0.9) return 75;
+      if (result >= reqDistance * 0.8) return 60;
+      return 50;
+    }
+
+    return 50; // Standardwert für nicht spezifizierte Übungen
+  };
+
+  const calculateCircuitPoints = () => {
+    const maxRounds = challenge.workoutDetails.rounds;
+    const completedRounds = parseInt(results.rounds) || 0;
+    const timeLimit = challenge.workoutDetails.timeLimit;
+    const timeTaken = parseInt(results.time) || 0;
+
+    // Basis-Punkte für geschaffte Runden (max. 80 Punkte)
+    let points = (completedRounds / maxRounds) * 80;
+
+    // Zeitbonus (max. 20 Punkte)
+    if (timeLimit && timeTaken <= timeLimit) {
+      const timeBonus = ((timeLimit - timeTaken) / timeLimit) * 20;
+      points += timeBonus;
+    }
+
+    return Math.round(Math.min(points, 100));
+  };
+
+  const calculateCustomWorkoutPoints = () => {
+    let totalPoints = 0;
+    let completedExercises = 0;
+
+    challenge.workoutDetails.exercises.forEach((exercise: any) => {
+      if (results[exercise.name]) {
+        const value = parseFloat(results[exercise.name]);
+        if (!isNaN(value)) {
+          const target = exercise.target || 0;
+          let points = (value / target) * 100;
+          points = Math.min(points, 100);
+          totalPoints += points;
+          completedExercises++;
+        }
+      }
+    });
+
+    return completedExercises > 0 ? Math.round(totalPoints / completedExercises) : 0;
+  };
+
+  const calculateTimeBasedPoints = () => {
+    const timeTaken = parseTimeToSeconds(results.time);
+    if (!timeTaken) return 0;
+
+    // Zeit-Ziele basierend auf Challenge-Typ
+    let targetTimes = {
+      gold: 0,
+      silver: 0,
+      bronze: 0
+    };
+
+    if (challenge.title.toLowerCase().includes('marathon')) {
+      targetTimes = {
+        gold: 9000,    // 2:30:00
+        silver: 10800,  // 3:00:00
+        bronze: 14400   // 4:00:00
+      };
+    } else if (challenge.title.toLowerCase().includes('halbmarathon')) {
+      targetTimes = {
+        gold: 4500,    // 1:15:00
+        silver: 5400,   // 1:30:00
+        bronze: 6300    // 1:45:00
+      };
+    } else {
+      // Standard Zeit-basierte Challenge
+      targetTimes = {
+        gold: challenge.workoutDetails.targetTime * 0.9,
+        silver: challenge.workoutDetails.targetTime,
+        bronze: challenge.workoutDetails.targetTime * 1.2
+      };
+    }
+
+    if (timeTaken <= targetTimes.gold) return 100;
+    if (timeTaken <= targetTimes.silver) return 85;
+    if (timeTaken <= targetTimes.bronze) return 70;
+    return 50;
+  };
+
+  const calculateAmrapPoints = () => {
+    const rounds = parseInt(results.rounds) || 0;
+    const timeLimit = challenge.workoutDetails.timeLimit || 20; // Standard 20 Minuten
+
+    // Berechne erwartete Runden basierend auf der Schwierigkeit
+    const expectedRounds = {
+      easy: timeLimit / 2,    // Eine Runde alle 2 Minuten
+      medium: timeLimit / 3,  // Eine Runde alle 3 Minuten
+      hard: timeLimit / 4     // Eine Runde alle 4 Minuten
+    };
+
+    const difficulty = challenge.workoutDetails.difficulty || 'medium';
+    const target = expectedRounds[difficulty];
+
+    if (rounds >= target * 1.2) return 100;
+    if (rounds >= target) return 85;
+    if (rounds >= target * 0.8) return 70;
+    return 50;
+  };
+
+  const calculateDefaultPoints = () => {
+    // Standard-Punkteberechnung für andere Challenge-Typen
     return 100;
+  };
+
+  const parseTimeToSeconds = (timeStr: string): number => {
+    if (!timeStr) return 0;
+
+    // Format: "MM:SS" oder "HH:MM:SS"
+    const parts = timeStr.split(':').map(Number);
+    if (parts.length === 2) {
+      return parts[0] * 60 + parts[1];
+    } else if (parts.length === 3) {
+      return parts[0] * 3600 + parts[1] * 60 + parts[2];
+    }
+    return parseInt(timeStr) || 0;
   };
 
   const handleSubmit = () => {
