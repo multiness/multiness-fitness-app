@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { mockUsers } from "../data/mockData";
+import { storage, STORAGE_KEYS } from "../lib/storage";
 
 type User = {
   id: number;
@@ -23,51 +24,15 @@ interface UserContextType {
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'fitness-app-user';
-const USERS_STORAGE_KEY = 'fitness-app-users';
-
 export function UserProvider({ children }: { children: ReactNode }) {
-  // Load users data from localStorage or use mockUsers as fallback
-  const loadInitialUsers = () => {
-    try {
-      const savedUsers = localStorage.getItem(USERS_STORAGE_KEY);
-      if (savedUsers) {
-        const parsedUsers = JSON.parse(savedUsers);
-        // Validate that the parsed data has the expected structure
-        if (Array.isArray(parsedUsers) && parsedUsers.length > 0 && 
-            parsedUsers[0].hasOwnProperty('id') && 
-            parsedUsers[0].hasOwnProperty('username')) {
-          return parsedUsers;
-        }
-      }
-    } catch (error) {
-      console.error('Error loading users from localStorage:', error);
-    }
-    return mockUsers;
-  };
+  // Lade Benutzerdaten aus dem Storage oder verwende mockUsers als Fallback
+  const [users, setUsers] = useState(() => 
+    storage.getItem(STORAGE_KEYS.USERS, mockUsers)
+  );
 
-  // Load current user from localStorage
-  const loadCurrentUser = () => {
-    try {
-      const savedUser = localStorage.getItem(STORAGE_KEY);
-      if (savedUser) {
-        const parsedUser = JSON.parse(savedUser);
-        // Validate that the parsed data has the expected structure
-        if (parsedUser && parsedUser.hasOwnProperty('id') && 
-            parsedUser.hasOwnProperty('username')) {
-          return parsedUser;
-        }
-      }
-    } catch (error) {
-      console.error('Error loading current user from localStorage:', error);
-    }
-    // If no saved user or invalid data, use the first user from loaded users
-    const initialUsers = loadInitialUsers();
-    return initialUsers[0];
-  };
-
-  const [users, setUsers] = useState(loadInitialUsers());
-  const [currentUser, setCurrentUser] = useState(loadCurrentUser());
+  const [currentUser, setCurrentUser] = useState(() => 
+    storage.getItem(STORAGE_KEYS.USER, users[0])
+  );
 
   const updateCurrentUser = (userData: Partial<User>) => {
     if (!currentUser) return;
@@ -81,18 +46,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
     );
     setUsers(updatedUsers);
 
-    // Save to localStorage
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedUser));
-      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
-
-      // Dispatch custom event to notify other components
-      window.dispatchEvent(new CustomEvent('userDataUpdated', {
-        detail: { user: updatedUser }
-      }));
-    } catch (error) {
-      console.error('Error saving user data to localStorage:', error);
-    }
+    // Save to storage
+    storage.setItem(STORAGE_KEYS.USER, updatedUser);
+    storage.setItem(STORAGE_KEYS.USERS, updatedUsers);
   };
 
   const toggleVerification = (userId: number) => {
@@ -102,27 +58,31 @@ export function UserProvider({ children }: { children: ReactNode }) {
         : user
     );
     setUsers(updatedUsers);
-    try {
-      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
-    } catch (error) {
-      console.error('Error saving users data to localStorage:', error);
-    }
+    storage.setItem(STORAGE_KEYS.USERS, updatedUsers);
   };
 
-  // Add listener for storage events from other tabs/windows
+  // Storage Event Listener
   useEffect(() => {
-    const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === STORAGE_KEY) {
-        const updatedUser = JSON.parse(event.newValue || '');
-        setCurrentUser(updatedUser);
-      } else if (event.key === USERS_STORAGE_KEY) {
-        const updatedUsers = JSON.parse(event.newValue || '[]');
-        setUsers(updatedUsers);
+    const cleanup = storage.addStorageListener((event: StorageEvent | CustomEvent) => {
+      if ('key' in event) { // StorageEvent
+        if (event.key === STORAGE_KEYS.USER) {
+          const updatedUser = JSON.parse(event.newValue || '');
+          setCurrentUser(updatedUser);
+        } else if (event.key === STORAGE_KEYS.USERS) {
+          const updatedUsers = JSON.parse(event.newValue || '[]');
+          setUsers(updatedUsers);
+        }
+      } else { // CustomEvent
+        const { key, value } = (event as CustomEvent).detail;
+        if (key === STORAGE_KEYS.USER) {
+          setCurrentUser(value);
+        } else if (key === STORAGE_KEYS.USERS) {
+          setUsers(value);
+        }
       }
-    };
+    });
 
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    return cleanup;
   }, []);
 
   return (
