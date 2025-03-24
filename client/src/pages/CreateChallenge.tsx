@@ -235,7 +235,8 @@ ${template.workoutType === 'amrap' ?
   };
 
   const needsExercises = (type: string) => {
-    return !['distance', 'running', 'custom'].includes(type);
+    // Custom workouts should also support exercises
+    return !['distance'].includes(type);
   };
 
   const isStepComplete = (step: number) => {
