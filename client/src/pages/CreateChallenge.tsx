@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { ExerciseDetails } from "@/components/ExerciseDetails";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface Exercise {
   name: string;
@@ -39,6 +40,10 @@ interface WorkoutDetails {
   exercises: Exercise[];
   distance?: number;
   targetType?: 'time' | 'distance';
+  mode?: 'amrap' | 'timecap' | 'rounds' | 'circuit';  // For custom workouts
+  restBetweenSets?: number;  // Rest period in seconds
+  timeLimit?: number;  // For AMRAP and Time Cap modes
+  isCircuit?: boolean; // Added for circuit training
 }
 
 interface BadgeTest {
@@ -105,6 +110,10 @@ export default function CreateChallenge() {
   const [challengeImage, setChallengeImage] = useState<string | null>(null);
   const [prizeImage, setPrizeImage] = useState<string | null>(null);
   const [targetType, setTargetType] = useState<'time' | 'distance'>('distance');
+  const [customMode, setCustomMode] = useState<'amrap' | 'timecap' | 'rounds'>('rounds');
+  const [restBetweenSets, setRestBetweenSets] = useState<string>("");
+  const [isCircuit, setIsCircuit] = useState(false);
+
 
   const workoutTypes = [
     { value: "amrap", label: "AMRAP (As Many Rounds As Possible)" },
@@ -190,20 +199,35 @@ ${template.workoutType === 'amrap' ?
       return details;
     }
 
-    switch (workoutType) {
-      case "amrap":
-        details += `AMRAP ${timeLimit} Minuten:\n`;
-        break;
-      case "emom":
-        details += `EMOM ${rounds} Runden:\n`;
-        details += `${timePerRound} Sekunden pro Runde\n`;
-        break;
-      case "fortime":
-        details += `Für Zeit:\n${rounds} Runden\n`;
-        break;
-      case "custom":
+    if (workoutType === "custom") {
+      if (isCircuit) {
+        details += `Zirkel-Training:\n`;
+        details += `${rounds} Runden\n`;
+        if (timeLimit) {
+          details += `Zeitlimit: ${timeLimit} Minuten\n`;
+        }
+        if (restBetweenSets) {
+          details += `Pause zwischen Runden: ${restBetweenSets} Sekunden\n`;
+        }
+      } else {
         details += "Freies Workout\n";
-        break;
+        if (restBetweenSets) {
+          details += `Pause zwischen Übungen: ${restBetweenSets} Sekunden\n`;
+        }
+      }
+    } else {
+      switch (workoutType) {
+        case "amrap":
+          details += `AMRAP ${timeLimit} Minuten:\n`;
+          break;
+        case "emom":
+          details += `EMOM ${rounds} Runden:\n`;
+          details += `${timePerRound} Sekunden pro Runde\n`;
+          break;
+        case "fortime":
+          details += `Für Zeit:\n${rounds} Runden\n`;
+          break;
+      }
     }
 
     if (exercises.length > 0) {
@@ -291,31 +315,16 @@ ${template.workoutType === 'amrap' ?
       return;
     }
 
-    if (creationMethod === "badge" && !selectedBadgeTest) {
-      toast({
-        title: "Kein Test ausgewählt",
-        description: "Bitte wähle einen Fitness-Test aus.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!challengeTitle || !challengeDescription) {
-      toast({
-        title: "Fehlende Informationen",
-        description: "Bitte gib einen Titel und eine Beschreibung für deine Challenge ein.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     const workoutDetails = creationMethod === "manual" ? {
       type: workoutType,
       timePerRound: Number(timePerRound) || undefined,
       rounds: Number(rounds) || undefined,
       exercises: exercises,
       distance: distance ? Number(distance) : undefined,
-      targetType: workoutType === 'distance' ? targetType : undefined
+      targetType: workoutType === 'distance' ? targetType : undefined,
+      isCircuit: workoutType === 'custom' ? isCircuit : undefined,
+      restBetweenSets: restBetweenSets ? Number(restBetweenSets) : undefined,
+      timeLimit: timeLimit ? Number(timeLimit) : undefined,
     } : creationMethod === "generator" ? selectedWorkout.workoutDetails : {
       type: "badge",
       exercises: []
@@ -365,6 +374,8 @@ ${template.workoutType === 'amrap' ?
     setChallengeImage(null);
     setPrizeImage(null);
     setTargetType('distance');
+    setIsCircuit(false);
+    setRestBetweenSets("");
 
     // Optional: Redirect to the challenges page
     window.location.href = '/challenges';
@@ -545,6 +556,54 @@ ${template.workoutType === 'amrap' ?
                         value={distance}
                         onChange={(e) => setDistance(e.target.value)}
                         placeholder={targetType === 'distance' ? "z.B. 5" : "z.B. 30"}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {workoutType === "custom" && (
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="isCircuit"
+                        checked={isCircuit}
+                        onCheckedChange={(checked) => setIsCircuit(checked as boolean)}
+                      />
+                      <Label htmlFor="isCircuit">Als Zirkel gestalten</Label>
+                    </div>
+
+                    {isCircuit && (
+                      <>
+                        <div>
+                          <Label>Anzahl Runden</Label>
+                          <Input
+                            type="number"
+                            value={rounds}
+                            onChange={(e) => setRounds(e.target.value)}
+                            placeholder="z.B. 5"
+                          />
+                        </div>
+                        <div>
+                          <Label>Zeitlimit (Optional, in Minuten)</Label>
+                          <Input
+                            type="number"
+                            value={timeLimit}
+                            onChange={(e) => setTimeLimit(e.target.value)}
+                            placeholder="z.B. 20"
+                          />
+                        </div>
+                      </>
+                    )}
+
+                    <div>
+                      <Label>
+                        {isCircuit ? 'Pause zwischen Runden (Sekunden)' : 'Pause zwischen Übungen (Sekunden)'}
+                      </Label>
+                      <Input
+                        type="number"
+                        value={restBetweenSets}
+                        onChange={(e) => setRestBetweenSets(e.target.value)}
+                        placeholder="z.B. 60"
                       />
                     </div>
                   </div>
