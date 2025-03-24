@@ -7,11 +7,11 @@ import ChallengeCard from "@/components/ChallengeCard";
 import FeedPost from "@/components/FeedPost";
 import EventSlider from "@/components/EventSlider";
 import { ArrowRight, Crown, Heart, Share2, Users, Trophy, Package, Calendar } from "lucide-react";
-import { mockGroups, mockChallenges, mockUsers, mockProducts } from "../data/mockData";
 import { useLocation, Link } from "wouter";
 import { usePostStore } from "../lib/postStore";
 import { getChatId } from "../lib/chatService";
-import { useUsers } from "../contexts/UserContext"; 
+import { useUsers } from "../contexts/UserContext";
+import { storage, STORAGE_KEYS } from "../lib/storage";
 import {
   Carousel,
   CarouselContent,
@@ -30,54 +30,33 @@ export default function Home() {
   const { currentUser } = useUsers();
   const [posts, setPosts] = useState([]);
   const [challenges, setChallenges] = useState([]);
+  const [groups, setGroups] = useState([]);
+  const [products, setProducts] = useState([]);
 
   // Load and sync data
   useEffect(() => {
     const loadData = () => {
-      // Load posts from localStorage
-      const savedPosts = localStorage.getItem('fitness-app-posts');
-      if (savedPosts) {
-        try {
-          const parsedPosts = JSON.parse(savedPosts);
-          setPosts(parsedPosts);
-        } catch (error) {
-          console.error('Error loading posts:', error);
-        }
-      }
-
-      // Load challenges from localStorage
-      const savedChallenges = localStorage.getItem('fitness-app-challenges');
-      if (savedChallenges) {
-        try {
-          const parsedChallenges = JSON.parse(savedChallenges);
-          setChallenges(parsedChallenges);
-        } catch (error) {
-          console.error('Error loading challenges:', error);
-        }
-      }
+      // Hole alle Daten aus dem zentralen Storage
+      setPosts(storage.getItem(STORAGE_KEYS.POSTS, []));
+      setChallenges(storage.getItem(STORAGE_KEYS.CHALLENGES, []));
+      setGroups(storage.getItem(STORAGE_KEYS.GROUPS, []));
+      setProducts(storage.getItem(STORAGE_KEYS.PRODUCTS, []));
     };
 
     // Initial load
     loadData();
 
     // Listen for updates
-    const handleStorageChange = () => loadData();
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('userDataUpdated', handleStorageChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('userDataUpdated', handleStorageChange);
-    };
+    const cleanup = storage.addStorageListener(() => loadData());
+    return cleanup;
   }, []);
 
-  const activeChallenges = challenges.length > 0 
-    ? challenges.filter(challenge => new Date() <= new Date(challenge.endDate))
-    : mockChallenges.filter(challenge => new Date() <= new Date(challenge.endDate));
+  const activeChallenges = challenges
+    .filter(challenge => new Date() <= new Date(challenge.endDate))
+    .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
 
-  const allPosts = posts.length > 0 
-    ? posts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    : Object.values(postStore.posts).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const allPosts = posts
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   const navigateToGroupChat = (groupId: number) => {
     const chatId = getChatId(groupId);
@@ -154,11 +133,11 @@ export default function Home() {
         </div>
         {/* Mobile: Karussell-Layout */}
         <div className="block md:hidden">
-          <GroupCarousel groups={mockGroups.slice(0, 6)} />
+          <GroupCarousel groups={groups.slice(0, 6)} />
         </div>
         {/* Desktop: Grid-Layout mit gleichem Design wie Mobile */}
         <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {mockGroups.slice(0, 6).map(group => (
+          {groups.slice(0, 6).map(group => (
             <div key={group.id} className="cursor-pointer transition-transform hover:scale-[1.02]" onClick={() => navigateToGroupChat(group.id)}>
               <GroupPreview group={group} />
             </div>
@@ -177,10 +156,10 @@ export default function Home() {
             Alle Produkte <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
-        <ProductSlider products={mockProducts} />
+        <ProductSlider products={products} />
       </section>
 
-      {/* Aktive Challenges - Hervorgehobenes Design */}
+      {/* Aktive Challenges */}
       <section className="mb-12">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
@@ -234,7 +213,6 @@ export default function Home() {
         </div>
         <EventSlider />
       </section>
-
 
       {/* Feed */}
       <section>
