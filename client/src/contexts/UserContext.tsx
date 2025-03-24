@@ -29,20 +29,39 @@ const USERS_STORAGE_KEY = 'fitness-app-users';
 export function UserProvider({ children }: { children: ReactNode }) {
   // Load users data from localStorage or use mockUsers as fallback
   const loadInitialUsers = () => {
-    const savedUsers = localStorage.getItem(USERS_STORAGE_KEY);
-    if (savedUsers) {
-      return JSON.parse(savedUsers);
+    try {
+      const savedUsers = localStorage.getItem(USERS_STORAGE_KEY);
+      if (savedUsers) {
+        const parsedUsers = JSON.parse(savedUsers);
+        // Validate that the parsed data has the expected structure
+        if (Array.isArray(parsedUsers) && parsedUsers.length > 0 && 
+            parsedUsers[0].hasOwnProperty('id') && 
+            parsedUsers[0].hasOwnProperty('username')) {
+          return parsedUsers;
+        }
+      }
+    } catch (error) {
+      console.error('Error loading users from localStorage:', error);
     }
     return mockUsers;
   };
 
   // Load current user from localStorage
   const loadCurrentUser = () => {
-    const savedUser = localStorage.getItem(STORAGE_KEY);
-    if (savedUser) {
-      return JSON.parse(savedUser);
+    try {
+      const savedUser = localStorage.getItem(STORAGE_KEY);
+      if (savedUser) {
+        const parsedUser = JSON.parse(savedUser);
+        // Validate that the parsed data has the expected structure
+        if (parsedUser && parsedUser.hasOwnProperty('id') && 
+            parsedUser.hasOwnProperty('username')) {
+          return parsedUser;
+        }
+      }
+    } catch (error) {
+      console.error('Error loading current user from localStorage:', error);
     }
-    // If no saved user, use the first user from loaded users
+    // If no saved user or invalid data, use the first user from loaded users
     const initialUsers = loadInitialUsers();
     return initialUsers[0];
   };
@@ -63,8 +82,17 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setUsers(updatedUsers);
 
     // Save to localStorage
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedUser));
-    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedUser));
+      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
+
+      // Dispatch custom event to notify other components
+      window.dispatchEvent(new CustomEvent('userDataUpdated', {
+        detail: { user: updatedUser }
+      }));
+    } catch (error) {
+      console.error('Error saving user data to localStorage:', error);
+    }
   };
 
   const toggleVerification = (userId: number) => {
@@ -74,19 +102,28 @@ export function UserProvider({ children }: { children: ReactNode }) {
         : user
     );
     setUsers(updatedUsers);
-    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
+    try {
+      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
+    } catch (error) {
+      console.error('Error saving users data to localStorage:', error);
+    }
   };
 
-  // Persist changes to localStorage whenever users or currentUser changes
+  // Add listener for storage events from other tabs/windows
   useEffect(() => {
-    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
-  }, [users]);
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === STORAGE_KEY) {
+        const updatedUser = JSON.parse(event.newValue || '');
+        setCurrentUser(updatedUser);
+      } else if (event.key === USERS_STORAGE_KEY) {
+        const updatedUsers = JSON.parse(event.newValue || '[]');
+        setUsers(updatedUsers);
+      }
+    };
 
-  useEffect(() => {
-    if (currentUser) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(currentUser));
-    }
-  }, [currentUser]);
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   return (
     <UserContext.Provider value={{ users, currentUser, updateCurrentUser, toggleVerification }}>

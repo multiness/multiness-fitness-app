@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navigation from "./Navigation";
 import CreateModal from "./CreateModal";
 import { Button } from "@/components/ui/button";
@@ -18,74 +18,75 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
-// Erweiterte Mock-Benachrichtigungen mit Typen und Links
-const mockNotifications = [
-  {
-    id: 1,
-    type: 'challenge',
-    title: "Neue Challenge",
-    message: "Eine neue Fitness Challenge wurde erstellt",
-    time: new Date(Date.now() - 5 * 60 * 1000),
-    unread: true,
-    link: "/challenges/123",
-    icon: Dumbbell
-  },
-  {
-    id: 2,
-    type: 'group',
-    title: "Gruppeneinladung",
-    message: "Du wurdest zur Gruppe 'Morning Workout' eingeladen",
-    time: new Date(Date.now() - 30 * 60 * 1000),
-    unread: true,
-    link: "/groups/456",
-    icon: Users2
-  },
-  {
-    id: 3,
-    type: 'event',
-    title: "Neues Event",
-    message: "Fitness Workshop am kommenden Samstag",
-    time: new Date(Date.now() - 2 * 60 * 60 * 1000),
-    unread: true,
-    link: "/events/789",
-    icon: Calendar
-  },
-  {
-    id: 4,
-    type: 'product',
-    title: "Neues Produkt",
-    message: "Neue Fitness-Ausrüstung im Shop verfügbar",
-    time: new Date(Date.now() - 3 * 60 * 60 * 1000),
-    unread: false,
-    link: "/products/101",
-    icon: Package
-  }
-];
+// Extended notifications interface
+interface Notification {
+  id: number;
+  type: 'challenge' | 'group' | 'event' | 'product';
+  title: string;
+  message: string;
+  time: Date;
+  unread: boolean;
+  link: string;
+  icon: any;
+}
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [, setLocation] = useLocation();
   const { currentUser } = useUsers();
-  const [notifications, setNotifications] = useState(mockNotifications);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+
+  // Load and sync notifications
+  useEffect(() => {
+    const loadNotifications = () => {
+      const savedNotifications = localStorage.getItem('fitness-app-notifications');
+      if (savedNotifications) {
+        try {
+          const parsedNotifications = JSON.parse(savedNotifications);
+          setNotifications(parsedNotifications);
+        } catch (error) {
+          console.error('Error loading notifications:', error);
+        }
+      }
+    };
+
+    // Initial load
+    loadNotifications();
+
+    // Listen for updates
+    const handleStorageChange = () => loadNotifications();
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('notificationAdded', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('notificationAdded', handleStorageChange);
+    };
+  }, []);
+
   const unreadCount = notifications.filter(n => n.unread).length;
 
-  // Gruppiere Benachrichtigungen nach Typ
+  // Group notifications by type
   const groupedNotifications = notifications.reduce((acc, notification) => {
     if (!acc[notification.type]) {
       acc[notification.type] = [];
     }
     acc[notification.type].push(notification);
     return acc;
-  }, {} as Record<string, typeof mockNotifications>);
+  }, {} as Record<string, Notification[]>);
 
   const markAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, unread: false })));
+    const updatedNotifications = notifications.map(n => ({ ...n, unread: false }));
+    setNotifications(updatedNotifications);
+    localStorage.setItem('fitness-app-notifications', JSON.stringify(updatedNotifications));
   };
 
   const markAsRead = (id: number) => {
-    setNotifications(notifications.map(n =>
+    const updatedNotifications = notifications.map(n =>
       n.id === id ? { ...n, unread: false } : n
-    ));
+    );
+    setNotifications(updatedNotifications);
+    localStorage.setItem('fitness-app-notifications', JSON.stringify(updatedNotifications));
   };
 
   const formatNotificationTime = (date: Date) => {

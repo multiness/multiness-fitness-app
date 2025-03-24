@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import UserSlider from "@/components/UserSlider";
@@ -10,6 +11,7 @@ import { mockGroups, mockChallenges, mockUsers, mockProducts } from "../data/moc
 import { useLocation, Link } from "wouter";
 import { usePostStore } from "../lib/postStore";
 import { getChatId } from "../lib/chatService";
+import { useUsers } from "../contexts/UserContext"; 
 import {
   Carousel,
   CarouselContent,
@@ -17,28 +19,65 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import GroupCarousel from "@/components/GroupCarousel";
 import { UserAvatar } from "@/components/UserAvatar";
 import ProductSlider from "@/components/ProductSlider";
 
-
-const format = (date: Date, formatStr: string) => {
-  return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
-};
-
 export default function Home() {
   const [, setLocation] = useLocation();
   const postStore = usePostStore();
-  const activeChallenges = mockChallenges.filter(
-    challenge => new Date() <= new Date(challenge.endDate)
-  );
+  const { currentUser } = useUsers();
+  const [posts, setPosts] = useState([]);
+  const [challenges, setChallenges] = useState([]);
 
-  // Lade Posts aus dem postStore statt mockPosts
-  const allPosts = Object.values(postStore.posts).sort((a, b) =>
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
+  // Load and sync data
+  useEffect(() => {
+    const loadData = () => {
+      // Load posts from localStorage
+      const savedPosts = localStorage.getItem('fitness-app-posts');
+      if (savedPosts) {
+        try {
+          const parsedPosts = JSON.parse(savedPosts);
+          setPosts(parsedPosts);
+        } catch (error) {
+          console.error('Error loading posts:', error);
+        }
+      }
+
+      // Load challenges from localStorage
+      const savedChallenges = localStorage.getItem('fitness-app-challenges');
+      if (savedChallenges) {
+        try {
+          const parsedChallenges = JSON.parse(savedChallenges);
+          setChallenges(parsedChallenges);
+        } catch (error) {
+          console.error('Error loading challenges:', error);
+        }
+      }
+    };
+
+    // Initial load
+    loadData();
+
+    // Listen for updates
+    const handleStorageChange = () => loadData();
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('userDataUpdated', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('userDataUpdated', handleStorageChange);
+    };
+  }, []);
+
+  const activeChallenges = challenges.length > 0 
+    ? challenges.filter(challenge => new Date() <= new Date(challenge.endDate))
+    : mockChallenges.filter(challenge => new Date() <= new Date(challenge.endDate));
+
+  const allPosts = posts.length > 0 
+    ? posts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    : Object.values(postStore.posts).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   const navigateToGroupChat = (groupId: number) => {
     const chatId = getChatId(groupId);
