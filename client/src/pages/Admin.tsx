@@ -41,8 +41,6 @@ import { Badge } from "@/components/ui/badge";
 import { Link, useLocation } from "wouter";
 import { useAdmin } from "@/contexts/AdminContext";
 import { useProducts } from "@/contexts/ProductContext";
-import { useChallenge } from "@/contexts/ChallengeContext";
-import { useBannerStore } from "@/lib/bannerStore";
 
 // Product Management Section Component
 function ProductManagement() {
@@ -327,23 +325,475 @@ function ProductManagement() {
   );
 }
 
-export default function Admin() {
+// Erweiterte Mock-Daten mit Button-Konfiguration und archivierten Bannern
+const mockBanners = [
+  {
+    id: 1,
+    name: "Summer Challenge",
+    positionId: "APP_HEADER",
+    description: "Promotion für die Summer Fitness Challenge",
+    appImage: "https://images.unsplash.com/photo-1517963879433-6ad2b056d712?w=1200&auto=format",
+    webImage: "https://images.unsplash.com/photo-1517963879433-6ad2b056d712?w=1920&auto=format",
+    isActive: true,
+    targetUrl: "https://example.com",
+    createdAt: new Date(),
+    buttons: [
+      {
+        text: "Jetzt mitmachen",
+        url: "https://example.com/challenge"
+      },
+      {
+        text: "Mehr erfahren",
+        url: "https://example.com/info"
+      }
+    ],
+    stats: {
+      views: 1234,
+      clicks: 89,
+      ctr: "7.2%"
+    }
+  },
+  {
+    id: 2,
+    name: "Spring Event 2024",
+    positionId: "APP_HEADER",
+    description: "Frühlings-Fitness-Event",
+    appImage: "https://images.unsplash.com/photo-1517963879433-6ad2b056d712?w=1200&auto=format",
+    webImage: "https://images.unsplash.com/photo-1517963879433-6ad2b056d712?w=1920&auto=format",
+    isActive: false,
+    targetUrl: "https://example.com/spring",
+    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 Tage alt
+    buttons: [],
+    stats: {
+      views: 2500,
+      clicks: 180,
+      ctr: "7.2%"
+    }
+  }
+];
+
+// Leere Mock-Daten für die Statistik-Karten
+const mockChallenges = [];
+const mockGroups = [];
+const mockPosts = [
+  {
+    id: 1,
+    userId: 1,
+    content: "Dies ist ein Beispiel für einen gemeldeten Beitrag.",
+    image: "https://via.placeholder.com/150",
+  },
+  {
+    id: 2,
+    userId: 2,
+    content: "Ein weiterer gemeldeter Beitrag.",
+    image: null,
+  }
+];
+
+// Mock Product Data
+const mockProducts = [
+  {
+    id: 1,
+    name: "Produkt A",
+    description: "Beschreibung von Produkt A",
+    image: "https://via.placeholder.com/150",
+    type: "Type A",
+    isActive: true,
+    isArchived: false,
+    validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
+  },
+  {
+    id: 2,
+    name: "Produkt B",
+    description: "Beschreibung von Produkt B",
+    image: "https://via.placeholder.com/150",
+    type: "Type B",
+    isActive: false,
+    isArchived: true,
+    validUntil: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) // 30 days ago
+
+  },
+  {
+    id: 3,
+    name: "Produkt C",
+    description: "Beschreibung von Produkt C",
+    image: "https://via.placeholder.com/150",
+    type: "Type C",
+    isActive: true,
+    isArchived: false,
+    validUntil: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000) // 10 days ago
+
+  }
+];
+
+
+// Änderungen im BannerManagement
+function BannerManagement() {
   const { toast } = useToast();
   const [editingBanner, setEditingBanner] = useState<number | null>(null);
   const [showSecondButton, setShowSecondButton] = useState(true);
-  const { banners, updateBanner, createBanner, archiveBanner } = useBannerStore();
-  const { challenges } = useChallenge();
-  const { users, toggleVerification } = useUsers();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [showVerifiedOnly, setShowVerifiedOnly] = useState(true);
 
   const copyShortcode = (shortcode: string) => {
     navigator.clipboard.writeText(`[banner position="${shortcode}"]`);
     toast({
       title: "Shortcode kopiert!",
-      description: "Fügen Sie diesen Code an der gewünschten Stelle Ihrer Website ein."
+      description: "Fügen Sie diesen Code an der gewünschten Stelle Ihrer Website ein. Der Banner wird nur angezeigt, wenn er aktiv ist, ansonsten wird der Container automatisch ausgeblendet."
     });
   };
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {DEFAULT_BANNER_POSITIONS.map(position => (
+          <Card key={position.shortcode}>
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <div>
+                  <CardTitle>{position.name}</CardTitle>
+                  <CardDescription className="mt-1.5">
+                    {position.description}
+                    <div className="mt-2 p-2 bg-muted rounded-md text-xs">
+                      <div className="font-medium mb-2">Format-Anforderungen:</div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="p-2 border rounded-md">
+                          <div className="font-medium">App Format</div>
+                          <div className="text-muted-foreground">
+                            {position.appDimensions.width} x {position.appDimensions.height}px
+                          </div>
+                        </div>
+                        <div className="p-2 border rounded-md">
+                          <div className="font-medium">Web Format</div>
+                          <div className="text-muted-foreground">
+                            {position.webDimensions.width} x {position.webDimensions.height}px
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardDescription>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                  onClick={() => copyShortcode(position.shortcode)}
+                >
+                  <Copy className="h-4 w-4" />
+                  Shortcode
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {/* Aktuelle Banner */}
+                {mockBanners
+                  .filter(banner => banner.positionId === position.shortcode && banner.isActive)
+                  .map(banner => (
+                    <div key={banner.id} className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* App Preview */}
+                        <div className="space-y-2">
+                          <div className="text-sm font-medium text-muted-foreground">App Preview:</div>
+                          <div className="relative aspect-square rounded-lg overflow-hidden bg-muted">
+                            <img
+                              src={banner.appImage}
+                              alt={`${banner.name} (App)`}
+                              className="object-cover w-full h-full"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Web Preview */}
+                        <div className="space-y-2">
+                          <div className="text-sm font-medium text-muted-foreground">Web Preview:</div>
+                          <div className="relative aspect-video rounded-lg overflow-hidden bg-muted">
+                            <img
+                              src={banner.webImage}
+                              alt={`${banner.name} (Web)`}
+                              className="object-cover w-full h-full"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Banner Info & Controls */}
+                      <div className="space-y-4 p-4 rounded-lg border bg-card">
+                        <div className="grid gap-4">
+                          <div>
+                            <label className="text-sm font-medium">Titel</label>
+                            <Input defaultValue={banner.name} className="mt-1.5" />
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">Beschreibung</label>
+                            <Input defaultValue={banner.description} className="mt-1.5" />
+                          </div>
+
+                          {/* Button Konfiguration */}
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <label className="text-sm font-medium">Button Konfiguration</label>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm">Zweiter Button</span>
+                                <Switch
+                                  checked={showSecondButton}
+                                  onCheckedChange={setShowSecondButton}
+                                />
+                              </div>
+                            </div>
+
+                            {/* Erster Button */}
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium">Button 1</label>
+                              <div className="grid gap-2">
+                                <Input
+                                  placeholder="Button Text"
+                                  defaultValue={banner.buttons[0]?.text}
+                                />
+                                <Input
+                                  placeholder="Button Link (https://...)"
+                                  defaultValue={banner.buttons[0]?.url}
+                                />
+                              </div>
+                            </div>
+
+                            {/* Zweiter Button (optional) */}
+                            {showSecondButton && (
+                              <div className="space-y-2">
+                                <label className="text-sm font-medium">Button 2</label>
+                                <div className="grid gap-2">
+                                  <Input
+                                    placeholder="Button Text"
+                                    defaultValue={banner.buttons[1]?.text}
+                                  />
+                                  <Input
+                                    placeholder="Button Link (https://...)"
+                                    defaultValue={banner.buttons[1]?.url}
+                                  />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-4 border-t">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm">Aktiv</span>
+                            <Switch
+                              checked={banner.isActive}
+                              onCheckedChange={() => {
+                                toast({
+                                  title: banner.isActive ? "Banner deaktiviert" : "Banner aktiviert",
+                                  description: banner.isActive
+                                    ? "Der Banner wird nicht mehr angezeigt."
+                                    : "Der Banner wird jetzt auf der Website angezeigt."
+                                });
+                              }}
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                toast({
+                                  title: "Vorschau aktualisiert",
+                                  description: "Die Änderungen werden in der Vorschau angezeigt."
+                                });
+                              }}
+                            >
+                              Vorschau
+                            </Button>
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={() => {
+                                toast({
+                                  title: "Änderungen gespeichert",
+                                  description: "Die Änderungen wurden erfolgreich gespeichert und sind jetzt live."
+                                });
+                              }}
+                            >
+                              Speichern
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Stats */}
+                      <div className="grid grid-cols-3 gap-4">
+                        <Card>
+                          <CardHeader className="p-4">
+                            <CardTitle className="text-sm font-medium">Views</CardTitle>
+                          </CardHeader>
+                          <CardContent className="p-4 pt-0">
+                            <div className="text-2xl font-bold">{banner.stats.views}</div>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardHeader className="p-4">
+                            <CardTitle className="text-sm font-medium">Clicks</CardTitle>
+                          </CardHeader>
+                          <CardContent className="p-4 pt-0">
+                            <div className="text-2xl font-bold">{banner.stats.clicks}</div>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardHeader className="p-4">
+                            <CardTitle className="text-sm font-medium">CTR</CardTitle>
+                          </CardHeader>
+                          <CardContent className="p-4 pt-0">
+                            <div className="text-2xl font-bold">{banner.stats.ctr}</div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    </div>
+                  ))}
+
+                {/* Upload Bereich */}
+                <div className="border-2 border-dashed rounded-lg p-6">
+                  <div className="text-center space-y-4">
+                    <div className="flex flex-col items-center gap-2">
+                      <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                      <div className="text-sm text-muted-foreground">
+                        Ziehen Sie Bilder hierher oder klicken Sie zum Hochladen
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-lg">
+                        <div className="p-4 bg-muted rounded-lg">
+                          <div className="font-medium mb-2">App Format</div>
+                          <div className="text-xs text-muted-foreground">
+                            Quadratisch: {position.appDimensions.width} x {position.appDimensions.height}px
+                          </div>
+                        </div>
+                        <div className="p-4 bg-muted rounded-lg">
+                          <div className="font-medium mb-2">Web Format</div>
+                          <div className="text-xs text-muted-foreground">
+                            {position.webDimensions.width} x {position.webDimensions.height}px
+                            <div className="mt-1">Empfohlene Mindestgröße</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <Button variant="outline" className="w-full sm:w-auto">
+                      <Upload className="h-4 w-4 mr-2" />
+                      Banner hochladen
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Banner Archiv */}
+                <div className="space-y-4 pt-6 border-t">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-lg">Banner-Archiv</h3>
+                    <Button variant="outline" size="sm">
+                      Archiv anzeigen
+                    </Button>
+                  </div>
+
+                  <div className="space-y-4">
+                    {mockBanners
+                      .filter(banner => banner.positionId === position.shortcode && !banner.isActive)
+                      .map(banner => (
+                        <div key={banner.id} className="flex flex-col sm:flex-row items-start justify-between p-4 border rounded-lg gap-4">
+                          <div className="flex items-center gap-4">
+                            <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-muted shrink-0">
+                              <img
+                                src={banner.appImage}
+                                alt={banner.name}
+                                className="object-cover w-full h-full"
+                              />
+                            </div>
+                            <div className="min-w-0">
+                              <h4 className="font-medium truncate">{banner.name}</h4>
+                              <div className="text-sm text-muted-foreground">
+                                Erstellt am {format(banner.createdAt, "dd.MM.yyyy")}
+                              </div>
+                              <div className="text-sm text-muted-foreground flex items-center gap-2 flex-wrap">
+                                <span>{banner.stats.views} Views</span>
+                                <span>•</span>
+                                <span>{banner.stats.clicks} Clicks</span>
+                                <span>•</span>
+                                <span>{banner.stats.ctr} CTR</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full sm:w-auto"
+                              onClick={() => setEditingBanner(banner.id)}
+                            >
+                              Bearbeiten
+                            </Button>
+                            <Button
+                              variant="default"
+                              size="sm"
+                              className="w-full sm:w-auto"
+                              onClick={() => {
+                                toast({
+                                  title: "Banner reaktiviert",
+                                  description: "Der Banner wurde erfolgreich reaktiviert und wird jetzt angezeigt."
+                                });
+                              }}
+                            >
+                              Reaktivieren
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function EventSection() {
+  const [, setLocation] = useLocation();
+  return (
+    <section>
+      <h2 className="text-2xl font-bold mb-6">Event Management</h2>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            Events verwalten
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Button 
+              className="w-full" 
+              variant="outline"
+              onClick={() => setLocation("/create/event")}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Neues Event erstellen
+            </Button>
+            <Button 
+              className="w-full" 
+              variant="outline"
+              onClick={() => setLocation("/events/manager")}
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              Event Manager öffnen
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </section>
+  );
+}
+
+
+export default function Admin() {
+  const { users, toggleVerification } = useUsers();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showVerifiedOnly, setShowVerifiedOnly] = useState(true);
+  const { toast } = useToast();
 
   // Filtere Benutzer basierend auf Suche und Verifizierungsstatus
   const filteredUsers = users.filter(user => {
@@ -355,272 +805,82 @@ export default function Admin() {
     return matchesSearch;
   });
 
+  const copyShortcode = (shortcode: string) => {
+    navigator.clipboard.writeText(`[banner position="${shortcode}"]`);
+    toast({
+      title: "Shortcode kopiert!",
+      description: "Fügen Sie diesen Code an der gewünschten Stelle Ihrer Website ein. Der Banner wird nur angezeigt, wenn er aktiv ist, ansonsten wird der Container automatisch ausgeblendet."
+    });
+  };
 
   return (
-    <div className="container max-w-7xl mx-auto py-6 px-4 sm:px-6">
-      <Tabs defaultValue="products">
-        <TabsList className="w-full justify-start mb-6">
-          <TabsTrigger value="products">Produkte</TabsTrigger>
-          <TabsTrigger value="banners">Banner</TabsTrigger>
-          <TabsTrigger value="challenges">Challenges</TabsTrigger>
-        </TabsList>
+    <div className="container mx-auto p-4 pb-8 space-y-8">
+      {/* Insights Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <Card className="col-span-1">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Users</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{users.length}</div>
+            <p className="text-xs text-muted-foreground">
+              {users.filter(u => u.isVerified).length} verified
+            </p>
+          </CardContent>
+        </Card>
 
-        <TabsContent value="products">
-          <ProductManagement />
-        </TabsContent>
+        <Card className="col-span-1">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Challenges</CardTitle>
+            <Trophy className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{mockChallenges.length}</div>
+            <p className="text-xs text-muted-foreground">
+              3 ending this week
+            </p>
+          </CardContent>
+        </Card>
 
-        <TabsContent value="banners">
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {DEFAULT_BANNER_POSITIONS.map(position => (
-                <Card key={position.shortcode}>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle>{position.name}</CardTitle>
-                        <CardDescription className="mt-1.5">
-                          {position.description}
-                        </CardDescription>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex items-center gap-2"
-                        onClick={() => copyShortcode(position.shortcode)}
-                      >
-                        <Copy className="h-4 w-4" />
-                        Shortcode
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {/* Active Banners */}
-                    {banners
-                      .filter(banner => banner.positionId === position.shortcode && banner.isActive)
-                      .map(banner => (
-                        <div key={banner.id} className="space-y-4 mb-6">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {/* App Preview */}
-                            <div className="space-y-2">
-                              <div className="text-sm font-medium text-muted-foreground">App Preview:</div>
-                              <div className="relative aspect-square rounded-lg overflow-hidden bg-muted">
-                                <img
-                                  src={banner.appImage}
-                                  alt={`${banner.name} (App)`}
-                                  className="object-cover w-full h-full"
-                                />
-                              </div>
-                            </div>
+        <Card className="col-span-1">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Groups</CardTitle>
+            <Users2 className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{mockGroups.length}</div>
+            <p className="text-xs text-muted-foreground">
+              2 new this week
+            </p>
+          </CardContent>
+        </Card>
 
-                            {/* Web Preview */}
-                            <div className="space-y-2">
-                              <div className="text-sm font-medium text-muted-foreground">Web Preview:</div>
-                              <div className="relative aspect-video rounded-lg overflow-hidden bg-muted">
-                                <img
-                                  src={banner.webImage}
-                                  alt={`${banner.name} (Web)`}
-                                  className="object-cover w-full h-full"
-                                />
-                              </div>
-                            </div>
-                          </div>
+        <Card className="col-span-1">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Posts</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground"/>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{mockPosts.length}</div>
+            <p className="text-xs text-muted-foreground">
+              +2 seit letzter Woche
+            </p>
+          </CardContent>
+        </Card>
+      </div>
 
-                          {/* Banner Info & Controls */}
-                          <div className="space-y-4 p-4 rounded-lg border bg-card">
-                            <div className="grid gap-4">
-                              <div>
-                                <label className="text-sm font-medium">Titel</label>
-                                <Input defaultValue={banner.name} className="mt-1.5" />
-                              </div>
-                              <div>
-                                <label className="text-sm font-medium">Beschreibung</label>
-                                <Input defaultValue={banner.description} className="mt-1.5" />
-                              </div>
+      {/* Marketing Banner Section */}
+      <section>
+        <h2 className="text-2xl font-bold mb-6">Marketing Banner Management</h2>
+        <BannerManagement />
+      </section>
 
-                              {/* Button Konfiguration */}
-                              <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                  <label className="text-sm font-medium">Button Konfiguration</label>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-sm">Zweiter Button</span>
-                                    <Switch
-                                      checked={showSecondButton}
-                                      onCheckedChange={setShowSecondButton}
-                                    />
-                                  </div>
-                                </div>
+      {/* Products Management Section */}
+      <ProductManagement />
 
-                                {/* Erster Button */}
-                                <div className="space-y-2">
-                                  <label className="text-sm font-medium">Button 1</label>
-                                  <div className="grid gap-2">
-                                    <Input
-                                      placeholder="Button Text"
-                                      defaultValue={banner.buttons[0]?.text}
-                                    />
-                                    <Input
-                                      placeholder="Button Link (https://...)"
-                                      defaultValue={banner.buttons[0]?.url}
-                                    />
-                                  </div>
-                                </div>
-
-                                {/* Zweiter Button (optional) */}
-                                {showSecondButton && (
-                                  <div className="space-y-2">
-                                    <label className="text-sm font-medium">Button 2</label>
-                                    <div className="grid gap-2">
-                                      <Input
-                                        placeholder="Button Text"
-                                        defaultValue={banner.buttons[1]?.text}
-                                      />
-                                      <Input
-                                        placeholder="Button Link (https://...)"
-                                        defaultValue={banner.buttons[1]?.url}
-                                      />
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-4 border-t">
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm">Aktiv</span>
-                                <Switch
-                                  checked={banner.isActive}
-                                  onCheckedChange={() => {
-                                    toast({
-                                      title: banner.isActive ? "Banner deaktiviert" : "Banner aktiviert",
-                                      description: banner.isActive
-                                        ? "Der Banner wird nicht mehr angezeigt."
-                                        : "Der Banner wird jetzt auf der Website angezeigt."
-                                    });
-                                  }}
-                                />
-                              </div>
-                              <div className="flex gap-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    toast({
-                                      title: "Vorschau aktualisiert",
-                                      description: "Die Änderungen werden in der Vorschau angezeigt."
-                                    });
-                                  }}
-                                >
-                                  Vorschau
-                                </Button>
-                                <Button
-                                  variant="default"
-                                  size="sm"
-                                  onClick={() => {
-                                    toast({
-                                      title: "Änderungen gespeichert",
-                                      description: "Die Änderungen wurden erfolgreich gespeichert und sind jetzt live."
-                                    });
-                                  }}
-                                >
-                                  Speichern
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Stats */}
-                          <div className="grid grid-cols-3 gap-4">
-                            <Card>
-                              <CardHeader className="p-4">
-                                <CardTitle className="text-sm font-medium">Views</CardTitle>
-                              </CardHeader>
-                              <CardContent className="p-4 pt-0">
-                                <div className="text-2xl font-bold">{banner.stats.views}</div>
-                              </CardContent>
-                            </Card>
-                            <Card>
-                              <CardHeader className="p-4">
-                                <CardTitle className="text-sm font-medium">Clicks</CardTitle>
-                              </CardHeader>
-                              <CardContent className="p-4 pt-0">
-                                <div className="text-2xl font-bold">{banner.stats.clicks}</div>
-                              </CardContent>
-                            </Card>
-                            <Card>
-                              <CardHeader className="p-4">
-                                <CardTitle className="text-sm font-medium">CTR</CardTitle>
-                              </CardHeader>
-                              <CardContent className="p-4 pt-0">
-                                <div className="text-2xl font-bold">{banner.stats.ctr}</div>
-                              </CardContent>
-                            </Card>
-                          </div>
-                        </div>
-                      ))}
-
-                    {/* Upload Section */}
-                    <div className="border-2 border-dashed rounded-lg p-6">
-                      <div className="text-center space-y-4">
-                        <div className="flex flex-col items-center gap-2">
-                          <ImageIcon className="h-8 w-8 text-muted-foreground" />
-                          <div className="text-sm text-muted-foreground">
-                            Ziehen Sie Bilder hierher oder klicken Sie zum Hochladen
-                          </div>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-lg">
-                            <div className="p-4 bg-muted rounded-lg">
-                              <div className="font-medium mb-2">App Format</div>
-                              <div className="text-xs text-muted-foreground">
-                                Quadratisch: {position.appDimensions.width} x {position.appDimensions.height}px
-                              </div>
-                            </div>
-                            <div className="p-4 bg-muted rounded-lg">
-                              <div className="font-medium mb-2">Web Format</div>
-                              <div className="text-xs text-muted-foreground">
-                                {position.webDimensions.width} x {position.webDimensions.height}px
-                                <div className="mt-1">Empfohlene Mindestgröße</div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        <Button variant="outline" className="w-full sm:w-auto">
-                          <Upload className="h-4 w-4 mr-2" />
-                          Banner hochladen
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="challenges">
-          <div className="space-y-6">
-            {/* Challenge Management UI */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Challenge Verwaltung</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {challenges.map(challenge => (
-                    <Card key={challenge.id}>
-                      <CardContent className="p-4">
-                        <h3 className="font-semibold">{challenge.title}</h3>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {challenge.description}
-                        </p>
-                        {/* Additional challenge management UI */}
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-      </Tabs>
+      {/* Event Management Section */}
+      <EventSection />
 
       {/* User Verification Section */}
       <section>

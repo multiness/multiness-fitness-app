@@ -56,10 +56,10 @@ function CommentItem({ comment, postId, onReplyClick }: any) {
 
   const commentUser = users.find(u => u.id === comment.userId);
   const replies = postStore.getComments(postId, comment.id);
-  const isLiked = postStore.hasLikedComment(postId, comment.id, currentUser?.id || 0);
+  const isLiked = postStore.hasLikedComment(postId, comment.id, currentUser?.id || 1);
 
   const handleLike = () => {
-    const userId = currentUser?.id || 0;
+    const userId = currentUser?.id || 1;
     if (isLiked) {
       postStore.removeCommentLike(postId, comment.id, userId);
     } else {
@@ -73,7 +73,7 @@ function CommentItem({ comment, postId, onReplyClick }: any) {
 
   const handleReply = () => {
     if (!replyContent.trim()) return;
-    postStore.addComment(postId, currentUser?.id || 0, replyContent, comment.id);
+    postStore.addComment(postId, currentUser?.id || 1, replyContent, comment.id);
     setReplyContent("");
     setIsReplying(false);
     toast({
@@ -174,15 +174,16 @@ export default function FeedPost({ post }: FeedPostProps) {
   const { toast } = useToast();
   const { currentUser, users } = useUsers();
   const postStore = usePostStore();
-  const isLiked = postStore.hasLiked(post.id, currentUser?.id || 0);
+  const isLiked = postStore.hasLiked(post.id, currentUser?.id || 1);
   const likes = postStore.getLikes(post.id);
   const comments = postStore.getComments(post.id);
   const user = users.find(u => u.id === post.userId);
+  const isOwnPost = currentUser?.id === post.userId;
 
   if (!user) return null;
 
   const handleLike = () => {
-    const userId = currentUser?.id || 0;
+    const userId = currentUser?.id || 1;
     if (isLiked) {
       postStore.removeLike(post.id, userId);
     } else {
@@ -239,7 +240,7 @@ export default function FeedPost({ post }: FeedPostProps) {
     e.preventDefault();
     if (!newComment.trim()) return;
 
-    postStore.addComment(post.id, currentUser?.id || 0, newComment);
+    postStore.addComment(post.id, currentUser?.id || 1, newComment);
     setNewComment("");
     toast({
       title: "Kommentar hinzugefügt",

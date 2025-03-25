@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { usePostStore } from "../lib/postStore"; // Importiere postStore statt mockData
+import { mockWorkoutTemplates, workoutGoals, exerciseDatabase } from "../data/mockData";
 
 interface WorkoutGeneratorProps {
   onSelectWorkout: (template: any) => void;
@@ -24,10 +24,6 @@ export default function WorkoutGenerator({ onSelectWorkout }: WorkoutGeneratorPr
   const [workoutType, setWorkoutType] = useState<string>("emom");
   const [suggestedWorkout, setSuggestedWorkout] = useState<any>(null);
   const [exercises, setExercises] = useState<any[]>([{ name: "", reps: "", sets: "", description: "" }]);
-  const postStore = usePostStore(); // Hole den Store
-
-  // Hole die Workouts aus dem Store statt aus mockData
-  const { workoutGoals, mockExerciseDatabase } = postStore.getWorkoutData();
 
   const generateWorkout = () => {
     let generatedWorkout = {
@@ -48,7 +44,7 @@ export default function WorkoutGenerator({ onSelectWorkout }: WorkoutGeneratorPr
 
     switch(workoutType) {
       case "emom":
-        const emomExercises = shuffleArray(mockExerciseDatabase.emom)
+        const emomExercises = shuffleArray(exerciseDatabase.emom)
           .slice(0, 3)
           .map(exercise => ({
             name: exercise.name,
@@ -69,7 +65,7 @@ export default function WorkoutGenerator({ onSelectWorkout }: WorkoutGeneratorPr
         break;
 
       case "amrap":
-        const amrapExercises = shuffleArray(mockExerciseDatabase.amrap)
+        const amrapExercises = shuffleArray(exerciseDatabase.amrap)
           .slice(0, 4)
           .map(exercise => ({
             name: exercise.name,
@@ -89,7 +85,7 @@ export default function WorkoutGenerator({ onSelectWorkout }: WorkoutGeneratorPr
         break;
 
       case "hit":
-        const hitExercises = shuffleArray(mockExerciseDatabase.hit)
+        const hitExercises = shuffleArray(exerciseDatabase.hit)
           .slice(0, 6);
 
         const workTime = difficultyIndex === 0 ? 30 : difficultyIndex === 1 ? 40 : 45;
@@ -110,7 +106,7 @@ export default function WorkoutGenerator({ onSelectWorkout }: WorkoutGeneratorPr
         break;
 
       case "running":
-        const runningTemplate = shuffleArray(mockExerciseDatabase.running)[0];
+        const runningTemplate = shuffleArray(exerciseDatabase.running)[0];
         const variation = runningTemplate.variations[duration];
 
         generatedWorkout = {

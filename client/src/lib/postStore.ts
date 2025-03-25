@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Post } from '@shared/schema';
-import { mockWorkoutGoals, mockExerciseDatabase } from '../data/mockData';
 
 export type DailyGoal = {
   type: 'water' | 'steps' | 'distance' | 'custom';
@@ -19,9 +18,9 @@ export type Comment = {
   userId: number;
   content: string;
   timestamp: string;
-  parentId?: number;
-  likes: number[];
-  replies?: number[];
+  parentId?: number; // Für nested comments
+  likes: number[]; // Array von User IDs die den Kommentar geliked haben
+  replies?: number[]; // IDs der Antwort-Kommentare
 };
 
 type PostStore = {
@@ -30,10 +29,6 @@ type PostStore = {
   dailyGoals: Record<number, DailyGoal>;
   goalParticipants: Record<number, number[]>;
   posts: Record<number, Post>;
-  workoutData: {
-    workoutGoals: any[];
-    exerciseDatabase: any;
-  };
   addLike: (postId: number, userId: number) => void;
   removeLike: (postId: number, userId: number) => void;
   hasLiked: (postId: number, userId: number) => boolean;
@@ -51,12 +46,11 @@ type PostStore = {
   joinDailyGoal: (targetUserId: number, participantId: number) => void;
   leaveDailyGoal: (targetUserId: number, participantId: number) => void;
   getGoalParticipants: (userId: number) => number[];
+  checkExpiredGoals: () => void;
+  hasActiveGoal: (userId: number) => boolean;
   createPostWithGoal: (userId: number, content: string, goal: DailyGoal) => void;
   createPost: (userId: number, content: string, image?: string | null) => void;
   deleteDailyGoal: (userId: number) => void;
-  getWorkoutData: () => { workoutGoals: any[]; exerciseDatabase: any };
-  setWorkoutData: (data: { workoutGoals: any[]; exerciseDatabase: any }) => void;
-  initializeWorkoutData: () => void;
 };
 
 export const usePostStore = create<PostStore>()(
@@ -67,78 +61,6 @@ export const usePostStore = create<PostStore>()(
       dailyGoals: {},
       goalParticipants: {},
       posts: {},
-      workoutData: {
-        workoutGoals: [],
-        exerciseDatabase: {
-          emom: [],
-          amrap: [],
-          hit: [],
-          running: []
-        }
-      },
-
-      getDailyGoal: (userId) => {
-        const goal = get().dailyGoals[userId];
-        if (!goal) return undefined;
-
-        return {
-          ...goal,
-          createdAt: new Date(goal.createdAt)
-        };
-      },
-
-      setDailyGoal: (userId, goal) => {
-        const existingGoal = get().getDailyGoal(userId);
-        const hasExistingGoal = Boolean(existingGoal);
-
-        set((state) => ({
-          dailyGoals: {
-            ...state.dailyGoals,
-            [userId]: goal
-          }
-        }));
-
-        return { hasExistingGoal };
-      },
-
-      updateDailyGoalProgress: (userId, newProgressValue) =>
-        set((state) => {
-          const currentGoal = state.dailyGoals[userId];
-          if (!currentGoal) return state;
-
-          const updatedProgress = currentGoal.progress + newProgressValue;
-          const isCompleted = updatedProgress >= currentGoal.target;
-
-          return {
-            dailyGoals: {
-              ...state.dailyGoals,
-              [userId]: {
-                ...currentGoal,
-                progress: isCompleted ? currentGoal.target : updatedProgress,
-                completed: isCompleted
-              }
-            }
-          };
-        }),
-
-      joinDailyGoal: (targetUserId, participantId) =>
-        set((state) => ({
-          goalParticipants: {
-            ...state.goalParticipants,
-            [targetUserId]: [...(state.goalParticipants[targetUserId] || []), participantId]
-          }
-        })),
-
-      leaveDailyGoal: (targetUserId, participantId) =>
-        set((state) => ({
-          goalParticipants: {
-            ...state.goalParticipants,
-            [targetUserId]: (state.goalParticipants[targetUserId] || []).filter(id => id !== participantId)
-          }
-        })),
-
-      getGoalParticipants: (userId) =>
-        get().goalParticipants[userId] || [],
 
       addLike: (postId, userId) =>
         set((state) => ({
@@ -177,6 +99,7 @@ export const usePostStore = create<PostStore>()(
         set((state) => {
           const updatedComments = [...(state.comments[postId] || []), comment];
 
+          // Wenn es ein Reply ist, füge die ID zum Parent-Kommentar hinzu
           if (parentId) {
             const parentIndex = updatedComments.findIndex(c => c.id === parentId);
             if (parentIndex !== -1) {
@@ -199,8 +122,10 @@ export const usePostStore = create<PostStore>()(
       getComments: (postId, parentId) => {
         const comments = get().comments[postId] || [];
         if (parentId === undefined) {
+          // Hauptkommentare (keine Antworten)
           return comments.filter(c => !c.parentId);
         }
+        // Antworten auf einen spezifischen Kommentar
         return comments.filter(c => c.parentId === parentId);
       },
 
@@ -258,7 +183,7 @@ export const usePostStore = create<PostStore>()(
           id: postId,
           userId,
           content,
-          image: image || null,
+          image,
           createdAt: new Date()
         };
 
@@ -320,6 +245,113 @@ export const usePostStore = create<PostStore>()(
           };
         }),
 
+      hasActiveGoal: (userId) => {
+        return Boolean(get().getDailyGoal(userId));
+      },
+
+      getDailyGoal: (userId) => {
+        const goal = get().dailyGoals[userId];
+
+        if (!goal) return undefined;
+
+        const goalWithDate = {
+          ...goal,
+          createdAt: new Date(goal.createdAt)
+        };
+
+        const now = new Date();
+        const goalAge = now.getTime() - goalWithDate.createdAt.getTime();
+        const isExpired = goalAge > 24 * 60 * 60 * 1000;
+
+        if (isExpired) {
+          set((state) => {
+            const { [userId]: _, ...remainingGoals } = state.dailyGoals;
+            const { [userId]: __, ...remainingParticipants } = state.goalParticipants;
+            return {
+              dailyGoals: remainingGoals,
+              goalParticipants: remainingParticipants
+            };
+          });
+          return undefined;
+        }
+
+        return goalWithDate;
+      },
+
+      setDailyGoal: (userId, goal) => {
+        const existingGoal = get().getDailyGoal(userId);
+        const hasExistingGoal = Boolean(existingGoal);
+
+        set((state) => ({
+          dailyGoals: {
+            ...state.dailyGoals,
+            [userId]: goal
+          }
+        }));
+
+        return { hasExistingGoal };
+      },
+
+      updateDailyGoalProgress: (userId, newProgressValue) =>
+        set((state) => {
+          const currentGoal = state.dailyGoals[userId];
+          if (!currentGoal) return state;
+
+          // Aktualisiere den Fortschritt durch Addition
+          const updatedProgress = currentGoal.progress + newProgressValue;
+          const isCompleted = updatedProgress >= currentGoal.target;
+
+          return {
+            dailyGoals: {
+              ...state.dailyGoals,
+              [userId]: {
+                ...currentGoal,
+                progress: isCompleted ? currentGoal.target : updatedProgress,
+                completed: isCompleted
+              }
+            }
+          };
+        }),
+
+      joinDailyGoal: (targetUserId, participantId) =>
+        set((state) => ({
+          goalParticipants: {
+            ...state.goalParticipants,
+            [targetUserId]: [...(state.goalParticipants[targetUserId] || []), participantId]
+          }
+        })),
+
+      leaveDailyGoal: (targetUserId, participantId) =>
+        set((state) => ({
+          goalParticipants: {
+            ...state.goalParticipants,
+            [targetUserId]: (state.goalParticipants[targetUserId] || []).filter(id => id !== participantId)
+          }
+        })),
+
+      getGoalParticipants: (userId) =>
+        get().goalParticipants[userId] || [],
+
+      checkExpiredGoals: () => {
+        const now = new Date();
+        const goals = get().dailyGoals;
+
+        Object.entries(goals).forEach(([userId, goal]) => {
+          if (!goal) return;
+
+          const goalAge = now.getTime() - new Date(goal.createdAt).getTime();
+          if (goalAge > 24 * 60 * 60 * 1000) {
+            set((state) => {
+              const { [userId]: _, ...remainingGoals } = state.dailyGoals;
+              const { [userId]: __, ...remainingParticipants } = state.goalParticipants;
+              return {
+                dailyGoals: remainingGoals,
+                goalParticipants: remainingParticipants
+              };
+            });
+          }
+        });
+      },
       deleteDailyGoal: (userId: number) =>
         set((state) => {
           const { [userId]: _, ...remainingGoals } = state.dailyGoals;
@@ -329,19 +361,6 @@ export const usePostStore = create<PostStore>()(
             goalParticipants: remainingParticipants
           };
         }),
-
-      getWorkoutData: () => get().workoutData,
-
-      setWorkoutData: (data) => set({ workoutData: data }),
-
-      initializeWorkoutData: () => {
-        set({
-          workoutData: {
-            workoutGoals: mockWorkoutGoals,
-            exerciseDatabase: mockExerciseDatabase
-          }
-        });
-      },
     }),
     {
       name: 'post-interaction-storage',
@@ -349,6 +368,3 @@ export const usePostStore = create<PostStore>()(
     }
   )
 );
-
-// Initialize workout data when the store is created
-usePostStore.getState().initializeWorkoutData();
