@@ -48,6 +48,9 @@ type PostStore = {
   setDailyGoal: (userId: number, goal: DailyGoal) => { hasExistingGoal: boolean };
   getDailyGoal: (userId: number) => DailyGoal | undefined;
   updateDailyGoalProgress: (userId: number, progress: number) => void;
+  joinDailyGoal: (targetUserId: number, participantId: number) => void;
+  leaveDailyGoal: (targetUserId: number, participantId: number) => void;
+  getGoalParticipants: (userId: number) => number[];
   createPostWithGoal: (userId: number, content: string, goal: DailyGoal) => void;
   createPost: (userId: number, content: string, image?: string | null) => void;
   deleteDailyGoal: (userId: number) => void;
@@ -78,7 +81,6 @@ export const usePostStore = create<PostStore>()(
         const goal = get().dailyGoals[userId];
         if (!goal) return undefined;
 
-        // Konvertiere das Datum zurück in ein Date-Objekt
         return {
           ...goal,
           createdAt: new Date(goal.createdAt)
@@ -118,6 +120,25 @@ export const usePostStore = create<PostStore>()(
             }
           };
         }),
+
+      joinDailyGoal: (targetUserId, participantId) =>
+        set((state) => ({
+          goalParticipants: {
+            ...state.goalParticipants,
+            [targetUserId]: [...(state.goalParticipants[targetUserId] || []), participantId]
+          }
+        })),
+
+      leaveDailyGoal: (targetUserId, participantId) =>
+        set((state) => ({
+          goalParticipants: {
+            ...state.goalParticipants,
+            [targetUserId]: (state.goalParticipants[targetUserId] || []).filter(id => id !== participantId)
+          }
+        })),
+
+      getGoalParticipants: (userId) =>
+        get().goalParticipants[userId] || [],
 
       addLike: (postId, userId) =>
         set((state) => ({
@@ -302,8 +323,10 @@ export const usePostStore = create<PostStore>()(
       deleteDailyGoal: (userId: number) =>
         set((state) => {
           const { [userId]: _, ...remainingGoals } = state.dailyGoals;
+          const { [userId]: __, ...remainingParticipants } = state.goalParticipants;
           return {
-            dailyGoals: remainingGoals
+            dailyGoals: remainingGoals,
+            goalParticipants: remainingParticipants
           };
         }),
 
