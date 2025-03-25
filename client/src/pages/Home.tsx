@@ -23,9 +23,9 @@ import { useProducts } from "../lib/productStore";
 export default function Home() {
   const [, setLocation] = useLocation();
   const postStore = usePostStore();
-  const { activeChallenges } = useChallenges();
-  const { groups } = useGroups();
-  const { products } = useProducts();
+  const { activeChallenges = [] } = useChallenges();
+  const { groups = [] } = useGroups();
+  const { products = [] } = useProducts();
 
   // Lade Posts aus dem postStore
   const allPosts = Object.values(postStore.posts).sort((a, b) =>
@@ -105,7 +105,7 @@ export default function Home() {
             Alle Gruppen <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
-        <GroupCarousel groups={groups.slice(0, 6)} />
+        <GroupCarousel groups={groups} />
       </section>
 
       {/* Products Section */}
