@@ -2,23 +2,78 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertProductSchema, insertEventExternalRegistrationSchema } from "@shared/schema";
+import { db } from "./db";
+import { groups, challenges, products } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Alle Produkte abrufen
+  // Groups API
+  app.get("/api/groups", async (req, res) => {
+    try {
+      const allGroups = await db.select().from(groups);
+      res.json(allGroups);
+    } catch (error) {
+      console.error("Error fetching groups:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.post("/api/groups", async (req, res) => {
+    try {
+      const [group] = await db.insert(groups).values(req.body).returning();
+      res.status(201).json(group);
+    } catch (error) {
+      console.error("Error creating group:", error);
+      res.status(400).json({ error: "Invalid group data" });
+    }
+  });
+
+  // Challenges API
+  app.get("/api/challenges", async (req, res) => {
+    try {
+      const allChallenges = await db.select().from(challenges);
+      res.json(allChallenges);
+    } catch (error) {
+      console.error("Error fetching challenges:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.post("/api/challenges", async (req, res) => {
+    try {
+      const [challenge] = await db.insert(challenges).values(req.body).returning();
+      res.status(201).json(challenge);
+    } catch (error) {
+      console.error("Error creating challenge:", error);
+      res.status(400).json({ error: "Invalid challenge data" });
+    }
+  });
+
+  // Products API
   app.get("/api/products", async (req, res) => {
     try {
-      const products = await storage.getProducts();
-      res.json(products);
+      const allProducts = await db.select().from(products);
+      res.json(allProducts);
     } catch (error) {
       console.error("Error fetching products:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
 
+  app.post("/api/products", async (req, res) => {
+    try {
+      const productData = insertProductSchema.parse(req.body);
+      const [product] = await db.insert(products).values(productData).returning();
+      res.status(201).json(product);
+    } catch (error) {
+      console.error("Error creating product:", error);
+      res.status(400).json({ error: "Invalid product data" });
+    }
+  });
+
   // Ein einzelnes Produkt abrufen
   app.get("/api/products/:id", async (req, res) => {
     try {
-      const product = await storage.getProduct(Number(req.params.id));
+      const product = await db.select().from(products).where({ id: Number(req.params.id) }).first();
       if (!product) {
         return res.status(404).json({ error: "Product not found" });
       }
@@ -29,23 +84,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Neues Produkt erstellen
-  app.post("/api/products", async (req, res) => {
-    try {
-      const productData = insertProductSchema.parse(req.body);
-      const product = await storage.createProduct(productData);
-      res.status(201).json(product);
-    } catch (error) {
-      console.error("Error creating product:", error);
-      res.status(400).json({ error: "Invalid product data" });
-    }
-  });
 
   // Produkt aktualisieren
   app.patch("/api/products/:id", async (req, res) => {
     try {
       const productId = Number(req.params.id);
-      const product = await storage.getProduct(productId);
+      const product = await db.select().from(products).where({ id: productId }).first();
       if (!product) {
         return res.status(404).json({ error: "Product not found" });
       }
@@ -56,7 +100,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         updateData.validUntil = new Date(updateData.validUntil);
       }
 
-      const updatedProduct = await storage.updateProduct(productId, updateData);
+      await db.update(products).set(updateData).where({ id: productId });
+      const updatedProduct = await db.select().from(products).where({ id: productId }).first();
       res.json(updatedProduct);
     } catch (error) {
       console.error("Error updating product:", error);
@@ -68,21 +113,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/products/:id", async (req, res) => {
     try {
       const productId = Number(req.params.id);
-      const product = await storage.getProduct(productId);
+      const product = await db.select().from(products).where({ id: productId }).first();
       if (!product) {
         return res.status(404).json({ error: "Product not found" });
       }
 
       if (req.query.archive === 'true') {
         // Archivieren
-        await storage.updateProduct(productId, { 
-          isArchived: true, 
-          isActive: false 
-        });
+        await db.update(products).set({ isArchived: true, isActive: false }).where({ id: productId });
         res.json({ message: "Product archived successfully" });
       } else {
         // Permanent löschen
-        await storage.deleteProduct(productId);
+        await db.delete().from(products).where({ id: productId });
         res.json({ message: "Product deleted successfully" });
       }
     } catch (error) {
@@ -133,7 +175,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Update create event route to generate slug -  This section is removed as per the intention.
+
   app.post("/api/events", async (req, res) => {
     try {
       const event = await storage.createEvent(req.body);

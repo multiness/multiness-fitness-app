@@ -27,45 +27,31 @@ interface GroupStore {
   addAdmin: (groupId: number, userId: number) => void;
   removeAdmin: (groupId: number, userId: number) => void;
   isGroupAdmin: (groupId: number, userId: number) => boolean;
+  fetchGroups: () => Promise<void>;
 }
-
-// Initialisieren Sie den Store mit einigen Beispiel-Gruppen
-const initialGroups: Group[] = [
-  {
-    id: 1,
-    name: "Morning Workout",
-    description: "Frühmorgendliches Training für Frühaufsteher",
-    image: "https://images.unsplash.com/photo-1517963879433-6ad2b056d712?w=1200&auto=format",
-    participantIds: [1, 2, 3],
-    adminIds: [1],
-    creatorId: 1,
-    createdAt: new Date(),
-    memberCount: 3,
-    type: 'public',
-    tags: ['Morgen', 'Workout', 'Fitness']
-  },
-  {
-    id: 2,
-    name: "Yoga Community",
-    description: "Gemeinsames Yoga für alle Level",
-    image: "https://images.unsplash.com/photo-1517963879433-6ad2b056d712?w=1200&auto=format",
-    participantIds: [1, 4, 5],
-    adminIds: [1],
-    creatorId: 1,
-    createdAt: new Date(),
-    memberCount: 3,
-    type: 'public',
-    tags: ['Yoga', 'Entspannung']
-  }
-];
 
 export const useGroups = create<GroupStore>()(
   persist(
     (set, get) => ({
-      groups: initialGroups, // Initialisiere mit Beispiel-Gruppen
+      groups: [], // Initialisiere als leeres Array
       joinedGroups: [],
 
-      setGroups: (groups) => set({ groups }),
+      fetchGroups: async () => {
+        try {
+          const response = await fetch('/api/groups');
+          if (!response.ok) throw new Error('Failed to fetch groups');
+          const groups = await response.json();
+          set({ groups: Array.isArray(groups) ? groups : [] });
+        } catch (error) {
+          console.error('Error fetching groups:', error);
+          set({ groups: [] }); // Setze leeres Array im Fehlerfall
+        }
+      },
+
+      setGroups: (groups) => {
+        console.log('Setting groups:', groups); // Debug-Log
+        set({ groups: Array.isArray(groups) ? groups : [] });
+      },
 
       addGroup: (group) => set((state) => ({
         groups: [...state.groups, group],

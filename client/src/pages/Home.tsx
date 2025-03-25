@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import UserSlider from "@/components/UserSlider";
@@ -24,8 +25,16 @@ export default function Home() {
   const [, setLocation] = useLocation();
   const postStore = usePostStore();
   const { activeChallenges = [] } = useChallenges();
-  const { groups = [] } = useGroups();
+  const groupStore = useGroups();
   const { products = [] } = useProducts();
+
+  // Lade die Gruppen beim Mounten der Komponente
+  useEffect(() => {
+    groupStore.fetchGroups();
+  }, []);
+
+  // Stelle sicher, dass groups immer ein Array ist
+  const groups = groupStore.groups || [];
 
   // Lade Posts aus dem postStore
   const allPosts = Object.values(postStore.posts).sort((a, b) =>
