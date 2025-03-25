@@ -40,6 +40,8 @@ export default function Home() {
   const allPosts = Object.values(postStore.posts)
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
+  console.log("Aktuelle Posts aus dem Store:", allPosts); // Debug-Log für Posts
+
   return (
     <div className="w-full max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* Marketing Banner */}
@@ -76,6 +78,22 @@ export default function Home() {
             </div>
           </div>
         </Card>
+      </section>
+
+      {/* Feed */}
+      <section className="mb-12">
+        <h2 className="text-2xl font-bold mb-6">Neueste Beiträge</h2>
+        <div className="space-y-6">
+          {allPosts.length > 0 ? (
+            allPosts.map(post => (
+              <FeedPost key={post.id} post={post} />
+            ))
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              Keine Beiträge gefunden
+            </div>
+          )}
+        </div>
       </section>
 
       {/* Events & Kurse */}
@@ -151,16 +169,6 @@ export default function Home() {
             ))}
           </CarouselContent>
         </Carousel>
-      </section>
-
-      {/* Feed */}
-      <section>
-        <h2 className="text-2xl font-bold mb-6">Neueste Beiträge</h2>
-        <div className="space-y-6">
-          {allPosts.map(post => (
-            <FeedPost key={post.id} post={post} />
-          ))}
-        </div>
       </section>
     </div>
   );
