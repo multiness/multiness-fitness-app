@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { mockWorkoutTemplates, workoutGoals, exerciseDatabase } from "../data/mockData";
+import { usePostStore } from "../lib/postStore"; // Importiere postStore statt mockData
 
 interface WorkoutGeneratorProps {
   onSelectWorkout: (template: any) => void;
@@ -24,6 +24,10 @@ export default function WorkoutGenerator({ onSelectWorkout }: WorkoutGeneratorPr
   const [workoutType, setWorkoutType] = useState<string>("emom");
   const [suggestedWorkout, setSuggestedWorkout] = useState<any>(null);
   const [exercises, setExercises] = useState<any[]>([{ name: "", reps: "", sets: "", description: "" }]);
+  const postStore = usePostStore(); // Hole den Store
+
+  // Hole die Workouts aus dem Store statt aus mockData
+  const { workoutGoals, exerciseDatabase } = postStore.getWorkoutData();
 
   const generateWorkout = () => {
     let generatedWorkout = {

@@ -6,7 +6,7 @@ import ChallengeCard from "@/components/ChallengeCard";
 import FeedPost from "@/components/FeedPost";
 import EventSlider from "@/components/EventSlider";
 import { ArrowRight, Crown, Heart, Share2, Users, Trophy, Package } from "lucide-react";
-import { mockGroups, mockChallenges, mockUsers, mockProducts } from "../data/mockData";
+import { mockGroups, mockProducts, mockUsers } from "../data/mockData";
 import { useLocation, Link } from "wouter";
 import { usePostStore } from "../lib/postStore";
 import { getChatId } from "../lib/chatService";
@@ -22,7 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import GroupCarousel from "@/components/GroupCarousel";
 import { UserAvatar } from "@/components/UserAvatar";
 import ProductSlider from "@/components/ProductSlider";
-
+import { useChallengeStore } from "../lib/challengeStore";
 
 const format = (date: Date, formatStr: string) => {
   return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -31,7 +31,10 @@ const format = (date: Date, formatStr: string) => {
 export default function Home() {
   const [, setLocation] = useLocation();
   const postStore = usePostStore();
-  const activeChallenges = mockChallenges.filter(
+  const getAllChallenges = useChallengeStore(state => state.getAllChallenges);
+  const challenges = getAllChallenges();
+
+  const activeChallenges = challenges.filter(
     challenge => new Date() <= new Date(challenge.endDate)
   );
 
