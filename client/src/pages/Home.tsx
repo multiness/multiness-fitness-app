@@ -6,10 +6,11 @@ import ChallengeCard from "@/components/ChallengeCard";
 import FeedPost from "@/components/FeedPost";
 import EventSlider from "@/components/EventSlider";
 import { ArrowRight, Crown, Heart, Share2, Users, Trophy, Package } from "lucide-react";
-import { mockGroups, mockProducts, mockUsers } from "../data/mockData";
+import { mockGroups, mockProducts } from "../data/mockData";
 import { useLocation, Link } from "wouter";
 import { usePostStore } from "../lib/postStore";
 import { getChatId } from "../lib/chatService";
+import { useGroupStore } from "../lib/groupStore";
 import {
   Carousel,
   CarouselContent,
@@ -31,8 +32,10 @@ const format = (date: Date, formatStr: string) => {
 export default function Home() {
   const [, setLocation] = useLocation();
   const postStore = usePostStore();
+  const groupStore = useGroupStore();
   const getAllChallenges = useChallengeStore(state => state.getAllChallenges);
   const challenges = getAllChallenges();
+  const groups = groupStore.getGroups();
 
   const activeChallenges = challenges.filter(
     challenge => new Date() <= new Date(challenge.endDate)
@@ -118,11 +121,11 @@ export default function Home() {
         </div>
         {/* Mobile: Karussell-Layout */}
         <div className="block md:hidden">
-          <GroupCarousel groups={mockGroups.slice(0, 6)} />
+          <GroupCarousel groups={groups.slice(0, 6)} />
         </div>
         {/* Desktop: Grid-Layout */}
         <div className="hidden md:grid grid-cols-2 gap-4">
-          {mockGroups.slice(0, 4).map(group => {
+          {groups.slice(0, 4).map(group => {
             const chatId = getChatId(group.id);
             return (
               <div key={group.id} className="cursor-pointer" onClick={() => navigateToGroupChat(group.id)}>
