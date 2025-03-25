@@ -33,23 +33,22 @@ interface GroupStore {
 export const useGroups = create<GroupStore>()(
   persist(
     (set, get) => ({
-      groups: [], // Initialisiere als leeres Array
+      groups: [], // Initialize as empty array
       joinedGroups: [],
 
       fetchGroups: async () => {
         try {
           const response = await fetch('/api/groups');
-          if (!response.ok) throw new Error('Failed to fetch groups');
           const groups = await response.json();
           set({ groups: Array.isArray(groups) ? groups : [] });
         } catch (error) {
           console.error('Error fetching groups:', error);
-          set({ groups: [] }); // Setze leeres Array im Fehlerfall
+          // Fallback to empty array if fetch fails
+          set({ groups: [] });
         }
       },
 
       setGroups: (groups) => {
-        console.log('Setting groups:', groups); // Debug-Log
         set({ groups: Array.isArray(groups) ? groups : [] });
       },
 

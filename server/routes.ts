@@ -1,51 +1,44 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertProductSchema, insertEventExternalRegistrationSchema } from "@shared/schema";
-import { db } from "./db";
-import { groups, challenges, products } from "@shared/schema";
+
+// In-Memory Storage für Groups
+let groups = [];
+let groupIdCounter = 1;
+
+// In-Memory Storage für Challenges
+let challenges = [];
+let challengeIdCounter = 1;
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Groups API
   app.get("/api/groups", async (req, res) => {
-    try {
-      const allGroups = await db.select().from(groups);
-      res.json(allGroups);
-    } catch (error) {
-      console.error("Error fetching groups:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
+    res.json(groups);
   });
 
   app.post("/api/groups", async (req, res) => {
-    try {
-      const [group] = await db.insert(groups).values(req.body).returning();
-      res.status(201).json(group);
-    } catch (error) {
-      console.error("Error creating group:", error);
-      res.status(400).json({ error: "Invalid group data" });
-    }
+    const newGroup = {
+      id: groupIdCounter++,
+      ...req.body,
+      createdAt: new Date()
+    };
+    groups.push(newGroup);
+    res.status(201).json(newGroup);
   });
 
   // Challenges API
   app.get("/api/challenges", async (req, res) => {
-    try {
-      const allChallenges = await db.select().from(challenges);
-      res.json(allChallenges);
-    } catch (error) {
-      console.error("Error fetching challenges:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
+    res.json(challenges);
   });
 
   app.post("/api/challenges", async (req, res) => {
-    try {
-      const [challenge] = await db.insert(challenges).values(req.body).returning();
-      res.status(201).json(challenge);
-    } catch (error) {
-      console.error("Error creating challenge:", error);
-      res.status(400).json({ error: "Invalid challenge data" });
-    }
+    const newChallenge = {
+      id: challengeIdCounter++,
+      ...req.body,
+      createdAt: new Date()
+    };
+    challenges.push(newChallenge);
+    res.status(201).json(newChallenge);
   });
 
   // Products API
@@ -185,7 +178,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ error: "Invalid event data" });
     }
   });
-
 
   const httpServer = createServer(app);
   return httpServer;
