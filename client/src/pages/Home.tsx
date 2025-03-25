@@ -8,8 +8,6 @@ import FeedPost from "@/components/FeedPost";
 import EventSlider from "@/components/EventSlider";
 import { ArrowRight, Crown, Heart, Share2, Users, Trophy, Package, Calendar } from "lucide-react";
 import { useLocation, Link } from "wouter";
-import { usePostStore } from "../lib/postStore";
-import { getChatId } from "../lib/chatService";
 import { useUsers } from "../contexts/UserContext";
 import { storage, STORAGE_KEYS } from "../lib/storage";
 import {
@@ -26,27 +24,21 @@ import ProductSlider from "@/components/ProductSlider";
 
 export default function Home() {
   const [, setLocation] = useLocation();
-  const postStore = usePostStore();
   const { currentUser } = useUsers();
   const [posts, setPosts] = useState([]);
   const [challenges, setChallenges] = useState([]);
   const [groups, setGroups] = useState([]);
   const [products, setProducts] = useState([]);
 
-  // Load and sync data
   useEffect(() => {
     const loadData = () => {
-      // Hole alle Daten aus dem zentralen Storage
       setPosts(storage.getItem(STORAGE_KEYS.POSTS, []));
       setChallenges(storage.getItem(STORAGE_KEYS.CHALLENGES, []));
       setGroups(storage.getItem(STORAGE_KEYS.GROUPS, []));
       setProducts(storage.getItem(STORAGE_KEYS.PRODUCTS, []));
     };
 
-    // Initial load
     loadData();
-
-    // Listen for updates
     const cleanup = storage.addStorageListener(() => loadData());
     return cleanup;
   }, []);
@@ -59,7 +51,7 @@ export default function Home() {
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   const navigateToGroupChat = (groupId: number) => {
-    const chatId = getChatId(groupId);
+    const chatId = getChatId(groupId); // Assuming getChatId function exists elsewhere
     setLocation(`/chat/${chatId}`);
   };
 
@@ -131,12 +123,8 @@ export default function Home() {
             Alle Gruppen <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
-        {/* Mobile: Karussell-Layout */}
-        <div className="block md:hidden">
-          <GroupCarousel groups={groups.slice(0, 6)} />
-        </div>
-        {/* Desktop: Grid-Layout mit gleichem Design wie Mobile */}
-        <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Einheitliches Layout für beide Ansichten */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {groups.slice(0, 6).map(group => (
             <div key={group.id} className="cursor-pointer transition-transform hover:scale-[1.02]" onClick={() => navigateToGroupChat(group.id)}>
               <GroupPreview group={group} />
@@ -170,48 +158,14 @@ export default function Home() {
             Alle Challenges <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
-
-        {/* Mobile: Karussell-Layout */}
-        <div className="block md:hidden">
-          <Carousel
-            opts={{
-              align: "start",
-              loop: true,
-            }}
-            className="w-full"
-          >
-            <CarouselContent className="-ml-2">
-              {activeChallenges.map(challenge => (
-                <CarouselItem key={challenge.id} className="pl-2 basis-[80%]">
-                  <ChallengeCard challenge={challenge} />
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-          </Carousel>
-        </div>
-
-        {/* Desktop: Grid-Layout mit gleichem Design wie Mobile */}
-        <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Einheitliches Layout für beide Ansichten */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {activeChallenges.slice(0, 6).map(challenge => (
             <div key={challenge.id} className="transition-transform hover:scale-[1.02]">
               <ChallengeCard challenge={challenge} />
             </div>
           ))}
         </div>
-      </section>
-
-      {/* Events Section */}
-      <section className="mb-12">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-6 w-6 text-primary" />
-            <h2 className="text-2xl font-bold">Events</h2>
-          </div>
-          <Link href="/events" className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1">
-            Alle Events <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-        <EventSlider />
       </section>
 
       {/* Feed */}
