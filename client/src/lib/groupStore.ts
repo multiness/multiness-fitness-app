@@ -29,10 +29,40 @@ interface GroupStore {
   isGroupAdmin: (groupId: number, userId: number) => boolean;
 }
 
+// Initialisieren Sie den Store mit einigen Beispiel-Gruppen
+const initialGroups: Group[] = [
+  {
+    id: 1,
+    name: "Morning Workout",
+    description: "Frühmorgendliches Training für Frühaufsteher",
+    image: "https://images.unsplash.com/photo-1517963879433-6ad2b056d712?w=1200&auto=format",
+    participantIds: [1, 2, 3],
+    adminIds: [1],
+    creatorId: 1,
+    createdAt: new Date(),
+    memberCount: 3,
+    type: 'public',
+    tags: ['Morgen', 'Workout', 'Fitness']
+  },
+  {
+    id: 2,
+    name: "Yoga Community",
+    description: "Gemeinsames Yoga für alle Level",
+    image: "https://images.unsplash.com/photo-1517963879433-6ad2b056d712?w=1200&auto=format",
+    participantIds: [1, 4, 5],
+    adminIds: [1],
+    creatorId: 1,
+    createdAt: new Date(),
+    memberCount: 3,
+    type: 'public',
+    tags: ['Yoga', 'Entspannung']
+  }
+];
+
 export const useGroups = create<GroupStore>()(
   persist(
     (set, get) => ({
-      groups: [],
+      groups: initialGroups, // Initialisiere mit Beispiel-Gruppen
       joinedGroups: [],
 
       setGroups: (groups) => set({ groups }),
