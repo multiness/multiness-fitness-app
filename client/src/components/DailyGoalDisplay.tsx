@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { usePostStore } from "../lib/postStore";
-import { useUsers } from "../contexts/UserContext";
+import { useUsers } from "../contexts/UserContext"; // Fügen Sie diesen Import hinzu
 import { useToast } from "@/hooks/use-toast";
-import { mockUsers } from "../data/mockData";
+//import { mockUsers } from "../data/mockData"; // Entfernen Sie den Import von mockUsers
 import { formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
 import {
@@ -35,7 +35,7 @@ export default function DailyGoalDisplay({
   const [showProgressInput, setShowProgressInput] = useState(false);
   const [progressInput, setProgressInput] = useState("");
   const postStore = usePostStore();
-  const { currentUser } = useUsers();
+  const { users, currentUser } = useUsers(); // Fügen Sie diesen Hook hinzu
   const { toast } = useToast();
   const participants = postStore.getGoalParticipants(userId);
   const isOwner = currentUser?.id === userId;
@@ -474,7 +474,7 @@ export default function DailyGoalDisplay({
           <p className="text-sm text-muted-foreground mb-2">Machen auch mit:</p>
           <div className="flex flex-wrap gap-2">
             {participants.map(participantId => {
-              const participant = mockUsers.find(u => u.id === participantId);
+              const participant = users.find(u => u.id === participantId);
               return (
                 <span key={participantId} className="text-sm bg-primary/10 px-2 py-1 rounded-full">
                   {participant?.username}

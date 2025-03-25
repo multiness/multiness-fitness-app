@@ -5,35 +5,33 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MessageSquare, Trophy, Users2, ArrowRight, Pencil } from "lucide-react";
 import FeedPost from "@/components/FeedPost";
-import { mockUsers, mockChallenges } from "../data/mockData";
 import { Badge } from "@/components/ui/badge";
 import EditProfileDialog from "@/components/EditProfileDialog";
-import { usePostStore } from "../lib/postStore";
+import { usePostStore } from "@/lib/postStore";
 import DailyGoalDisplay from "@/components/DailyGoalDisplay";
-import { useUsers } from "../contexts/UserContext";
+import { useUsers } from "@/contexts/UserContext";
 import { UserAvatar } from "@/components/UserAvatar";
 import { Card, CardContent } from "@/components/ui/card";
-import { getChatId } from "../lib/chatService";
-import { useGroupStore } from "../lib/groupStore";
+import { getChatId } from "@/lib/chatService";
+import { useGroupStore } from "@/lib/groupStore";
+import { useChallengeStore } from "@/lib/challengeStore";
 import EditGroupDialog from "@/components/EditGroupDialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import ChallengeCard from "@/components/ChallengeCard"; // Import ChallengeCard
-
+import ChallengeCard from "@/components/ChallengeCard";
 
 export default function Profile() {
   const { id } = useParams();
   const [, setLocation] = useLocation();
-  const { currentUser, updateCurrentUser, users } = useUsers();
+  const { currentUser, users } = useUsers();
   const userId = parseInt(id || "1");
-  const [user, setUser] = useState(() =>
-    userId === currentUser?.id
-      ? currentUser
-      : users.find(u => u.id === userId)
-  );
+  const user = userId === currentUser?.id
+    ? currentUser
+    : users.find(u => u.id === userId);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedTab, setSelectedTab] = useState("posts");
   const postStore = usePostStore();
   const groupStore = useGroupStore();
+  const challengeStore = useChallengeStore();
   const [isEditGroupDialogOpen, setIsEditGroupDialogOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState(null);
   const activeGoal = postStore.getDailyGoal(userId);
@@ -42,20 +40,20 @@ export default function Profile() {
     window.scrollTo(0, 0);
   }, [userId]);
 
+  // Lade Posts aus dem postStore
   const userPosts = Object.values(postStore.posts)
     .filter(p => p.userId === userId)
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-  const userChallenges = mockChallenges.filter(c => c.creatorId === userId || c.participantIds?.includes(userId));
+  // Lade Challenges aus dem challengeStore
+  const userChallenges = Object.values(challengeStore.challenges)
+    .filter(c => c.creatorId === userId || c.participantIds?.includes(userId));
 
   const userGroups = Object.values(groupStore.groups)
     .filter(g => g.creatorId === userId || g.participantIds?.includes(userId));
 
-  console.log('Current user ID:', userId);
-  console.log('User groups:', userGroups);
-  console.log('All groups in store:', groupStore.groups);
-
-  const activeUserChallenges = userChallenges.filter(c => new Date() <= new Date(c.endDate));
+  const activeUserChallenges = userChallenges
+    .filter(c => new Date() <= new Date(c.endDate));
 
   if (!user) return <div>Benutzer nicht gefunden</div>;
 
@@ -67,7 +65,6 @@ export default function Profile() {
     bannerImage?: string;
   }) => {
     if (userId === currentUser?.id) {
-      // Wenn es der aktuelle Benutzer ist, aktualisiere über den Context
       updateCurrentUser(updatedData);
     }
     setUser(currentUser => {
@@ -85,7 +82,6 @@ export default function Profile() {
 
   const navigateToGroupChat = (groupId: number) => {
     const chatId = getChatId(groupId);
-    console.log('Navigating to group chat:', chatId);
     setLocation(`/chat/${chatId}`);
   };
 
@@ -119,8 +115,6 @@ export default function Profile() {
           <div className="relative">
             <UserAvatar
               userId={userId}
-              avatar={user.avatar}
-              username={user.username}
               size="lg"
               showActiveGoal={true}
               enableImageModal={true}
@@ -199,6 +193,31 @@ export default function Profile() {
             </TabsTrigger>
           </TabsList>
 
+          <TabsContent value="posts">
+            {userPosts.map((post) => (
+              <FeedPost key={post.id} post={post} />
+            ))}
+          </TabsContent>
+
+          {/* Challenges TabContent */}
+          <TabsContent value="challenges" className="space-y-4">
+            {activeUserChallenges.length > 0 ? (
+              <div className="grid gap-4">
+                {activeUserChallenges.map((challenge) => (
+                  <ChallengeCard
+                    key={challenge.id}
+                    challenge={challenge}
+                    variant="full"
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center text-muted-foreground py-8">
+                Keine aktiven Challenges gefunden
+              </div>
+            )}
+          </TabsContent>
+
           {/* Groups Tab */}
           <TabsContent value="groups" className="space-y-4">
             {userGroups.length > 0 ? (
@@ -206,7 +225,6 @@ export default function Profile() {
                 {userGroups.map(group => {
                   const isCreator = group.creatorId === userId;
                   const isAdmin = group.adminIds?.includes(userId);
-                  console.log(`Group ${group.name} - Creator: ${isCreator}, Admin: ${isAdmin}`);
 
                   return (
                     <Card
@@ -255,13 +273,11 @@ export default function Profile() {
                               <div className="flex items-center gap-2">
                                 <div className="flex -space-x-2">
                                   {group.participantIds?.slice(0, 3).map((participantId) => {
-                                    const participant = mockUsers.find(u => u.id === participantId);
+                                    const participant = users.find(u => u.id === participantId);
                                     return participant ? (
                                       <UserAvatar
                                         key={participant.id}
                                         userId={participant.id}
-                                        avatar={participant.avatar}
-                                        username={participant.username}
                                         size="sm"
                                       />
                                     ) : null;
@@ -291,32 +307,9 @@ export default function Profile() {
               <p className="text-center text-muted-foreground">Keine Gruppen gefunden</p>
             )}
           </TabsContent>
-          <TabsContent value="posts">
-            {/* Posts TabContent */}
-            {userPosts.map((post) => (
-              <FeedPost key={post.id} post={post} />
-            ))}
-          </TabsContent>
-          {/* Challenges TabContent */}
-          <TabsContent value="challenges" className="space-y-4">
-            {activeUserChallenges.length > 0 ? (
-              <div className="grid gap-4">
-                {activeUserChallenges.map((challenge) => (
-                  <ChallengeCard
-                    key={challenge.id}
-                    challenge={challenge}
-                    variant="full"
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center text-muted-foreground py-8">
-                Keine aktiven Challenges gefunden
-              </div>
-            )}
-          </TabsContent>
         </Tabs>
       </ScrollArea>
+
       <EditProfileDialog
         open={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}

@@ -36,15 +36,9 @@ export default function Home() {
   // Stelle sicher, dass groups immer ein Array ist
   const groups = groupStore.groups || [];
 
-  // Lade Posts aus dem postStore
-  const allPosts = Object.values(postStore.posts).sort((a, b) =>
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
-
-  const navigateToGroupChat = (groupId: number) => {
-    const chatId = getChatId(groupId);
-    setLocation(`/chat/${chatId}`);
-  };
+  // Lade aktuelle Posts aus dem postStore und sortiere sie nach Datum
+  const allPosts = Object.values(postStore.posts)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   return (
     <div className="w-full max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">

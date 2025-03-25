@@ -4,7 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Trophy, Calendar, Users, ArrowRight, MapPin } from "lucide-react";
 import { useLocation } from "wouter";
 import { UserAvatar } from "./UserAvatar";
-import { mockUsers } from "../data/mockData";
+import { useUsers } from "../contexts/UserContext";
+import { usePostStore } from "../lib/postStore";
 
 interface SharedContentProps {
   content: {
@@ -20,7 +21,11 @@ interface SharedContentProps {
 
 export default function SharedContent({ content }: SharedContentProps) {
   const [, setLocation] = useLocation();
-  const participants = mockUsers.slice(0, Math.floor(Math.random() * 5) + 3);
+  const { users } = useUsers();
+  const postStore = usePostStore();
+
+  // Hole echte Teilnehmer aus dem postStore
+  const participants = postStore.getParticipants(content.id);
 
   const handleClick = () => {
     const route = content.type === 'challenge' ? 'challenges' :
@@ -71,10 +76,10 @@ export default function SharedContent({ content }: SharedContentProps) {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <div className="flex -space-x-2">
-                  {participants.slice(0, 3).map((user, i) => (
+                  {participants.slice(0, 3).map((userId) => (
                     <UserAvatar
-                      key={i}
-                      userId={user.id}
+                      key={userId}
+                      userId={userId}
                       size="sm"
                       className="-ml-2 first:ml-0"
                     />
@@ -106,7 +111,7 @@ export default function SharedContent({ content }: SharedContentProps) {
     );
   }
 
-  // Challenge Card Design (already existing)
+  // Challenge Card Design
   return (
     <Card className="cursor-pointer overflow-hidden hover:bg-muted/50 transition-all" onClick={handleClick}>
       <CardContent className="p-0">
@@ -134,10 +139,10 @@ export default function SharedContent({ content }: SharedContentProps) {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="flex -space-x-2">
-                {participants.slice(0, 3).map((user, i) => (
+                {participants.slice(0, 3).map((userId) => (
                   <UserAvatar
-                    key={i}
-                    userId={user.id}
+                    key={userId}
+                    userId={userId}
                     size="sm"
                     className="-ml-2 first:ml-0"
                   />
