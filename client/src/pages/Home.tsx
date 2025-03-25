@@ -6,7 +6,6 @@ import ChallengeCard from "@/components/ChallengeCard";
 import FeedPost from "@/components/FeedPost";
 import EventSlider from "@/components/EventSlider";
 import { ArrowRight, Crown, Heart, Share2, Users, Trophy, Package } from "lucide-react";
-import { mockGroups, mockProducts } from "../data/mockData";
 import { useLocation, Link } from "wouter";
 import { usePostStore } from "../lib/postStore";
 import { getChatId } from "../lib/chatService";
@@ -147,7 +146,7 @@ export default function Home() {
             Alle Produkte <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
-        <ProductSlider products={mockProducts} />
+        <ProductSlider />
       </section>
 
       {/* Aktive Challenges - Hervorgehobenes Design */}
