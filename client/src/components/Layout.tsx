@@ -10,63 +10,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useLocation, Link } from "wouter";
-import { Bell, Dumbbell, Users2, Calendar, Package, Clock, Check } from "lucide-react";
+import { Bell, Users2, Calendar, Package, Check } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useUsers } from "../contexts/UserContext";
 import { UserAvatar } from "./UserAvatar";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-
-// Erweiterte Mock-Benachrichtigungen mit Typen und Links
-const mockNotifications = [
-  {
-    id: 1,
-    type: 'challenge',
-    title: "Neue Challenge",
-    message: "Eine neue Fitness Challenge wurde erstellt",
-    time: new Date(Date.now() - 5 * 60 * 1000),
-    unread: true,
-    link: "/challenges/123",
-    icon: Dumbbell
-  },
-  {
-    id: 2,
-    type: 'group',
-    title: "Gruppeneinladung",
-    message: "Du wurdest zur Gruppe 'Morning Workout' eingeladen",
-    time: new Date(Date.now() - 30 * 60 * 1000),
-    unread: true,
-    link: "/groups/456",
-    icon: Users2
-  },
-  {
-    id: 3,
-    type: 'event',
-    title: "Neues Event",
-    message: "Fitness Workshop am kommenden Samstag",
-    time: new Date(Date.now() - 2 * 60 * 60 * 1000),
-    unread: true,
-    link: "/events/789",
-    icon: Calendar
-  },
-  {
-    id: 4,
-    type: 'product',
-    title: "Neues Produkt",
-    message: "Neue Fitness-Ausrüstung im Shop verfügbar",
-    time: new Date(Date.now() - 3 * 60 * 60 * 1000),
-    unread: false,
-    link: "/products/101",
-    icon: Package
-  }
-];
+import { useNotificationStore } from "../lib/notificationStore";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [, setLocation] = useLocation();
   const { currentUser } = useUsers();
-  const [notifications, setNotifications] = useState(mockNotifications);
+  const { notifications, markAsRead, markAllAsRead } = useNotificationStore();
   const unreadCount = notifications.filter(n => n.unread).length;
 
   // Gruppiere Benachrichtigungen nach Typ
@@ -76,17 +33,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     }
     acc[notification.type].push(notification);
     return acc;
-  }, {} as Record<string, typeof mockNotifications>);
-
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, unread: false })));
-  };
-
-  const markAsRead = (id: number) => {
-    setNotifications(notifications.map(n =>
-      n.id === id ? { ...n, unread: false } : n
-    ));
-  };
+  }, {} as Record<string, typeof notifications>);
 
   const formatNotificationTime = (date: Date) => {
     const now = new Date();
@@ -163,7 +110,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                           }}
                         >
                           <div className="mt-1">
-                            <notification.icon className="h-5 w-5 text-muted-foreground" />
+                            {type === 'group' && <Users2 className="h-5 w-5 text-muted-foreground" />}
+                            {type === 'event' && <Calendar className="h-5 w-5 text-muted-foreground" />}
+                            {type === 'product' && <Package className="h-5 w-5 text-muted-foreground" />}
+                            {/* Added default icon for unknown types */}
+                            {!(type === 'group' || type === 'event' || type === 'product') && <Bell className="h-5 w-5 text-muted-foreground" />}
                           </div>
                           <div className="space-y-1 flex-1">
                             <div className="flex items-center justify-between">
@@ -176,7 +127,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                                 )}
                               </p>
                               <span className="text-xs text-muted-foreground">
-                                {formatNotificationTime(notification.time)}
+                                {formatNotificationTime(notification.createdAt)}
                               </span>
                             </div>
                             <p className="text-sm text-muted-foreground">

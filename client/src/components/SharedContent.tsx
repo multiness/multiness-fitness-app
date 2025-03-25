@@ -4,7 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { Trophy, Calendar, Users, ArrowRight, MapPin } from "lucide-react";
 import { useLocation } from "wouter";
 import { UserAvatar } from "./UserAvatar";
-import { mockUsers } from "../data/mockData";
+import { useUsers } from "../contexts/UserContext";
+import { useGroupStore } from "../lib/groupStore";
+import { usePostStore } from "../lib/postStore";
 
 interface SharedContentProps {
   content: {
@@ -20,7 +22,25 @@ interface SharedContentProps {
 
 export default function SharedContent({ content }: SharedContentProps) {
   const [, setLocation] = useLocation();
-  const participants = mockUsers.slice(0, Math.floor(Math.random() * 5) + 3);
+  const { users } = useUsers();
+  const groupStore = useGroupStore();
+  const postStore = usePostStore();
+
+  // Hole die tatsächlichen Teilnehmer basierend auf dem Typ
+  const getParticipants = () => {
+    if (content.type === 'challenge') {
+      return users.filter(u => groupStore.isGroupParticipant(content.id, u.id));
+    } else if (content.type === 'event') {
+      // Verwende die Event-Teilnehmer aus dem entsprechenden Store
+      return users.slice(0, Math.floor(Math.random() * 5) + 3); // Temporär, bis Event-Store implementiert ist
+    } else {
+      // Für Posts, zeige Likes oder Kommentare
+      const postLikes = postStore.getLikes(content.id);
+      return users.filter(u => postLikes.includes(u.id));
+    }
+  };
+
+  const participants = getParticipants();
 
   const handleClick = () => {
     const route = content.type === 'challenge' ? 'challenges' :
@@ -106,7 +126,7 @@ export default function SharedContent({ content }: SharedContentProps) {
     );
   }
 
-  // Challenge Card Design (already existing)
+  // Challenge Card Design
   return (
     <Card className="cursor-pointer overflow-hidden hover:bg-muted/50 transition-all" onClick={handleClick}>
       <CardContent className="p-0">

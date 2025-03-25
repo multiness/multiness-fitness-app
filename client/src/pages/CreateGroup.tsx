@@ -50,6 +50,17 @@ export default function CreateGroup() {
     setImagePreview(null);
   };
 
+  const handleAddInvite = () => {
+    if (currentInvite.trim() && !invites.includes(currentInvite.trim())) {
+      setInvites([...invites, currentInvite.trim()]);
+      setCurrentInvite("");
+    }
+  };
+
+  const removeInvite = (invite: string) => {
+    setInvites(invites.filter(i => i !== invite));
+  };
+
   const handleSubmit = () => {
     if (!currentUser) {
       toast({
@@ -77,13 +88,12 @@ export default function CreateGroup() {
       creatorId: currentUser.id,
       participantIds: [currentUser.id],
       adminIds: [currentUser.id], // Der Ersteller ist automatisch Admin
+      privacy,
+      isFeatured,
     });
 
     // Initialisiere den Gruppen-Chat
     chatStore.initializeGroupChat(groupId);
-
-    console.log('Created group with ID:', groupId);
-    console.log('Initialized group chat');
 
     toast({
       title: "Gruppe erstellt!",
@@ -137,7 +147,6 @@ export default function CreateGroup() {
                   onCheckedChange={setIsFeatured}
                   aria-label="Toggle featured status"
                 />
-                {/*<Pin className={`h-4 w-4 ${isFeatured ? 'text-primary' : 'text-muted-foreground'}`} />*/}
               </div>
             </div>
           )}
@@ -260,14 +269,3 @@ export default function CreateGroup() {
     </div>
   );
 }
-
-const handleAddInvite = () => {
-  if (currentInvite.trim() && !invites.includes(currentInvite.trim())) {
-    setInvites([...invites, currentInvite.trim()]);
-    setCurrentInvite("");
-  }
-};
-
-const removeInvite = (invite: string) => {
-  setInvites(invites.filter(i => i !== invite));
-};

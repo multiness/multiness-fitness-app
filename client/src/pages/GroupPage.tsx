@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { mockUsers } from "../data/mockData";
 import { format } from "date-fns";
 import { Send, ImagePlus, Pencil } from "lucide-react";
 import { useChatStore, getChatId } from "../lib/chatService";
@@ -14,7 +13,7 @@ import EditGroupDialog from "@/components/EditGroupDialog";
 
 export default function GroupPage() {
   const { id } = useParams();
-  const { currentUser } = useUsers();
+  const { currentUser, users } = useUsers();
   const groupStore = useGroupStore();
   const group = groupStore.groups[parseInt(id || "")];
   const [newMessage, setNewMessage] = useState("");
@@ -32,10 +31,11 @@ export default function GroupPage() {
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() && !selectedImage) return;
+    if (!currentUser) return;
 
     const message = {
       id: messages.length + 1,
-      userId: currentUser?.id || 0,
+      userId: currentUser.id,
       content: newMessage,
       timestamp: new Date().toISOString(),
       imageUrl: selectedImage ? URL.createObjectURL(selectedImage) : undefined,
@@ -93,13 +93,13 @@ export default function GroupPage() {
           {/* Messages */}
           <div className="space-y-4 mb-4 h-[400px] overflow-y-auto">
             {messages.map(message => {
-              const user = mockUsers.find(u => u.id === message.userId);
+              const user = users.find(u => u.id === message.userId);
               const isCurrentUser = message.userId === currentUser?.id;
 
               return (
                 <div key={message.id} className={`flex gap-3 ${isCurrentUser ? 'flex-row-reverse' : ''}`}>
                   <Avatar>
-                    <AvatarImage src={user?.avatar || undefined} />
+                    <AvatarImage src={user?.avatar} />
                     <AvatarFallback>{user?.username[0]}</AvatarFallback>
                   </Avatar>
                   <div className={`flex flex-col ${isCurrentUser ? 'items-end' : ''} max-w-[70%]`}>
