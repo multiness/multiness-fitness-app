@@ -10,6 +10,8 @@ import { useLocation, Link } from "wouter";
 import { usePostStore } from "../lib/postStore";
 import { getChatId } from "../lib/chatService";
 import { useGroupStore } from "../lib/groupStore";
+import { useChallengeStore } from "../lib/challengeStore";
+import { useUsers } from "../contexts/UserContext";
 import {
   Carousel,
   CarouselContent,
@@ -22,7 +24,6 @@ import { Badge } from "@/components/ui/badge";
 import GroupCarousel from "@/components/GroupCarousel";
 import { UserAvatar } from "@/components/UserAvatar";
 import ProductSlider from "@/components/ProductSlider";
-import { useChallengeStore } from "../lib/challengeStore";
 
 const format = (date: Date, formatStr: string) => {
   return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -31,8 +32,10 @@ const format = (date: Date, formatStr: string) => {
 export default function Home() {
   const [, setLocation] = useLocation();
   const postStore = usePostStore();
-  const getAllChallenges = useChallengeStore(state => state.getAllChallenges);
+  const { users, currentUser } = useUsers();
   const getGroups = useGroupStore(state => state.getGroups);
+  const getAllChallenges = useChallengeStore(state => state.getAllChallenges);
+
   const challenges = getAllChallenges();
   const groups = getGroups();
 
@@ -40,7 +43,7 @@ export default function Home() {
     challenge => new Date() <= new Date(challenge.endDate)
   );
 
-  // Lade Posts aus dem postStore statt mockPosts
+  // Lade Posts aus dem postStore
   const allPosts = Object.values(postStore.posts).sort((a, b) =>
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
@@ -149,7 +152,7 @@ export default function Home() {
         <ProductSlider />
       </section>
 
-      {/* Aktive Challenges - Hervorgehobenes Design */}
+      {/* Aktive Challenges */}
       <section className="mb-12">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
