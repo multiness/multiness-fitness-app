@@ -1,12 +1,10 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import UserSlider from "@/components/UserSlider";
-import GroupPreview from "@/components/GroupPreview";
 import ChallengeCard from "@/components/ChallengeCard";
 import FeedPost from "@/components/FeedPost";
 import EventSlider from "@/components/EventSlider";
 import { ArrowRight, Crown, Heart, Share2, Users, Trophy, Package } from "lucide-react";
-import { mockGroups, mockChallenges, mockUsers, mockProducts } from "../data/mockData";
 import { useLocation, Link } from "wouter";
 import { usePostStore } from "../lib/postStore";
 import { getChatId } from "../lib/chatService";
@@ -14,28 +12,22 @@ import {
   Carousel,
   CarouselContent,
   CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
 } from "@/components/ui/carousel";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import GroupCarousel from "@/components/GroupCarousel";
-import { UserAvatar } from "@/components/UserAvatar";
 import ProductSlider from "@/components/ProductSlider";
-
-
-const format = (date: Date, formatStr: string) => {
-  return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
-};
+import { useChallenges } from "../lib/challengeStore";
+import { useGroups } from "../lib/groupStore";
+import { useProducts } from "../lib/productStore";
 
 export default function Home() {
   const [, setLocation] = useLocation();
   const postStore = usePostStore();
-  const activeChallenges = mockChallenges.filter(
-    challenge => new Date() <= new Date(challenge.endDate)
-  );
+  const { activeChallenges } = useChallenges();
+  const { groups } = useGroups();
+  const { products } = useProducts();
 
-  // Lade Posts aus dem postStore statt mockPosts
+  // Lade Posts aus dem postStore
   const allPosts = Object.values(postStore.posts).sort((a, b) =>
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
@@ -113,21 +105,7 @@ export default function Home() {
             Alle Gruppen <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
-        {/* Mobile: Karussell-Layout */}
-        <div className="block md:hidden">
-          <GroupCarousel groups={mockGroups.slice(0, 6)} />
-        </div>
-        {/* Desktop: Grid-Layout */}
-        <div className="hidden md:grid grid-cols-2 gap-4">
-          {mockGroups.slice(0, 4).map(group => {
-            const chatId = getChatId(group.id);
-            return (
-              <div key={group.id} className="cursor-pointer" onClick={() => navigateToGroupChat(group.id)}>
-                <GroupPreview group={group} />
-              </div>
-            );
-          })}
-        </div>
+        <GroupCarousel groups={groups.slice(0, 6)} />
       </section>
 
       {/* Products Section */}
@@ -141,10 +119,10 @@ export default function Home() {
             Alle Produkte <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
-        <ProductSlider products={mockProducts} />
+        <ProductSlider products={products} />
       </section>
 
-      {/* Aktive Challenges - Hervorgehobenes Design */}
+      {/* Aktive Challenges */}
       <section className="mb-12">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
@@ -155,42 +133,29 @@ export default function Home() {
             Alle Challenges <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
-
-        {/* Mobile: Karussell-Layout */}
-        <div className="block md:hidden">
-          <Carousel
-            opts={{
-              align: "start",
-              loop: true,
-            }}
-            className="w-full"
-          >
-            <CarouselContent className="-ml-2">
-              {activeChallenges.map(challenge => (
-                <CarouselItem key={challenge.id} className="pl-2 basis-[80%]">
-                  <ChallengeCard challenge={challenge} />
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-          </Carousel>
-        </div>
-
-        {/* Desktop: Grid-Layout */}
-        <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-4">
-          {activeChallenges.slice(0, 6).map(challenge => (
-            <ChallengeCard key={challenge.id} challenge={challenge} />
-          ))}
-        </div>
+        <Carousel
+          opts={{
+            align: "start",
+            loop: true,
+          }}
+          className="w-full"
+        >
+          <CarouselContent className="-ml-2">
+            {activeChallenges.map(challenge => (
+              <CarouselItem key={challenge.id} className="pl-2 basis-[80%] sm:basis-1/2 lg:basis-1/3">
+                <ChallengeCard challenge={challenge} />
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+        </Carousel>
       </section>
 
       {/* Feed */}
       <section>
         <h2 className="text-2xl font-bold mb-6">Neueste Beiträge</h2>
-        <div className="space-y-6 w-full">
+        <div className="space-y-6">
           {allPosts.map(post => (
-            <div key={post.id} className="w-full max-w-xl mx-auto">
-              <FeedPost post={post} />
-            </div>
+            <FeedPost key={post.id} post={post} />
           ))}
         </div>
       </section>

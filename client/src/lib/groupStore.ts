@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-type Group = {
+export interface Group {
   id: number;
   name: string;
   description: string;
@@ -9,106 +9,79 @@ type Group = {
   participantIds: number[];
   adminIds: number[];
   creatorId: number;
-};
+  createdAt: Date;
+  memberCount?: number;
+  type?: 'public' | 'private';
+  tags?: string[];
+}
 
-type GroupStore = {
-  groups: Record<number, Group>;
+interface GroupStore {
+  groups: Group[];
   joinedGroups: number[];
-  createGroup: (group: Omit<Group, 'id'>) => number;
+  setGroups: (groups: Group[]) => void;
+  addGroup: (group: Group) => void;
+  updateGroup: (groupId: number, data: Partial<Group>) => void;
   joinGroup: (groupId: number) => void;
   leaveGroup: (groupId: number) => void;
   isGroupMember: (groupId: number) => boolean;
-  updateGroup: (groupId: number, data: Partial<Group>) => void;
   addAdmin: (groupId: number, userId: number) => void;
   removeAdmin: (groupId: number, userId: number) => void;
   isGroupAdmin: (groupId: number, userId: number) => boolean;
-};
+}
 
-export const useGroupStore = create<GroupStore>()(
+export const useGroups = create<GroupStore>()(
   persist(
     (set, get) => ({
-      groups: {},
+      groups: [],
       joinedGroups: [],
 
-      createGroup: (groupData) => {
-        const id = Date.now();
-        const group = { ...groupData, id };
+      setGroups: (groups) => set({ groups }),
 
-        set((state) => ({
-          groups: {
-            ...state.groups,
-            [id]: group
-          },
-          joinedGroups: [...state.joinedGroups, id]
-        }));
+      addGroup: (group) => set((state) => ({
+        groups: [...state.groups, group],
+        joinedGroups: [...state.joinedGroups, group.id]
+      })),
 
-        console.log('Group created:', group);
-        return id;
-      },
+      updateGroup: (groupId, data) => set((state) => ({
+        groups: state.groups.map(group =>
+          group.id === groupId ? { ...group, ...data } : group
+        )
+      })),
 
-      joinGroup: (groupId) => 
-        set((state) => ({
-          joinedGroups: [...state.joinedGroups, groupId]
-        })),
+      joinGroup: (groupId) => set((state) => ({
+        joinedGroups: [...state.joinedGroups, groupId]
+      })),
 
-      leaveGroup: (groupId) =>
-        set((state) => ({
-          joinedGroups: state.joinedGroups.filter(id => id !== groupId)
-        })),
+      leaveGroup: (groupId) => set((state) => ({
+        joinedGroups: state.joinedGroups.filter(id => id !== groupId)
+      })),
 
-      isGroupMember: (groupId) =>
-        get().joinedGroups.includes(groupId),
+      isGroupMember: (groupId) => get().joinedGroups.includes(groupId),
 
-      updateGroup: (groupId, data) => {
-        console.log('Updating group:', groupId, 'with data:', data);
-        set((state) => ({
-          groups: {
-            ...state.groups,
-            [groupId]: {
-              ...state.groups[groupId],
-              ...data
-            }
-          }
-        }));
-      },
+      addAdmin: (groupId, userId) => set((state) => ({
+        groups: state.groups.map(group =>
+          group.id === groupId
+            ? { ...group, adminIds: [...(group.adminIds || []), userId] }
+            : group
+        )
+      })),
 
-      addAdmin: (groupId, userId) =>
-        set((state) => {
-          const group = state.groups[groupId];
-          if (!group) return state;
+      removeAdmin: (groupId, userId) => set((state) => {
+        const group = state.groups.find(g => g.id === groupId);
+        if (!group || group.creatorId === userId) return state;
 
-          return {
-            groups: {
-              ...state.groups,
-              [groupId]: {
-                ...group,
-                adminIds: [...(group.adminIds || []), userId]
-              }
-            }
-          };
-        }),
-
-      removeAdmin: (groupId, userId) =>
-        set((state) => {
-          const group = state.groups[groupId];
-          if (!group || group.creatorId === userId) return state;
-
-          return {
-            groups: {
-              ...state.groups,
-              [groupId]: {
-                ...group,
-                adminIds: (group.adminIds || []).filter(id => id !== userId)
-              }
-            }
-          };
-        }),
+        return {
+          groups: state.groups.map(g =>
+            g.id === groupId
+              ? { ...g, adminIds: (g.adminIds || []).filter(id => id !== userId) }
+              : g
+          )
+        };
+      }),
 
       isGroupAdmin: (groupId, userId) => {
-        const group = get().groups[groupId];
-        const isAdmin = group ? (group.creatorId === userId || (group.adminIds || []).includes(userId)) : false;
-        console.log('Checking admin status:', { groupId, userId, group, isAdmin });
-        return isAdmin;
+        const group = get().groups.find(g => g.id === groupId);
+        return group ? (group.creatorId === userId || (group.adminIds || []).includes(userId)) : false;
       }
     }),
     {
@@ -117,3 +90,6 @@ export const useGroupStore = create<GroupStore>()(
     }
   )
 );
+
+// Alias für Abwärtskompatibilität
+export const useGroupStore = useGroups;
