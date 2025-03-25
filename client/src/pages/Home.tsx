@@ -32,10 +32,10 @@ const format = (date: Date, formatStr: string) => {
 export default function Home() {
   const [, setLocation] = useLocation();
   const postStore = usePostStore();
-  const groupStore = useGroupStore();
   const getAllChallenges = useChallengeStore(state => state.getAllChallenges);
+  const getGroups = useGroupStore(state => state.getGroups);
   const challenges = getAllChallenges();
-  const groups = groupStore.getGroups();
+  const groups = getGroups();
 
   const activeChallenges = challenges.filter(
     challenge => new Date() <= new Date(challenge.endDate)

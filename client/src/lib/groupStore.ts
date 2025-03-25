@@ -22,6 +22,7 @@ type GroupStore = {
   addAdmin: (groupId: number, userId: number) => void;
   removeAdmin: (groupId: number, userId: number) => void;
   isGroupAdmin: (groupId: number, userId: number) => boolean;
+  getGroups: () => Group[]; // Neue Methode hinzugefügt
 };
 
 export const useGroupStore = create<GroupStore>()(
@@ -109,6 +110,11 @@ export const useGroupStore = create<GroupStore>()(
         const isAdmin = group ? (group.creatorId === userId || (group.adminIds || []).includes(userId)) : false;
         console.log('Checking admin status:', { groupId, userId, group, isAdmin });
         return isAdmin;
+      },
+
+      // Neue Methode zum Abrufen aller Gruppen als Array
+      getGroups: () => {
+        return Object.values(get().groups);
       }
     }),
     {

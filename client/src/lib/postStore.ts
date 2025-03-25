@@ -45,6 +45,9 @@ type PostStore = {
   hasLikedComment: (postId: number, commentId: number, userId: number) => boolean;
   updatePost: (postId: number, content: string) => void;
   deletePost: (postId: number) => void;
+  setDailyGoal: (userId: number, goal: DailyGoal) => { hasExistingGoal: boolean };
+  getDailyGoal: (userId: number) => DailyGoal | undefined;
+  updateDailyGoalProgress: (userId: number, progress: number) => void;
   createPostWithGoal: (userId: number, content: string, goal: DailyGoal) => void;
   createPost: (userId: number, content: string, image?: string | null) => void;
   deleteDailyGoal: (userId: number) => void;
@@ -70,6 +73,51 @@ export const usePostStore = create<PostStore>()(
           running: []
         }
       },
+
+      getDailyGoal: (userId) => {
+        const goal = get().dailyGoals[userId];
+        if (!goal) return undefined;
+
+        // Konvertiere das Datum zurück in ein Date-Objekt
+        return {
+          ...goal,
+          createdAt: new Date(goal.createdAt)
+        };
+      },
+
+      setDailyGoal: (userId, goal) => {
+        const existingGoal = get().getDailyGoal(userId);
+        const hasExistingGoal = Boolean(existingGoal);
+
+        set((state) => ({
+          dailyGoals: {
+            ...state.dailyGoals,
+            [userId]: goal
+          }
+        }));
+
+        return { hasExistingGoal };
+      },
+
+      updateDailyGoalProgress: (userId, newProgressValue) =>
+        set((state) => {
+          const currentGoal = state.dailyGoals[userId];
+          if (!currentGoal) return state;
+
+          const updatedProgress = currentGoal.progress + newProgressValue;
+          const isCompleted = updatedProgress >= currentGoal.target;
+
+          return {
+            dailyGoals: {
+              ...state.dailyGoals,
+              [userId]: {
+                ...currentGoal,
+                progress: isCompleted ? currentGoal.target : updatedProgress,
+                completed: isCompleted
+              }
+            }
+          };
+        }),
 
       addLike: (postId, userId) =>
         set((state) => ({
@@ -189,7 +237,7 @@ export const usePostStore = create<PostStore>()(
           id: postId,
           userId,
           content,
-          image,
+          image: image || null,
           createdAt: new Date()
         };
 
@@ -254,10 +302,8 @@ export const usePostStore = create<PostStore>()(
       deleteDailyGoal: (userId: number) =>
         set((state) => {
           const { [userId]: _, ...remainingGoals } = state.dailyGoals;
-          const { [userId]: __, ...remainingParticipants } = state.goalParticipants;
           return {
-            dailyGoals: remainingGoals,
-            goalParticipants: remainingParticipants
+            dailyGoals: remainingGoals
           };
         }),
 

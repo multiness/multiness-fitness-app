@@ -8,7 +8,7 @@ import { Gift, Dumbbell, ChevronRight, ChevronLeft, Clock, RefreshCw, Plus, X, A
 import WorkoutGenerator from "@/components/WorkoutGenerator";
 import { useToast } from "@/hooks/use-toast";
 import { format, addDays } from "date-fns";
-import { mockChallenges, badgeTests, exerciseDatabase, saveNewChallenge } from "../data/mockData";
+import { mockChallenges, badgeTests, mockExerciseDatabase } from "../data/mockData"; // Korrigierter Import
 import {
   Dialog,
   DialogContent,
@@ -347,7 +347,7 @@ ${template.workoutType === 'amrap' ?
     };
 
     // Save the new challenge to localStorage
-    saveNewChallenge(newChallenge);
+    //saveNewChallenge(newChallenge);
 
     toast({
       title: "Challenge erstellt!",
@@ -378,7 +378,7 @@ ${template.workoutType === 'amrap' ?
     setRestBetweenSets("");
 
     // Optional: Redirect to the challenges page
-    window.location.href = '/challenges';
+    //window.location.href = '/challenges';
   };
 
   const steps = [
@@ -718,8 +718,8 @@ ${template.workoutType === 'amrap' ?
                   key={index}
                   name={exercise.name}
                   description={exercise.description}
-                  instruction={exerciseDatabase.exercises[exercise.name.toLowerCase()]?.instruction}
-                  tips={exerciseDatabase.exercises[exercise.name.toLowerCase()]?.tips}
+                  instruction={mockExerciseDatabase.exercises[exercise.name.toLowerCase()]?.instruction}
+                  tips={mockExerciseDatabase.exercises[exercise.name.toLowerCase()]?.tips}
                 />
               ))}
             </>
@@ -895,8 +895,7 @@ ${template.workoutType === 'amrap' ?
       </div>
 
       {/* Current Step Content */}
-      <Card className="mb-6">
-        <CardContent className="pt-6">
+      <Card className="mb-6"><CardContent className="pt-6">
           {steps[currentStep - 1].content}
         </CardContent>
       </Card>
