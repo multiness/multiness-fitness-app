@@ -87,3 +87,6 @@ export const useChallengeStore = create<ChallengeStore>()(
     }
   )
 );
+
+// Füge den Alias für useChallenges hinzu
+export const useChallenges = useChallengeStore;
