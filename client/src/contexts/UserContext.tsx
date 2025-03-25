@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { mockUsers } from "../data/mockData";
-import { storage, STORAGE_KEYS } from "../lib/storage";
 
 type User = {
   id: number;
@@ -24,15 +23,32 @@ interface UserContextType {
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
-export function UserProvider({ children }: { children: ReactNode }) {
-  // Lade Benutzerdaten aus dem Storage oder verwende mockUsers als Fallback
-  const [users, setUsers] = useState(() => 
-    storage.getItem(STORAGE_KEYS.USERS, mockUsers)
-  );
+const STORAGE_KEY = 'fitness-app-user';
+const USERS_STORAGE_KEY = 'fitness-app-users';
 
-  const [currentUser, setCurrentUser] = useState(() => 
-    storage.getItem(STORAGE_KEYS.USER, users[0])
-  );
+export function UserProvider({ children }: { children: ReactNode }) {
+  // Load users data from localStorage or use mockUsers as fallback
+  const loadInitialUsers = () => {
+    const savedUsers = localStorage.getItem(USERS_STORAGE_KEY);
+    if (savedUsers) {
+      return JSON.parse(savedUsers);
+    }
+    return mockUsers;
+  };
+
+  // Load current user from localStorage
+  const loadCurrentUser = () => {
+    const savedUser = localStorage.getItem(STORAGE_KEY);
+    if (savedUser) {
+      return JSON.parse(savedUser);
+    }
+    // If no saved user, use the first user from loaded users
+    const initialUsers = loadInitialUsers();
+    return initialUsers[0];
+  };
+
+  const [users, setUsers] = useState(loadInitialUsers());
+  const [currentUser, setCurrentUser] = useState(loadCurrentUser());
 
   const updateCurrentUser = (userData: Partial<User>) => {
     if (!currentUser) return;
@@ -46,9 +62,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
     );
     setUsers(updatedUsers);
 
-    // Save to storage
-    storage.setItem(STORAGE_KEYS.USER, updatedUser);
-    storage.setItem(STORAGE_KEYS.USERS, updatedUsers);
+    // Save to localStorage
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedUser));
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
   };
 
   const toggleVerification = (userId: number) => {
@@ -58,32 +74,19 @@ export function UserProvider({ children }: { children: ReactNode }) {
         : user
     );
     setUsers(updatedUsers);
-    storage.setItem(STORAGE_KEYS.USERS, updatedUsers);
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
   };
 
-  // Storage Event Listener
+  // Persist changes to localStorage whenever users or currentUser changes
   useEffect(() => {
-    const cleanup = storage.addStorageListener((event: StorageEvent | CustomEvent) => {
-      if ('key' in event) { // StorageEvent
-        if (event.key === STORAGE_KEYS.USER) {
-          const updatedUser = JSON.parse(event.newValue || '');
-          setCurrentUser(updatedUser);
-        } else if (event.key === STORAGE_KEYS.USERS) {
-          const updatedUsers = JSON.parse(event.newValue || '[]');
-          setUsers(updatedUsers);
-        }
-      } else { // CustomEvent
-        const { key, value } = (event as CustomEvent).detail;
-        if (key === STORAGE_KEYS.USER) {
-          setCurrentUser(value);
-        } else if (key === STORAGE_KEYS.USERS) {
-          setUsers(value);
-        }
-      }
-    });
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+  }, [users]);
 
-    return cleanup;
-  }, []);
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(currentUser));
+    }
+  }, [currentUser]);
 
   return (
     <UserContext.Provider value={{ users, currentUser, updateCurrentUser, toggleVerification }}>

@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import UserSlider from "@/components/UserSlider";
@@ -6,10 +5,11 @@ import GroupPreview from "@/components/GroupPreview";
 import ChallengeCard from "@/components/ChallengeCard";
 import FeedPost from "@/components/FeedPost";
 import EventSlider from "@/components/EventSlider";
-import { ArrowRight, Crown, Heart, Share2, Users, Trophy, Package, Calendar } from "lucide-react";
+import { ArrowRight, Crown, Heart, Share2, Users, Trophy, Package } from "lucide-react";
+import { mockGroups, mockChallenges, mockUsers, mockProducts } from "../data/mockData";
 import { useLocation, Link } from "wouter";
-import { useUsers } from "../contexts/UserContext";
-import { storage, STORAGE_KEYS } from "../lib/storage";
+import { usePostStore } from "../lib/postStore";
+import { getChatId } from "../lib/chatService";
 import {
   Carousel,
   CarouselContent,
@@ -17,41 +17,31 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import GroupCarousel from "@/components/GroupCarousel";
 import { UserAvatar } from "@/components/UserAvatar";
 import ProductSlider from "@/components/ProductSlider";
 
+
+const format = (date: Date, formatStr: string) => {
+  return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+};
+
 export default function Home() {
   const [, setLocation] = useLocation();
-  const { currentUser } = useUsers();
-  const [posts, setPosts] = useState([]);
-  const [challenges, setChallenges] = useState([]);
-  const [groups, setGroups] = useState([]);
-  const [products, setProducts] = useState([]);
+  const postStore = usePostStore();
+  const activeChallenges = mockChallenges.filter(
+    challenge => new Date() <= new Date(challenge.endDate)
+  );
 
-  useEffect(() => {
-    const loadData = () => {
-      setPosts(storage.getItem(STORAGE_KEYS.POSTS, []));
-      setChallenges(storage.getItem(STORAGE_KEYS.CHALLENGES, []));
-      setGroups(storage.getItem(STORAGE_KEYS.GROUPS, []));
-      setProducts(storage.getItem(STORAGE_KEYS.PRODUCTS, []));
-    };
-
-    loadData();
-    const cleanup = storage.addStorageListener(() => loadData());
-    return cleanup;
-  }, []);
-
-  const activeChallenges = challenges
-    .filter(challenge => new Date() <= new Date(challenge.endDate))
-    .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
-
-  const allPosts = posts
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  // Lade Posts aus dem postStore statt mockPosts
+  const allPosts = Object.values(postStore.posts).sort((a, b) =>
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
 
   const navigateToGroupChat = (groupId: number) => {
-    const chatId = getChatId(groupId); // Assuming getChatId function exists elsewhere
+    const chatId = getChatId(groupId);
     setLocation(`/chat/${chatId}`);
   };
 
@@ -123,13 +113,20 @@ export default function Home() {
             Alle Gruppen <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
-        {/* Einheitliches Layout für beide Ansichten */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {groups.slice(0, 6).map(group => (
-            <div key={group.id} className="cursor-pointer transition-transform hover:scale-[1.02]" onClick={() => navigateToGroupChat(group.id)}>
-              <GroupPreview group={group} />
-            </div>
-          ))}
+        {/* Mobile: Karussell-Layout */}
+        <div className="block md:hidden">
+          <GroupCarousel groups={mockGroups.slice(0, 6)} />
+        </div>
+        {/* Desktop: Grid-Layout */}
+        <div className="hidden md:grid grid-cols-2 gap-4">
+          {mockGroups.slice(0, 4).map(group => {
+            const chatId = getChatId(group.id);
+            return (
+              <div key={group.id} className="cursor-pointer" onClick={() => navigateToGroupChat(group.id)}>
+                <GroupPreview group={group} />
+              </div>
+            );
+          })}
         </div>
       </section>
 
@@ -144,10 +141,10 @@ export default function Home() {
             Alle Produkte <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
-        <ProductSlider products={products} />
+        <ProductSlider products={mockProducts} />
       </section>
 
-      {/* Aktive Challenges */}
+      {/* Aktive Challenges - Hervorgehobenes Design */}
       <section className="mb-12">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
@@ -158,12 +155,30 @@ export default function Home() {
             Alle Challenges <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
-        {/* Einheitliches Layout für beide Ansichten */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+        {/* Mobile: Karussell-Layout */}
+        <div className="block md:hidden">
+          <Carousel
+            opts={{
+              align: "start",
+              loop: true,
+            }}
+            className="w-full"
+          >
+            <CarouselContent className="-ml-2">
+              {activeChallenges.map(challenge => (
+                <CarouselItem key={challenge.id} className="pl-2 basis-[80%]">
+                  <ChallengeCard challenge={challenge} />
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+          </Carousel>
+        </div>
+
+        {/* Desktop: Grid-Layout */}
+        <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-4">
           {activeChallenges.slice(0, 6).map(challenge => (
-            <div key={challenge.id} className="transition-transform hover:scale-[1.02]">
-              <ChallengeCard challenge={challenge} />
-            </div>
+            <ChallengeCard key={challenge.id} challenge={challenge} />
           ))}
         </div>
       </section>
@@ -171,9 +186,9 @@ export default function Home() {
       {/* Feed */}
       <section>
         <h2 className="text-2xl font-bold mb-6">Neueste Beiträge</h2>
-        <div className="space-y-6">
+        <div className="space-y-6 w-full">
           {allPosts.map(post => (
-            <div key={post.id} className="w-full max-w-xl mx-auto transition-transform hover:scale-[1.01]">
+            <div key={post.id} className="w-full max-w-xl mx-auto">
               <FeedPost post={post} />
             </div>
           ))}
