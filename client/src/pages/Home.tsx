@@ -50,11 +50,11 @@ export default function Home() {
     <div className="w-full max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* Marketing Banner */}
       <section className="mb-12">
-        <Card className="relative aspect-square overflow-hidden">
+        <Card className="relative overflow-hidden">
           <img
             src="https://images.unsplash.com/photo-1517963879433-6ad2b056d712?w=1200&auto=format"
             alt="Summer Fitness Challenge"
-            className="w-full h-full object-cover"
+            className="w-full aspect-video object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
 
