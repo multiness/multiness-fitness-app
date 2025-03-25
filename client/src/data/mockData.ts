@@ -181,7 +181,8 @@ interface WorkoutGoal {
   description: string;
 }
 
-export const workoutGoals: WorkoutGoal[] = [
+// Change the export name from workoutGoals to mockWorkoutGoals
+export const mockWorkoutGoals = [
   {
     id: "strength",
     name: "Kraftaufbau",
@@ -522,8 +523,8 @@ export const mockWorkoutTemplates = [
   }
 ];
 
-// Füge Übungsdatenbank hinzu
-export const exerciseDatabase = {
+//Rename exerciseDatabase to mockExerciseDatabase and export it
+export const mockExerciseDatabase = {
   exercises: {
     pushups: {
       name: "Liegestütze",

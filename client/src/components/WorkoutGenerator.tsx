@@ -27,7 +27,7 @@ export default function WorkoutGenerator({ onSelectWorkout }: WorkoutGeneratorPr
   const postStore = usePostStore(); // Hole den Store
 
   // Hole die Workouts aus dem Store statt aus mockData
-  const { workoutGoals, exerciseDatabase } = postStore.getWorkoutData();
+  const { workoutGoals, mockExerciseDatabase } = postStore.getWorkoutData();
 
   const generateWorkout = () => {
     let generatedWorkout = {
@@ -48,7 +48,7 @@ export default function WorkoutGenerator({ onSelectWorkout }: WorkoutGeneratorPr
 
     switch(workoutType) {
       case "emom":
-        const emomExercises = shuffleArray(exerciseDatabase.emom)
+        const emomExercises = shuffleArray(mockExerciseDatabase.emom)
           .slice(0, 3)
           .map(exercise => ({
             name: exercise.name,
@@ -69,7 +69,7 @@ export default function WorkoutGenerator({ onSelectWorkout }: WorkoutGeneratorPr
         break;
 
       case "amrap":
-        const amrapExercises = shuffleArray(exerciseDatabase.amrap)
+        const amrapExercises = shuffleArray(mockExerciseDatabase.amrap)
           .slice(0, 4)
           .map(exercise => ({
             name: exercise.name,
@@ -89,7 +89,7 @@ export default function WorkoutGenerator({ onSelectWorkout }: WorkoutGeneratorPr
         break;
 
       case "hit":
-        const hitExercises = shuffleArray(exerciseDatabase.hit)
+        const hitExercises = shuffleArray(mockExerciseDatabase.hit)
           .slice(0, 6);
 
         const workTime = difficultyIndex === 0 ? 30 : difficultyIndex === 1 ? 40 : 45;
@@ -110,7 +110,7 @@ export default function WorkoutGenerator({ onSelectWorkout }: WorkoutGeneratorPr
         break;
 
       case "running":
-        const runningTemplate = shuffleArray(exerciseDatabase.running)[0];
+        const runningTemplate = shuffleArray(mockExerciseDatabase.running)[0];
         const variation = runningTemplate.variations[duration];
 
         generatedWorkout = {
