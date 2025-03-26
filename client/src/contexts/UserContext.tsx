@@ -77,6 +77,20 @@ export function UserProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
   };
 
+  // Listen for storage changes in other tabs/windows
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === USERS_STORAGE_KEY && e.newValue) {
+        setUsers(JSON.parse(e.newValue));
+      } else if (e.key === STORAGE_KEY && e.newValue) {
+        setCurrentUser(JSON.parse(e.newValue));
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
   // Persist changes to localStorage whenever users or currentUser changes
   useEffect(() => {
     localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
