@@ -27,22 +27,31 @@ import ProductSlider from "@/components/ProductSlider";
 export default function Home() {
   const [, setLocation] = useLocation();
   const postStore = usePostStore();
-  const activeChallenges = mockChallenges.filter(
-    challenge => new Date() <= new Date(challenge.endDate)
-  );
 
-  // Debug-Logging für Posts
-  console.log("Posts from store:", Object.values(postStore.posts));
+  // Debug logs
+  useEffect(() => {
+    console.log('PostStore State:', {
+      posts: postStore.posts,
+      totalPosts: Object.keys(postStore.posts).length
+    });
+  }, [postStore.posts]);
 
-  // Nutze ausschließlich den postStore für die Posts
+  // Sortiere Posts nach Datum
   const posts = Object.values(postStore.posts).sort((a, b) =>
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
+
+  // Debug log für Posts Array
+  console.log('Sorted Posts:', posts);
 
   const navigateToGroupChat = (groupId: number) => {
     const chatId = getChatId(groupId);
     setLocation(`/chat/${chatId}`);
   };
+
+  const activeChallenges = mockChallenges.filter(
+    challenge => new Date() <= new Date(challenge.endDate)
+  );
 
   return (
     <div className="w-full max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -167,18 +176,20 @@ export default function Home() {
           ))}
         </div>
 
-        {/* Desktop Layout - Nutzt die gleiche posts-Variable */}
+        {/* Desktop Layout */}
         <div className="hidden md:block space-y-6">
           {posts.map(post => (
             <FeedPost key={post.id} post={post} />
           ))}
         </div>
 
-        {/* Debug-Anzeige */}
-        <div className="hidden md:block mt-4 p-4 bg-gray-100 rounded">
-          <p>Anzahl Posts: {posts.length}</p>
-          <pre className="mt-2 text-xs">
-            {JSON.stringify(posts, null, 2)}
+        {/* Debug Info */}
+        <div className="mt-4 p-4 bg-gray-100 rounded">
+          <p>Store Status:</p>
+          <p>Anzahl Posts im Store: {Object.keys(postStore.posts).length}</p>
+          <p>Anzahl sortierte Posts: {posts.length}</p>
+          <pre className="mt-2 text-xs overflow-auto">
+            {JSON.stringify({ posts: posts }, null, 2)}
           </pre>
         </div>
       </section>
