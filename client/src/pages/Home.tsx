@@ -86,11 +86,15 @@ export default function Home() {
           </section>
 
           {/* Feed */}
-          <section className="space-y-6">
-            <h2 className="text-2xl font-bold">Neueste Beiträge</h2>
-            {allPosts.map(post => (
-              <FeedPost key={post.id} post={post} />
-            ))}
+          <section>
+            <h2 className="text-2xl font-bold mb-6">Neueste Beiträge</h2>
+            <div className="space-y-6 w-full">
+              {allPosts.map(post => (
+                <div key={post.id} className="w-full max-w-xl mx-auto">
+                  <FeedPost post={post} />
+                </div>
+              ))}
+            </div>
           </section>
         </div>
 
