@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import UserSlider from "@/components/UserSlider";
@@ -24,6 +23,11 @@ import GroupCarousel from "@/components/GroupCarousel";
 import { UserAvatar } from "@/components/UserAvatar";
 import ProductSlider from "@/components/ProductSlider";
 
+
+const format = (date: Date, formatStr: string) => {
+  return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+};
+
 export default function Home() {
   const [, setLocation] = useLocation();
   const postStore = usePostStore();
@@ -31,8 +35,8 @@ export default function Home() {
     challenge => new Date() <= new Date(challenge.endDate)
   );
 
-  // Hole alle Posts aus dem Store und sortiere sie nach Datum
-  const posts = Object.values(postStore.posts).sort((a, b) => 
+  // Lade Posts aus dem postStore statt mockPosts
+  const allPosts = Object.values(postStore.posts).sort((a, b) =>
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
@@ -140,7 +144,7 @@ export default function Home() {
         <ProductSlider products={mockProducts} />
       </section>
 
-      {/* Aktive Challenges */}
+      {/* Aktive Challenges - Hervorgehobenes Design */}
       <section className="mb-12">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
@@ -179,21 +183,15 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Feed Section */}
-      <section className="mb-12">
+      {/* Feed */}
+      <section>
         <h2 className="text-2xl font-bold mb-6">Neueste Beiträge</h2>
-        <div className="space-y-6">
-          {posts.length > 0 ? (
-            posts.map((post) => (
-              <div key={post.id} className="w-full max-w-xl mx-auto">
-                <FeedPost post={post} />
-              </div>
-            ))
-          ) : (
-            <div className="text-center text-muted-foreground py-8">
-              Noch keine Beiträge vorhanden
+        <div className="space-y-6 w-full">
+          {allPosts.map(post => (
+            <div key={post.id} className="w-full max-w-xl mx-auto">
+              <FeedPost post={post} />
             </div>
-          )}
+          ))}
         </div>
       </section>
     </div>
