@@ -7,8 +7,6 @@ import FeedPost from "@/components/FeedPost";
 import EventSlider from "@/components/EventSlider";
 import { ArrowRight, Crown, Heart, Share2, Users, Trophy, Package } from "lucide-react";
 import { useGroupStore } from "../lib/groupStore";
-import { mockChallenges, mockUsers, mockProducts } from "../data/mockData";
-import { useLocation, Link } from "wouter";
 import { usePostStore } from "../lib/postStore";
 import { getChatId } from "../lib/chatService";
 import {
@@ -18,23 +16,18 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import GroupCarousel from "@/components/GroupCarousel";
 import { UserAvatar } from "@/components/UserAvatar";
 import ProductSlider from "@/components/ProductSlider";
-
-const format = (date: Date, formatStr: string) => {
-  return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
-};
+import { useUsers } from "../contexts/UserContext";
+import { useLocation, Link } from "wouter";
 
 export default function Home() {
   const [, setLocation] = useLocation();
   const postStore = usePostStore();
   const groupStore = useGroupStore();
-  const activeChallenges = mockChallenges.filter(
-    challenge => new Date() <= new Date(challenge.endDate)
-  );
+  const { users } = useUsers();
 
   // Lade Posts aus dem postStore
   const allPosts = Object.values(postStore.posts).sort((a, b) =>
@@ -43,6 +36,12 @@ export default function Home() {
 
   // Lade Gruppen aus dem groupStore
   const groups = Object.values(groupStore.groups);
+
+  // Lade aktive Challenges
+  const activeChallenges = users
+    .filter(user => user.challenges)
+    .flatMap(user => user.challenges)
+    .filter(challenge => new Date() <= new Date(challenge.endDate));
 
   const navigateToGroupChat = (groupId: number) => {
     const chatId = getChatId(groupId);
@@ -132,20 +131,6 @@ export default function Home() {
             );
           })}
         </div>
-      </section>
-
-      {/* Products Section */}
-      <section className="mb-12">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <Package className="h-6 w-6 text-primary" />
-            <h2 className="text-2xl font-bold">Shop</h2>
-          </div>
-          <Link href="/products" className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1">
-            Alle Produkte <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-        <ProductSlider products={mockProducts} />
       </section>
 
       {/* Aktive Challenges */}
