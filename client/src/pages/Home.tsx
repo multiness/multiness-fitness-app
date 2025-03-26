@@ -51,7 +51,6 @@ export default function Home() {
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
-
           <div className="absolute inset-0 flex flex-col justify-end p-6 text-white">
             <span className="text-sm font-semibold uppercase tracking-wider mb-2">Limitiertes Angebot</span>
             <h1 className="text-3xl font-bold mb-4">Summer Body Challenge 2025</h1>
@@ -98,31 +97,6 @@ export default function Home() {
           </Link>
         </div>
         <UserSlider />
-      </section>
-
-      {/* Beliebte Gruppen */}
-      <section className="mb-12">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold">Beliebte Gruppen</h2>
-          <Link href="/groups" className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1">
-            Alle Gruppen <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-        {/* Mobile: Karussell-Layout */}
-        <div className="block md:hidden">
-          <GroupCarousel groups={mockGroups.slice(0, 6)} />
-        </div>
-        {/* Desktop: Grid-Layout */}
-        <div className="hidden md:grid grid-cols-2 gap-4">
-          {mockGroups.slice(0, 4).map(group => {
-            const chatId = getChatId(group.id);
-            return (
-              <div key={group.id} className="cursor-pointer" onClick={() => navigateToGroupChat(group.id)}>
-                <GroupPreview group={group} />
-              </div>
-            );
-          })}
-        </div>
       </section>
 
       {/* Products Section */}
@@ -189,10 +163,10 @@ export default function Home() {
           ))}
         </div>
 
-        {/* Desktop Layout - gleiche Datenquelle */}
-        <div className="hidden md:block space-y-6">
+        {/* Desktop Layout - gleiche Datenquelle aber mit max-width */}
+        <div className="hidden md:flex flex-col space-y-6">
           {posts.map(post => (
-            <div key={post.id} className="max-w-2xl mx-auto">
+            <div key={post.id} className="w-full">
               <FeedPost post={post} />
             </div>
           ))}
