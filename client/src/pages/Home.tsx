@@ -5,19 +5,36 @@ import GroupPreview from "@/components/GroupPreview";
 import ChallengeCard from "@/components/ChallengeCard";
 import FeedPost from "@/components/FeedPost";
 import EventSlider from "@/components/EventSlider";
-import { ArrowRight, Trophy, Users2 } from "lucide-react";
+import { ArrowRight, Crown, Heart, Share2, Users, Trophy, Package } from "lucide-react";
 import { useGroupStore } from "../lib/groupStore";
+import { mockChallenges, mockUsers, mockProducts } from "../data/mockData";
+import { useLocation, Link } from "wouter";
 import { usePostStore } from "../lib/postStore";
 import { getChatId } from "../lib/chatService";
-import { useUsers } from "../contexts/UserContext";
-import { useLocation, Link } from "wouter";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import GroupCarousel from "@/components/GroupCarousel";
+import { UserAvatar } from "@/components/UserAvatar";
+import ProductSlider from "@/components/ProductSlider";
+
+const format = (date: Date, formatStr: string) => {
+  return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+};
 
 export default function Home() {
   const [, setLocation] = useLocation();
   const postStore = usePostStore();
   const groupStore = useGroupStore();
-  const { users, currentUser } = useUsers();
+  const activeChallenges = mockChallenges.filter(
+    challenge => new Date() <= new Date(challenge.endDate)
+  );
 
   // Lade Posts aus dem postStore
   const allPosts = Object.values(postStore.posts).sort((a, b) =>
@@ -32,35 +49,53 @@ export default function Home() {
     setLocation(`/chat/${chatId}`);
   };
 
-  // Lade aktive Challenges
-  const activeChallenges = users
-    .filter(user => user.challenges)
-    .flatMap(user => user.challenges)
-    .filter(challenge => new Date() <= new Date(challenge.endDate));
-
-
   return (
     <div className="w-full max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
-      {/* Feed - Direkt am Anfang für schnellen Zugriff auf neue Posts */}
+      {/* Marketing Banner */}
+      <section className="mb-12">
+        <Card className="relative aspect-square overflow-hidden">
+          <img
+            src="https://images.unsplash.com/photo-1517963879433-6ad2b056d712?w=1200&auto=format"
+            alt="Summer Fitness Challenge"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
+
+          <div className="absolute inset-0 flex flex-col justify-end p-6 text-white">
+            <span className="text-sm font-semibold uppercase tracking-wider mb-2">Limitiertes Angebot</span>
+            <h1 className="text-3xl font-bold mb-4">Summer Body Challenge 2025</h1>
+            <p className="text-lg mb-6 text-white/90">Starte jetzt deine Fitness-Journey mit unserem 12-Wochen Programm.</p>
+            <div className="flex gap-3">
+              <Button
+                size="lg"
+                variant="default"
+                className="bg-primary hover:bg-primary/90 text-white"
+                onClick={() => setLocation("/challenges")}
+              >
+                Jetzt teilnehmen
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="bg-white hover:bg-white/90 text-black border-white"
+                onClick={() => setLocation("/events/1")}
+              >
+                Mehr erfahren
+              </Button>
+            </div>
+          </div>
+        </Card>
+      </section>
+
+      {/* Events & Kurse */}
       <section className="mb-12">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold">Neueste Beiträge</h2>
-          <Link href="/create/post" className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1">
-            Beitrag erstellen <ArrowRight className="h-4 w-4" />
+          <h2 className="text-2xl font-bold">Events & Kurse</h2>
+          <Link href="/events" className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1">
+            Alle Events <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
-        <div className="space-y-6">
-          {allPosts.map(post => (
-            <div key={post.id} className="w-full max-w-xl mx-auto">
-              <FeedPost post={post} />
-            </div>
-          ))}
-          {allPosts.length === 0 && (
-            <div className="text-center text-muted-foreground py-8">
-              Noch keine Beiträge vorhanden
-            </div>
-          )}
-        </div>
+        <EventSlider />
       </section>
 
       {/* Neue Mitglieder */}
@@ -77,10 +112,7 @@ export default function Home() {
       {/* Beliebte Gruppen */}
       <section className="mb-12">
         <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <Users2 className="h-6 w-6 text-primary" />
-            <h2 className="text-2xl font-bold">Beliebte Gruppen</h2>
-          </div>
+          <h2 className="text-2xl font-bold">Beliebte Gruppen</h2>
           <Link href="/groups" className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1">
             Alle Gruppen <ArrowRight className="h-4 w-4" />
           </Link>
@@ -91,28 +123,29 @@ export default function Home() {
         </div>
         {/* Desktop: Grid-Layout */}
         <div className="hidden md:grid grid-cols-2 gap-4">
-          {groups.slice(0, 4).map(group => (
-            <div key={group.id} className="cursor-pointer" onClick={() => navigateToGroupChat(group.id)}>
-              <GroupPreview group={group} />
-            </div>
-          ))}
-          {groups.length === 0 && (
-            <div className="text-center text-muted-foreground py-8 col-span-2">
-              Noch keine Gruppen vorhanden
-            </div>
-          )}
+          {groups.slice(0, 4).map(group => {
+            const chatId = getChatId(group.id);
+            return (
+              <div key={group.id} className="cursor-pointer" onClick={() => navigateToGroupChat(group.id)}>
+                <GroupPreview group={group} />
+              </div>
+            );
+          })}
         </div>
       </section>
 
-      {/* Events & Kurse */}
+      {/* Products Section */}
       <section className="mb-12">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold">Events & Kurse</h2>
-          <Link href="/events" className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1">
-            Alle Events <ArrowRight className="h-4 w-4" />
+          <div className="flex items-center gap-2">
+            <Package className="h-6 w-6 text-primary" />
+            <h2 className="text-2xl font-bold">Shop</h2>
+          </div>
+          <Link href="/products" className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1">
+            Alle Produkte <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
-        <EventSlider />
+        <ProductSlider products={mockProducts} />
       </section>
 
       {/* Aktive Challenges */}
@@ -151,6 +184,28 @@ export default function Home() {
           {activeChallenges.slice(0, 6).map(challenge => (
             <ChallengeCard key={challenge.id} challenge={challenge} />
           ))}
+        </div>
+      </section>
+
+      {/* Feed */}
+      <section>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold">Neueste Beiträge</h2>
+          <Link href="/create/post" className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1">
+            Beitrag erstellen <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+        <div className="space-y-6">
+          {allPosts.map(post => (
+            <div key={post.id} className="w-full max-w-xl mx-auto">
+              <FeedPost post={post} />
+            </div>
+          ))}
+          {allPosts.length === 0 && (
+            <div className="text-center text-muted-foreground py-8">
+              Noch keine Beiträge vorhanden
+            </div>
+          )}
         </div>
       </section>
     </div>

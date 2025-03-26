@@ -18,9 +18,9 @@ export type Comment = {
   userId: number;
   content: string;
   timestamp: string;
-  parentId?: number;
-  likes: number[];
-  replies?: number[];
+  parentId?: number; // Für nested comments
+  likes: number[]; // Array von User IDs die den Kommentar geliked haben
+  replies?: number[]; // IDs der Antwort-Kommentare
 };
 
 type PostStore = {
@@ -51,7 +51,6 @@ type PostStore = {
   createPostWithGoal: (userId: number, content: string, goal: DailyGoal) => void;
   createPost: (userId: number, content: string, image?: string | null) => void;
   deleteDailyGoal: (userId: number) => void;
-  reset: () => void; // New reset function
 };
 
 export const usePostStore = create<PostStore>()(
@@ -62,18 +61,6 @@ export const usePostStore = create<PostStore>()(
       dailyGoals: {},
       goalParticipants: {},
       posts: {},
-
-      // Add reset function
-      reset: () => {
-        set({
-          likes: {},
-          comments: {},
-          dailyGoals: {},
-          goalParticipants: {},
-          posts: {}
-        });
-        console.log('PostStore has been reset');
-      },
 
       addLike: (postId, userId) =>
         set((state) => ({
@@ -112,6 +99,7 @@ export const usePostStore = create<PostStore>()(
         set((state) => {
           const updatedComments = [...(state.comments[postId] || []), comment];
 
+          // Wenn es ein Reply ist, füge die ID zum Parent-Kommentar hinzu
           if (parentId) {
             const parentIndex = updatedComments.findIndex(c => c.id === parentId);
             if (parentIndex !== -1) {
@@ -134,8 +122,10 @@ export const usePostStore = create<PostStore>()(
       getComments: (postId, parentId) => {
         const comments = get().comments[postId] || [];
         if (parentId === undefined) {
+          // Hauptkommentare (keine Antworten)
           return comments.filter(c => !c.parentId);
         }
+        // Antworten auf einen spezifischen Kommentar
         return comments.filter(c => c.parentId === parentId);
       },
 
@@ -193,7 +183,7 @@ export const usePostStore = create<PostStore>()(
           id: postId,
           userId,
           content,
-          image: image || null,
+          image,
           createdAt: new Date()
         };
 
@@ -204,7 +194,6 @@ export const usePostStore = create<PostStore>()(
           }
         }));
 
-        console.log('New post created:', post);
         return postId;
       },
 
@@ -229,8 +218,6 @@ export const usePostStore = create<PostStore>()(
             [userId]: goal
           }
         }));
-
-        console.log('New post with goal created:', post);
       },
 
       updatePost: (postId, content) =>
@@ -251,7 +238,6 @@ export const usePostStore = create<PostStore>()(
           const { [postId]: deletedLikes, ...remainingLikes } = state.likes;
           const { [postId]: deletedComments, ...remainingComments } = state.comments;
 
-          console.log('Post deleted:', postId);
           return {
             posts: remainingPosts,
             likes: remainingLikes,
@@ -311,6 +297,7 @@ export const usePostStore = create<PostStore>()(
           const currentGoal = state.dailyGoals[userId];
           if (!currentGoal) return state;
 
+          // Aktualisiere den Fortschritt durch Addition
           const updatedProgress = currentGoal.progress + newProgressValue;
           const isCompleted = updatedProgress >= currentGoal.target;
 
@@ -365,7 +352,6 @@ export const usePostStore = create<PostStore>()(
           }
         });
       },
-
       deleteDailyGoal: (userId: number) =>
         set((state) => {
           const { [userId]: _, ...remainingGoals } = state.dailyGoals;
