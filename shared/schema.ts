@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp, boolean, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, boolean, jsonb, decimal } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -174,7 +174,7 @@ export const products = pgTable("products", {
   name: text("name").notNull(),
   description: text("description").notNull(),
   type: text("type").notNull(),
-  price: numeric("price").notNull(),
+  price: decimal("price").notNull(),  // Changed from numeric to decimal
   image: text("image"),
   creatorId: integer("creator_id").references(() => users.id).notNull(),
   isActive: boolean("is_active").default(true).notNull(),
@@ -183,7 +183,7 @@ export const products = pgTable("products", {
   stockEnabled: boolean("stock_enabled").default(false),
   stock: integer("stock"),
   onSale: boolean("on_sale").default(false),
-  salePrice: numeric("sale_price"),
+  salePrice: decimal("sale_price"),  // Changed from numeric to decimal
   metadata: jsonb("metadata"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

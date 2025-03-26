@@ -8,7 +8,7 @@ export const resetAllStores = () => {
   localStorage.clear();
 
   // Reset individual stores
-  usePostStore.getState().reset?.();
+  usePostStore.getState().reset();
   useGroupStore.getState().reset?.();
   useChatStore.getState().messages = {};
   useChatStore.getState().groupGoals = {};
