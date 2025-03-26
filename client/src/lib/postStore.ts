@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Post as OriginalPost } from '@shared/schema';
+import { Post } from '@shared/schema';
 
 export type DailyGoal = {
   type: 'water' | 'steps' | 'distance' | 'custom';
@@ -21,15 +21,6 @@ export type Comment = {
   parentId?: number;
   likes: number[];
   replies?: number[];
-};
-
-export type Post = {
-  id: number;
-  userId: number;
-  content: string;
-  image?: string | null;
-  createdAt: Date;
-  dailyGoal?: DailyGoal;
 };
 
 type PostStore = {

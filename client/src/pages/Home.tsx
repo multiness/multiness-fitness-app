@@ -32,12 +32,9 @@ export default function Home() {
   );
 
   // Hole alle Posts aus dem Store und sortiere sie nach Datum
-  const allPosts = Object.values(postStore.posts)
-    .map(post => ({
-      ...post,
-      createdAt: new Date(post.createdAt)
-    }))
-    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  const posts = Object.values(postStore.posts).sort((a, b) => 
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
 
   const navigateToGroupChat = (groupId: number) => {
     const chatId = getChatId(groupId);
@@ -186,8 +183,8 @@ export default function Home() {
       <section className="mb-12">
         <h2 className="text-2xl font-bold mb-6">Neueste Beiträge</h2>
         <div className="space-y-6">
-          {allPosts.length > 0 ? (
-            allPosts.map((post) => (
+          {posts.length > 0 ? (
+            posts.map((post) => (
               <div key={post.id} className="w-full max-w-xl mx-auto">
                 <FeedPost post={post} />
               </div>
