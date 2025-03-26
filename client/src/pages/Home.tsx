@@ -23,11 +23,6 @@ import GroupCarousel from "@/components/GroupCarousel";
 import { UserAvatar } from "@/components/UserAvatar";
 import ProductSlider from "@/components/ProductSlider";
 
-
-const format = (date: Date, formatStr: string) => {
-  return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
-};
-
 export default function Home() {
   const [, setLocation] = useLocation();
   const postStore = usePostStore();
@@ -35,8 +30,8 @@ export default function Home() {
     challenge => new Date() <= new Date(challenge.endDate)
   );
 
-  // Lade Posts aus dem postStore statt mockPosts
-  const allPosts = Object.values(postStore.posts).sort((a, b) =>
+  // Nutze ausschließlich den postStore für die Posts
+  const posts = Object.values(postStore.posts).sort((a, b) =>
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
@@ -49,7 +44,7 @@ export default function Home() {
     <div className="w-full max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* Marketing Banner */}
       <section className="mb-12">
-        <Card className="relative aspect-square overflow-hidden">
+        <Card className="relative aspect-square sm:aspect-[21/9] overflow-hidden">
           <img
             src="https://images.unsplash.com/photo-1517963879433-6ad2b056d712?w=1200&auto=format"
             alt="Summer Fitness Challenge"
@@ -144,7 +139,7 @@ export default function Home() {
         <ProductSlider products={mockProducts} />
       </section>
 
-      {/* Aktive Challenges - Hervorgehobenes Design */}
+      {/* Aktive Challenges */}
       <section className="mb-12">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
@@ -183,14 +178,12 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Feed */}
+      {/* Feed - Verwende die gleiche Datenquelle für beide Ansichten */}
       <section>
         <h2 className="text-2xl font-bold mb-6">Neueste Beiträge</h2>
-        <div className="space-y-6 w-full">
-          {allPosts.map(post => (
-            <div key={post.id} className="w-full max-w-xl mx-auto">
-              <FeedPost post={post} />
-            </div>
+        <div className="space-y-6">
+          {posts.map(post => (
+            <FeedPost key={post.id} post={post} />
           ))}
         </div>
       </section>
