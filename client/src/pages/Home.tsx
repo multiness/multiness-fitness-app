@@ -39,8 +39,7 @@ export default function Home() {
   const allPosts = Object.entries(postStore.posts)
     .map(([, post]) => ({
       ...post,
-      createdAt: new Date(post.createdAt), // Ensure createdAt is a Date object
-      image: post.image || null // Ensure image is either string or null
+      createdAt: new Date(post.createdAt)
     }))
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
@@ -187,11 +186,11 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Feed Section - Überarbeitete Version */}
-      <section>
+      {/* Feed Section */}
+      <section className="mb-12">
         <h2 className="text-2xl font-bold mb-6">Neueste Beiträge</h2>
-        <div className="space-y-6 w-full">
-          {allPosts.length > 0 ? (
+        <div className="space-y-6">
+          {Object.keys(postStore.posts).length > 0 ? (
             allPosts.map((post) => (
               <div key={post.id} className="w-full max-w-xl mx-auto">
                 <FeedPost post={post} />
