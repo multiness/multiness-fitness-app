@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 
 export type DailyGoal = {
   type: 'water' | 'steps' | 'distance' | 'custom';
@@ -43,28 +43,22 @@ type PostStore = {
   createPostWithGoal: (userId: number, content: string, goal: DailyGoal) => void;
   updatePost: (postId: number, content: string) => void;
   deletePost: (postId: number) => void;
-
-  // Like Actions
+  getLikes: (postId: number) => number[];
+  hasLiked: (postId: number, userId: number) => boolean;
   addLike: (postId: number, userId: number) => void;
   removeLike: (postId: number, userId: number) => void;
-  hasLiked: (postId: number, userId: number) => boolean;
-  getLikes: (postId: number) => number[];
-
-  // Comment Actions  
-  addComment: (postId: number, userId: number, content: string, parentId?: number) => void;
   getComments: (postId: number, parentId?: number) => Comment[];
+  addComment: (postId: number, userId: number, content: string, parentId?: number) => void;
+  hasLikedComment: (postId: number, commentId: number, userId: number) => boolean;
   addCommentLike: (postId: number, commentId: number, userId: number) => void;
   removeCommentLike: (postId: number, commentId: number, userId: number) => void;
-  hasLikedComment: (postId: number, commentId: number, userId: number) => boolean;
-
-  // Goal Actions
-  setDailyGoal: (userId: number, goal: DailyGoal) => { hasExistingGoal: boolean };
   getDailyGoal: (userId: number) => DailyGoal | undefined;
+  setDailyGoal: (userId: number, goal: DailyGoal) => { hasExistingGoal: boolean };
   updateDailyGoalProgress: (userId: number, progress: number) => void;
+  hasActiveGoal: (userId: number) => boolean;
   joinDailyGoal: (targetUserId: number, participantId: number) => void;
   leaveDailyGoal: (targetUserId: number, participantId: number) => void;
   getGoalParticipants: (userId: number) => number[];
-  hasActiveGoal: (userId: number) => boolean;
   deleteDailyGoal: (userId: number) => void;
   checkExpiredGoals: () => void;
 };
@@ -375,34 +369,8 @@ export const usePostStore = create<PostStore>()(
         }),
     }),
     {
-      name: 'post-interaction-storage',
-      version: 1,
-      storage: {
-        getItem: (name) => {
-          const str = localStorage.getItem(name);
-          if (!str) return null;
-          try {
-            const data = JSON.parse(str);
-            // Convert string dates back to Date objects
-            if (data.state?.posts) {
-              Object.values(data.state.posts).forEach((post: any) => {
-                post.createdAt = new Date(post.createdAt);
-                if (post.dailyGoal) {
-                  post.dailyGoal.createdAt = new Date(post.dailyGoal.createdAt);
-                }
-              });
-            }
-            return data;
-          } catch (e) {
-            console.error('Error parsing store:', e);
-            return null;
-          }
-        },
-        setItem: (name, value) => {
-          localStorage.setItem(name, JSON.stringify(value));
-        },
-        removeItem: (name) => localStorage.removeItem(name)
-      }
+      name: 'post-storage',
+      storage: createJSONStorage(() => localStorage)
     }
   )
 );
