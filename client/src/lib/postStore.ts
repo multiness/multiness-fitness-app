@@ -69,7 +69,7 @@ type PostStore = {
   checkExpiredGoals: () => void;
 };
 
-// Erstelle einen neuen Store mit persistentem Speicher
+// Create store with persistence
 export const usePostStore = create<PostStore>()(
   persist(
     (set, get) => ({
@@ -377,6 +377,32 @@ export const usePostStore = create<PostStore>()(
     {
       name: 'post-interaction-storage',
       version: 1,
+      storage: {
+        getItem: (name) => {
+          const str = localStorage.getItem(name);
+          if (!str) return null;
+          try {
+            const data = JSON.parse(str);
+            // Convert string dates back to Date objects
+            if (data.state?.posts) {
+              Object.values(data.state.posts).forEach((post: any) => {
+                post.createdAt = new Date(post.createdAt);
+                if (post.dailyGoal) {
+                  post.dailyGoal.createdAt = new Date(post.dailyGoal.createdAt);
+                }
+              });
+            }
+            return data;
+          } catch (e) {
+            console.error('Error parsing store:', e);
+            return null;
+          }
+        },
+        setItem: (name, value) => {
+          localStorage.setItem(name, JSON.stringify(value));
+        },
+        removeItem: (name) => localStorage.removeItem(name)
+      }
     }
   )
 );

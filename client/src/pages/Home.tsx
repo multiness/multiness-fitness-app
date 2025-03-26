@@ -156,18 +156,18 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Feed - Getrennte Layouts aber gleiche Datenquelle */}
+      {/* Feed - Mobile Layout unberührt lassen */}
       <section>
         <h2 className="text-2xl font-bold mb-6">Neueste Beiträge</h2>
 
-        {/* Mobile Layout - unberührt lassen */}
+        {/* Mobile Layout - Bleibt unberührt */}
         <div className="block md:hidden space-y-6">
           {posts.map(post => (
             <FeedPost key={post.id} post={post} />
           ))}
         </div>
 
-        {/* Desktop Layout - identische Struktur wie Mobile */}
+        {/* Desktop Layout - Nutzt die gleiche posts-Variable */}
         <div className="hidden md:block space-y-6">
           {posts.map(post => (
             <FeedPost key={post.id} post={post} />
