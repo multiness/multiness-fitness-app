@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import UserSlider from "@/components/UserSlider";
@@ -8,7 +9,7 @@ import EventSlider from "@/components/EventSlider";
 import { ArrowRight, Crown, Heart, Share2, Users, Trophy, Package } from "lucide-react";
 import { mockGroups, mockChallenges, mockUsers, mockProducts } from "../data/mockData";
 import { useLocation, Link } from "wouter";
-import { usePostStore, type Post } from "../lib/postStore";
+import { usePostStore } from "../lib/postStore";
 import { getChatId } from "../lib/chatService";
 import {
   Carousel,
@@ -23,11 +24,6 @@ import GroupCarousel from "@/components/GroupCarousel";
 import { UserAvatar } from "@/components/UserAvatar";
 import ProductSlider from "@/components/ProductSlider";
 
-
-const format = (date: Date, formatStr: string) => {
-  return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
-};
-
 export default function Home() {
   const [, setLocation] = useLocation();
   const postStore = usePostStore();
@@ -36,8 +32,8 @@ export default function Home() {
   );
 
   // Hole alle Posts aus dem Store und sortiere sie nach Datum
-  const allPosts = Object.entries(postStore.posts)
-    .map(([, post]) => ({
+  const allPosts = Object.values(postStore.posts)
+    .map(post => ({
       ...post,
       createdAt: new Date(post.createdAt)
     }))
@@ -147,7 +143,7 @@ export default function Home() {
         <ProductSlider products={mockProducts} />
       </section>
 
-      {/* Aktive Challenges - Hervorgehobenes Design */}
+      {/* Aktive Challenges */}
       <section className="mb-12">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">

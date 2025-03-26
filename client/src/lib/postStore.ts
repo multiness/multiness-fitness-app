@@ -108,7 +108,6 @@ export const usePostStore = create<PostStore>()(
         set((state) => {
           const updatedComments = [...(state.comments[postId] || []), comment];
 
-          // Wenn es ein Reply ist, füge die ID zum Parent-Kommentar hinzu
           if (parentId) {
             const parentIndex = updatedComments.findIndex(c => c.id === parentId);
             if (parentIndex !== -1) {
@@ -131,10 +130,8 @@ export const usePostStore = create<PostStore>()(
       getComments: (postId, parentId) => {
         const comments = get().comments[postId] || [];
         if (parentId === undefined) {
-          // Hauptkommentare (keine Antworten)
           return comments.filter(c => !c.parentId);
         }
-        // Antworten auf einen spezifischen Kommentar
         return comments.filter(c => c.parentId === parentId);
       },
 
@@ -193,7 +190,7 @@ export const usePostStore = create<PostStore>()(
           userId,
           content,
           image,
-          createdAt: new Date().toISOString() // Store as ISO string
+          createdAt: new Date()
         };
 
         set((state) => ({
@@ -306,7 +303,6 @@ export const usePostStore = create<PostStore>()(
           const currentGoal = state.dailyGoals[userId];
           if (!currentGoal) return state;
 
-          // Aktualisiere den Fortschritt durch Addition
           const updatedProgress = currentGoal.progress + newProgressValue;
           const isCompleted = updatedProgress >= currentGoal.target;
 
@@ -361,7 +357,8 @@ export const usePostStore = create<PostStore>()(
           }
         });
       },
-      deleteDailyGoal: (userId: number) =>
+
+      deleteDailyGoal: (userId) =>
         set((state) => {
           const { [userId]: _, ...remainingGoals } = state.dailyGoals;
           const { [userId]: __, ...remainingParticipants } = state.goalParticipants;
