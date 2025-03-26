@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import UserSlider from "@/components/UserSlider";
@@ -24,12 +23,20 @@ import GroupCarousel from "@/components/GroupCarousel";
 import { UserAvatar } from "@/components/UserAvatar";
 import ProductSlider from "@/components/ProductSlider";
 
+
+const format = (date: Date, formatStr: string) => {
+  return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+};
+
 export default function Home() {
   const [, setLocation] = useLocation();
   const postStore = usePostStore();
+  const activeChallenges = mockChallenges.filter(
+    challenge => new Date() <= new Date(challenge.endDate)
+  );
 
-  // Posts aus dem Store laden und nach Datum sortieren
-  const posts = Object.values(postStore.posts).sort((a, b) =>
+  // Lade Posts aus dem postStore statt mockPosts
+  const allPosts = Object.values(postStore.posts).sort((a, b) =>
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
@@ -38,21 +45,18 @@ export default function Home() {
     setLocation(`/chat/${chatId}`);
   };
 
-  const activeChallenges = mockChallenges.filter(
-    challenge => new Date() <= new Date(challenge.endDate)
-  );
-
   return (
     <div className="w-full max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* Marketing Banner */}
       <section className="mb-12">
-        <Card className="relative aspect-square sm:aspect-[21/9] overflow-hidden">
+        <Card className="relative aspect-square overflow-hidden">
           <img
             src="https://images.unsplash.com/photo-1517963879433-6ad2b056d712?w=1200&auto=format"
             alt="Summer Fitness Challenge"
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
+
           <div className="absolute inset-0 flex flex-col justify-end p-6 text-white">
             <span className="text-sm font-semibold uppercase tracking-wider mb-2">Limitiertes Angebot</span>
             <h1 className="text-3xl font-bold mb-4">Summer Body Challenge 2025</h1>
@@ -101,6 +105,31 @@ export default function Home() {
         <UserSlider />
       </section>
 
+      {/* Beliebte Gruppen */}
+      <section className="mb-12">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold">Beliebte Gruppen</h2>
+          <Link href="/groups" className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1">
+            Alle Gruppen <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+        {/* Mobile: Karussell-Layout */}
+        <div className="block md:hidden">
+          <GroupCarousel groups={mockGroups.slice(0, 6)} />
+        </div>
+        {/* Desktop: Grid-Layout */}
+        <div className="hidden md:grid grid-cols-2 gap-4">
+          {mockGroups.slice(0, 4).map(group => {
+            const chatId = getChatId(group.id);
+            return (
+              <div key={group.id} className="cursor-pointer" onClick={() => navigateToGroupChat(group.id)}>
+                <GroupPreview group={group} />
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
       {/* Products Section */}
       <section className="mb-12">
         <div className="flex items-center justify-between mb-6">
@@ -115,7 +144,7 @@ export default function Home() {
         <ProductSlider products={mockProducts} />
       </section>
 
-      {/* Aktive Challenges */}
+      {/* Aktive Challenges - Hervorgehobenes Design */}
       <section className="mb-12">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
@@ -157,18 +186,11 @@ export default function Home() {
       {/* Feed */}
       <section>
         <h2 className="text-2xl font-bold mb-6">Neueste Beiträge</h2>
-
-        {/* Mobile Layout - Bleibt komplett unberührt */}
-        <div className="block md:hidden space-y-6">
-          {posts.map(post => (
-            <FeedPost key={post.id} post={post} />
-          ))}
-        </div>
-
-        {/* Desktop Layout */}
-        <div className="hidden md:block space-y-6">
-          {posts.map(post => (
-            <FeedPost key={post.id} post={post} />
+        <div className="space-y-6 w-full">
+          {allPosts.map(post => (
+            <div key={post.id} className="w-full max-w-xl mx-auto">
+              <FeedPost post={post} />
+            </div>
           ))}
         </div>
       </section>
