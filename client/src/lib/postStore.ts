@@ -28,7 +28,7 @@ export type Post = {
   userId: number;
   content: string;
   image?: string | null;
-  createdAt: Date | string;
+  createdAt: Date;
   dailyGoal?: DailyGoal;
 };
 

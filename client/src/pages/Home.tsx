@@ -186,7 +186,7 @@ export default function Home() {
       <section className="mb-12">
         <h2 className="text-2xl font-bold mb-6">Neueste Beiträge</h2>
         <div className="space-y-6">
-          {Object.keys(postStore.posts).length > 0 ? (
+          {allPosts.length > 0 ? (
             allPosts.map((post) => (
               <div key={post.id} className="w-full max-w-xl mx-auto">
                 <FeedPost post={post} />
