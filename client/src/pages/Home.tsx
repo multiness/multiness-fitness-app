@@ -163,12 +163,10 @@ export default function Home() {
           ))}
         </div>
 
-        {/* Desktop Layout - gleiche Datenquelle wie Mobile */}
-        <div className="hidden md:flex flex-col items-center w-full space-y-6">
+        {/* Desktop Layout - identische Struktur wie Mobile */}
+        <div className="hidden md:block space-y-6">
           {posts.map(post => (
-            <div key={post.id} className="w-full">
-              <FeedPost post={post} />
-            </div>
+            <FeedPost key={post.id} post={post} />
           ))}
         </div>
       </section>
