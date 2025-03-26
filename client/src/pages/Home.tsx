@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import UserSlider from "@/components/UserSlider";
@@ -29,6 +30,9 @@ export default function Home() {
   const activeChallenges = mockChallenges.filter(
     challenge => new Date() <= new Date(challenge.endDate)
   );
+
+  // Debug-Logging für Posts
+  console.log("Posts from store:", Object.values(postStore.posts));
 
   // Nutze ausschließlich den postStore für die Posts
   const posts = Object.values(postStore.posts).sort((a, b) =>
@@ -168,6 +172,14 @@ export default function Home() {
           {posts.map(post => (
             <FeedPost key={post.id} post={post} />
           ))}
+        </div>
+
+        {/* Debug-Anzeige */}
+        <div className="hidden md:block mt-4 p-4 bg-gray-100 rounded">
+          <p>Anzahl Posts: {posts.length}</p>
+          <pre className="mt-2 text-xs">
+            {JSON.stringify(posts, null, 2)}
+          </pre>
         </div>
       </section>
     </div>
