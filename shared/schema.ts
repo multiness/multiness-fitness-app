@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp, boolean, jsonb, numeric } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, boolean, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -306,3 +306,26 @@ export const insertEventExternalRegistrationSchema = createInsertSchema(eventExt
 export type InsertEvent = z.infer<typeof insertEventSchema>;
 export type InsertEventComment = z.infer<typeof insertEventCommentSchema>;
 export type InsertEventExternalRegistration = z.infer<typeof insertEventExternalRegistrationSchema>;
+
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  type: text("type").notNull(), // 'challenge', 'group', 'event', 'product'
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  link: text("link"),
+  image: text("image"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  isRead: boolean("is_read").default(false).notNull(),
+});
+
+// Type Definitionen für Notifications
+export type Notification = typeof notifications.$inferSelect;
+
+export const insertNotificationSchema = createInsertSchema(notifications)
+  .omit({
+    id: true,
+    createdAt: true,
+  });
+
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
