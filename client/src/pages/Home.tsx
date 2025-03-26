@@ -163,10 +163,10 @@ export default function Home() {
           ))}
         </div>
 
-        {/* Desktop Layout - gleiche Datenquelle aber mit max-width */}
-        <div className="hidden md:flex flex-col space-y-6">
+        {/* Desktop Layout - gleiche Datenquelle wie Mobile */}
+        <div className="hidden md:flex flex-col items-center w-full space-y-6">
           {posts.map(post => (
-            <div key={post.id} className="w-full">
+            <div key={post.id} className="w-full max-w-3xl">
               <FeedPost post={post} />
             </div>
           ))}
