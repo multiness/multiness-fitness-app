@@ -7,64 +7,96 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Send, Users, Image as ImageIcon, MessageCircle, Info } from "lucide-react";
+import { mockGroups, mockUsers } from "../data/mockData";
 import { format } from "date-fns";
-import { usePostStore } from "@/lib/postStore";
-import { useUserStore } from "@/lib/userStore";
-import { useGroupStore } from "@/lib/groupStore";
+
+// Mock messages für den Chat
+const mockGroupMessages = [
+  {
+    id: 1,
+    userId: 1,
+    content: "Willkommen in der Gruppe! 👋",
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
+    type: "group"
+  },
+  {
+    id: 2,
+    userId: 2,
+    content: "Danke! Freue mich auf den Austausch!",
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 12), // 12 hours ago
+    type: "group"
+  },
+  {
+    id: 3,
+    userId: 3,
+    content: "Hat jemand Tipps für das morgige Training?",
+    timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 minutes ago
+    type: "group"
+  },
+];
+
+// Mock Direktnachrichten
+const mockDirectMessages = [
+  {
+    id: 1,
+    userId: 2,
+    content: "Hey, wie läuft dein Training?",
+    timestamp: new Date(Date.now() - 1000 * 60 * 45),
+    type: "direct"
+  },
+  {
+    id: 2,
+    userId: 1,
+    content: "Gut, danke! Bereite mich auf den Marathon vor.",
+    timestamp: new Date(Date.now() - 1000 * 60 * 44),
+    type: "direct"
+  }
+];
 
 export default function GroupDetail() {
   const { id } = useParams();
-  const groupStore = useGroupStore();
-  const userStore = useUserStore();
-  const postStore = usePostStore();
-
-  const group = groupStore.groups.find(g => g.id === parseInt(id || ""));
-  const creator = group ? userStore.users.find(u => u.id === group.creatorId) : null;
-
+  const group = mockGroups.find(g => g.id === parseInt(id || ""));
+  const creator = group ? mockUsers.find(u => u.id === group.creatorId) : null;
   const [newMessage, setNewMessage] = useState("");
-  const [activeTab, setActiveTab] = useState("group");
+  const [activeTab, setActiveTab] = useState("group"); // Added here
+  const [groupMessages, setGroupMessages] = useState(mockGroupMessages);
+  const [directMessages, setDirectMessages] = useState(mockDirectMessages);
   const [showInfo, setShowInfo] = useState(false);
-  const currentUser = userStore.currentUser;
+  const currentUser = mockUsers[0]; // Mock current user
 
   useEffect(() => {
     setShowInfo(true);
-  }, []);
+  }, []); // Added useEffect hook here
 
   if (!group || !creator) return <div>Gruppe nicht gefunden</div>;
 
-  const participants = userStore.users.slice(0, Math.floor(Math.random() * 5) + 3);
-
-  // Hole Nachrichten aus dem PostStore
-  const groupMessages = Object.values(postStore.posts)
-    .filter(post => post.groupId === parseInt(id || ""))
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-  const directMessages = Object.values(postStore.posts)
-    .filter(post => post.type === "direct" && post.groupId === parseInt(id || ""))
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const participants = mockUsers.slice(0, Math.floor(Math.random() * 5) + 3);
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !currentUser) return;
+    if (!newMessage.trim()) return;
 
     const newMsg = {
-      id: Date.now(),
+      id: activeTab === "group" ? groupMessages.length + 1 : directMessages.length + 1,
       userId: currentUser.id,
       content: newMessage,
       timestamp: new Date(),
-      type: activeTab,
-      groupId: parseInt(id || "")
+      type: activeTab
     };
 
-    postStore.addPost(newMsg);
+    if (activeTab === "group") {
+      setGroupMessages([...groupMessages, newMsg]);
+    } else {
+      setDirectMessages([...directMessages, newMsg]);
+    }
     setNewMessage("");
   };
 
-  const renderMessages = (messages: typeof groupMessages) => (
+  const renderMessages = (messages: typeof mockGroupMessages) => (
     <div className="space-y-4">
       {messages.map(message => {
-        const user = userStore.users.find(u => u.id === message.userId);
-        const isCurrentUser = message.userId === currentUser?.id;
+        const user = mockUsers.find(u => u.id === message.userId);
+        const isCurrentUser = message.userId === currentUser.id;
 
         return (
           <div
@@ -84,7 +116,7 @@ export default function GroupDetail() {
                 {message.content}
               </div>
               <div className="text-xs text-muted-foreground mt-1">
-                {user?.username} • {format(new Date(message.createdAt), 'HH:mm')}
+                {user?.username} • {format(message.timestamp, 'HH:mm')}
               </div>
             </div>
           </div>

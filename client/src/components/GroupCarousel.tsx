@@ -2,7 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Users } from "lucide-react";
-import { Group } from "@/lib/groupStore"; // Corrected import path
+import { Group } from "@shared/schema";
 import { useUsers } from "../contexts/UserContext";
 import { useLocation } from "wouter";
 import { getChatId } from "../lib/chatService";
@@ -40,10 +40,6 @@ export default function GroupCarousel({ groups }: GroupCarouselProps) {
       setLocation(`/chat/${chatId}`);
     }
   };
-
-  if (!Array.isArray(groups) || groups.length === 0) { //Added check for empty groups
-    return <div>Keine Gruppen verfügbar.</div>;
-  }
 
   const groupChunks = groups.reduce((acc, curr, i) => {
     if (i % 2 === 0) acc.push([]);

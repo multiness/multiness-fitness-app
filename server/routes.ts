@@ -1,72 +1,24 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-
-// In-Memory Storage für Groups
-let groups = [];
-let groupIdCounter = 1;
-
-// In-Memory Storage für Challenges
-let challenges = [];
-let challengeIdCounter = 1;
+import { insertProductSchema, insertEventExternalRegistrationSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Groups API
-  app.get("/api/groups", async (req, res) => {
-    res.json(groups);
-  });
-
-  app.post("/api/groups", async (req, res) => {
-    const newGroup = {
-      id: groupIdCounter++,
-      ...req.body,
-      createdAt: new Date()
-    };
-    groups.push(newGroup);
-    res.status(201).json(newGroup);
-  });
-
-  // Challenges API
-  app.get("/api/challenges", async (req, res) => {
-    res.json(challenges);
-  });
-
-  app.post("/api/challenges", async (req, res) => {
-    const newChallenge = {
-      id: challengeIdCounter++,
-      ...req.body,
-      createdAt: new Date()
-    };
-    challenges.push(newChallenge);
-    res.status(201).json(newChallenge);
-  });
-
-  // Products API
+  // Alle Produkte abrufen
   app.get("/api/products", async (req, res) => {
     try {
-      const allProducts = await db.select().from(products);
-      res.json(allProducts);
+      const products = await storage.getProducts();
+      res.json(products);
     } catch (error) {
       console.error("Error fetching products:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
 
-  app.post("/api/products", async (req, res) => {
-    try {
-      const productData = insertProductSchema.parse(req.body);
-      const [product] = await db.insert(products).values(productData).returning();
-      res.status(201).json(product);
-    } catch (error) {
-      console.error("Error creating product:", error);
-      res.status(400).json({ error: "Invalid product data" });
-    }
-  });
-
   // Ein einzelnes Produkt abrufen
   app.get("/api/products/:id", async (req, res) => {
     try {
-      const product = await db.select().from(products).where({ id: Number(req.params.id) }).first();
+      const product = await storage.getProduct(Number(req.params.id));
       if (!product) {
         return res.status(404).json({ error: "Product not found" });
       }
@@ -77,12 +29,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Neues Produkt erstellen
+  app.post("/api/products", async (req, res) => {
+    try {
+      const productData = insertProductSchema.parse(req.body);
+      const product = await storage.createProduct(productData);
+      res.status(201).json(product);
+    } catch (error) {
+      console.error("Error creating product:", error);
+      res.status(400).json({ error: "Invalid product data" });
+    }
+  });
 
   // Produkt aktualisieren
   app.patch("/api/products/:id", async (req, res) => {
     try {
       const productId = Number(req.params.id);
-      const product = await db.select().from(products).where({ id: productId }).first();
+      const product = await storage.getProduct(productId);
       if (!product) {
         return res.status(404).json({ error: "Product not found" });
       }
@@ -93,8 +56,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         updateData.validUntil = new Date(updateData.validUntil);
       }
 
-      await db.update(products).set(updateData).where({ id: productId });
-      const updatedProduct = await db.select().from(products).where({ id: productId }).first();
+      const updatedProduct = await storage.updateProduct(productId, updateData);
       res.json(updatedProduct);
     } catch (error) {
       console.error("Error updating product:", error);
@@ -106,18 +68,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/products/:id", async (req, res) => {
     try {
       const productId = Number(req.params.id);
-      const product = await db.select().from(products).where({ id: productId }).first();
+      const product = await storage.getProduct(productId);
       if (!product) {
         return res.status(404).json({ error: "Product not found" });
       }
 
       if (req.query.archive === 'true') {
         // Archivieren
-        await db.update(products).set({ isArchived: true, isActive: false }).where({ id: productId });
+        await storage.updateProduct(productId, { 
+          isArchived: true, 
+          isActive: false 
+        });
         res.json({ message: "Product archived successfully" });
       } else {
         // Permanent löschen
-        await db.delete().from(products).where({ id: productId });
+        await storage.deleteProduct(productId);
         res.json({ message: "Product deleted successfully" });
       }
     } catch (error) {
@@ -168,7 +133,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-
+  // Update create event route to generate slug -  This section is removed as per the intention.
   app.post("/api/events", async (req, res) => {
     try {
       const event = await storage.createEvent(req.body);
@@ -178,6 +143,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ error: "Invalid event data" });
     }
   });
+
 
   const httpServer = createServer(app);
   return httpServer;

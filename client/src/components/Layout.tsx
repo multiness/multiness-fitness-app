@@ -17,31 +17,75 @@ import { UserAvatar } from "./UserAvatar";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { useNotificationStore } from "@/lib/notificationStore";
 
-// Icon-Map für Benachrichtigungstypen
-const notificationIcons = {
-  challenge: Dumbbell,
-  group: Users2,
-  event: Calendar,
-  product: Package,
-};
+// Erweiterte Mock-Benachrichtigungen mit Typen und Links
+const mockNotifications = [
+  {
+    id: 1,
+    type: 'challenge',
+    title: "Neue Challenge",
+    message: "Eine neue Fitness Challenge wurde erstellt",
+    time: new Date(Date.now() - 5 * 60 * 1000),
+    unread: true,
+    link: "/challenges/123",
+    icon: Dumbbell
+  },
+  {
+    id: 2,
+    type: 'group',
+    title: "Gruppeneinladung",
+    message: "Du wurdest zur Gruppe 'Morning Workout' eingeladen",
+    time: new Date(Date.now() - 30 * 60 * 1000),
+    unread: true,
+    link: "/groups/456",
+    icon: Users2
+  },
+  {
+    id: 3,
+    type: 'event',
+    title: "Neues Event",
+    message: "Fitness Workshop am kommenden Samstag",
+    time: new Date(Date.now() - 2 * 60 * 60 * 1000),
+    unread: true,
+    link: "/events/789",
+    icon: Calendar
+  },
+  {
+    id: 4,
+    type: 'product',
+    title: "Neues Produkt",
+    message: "Neue Fitness-Ausrüstung im Shop verfügbar",
+    time: new Date(Date.now() - 3 * 60 * 60 * 1000),
+    unread: false,
+    link: "/products/101",
+    icon: Package
+  }
+];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [, setLocation] = useLocation();
   const { currentUser } = useUsers();
-  const notificationStore = useNotificationStore();
+  const [notifications, setNotifications] = useState(mockNotifications);
+  const unreadCount = notifications.filter(n => n.unread).length;
 
-  const unreadCount = notificationStore.getUnreadCount();
-  const groupedNotifications = notificationStore.getNotificationsByType();
+  // Gruppiere Benachrichtigungen nach Typ
+  const groupedNotifications = notifications.reduce((acc, notification) => {
+    if (!acc[notification.type]) {
+      acc[notification.type] = [];
+    }
+    acc[notification.type].push(notification);
+    return acc;
+  }, {} as Record<string, typeof mockNotifications>);
 
   const markAllAsRead = () => {
-    notificationStore.markAllAsRead();
+    setNotifications(notifications.map(n => ({ ...n, unread: false })));
   };
 
   const markAsRead = (id: number) => {
-    notificationStore.markAsRead(id);
+    setNotifications(notifications.map(n =>
+      n.id === id ? { ...n, unread: false } : n
+    ));
   };
 
   const formatNotificationTime = (date: Date) => {
@@ -96,7 +140,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   </Button>
                 </div>
                 <ScrollArea className="h-[400px]">
-                  {Object.entries(groupedNotifications).map(([type, notifications]) => (
+                  {Object.entries(groupedNotifications).map(([type, typeNotifications]) => (
                     <div key={type}>
                       <div className="px-3 py-2 bg-muted/50">
                         <span className="text-xs font-medium text-muted-foreground capitalize">
@@ -106,44 +150,41 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                             type === 'product' ? 'Produkte' : type}
                         </span>
                       </div>
-                      {notifications.map((notification) => {
-                        const Icon = notificationIcons[notification.type];
-                        return (
-                          <DropdownMenuItem
-                            key={notification.id}
-                            className={cn(
-                              "p-3 cursor-pointer flex items-start gap-3",
-                              notification.unread && "bg-muted/50"
-                            )}
-                            onClick={() => {
-                              markAsRead(notification.id);
-                              setLocation(notification.link);
-                            }}
-                          >
-                            <div className="mt-1">
-                              <Icon className="h-5 w-5 text-muted-foreground" />
-                            </div>
-                            <div className="space-y-1 flex-1">
-                              <div className="flex items-center justify-between">
-                                <p className="font-medium text-sm">
-                                  {notification.title}
-                                  {notification.unread && (
-                                    <span className="ml-2">
-                                      <Badge variant="secondary" className="text-xs">Neu</Badge>
-                                    </span>
-                                  )}
-                                </p>
-                                <span className="text-xs text-muted-foreground">
-                                  {formatNotificationTime(notification.time)}
-                                </span>
-                              </div>
-                              <p className="text-sm text-muted-foreground">
-                                {notification.message}
+                      {typeNotifications.map((notification) => (
+                        <DropdownMenuItem
+                          key={notification.id}
+                          className={cn(
+                            "p-3 cursor-pointer flex items-start gap-3",
+                            notification.unread && "bg-muted/50"
+                          )}
+                          onClick={() => {
+                            markAsRead(notification.id);
+                            setLocation(notification.link);
+                          }}
+                        >
+                          <div className="mt-1">
+                            <notification.icon className="h-5 w-5 text-muted-foreground" />
+                          </div>
+                          <div className="space-y-1 flex-1">
+                            <div className="flex items-center justify-between">
+                              <p className="font-medium text-sm">
+                                {notification.title}
+                                {notification.unread && (
+                                  <span className="ml-2">
+                                    <Badge variant="secondary" className="text-xs">Neu</Badge>
+                                  </span>
+                                )}
                               </p>
+                              <span className="text-xs text-muted-foreground">
+                                {formatNotificationTime(notification.time)}
+                              </span>
                             </div>
-                          </DropdownMenuItem>
-                        );
-                      })}
+                            <p className="text-sm text-muted-foreground">
+                              {notification.message}
+                            </p>
+                          </div>
+                        </DropdownMenuItem>
+                      ))}
                     </div>
                   ))}
                 </ScrollArea>

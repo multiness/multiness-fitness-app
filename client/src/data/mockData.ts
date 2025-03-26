@@ -1,4 +1,4 @@
-import { User, Challenge, Group } from "@shared/schema";
+import { User, Post, Challenge, Group } from "@shared/schema";
 
 // Lade gespeicherte Challenges aus dem localStorage
 const loadStoredChallenges = (): Challenge[] => {
@@ -259,6 +259,79 @@ export const mockUsers: User[] = [
     isVerified: false,
     isTeamMember: false,
     teamRole: null,
+  }
+];
+
+export const mockPosts: Post[] = [
+  {
+    id: 1,
+    userId: 1,
+    content: "Intensives HIIT-Training heute! 💪 Denkt dran: Konsistenz ist der Schlüssel zum Erfolg. Wer ist morgen beim Workout dabei?",
+    image: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800&auto=format",
+    createdAt: new Date(Date.now() - 1800000), // 30 minutes ago
+  },
+  {
+    id: 2,
+    userId: 2,
+    content: "Morgen-Yoga Flow für einen energiegeladenen Start in den Tag 🧘‍♀️ Namaste!",
+    image: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&auto=format",
+    createdAt: new Date(Date.now() - 3600000), // 1 hour ago
+  },
+  {
+    id: 3,
+    userId: 3,
+    content: "Neuer Personal Record beim Kreuzheben! 💪 Wichtig: Immer auf die richtige Form achten.",
+    image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&auto=format",
+    createdAt: new Date(Date.now() - 7200000), // 2 hours ago
+  },
+  {
+    id: 4,
+    userId: 4,
+    content: "Meal Prep Sonntag! Meine Lieblings-Protein Bowl: Quinoa, Hähnchen, Avocado und geröstetes Gemüse. 🥗",
+    image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&auto=format",
+    createdAt: new Date(Date.now() - 10800000), // 3 hours ago
+  },
+  {
+    id: 5,
+    userId: 1,
+    content: "Quick Tipp: Bleibt hydriert während des Trainings! 💧 Ziel: 2-3 Liter Wasser täglich.",
+    image: "https://images.unsplash.com/photo-1511405946472-a37e3b5ccd47?w=800&auto=format",
+    createdAt: new Date(Date.now() - 14400000), // 4 hours ago
+  },
+  {
+    id: 6,
+    userId: 5,
+    content: "Toller Morgenlauf durch Heidelberg! 🌅 Die perfekte Route entlang des Neckars.",
+    image: "https://images.unsplash.com/photo-1526401485004-46910ecc8e51?w=800&auto=format",
+    createdAt: new Date(Date.now() - 86400000), // 1 day ago
+  },
+  {
+    id: 7,
+    userId: 2,
+    content: "Heute im Workshop: Stress-Abbau durch Meditation und sanfte Bewegungen 🧘‍♀️ #Achtsamkeit",
+    image: "https://images.unsplash.com/photo-1545205597-3d9d02c29597?w=800&auto=format",
+    createdAt: new Date(Date.now() - 90000000), // 25 hours ago
+  },
+  {
+    id: 8,
+    userId: 4,
+    content: "Gesunder Snack Alert! 🍎 Selbstgemachte Energiebällchen mit Datteln, Nüssen und Kakao. Perfekt für zwischendurch!",
+    image: "https://images.unsplash.com/photo-1604423043492-41503678e31e?w=800&auto=format",
+    createdAt: new Date(Date.now() - 95000000), // 26 hours ago
+  },
+  {
+    id: 9,
+    userId: 3,
+    content: "Mobility Training ist der Schlüssel zu besserer Performance 💯 Hier sind meine Top 3 Übungen für mehr Beweglichkeit!",
+    image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&auto=format",
+    createdAt: new Date(Date.now() - 100000000), // 28 hours ago
+  },
+  {
+    id: 10,
+    userId: 5,
+    content: "Perfektes Wetter für einen Trail Run im Odenwald 🌲 Natur pur!",
+    image: "https://images.unsplash.com/photo-1551698618-1dafe1857bd8?w=800&auto=format",
+    createdAt: new Date(Date.now() - 150000000), // 41 hours ago
   }
 ];
 
