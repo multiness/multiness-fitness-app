@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Post } from '@shared/schema';
+import { Post as OriginalPost } from '@shared/schema';
 
 export type DailyGoal = {
   type: 'water' | 'steps' | 'distance' | 'custom';
@@ -21,6 +21,15 @@ export type Comment = {
   parentId?: number; // Für nested comments
   likes: number[]; // Array von User IDs die den Kommentar geliked haben
   replies?: number[]; // IDs der Antwort-Kommentare
+};
+
+export type Post = {
+  id: number;
+  userId: number;
+  content: string;
+  image?: string | null;
+  createdAt: Date | string;
+  dailyGoal?: DailyGoal;
 };
 
 type PostStore = {

@@ -33,7 +33,7 @@ interface FeedPostProps {
     userId: number;
     content: string;
     image?: string | null;
-    createdAt: Date;
+    createdAt: Date | string;
     dailyGoal?: {
       type: 'water' | 'steps' | 'distance' | 'custom';
       target: number;
@@ -41,7 +41,7 @@ interface FeedPostProps {
       progress: number;
       completed: boolean;
       customName?: string;
-      createdAt: Date;
+      createdAt: Date | string;
     };
   };
 }
@@ -294,7 +294,7 @@ export default function FeedPost({ post }: FeedPostProps) {
           <div>
             <h3 className="font-semibold">{user.username}</h3>
             <p className="text-sm text-muted-foreground">
-              {format(post.createdAt, "dd. MMM yyyy")}
+              {format(new Date(post.createdAt), "dd. MMM yyyy")}
             </p>
           </div>
         </div>

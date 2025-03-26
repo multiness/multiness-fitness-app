@@ -8,7 +8,7 @@ import EventSlider from "@/components/EventSlider";
 import { ArrowRight, Crown, Heart, Share2, Users, Trophy, Package } from "lucide-react";
 import { mockGroups, mockChallenges, mockUsers, mockProducts } from "../data/mockData";
 import { useLocation, Link } from "wouter";
-import { usePostStore } from "../lib/postStore";
+import { usePostStore, type Post } from "../lib/postStore";
 import { getChatId } from "../lib/chatService";
 import {
   Carousel,
@@ -35,10 +35,14 @@ export default function Home() {
     challenge => new Date() <= new Date(challenge.endDate)
   );
 
-  // Lade Posts aus dem postStore statt mockPosts
-  const allPosts = Object.values(postStore.posts).sort((a, b) =>
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
+  // Hole alle Posts aus dem Store und sortiere sie nach Datum
+  const allPosts = Object.entries(postStore.posts)
+    .map(([, post]) => ({
+      ...post,
+      createdAt: new Date(post.createdAt), // Ensure createdAt is a Date object
+      image: post.image || null // Ensure image is either string or null
+    }))
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
   const navigateToGroupChat = (groupId: number) => {
     const chatId = getChatId(groupId);
@@ -183,15 +187,21 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Feed */}
+      {/* Feed Section - Überarbeitete Version */}
       <section>
         <h2 className="text-2xl font-bold mb-6">Neueste Beiträge</h2>
         <div className="space-y-6 w-full">
-          {allPosts.map(post => (
-            <div key={post.id} className="w-full max-w-xl mx-auto">
-              <FeedPost post={post} />
+          {allPosts.length > 0 ? (
+            allPosts.map((post) => (
+              <div key={post.id} className="w-full max-w-xl mx-auto">
+                <FeedPost post={post} />
+              </div>
+            ))
+          ) : (
+            <div className="text-center text-muted-foreground py-8">
+              Noch keine Beiträge vorhanden
             </div>
-          ))}
+          )}
         </div>
       </section>
     </div>
