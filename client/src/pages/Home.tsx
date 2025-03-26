@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import UserSlider from "@/components/UserSlider";
@@ -23,7 +24,6 @@ import GroupCarousel from "@/components/GroupCarousel";
 import { UserAvatar } from "@/components/UserAvatar";
 import ProductSlider from "@/components/ProductSlider";
 
-
 const format = (date: Date, formatStr: string) => {
   return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 };
@@ -35,7 +35,7 @@ export default function Home() {
     challenge => new Date() <= new Date(challenge.endDate)
   );
 
-  // Lade Posts aus dem postStore statt mockPosts
+  // Get all posts from postStore, sorted by date
   const allPosts = Object.values(postStore.posts).sort((a, b) =>
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
@@ -192,12 +192,13 @@ export default function Home() {
           </Link>
         </div>
         <div className="space-y-6">
-          {allPosts.map(post => (
-            <div key={post.id} className="w-full max-w-xl mx-auto">
-              <FeedPost post={post} />
-            </div>
-          ))}
-          {allPosts.length === 0 && (
+          {allPosts.length > 0 ? (
+            allPosts.map(post => (
+              <div key={post.id} className="w-full max-w-xl mx-auto">
+                <FeedPost post={post} />
+              </div>
+            ))
+          ) : (
             <div className="text-center text-muted-foreground py-8">
               Noch keine Beiträge vorhanden
             </div>
