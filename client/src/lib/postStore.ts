@@ -50,7 +50,7 @@ type PostStore = {
   hasLiked: (postId: number, userId: number) => boolean;
   getLikes: (postId: number) => number[];
 
-  // Comment Actions
+  // Comment Actions  
   addComment: (postId: number, userId: number, content: string, parentId?: number) => void;
   getComments: (postId: number, parentId?: number) => Comment[];
   addCommentLike: (postId: number, commentId: number, userId: number) => void;
@@ -69,6 +69,7 @@ type PostStore = {
   checkExpiredGoals: () => void;
 };
 
+// Erstelle einen neuen Store mit persistentem Speicher
 export const usePostStore = create<PostStore>()(
   persist(
     (set, get) => ({
@@ -374,7 +375,7 @@ export const usePostStore = create<PostStore>()(
         }),
     }),
     {
-      name: 'post-store',
+      name: 'post-interaction-storage',
       version: 1,
     }
   )
