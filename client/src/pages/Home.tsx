@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import UserSlider from "@/components/UserSlider";
@@ -31,14 +31,18 @@ const format = (date: Date, formatStr: string) => {
 export default function Home() {
   const [, setLocation] = useLocation();
   const postStore = usePostStore();
+  const [posts, setPosts] = useState([]); // Local state for posts
   const activeChallenges = mockChallenges.filter(
     challenge => new Date() <= new Date(challenge.endDate)
   );
 
-  // Get all posts from postStore, sorted by date
-  const allPosts = Object.values(postStore.posts).sort((a, b) =>
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
+  // Effect to update posts when postStore changes
+  useEffect(() => {
+    const allPosts = Object.values(postStore.posts).sort((a, b) =>
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+    setPosts(allPosts);
+  }, [postStore.posts]); // Re-run when postStore.posts changes
 
   const navigateToGroupChat = (groupId: number) => {
     const chatId = getChatId(groupId);
@@ -192,8 +196,8 @@ export default function Home() {
           </Link>
         </div>
         <div className="space-y-6">
-          {allPosts.length > 0 ? (
-            allPosts.map(post => (
+          {posts.length > 0 ? (
+            posts.map(post => (
               <div key={post.id} className="w-full max-w-xl mx-auto">
                 <FeedPost post={post} />
               </div>
