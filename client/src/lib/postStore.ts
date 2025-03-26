@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 import { Post } from '@shared/schema';
 
 export type DailyGoal = {
@@ -56,11 +56,11 @@ type PostStore = {
 export const usePostStore = create<PostStore>()(
   persist(
     (set, get) => ({
-      posts: {},
       likes: {},
       comments: {},
       dailyGoals: {},
       goalParticipants: {},
+      posts: {},
 
       addLike: (postId, userId) =>
         set((state) => ({
@@ -187,20 +187,12 @@ export const usePostStore = create<PostStore>()(
           createdAt: new Date()
         };
 
-        set((state) => {
-          console.log('Creating new post:', post);
-          console.log('Current posts:', state.posts);
-
-          const newState = {
-            posts: {
-              ...state.posts,
-              [postId]: post
-            }
-          };
-
-          console.log('Updated posts:', newState.posts);
-          return newState;
-        });
+        set((state) => ({
+          posts: {
+            ...state.posts,
+            [postId]: post
+          }
+        }));
 
         return postId;
       },
@@ -373,22 +365,6 @@ export const usePostStore = create<PostStore>()(
     {
       name: 'post-interaction-storage',
       version: 1,
-      storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({
-        posts: state.posts,
-        likes: state.likes,
-        comments: state.comments,
-        dailyGoals: state.dailyGoals,
-        goalParticipants: state.goalParticipants,
-      }),
     }
   )
 );
-
-// Debug subscription - moved outside conditional and improved
-usePostStore.subscribe((state) => {
-  console.log('PostStore updated:', {
-    postsCount: Object.keys(state.posts).length,
-    posts: state.posts,
-  });
-});
