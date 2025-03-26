@@ -6,8 +6,7 @@ import ChallengeCard from "@/components/ChallengeCard";
 import FeedPost from "@/components/FeedPost";
 import EventSlider from "@/components/EventSlider";
 import { ArrowRight, Crown, Heart, Share2, Users, Trophy, Package } from "lucide-react";
-import { useGroupStore } from "../lib/groupStore";
-import { mockChallenges, mockUsers, mockProducts } from "../data/mockData";
+import { mockGroups, mockChallenges, mockUsers, mockProducts } from "../data/mockData";
 import { useLocation, Link } from "wouter";
 import { usePostStore } from "../lib/postStore";
 import { getChatId } from "../lib/chatService";
@@ -24,6 +23,7 @@ import GroupCarousel from "@/components/GroupCarousel";
 import { UserAvatar } from "@/components/UserAvatar";
 import ProductSlider from "@/components/ProductSlider";
 
+
 const format = (date: Date, formatStr: string) => {
   return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 };
@@ -31,18 +31,14 @@ const format = (date: Date, formatStr: string) => {
 export default function Home() {
   const [, setLocation] = useLocation();
   const postStore = usePostStore();
-  const groupStore = useGroupStore();
   const activeChallenges = mockChallenges.filter(
     challenge => new Date() <= new Date(challenge.endDate)
   );
 
-  // Lade Posts aus dem postStore
+  // Lade Posts aus dem postStore statt mockPosts
   const allPosts = Object.values(postStore.posts).sort((a, b) =>
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
-
-  // Lade Gruppen aus dem groupStore
-  const groups = Object.values(groupStore.groups);
 
   const navigateToGroupChat = (groupId: number) => {
     const chatId = getChatId(groupId);
@@ -119,11 +115,11 @@ export default function Home() {
         </div>
         {/* Mobile: Karussell-Layout */}
         <div className="block md:hidden">
-          <GroupCarousel groups={groups.slice(0, 6)} />
+          <GroupCarousel groups={mockGroups.slice(0, 6)} />
         </div>
         {/* Desktop: Grid-Layout */}
         <div className="hidden md:grid grid-cols-2 gap-4">
-          {groups.slice(0, 4).map(group => {
+          {mockGroups.slice(0, 4).map(group => {
             const chatId = getChatId(group.id);
             return (
               <div key={group.id} className="cursor-pointer" onClick={() => navigateToGroupChat(group.id)}>
@@ -148,7 +144,7 @@ export default function Home() {
         <ProductSlider products={mockProducts} />
       </section>
 
-      {/* Aktive Challenges */}
+      {/* Aktive Challenges - Hervorgehobenes Design */}
       <section className="mb-12">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
