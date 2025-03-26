@@ -158,8 +158,15 @@ export default function Home() {
       <section>
         <h2 className="text-2xl font-bold mb-6">Neueste Beiträge</h2>
 
-        {/* Posts für beide Layouts */}
-        <div className="space-y-6">
+        {/* Mobile Layout - Bleibt komplett unberührt */}
+        <div className="block md:hidden space-y-6">
+          {posts.map(post => (
+            <FeedPost key={post.id} post={post} />
+          ))}
+        </div>
+
+        {/* Desktop Layout */}
+        <div className="hidden md:block space-y-6">
           {posts.map(post => (
             <FeedPost key={post.id} post={post} />
           ))}
