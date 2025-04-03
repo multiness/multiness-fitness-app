@@ -41,6 +41,9 @@ import { Badge } from "@/components/ui/badge";
 import { Link, useLocation } from "wouter";
 import { useAdmin } from "@/contexts/AdminContext";
 import { useProducts } from "@/contexts/ProductContext";
+import { usePostStore } from "../lib/postStore";
+import { useChallengeStore } from "../lib/challengeStore";
+import { useGroupStore } from "../lib/groupStore";
 
 // Product Management Section Component
 function ProductManagement() {
@@ -372,23 +375,11 @@ const mockBanners = [
   }
 ];
 
-// Leere Mock-Daten für die Statistik-Karten
+// Leere Arrays für Challenge- und Gruppen-Daten - später durch echte Daten ersetzen
+
+// Leere Mock-Daten für die Statistik-Karten - später durch echte Daten ersetzen
 const mockChallenges = [];
 const mockGroups = [];
-const mockPosts = [
-  {
-    id: 1,
-    userId: 1,
-    content: "Dies ist ein Beispiel für einen gemeldeten Beitrag.",
-    image: "https://via.placeholder.com/150",
-  },
-  {
-    id: 2,
-    userId: 2,
-    content: "Ein weiterer gemeldeter Beitrag.",
-    image: null,
-  }
-];
 
 // Mock Product Data
 const mockProducts = [
@@ -862,7 +853,7 @@ export default function Admin() {
             <TrendingUp className="h-4 w-4 text-muted-foreground"/>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockPosts.length}</div>
+            <div className="text-2xl font-bold">{Object.keys(usePostStore.getState().posts).length}</div>
             <p className="text-xs text-muted-foreground">
               +2 seit letzter Woche
             </p>
@@ -972,7 +963,8 @@ export default function Admin() {
             </div>
             <ScrollArea className="h-[400px]">
               <div className="space-y-4">
-                {mockPosts.map(post => (
+                {/* Verwenden von echten Posts aus dem postStore */}
+                {Object.values(usePostStore.getState().posts).slice(0, 5).map(post => (
                   <div key={post.id} className="border-b p-4">
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                       <div className="flex-1">
@@ -1022,7 +1014,7 @@ export default function Admin() {
                 ))}
 
                 {/* Wenn keine gemeldeten Inhalte vorhanden sind */}
-                {mockPosts.length === 0 && (
+                {Object.keys(usePostStore.getState().posts).length === 0 && (
                   <div className="text-center py-8 text-muted-foreground">
                     <div className="mb-2">✨</div>
                     <h4 className="font-medium">Alles klar!</h4>
