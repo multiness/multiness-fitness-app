@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-type Group = {
+export type Group = {
   id: number;
   name: string;
   description: string;
@@ -9,6 +9,7 @@ type Group = {
   participantIds: number[];
   adminIds: number[];
   creatorId: number;
+  isPrivate?: boolean;
 };
 
 type GroupStore = {

@@ -6,7 +6,6 @@ import ChallengeCard from "@/components/ChallengeCard";
 import FeedPost from "@/components/FeedPost";
 import EventSlider from "@/components/EventSlider";
 import { ArrowRight, Crown, Heart, Share2, Users, Trophy, Package } from "lucide-react";
-import { mockGroups, mockChallenges, mockUsers, mockProducts } from "../data/mockData";
 import { useLocation, Link } from "wouter";
 import { usePostStore } from "../lib/postStore";
 import { getChatId } from "../lib/chatService";
@@ -22,6 +21,9 @@ import { Badge } from "@/components/ui/badge";
 import GroupCarousel from "@/components/GroupCarousel";
 import { UserAvatar } from "@/components/UserAvatar";
 import ProductSlider from "@/components/ProductSlider";
+import { useGroupStore } from "../lib/groupStore";
+import { useChallengeStore } from "../lib/challengeStore";
+import { useProductStore } from "../lib/productStore";
 
 
 const format = (date: Date, formatStr: string) => {
@@ -30,12 +32,24 @@ const format = (date: Date, formatStr: string) => {
 
 export default function Home() {
   const [, setLocation] = useLocation();
+  
+  // Stores verwenden statt mockDaten
   const postStore = usePostStore();
-  const activeChallenges = mockChallenges.filter(
-    challenge => new Date() <= new Date(challenge.endDate)
+  const groupStore = useGroupStore();
+  const challengeStore = useChallengeStore();
+  const productStore = useProductStore();
+  
+  // Lade Daten aus den stores statt aus den mock-Daten
+  const groups = Object.values(groupStore.groups);
+  const challenges = Object.values(challengeStore.challenges);
+  const products = Object.values(productStore.products);
+  
+  // Aktive Challenges filtern
+  const activeChallenges = challenges.filter(
+    (challenge: any) => new Date() <= new Date(challenge.endDate)
   );
 
-  // Lade Posts aus dem postStore statt mockPosts
+  // Lade Posts aus dem postStore
   const allPosts = Object.values(postStore.posts).sort((a, b) =>
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
@@ -115,11 +129,11 @@ export default function Home() {
         </div>
         {/* Mobile: Karussell-Layout */}
         <div className="block md:hidden">
-          <GroupCarousel groups={mockGroups.slice(0, 6)} />
+          <GroupCarousel groups={groups.slice(0, 6)} />
         </div>
         {/* Desktop: Grid-Layout */}
         <div className="hidden md:grid grid-cols-2 gap-4">
-          {mockGroups.slice(0, 4).map(group => {
+          {groups.slice(0, 4).map(group => {
             const chatId = getChatId(group.id);
             return (
               <div key={group.id} className="cursor-pointer" onClick={() => navigateToGroupChat(group.id)}>
@@ -141,7 +155,7 @@ export default function Home() {
             Alle Produkte <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
-        <ProductSlider products={mockProducts} />
+        <ProductSlider products={products as any} />
       </section>
 
       {/* Aktive Challenges - Hervorgehobenes Design */}
@@ -166,7 +180,7 @@ export default function Home() {
             className="w-full"
           >
             <CarouselContent className="-ml-2">
-              {activeChallenges.map(challenge => (
+              {activeChallenges.map((challenge: any) => (
                 <CarouselItem key={challenge.id} className="pl-2 basis-[80%]">
                   <ChallengeCard challenge={challenge} />
                 </CarouselItem>
@@ -177,7 +191,7 @@ export default function Home() {
 
         {/* Desktop: Grid-Layout */}
         <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-4">
-          {activeChallenges.slice(0, 6).map(challenge => (
+          {activeChallenges.slice(0, 6).map((challenge: any) => (
             <ChallengeCard key={challenge.id} challenge={challenge} />
           ))}
         </div>
@@ -192,9 +206,9 @@ export default function Home() {
           </Link>
         </div>
         <div className="space-y-6">
-          {allPosts.map(post => (
+          {allPosts.map((post: any) => (
             <div key={post.id} className="w-full max-w-xl mx-auto">
-              <FeedPost post={post} />
+              <FeedPost post={post as any} />
             </div>
           ))}
           {allPosts.length === 0 && (

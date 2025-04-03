@@ -11,6 +11,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { useProducts } from "@/contexts/ProductContext";
+import { Product } from "../lib/productStore";
 
 // Fallback-Bilder für verschiedene Produkttypen
 const defaultProductImages: Record<string, string> = {
@@ -20,9 +21,14 @@ const defaultProductImages: Record<string, string> = {
   custom: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' ry='2'/%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3Cpath d='M12 8v1M12 15v1M8 12h1M15 12h1'/%3E%3C/svg%3E",
 };
 
-export default function ProductSlider() {
-  const { products } = useProducts();
-  const activeProducts = products.filter(p => p.isActive && !p.isArchived);
+interface ProductSliderProps {
+  products?: any[];
+}
+
+export default function ProductSlider({ products: propProducts }: ProductSliderProps) {
+  const { products: contextProducts } = useProducts();
+  const products = propProducts || contextProducts;
+  const activeProducts = products.filter((p: any) => p.available !== false);
 
   const getProductImage = (product: any) => {
     return product.image || defaultProductImages[product.type] || defaultProductImages.custom;

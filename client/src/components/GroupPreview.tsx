@@ -1,10 +1,9 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Users } from "lucide-react";
-import { Group } from "@shared/schema";
 import { useUsers } from "../contexts/UserContext";
 import { Link, useLocation } from "wouter";
-import { useGroupStore } from "../lib/groupStore";
+import { useGroupStore, type Group } from "../lib/groupStore";
 import { useToast } from "@/hooks/use-toast";
 import { getChatId } from "../lib/chatService";
 import { UserAvatar } from "./UserAvatar";

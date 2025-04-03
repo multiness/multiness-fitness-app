@@ -2,12 +2,11 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Users } from "lucide-react";
-import { Group } from "@shared/schema";
 import { useUsers } from "../contexts/UserContext";
 import { useLocation } from "wouter";
 import { getChatId } from "../lib/chatService";
 import { UserAvatar } from "./UserAvatar";
-import { useGroupStore } from "../lib/groupStore";
+import { useGroupStore, type Group } from "../lib/groupStore";
 import { useToast } from "@/hooks/use-toast";
 
 interface GroupCarouselProps {
