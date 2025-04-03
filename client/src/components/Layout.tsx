@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useLocation, Link } from "wouter";
-import { Bell, Home, Award, Users, MessageSquare, Plus, Check, Search } from "lucide-react";
+import { Bell, Check, Home, Award, Users, MessageSquare, Plus, Search } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useUsers } from "../contexts/UserContext";
 import { UserAvatar } from "./UserAvatar";
@@ -19,40 +19,32 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useNotificationStore, getNotificationIcon } from "../lib/notificationStore";
 
-// Lokale Definition des Notification-Typs, falls der importierte nicht funktioniert
-interface NotificationItem {
-  id: number;
-  type: string;
-  title: string;
-  message: string;
-  time: Date;
-  unread: boolean;
-  link: string;
-  entityId?: number;
-  iconName: string;
-}
-
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [location, setLocation] = useLocation();
   const { currentUser } = useUsers();
-  const [isMobile, setIsMobile] = useState(false);
   
-  // Ermittle, ob wir uns auf einem Mobilgerät befinden
+  // Hilfsfunktion zur Bestimmung des aktiven Menüpunkts
+  const isActive = (path: string) => location === path;
+  
+  // Responsives Design - prüfe Bildschirmgröße
+  const [isMobile, setIsMobile] = useState(true); // Standard: Mobile Ansicht
+  
   useEffect(() => {
-    const checkIsMobile = () => {
-      setIsMobile(window.innerWidth < 768);
+    // Funktion zur Prüfung der Bildschirmgröße
+    const checkScreenSize = () => {
+      setIsMobile(window.innerWidth < 768); // Unter 768px gilt als mobil
     };
     
-    // Initial check
-    checkIsMobile();
+    // Initial beim Laden prüfen
+    checkScreenSize();
     
-    // Event-Listener für Fenstergrößenänderungen
-    window.addEventListener('resize', checkIsMobile);
+    // Event-Listener für Größenänderungen
+    window.addEventListener('resize', checkScreenSize);
     
-    // Cleanup
+    // Cleanup beim Unmount
     return () => {
-      window.removeEventListener('resize', checkIsMobile);
+      window.removeEventListener('resize', checkScreenSize);
     };
   }, []);
   
@@ -74,7 +66,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     setUnreadCount(getUnreadCount());
     setGroupedNotifications(useNotificationStore.getState().getGroupedNotifications());
   }, [notifications, getUnreadCount]);
-
+  
   // Keine Init-Benachrichtigungen mehr nötig, werden durch Events erzeugt
 
   const formatNotificationTime = (date: Date) => {
@@ -88,96 +80,87 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   };
 
   if (!currentUser) return null;
-  
-  // Diese Funktion prüft, ob ein Navigationspfad aktiv ist
-  const isActive = (path: string) => location === path;
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Top Header - für Mobile und Desktop */}
+      {/* Top Header */}
       <header className="fixed top-0 left-0 right-0 h-14 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
         <div className={cn(
           "flex items-center justify-between h-full",
-          isMobile ? "px-4" : "container px-4 mx-auto"
+          isMobile ? "px-4" : "container mx-auto px-4"
         )}>
-          {/* Logo - für Mobile und Desktop */}
-          <Link href="/" className="flex items-center">
-            <img
-              src="/assets/logo.png"
-              alt="Multiness Logo"
-              className="h-12 w-auto object-contain hover:opacity-80 transition-opacity py-1.5 dark:invert dark:brightness-200 dark:contrast-200"
-            />
-          </Link>
+          <div className="flex items-center">
+            <Link href="/" className="flex items-center">
+              <img
+                src="/assets/logo.png"
+                alt="Multiness Logo"
+                className="h-12 w-auto object-contain hover:opacity-80 transition-opacity py-1.5 dark:invert dark:brightness-200 dark:contrast-200"
+              />
+            </Link>
+            
+            {/* Desktop-Navigation im Header */}
+            {!isMobile && (
+              <div className="flex items-center ml-8 space-x-1">
+                <Link href="/">
+                  <Button
+                    variant={isActive("/") ? "default" : "ghost"}
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <Home className="h-4 w-4" />
+                    <span>Start</span>
+                  </Button>
+                </Link>
+                
+                <Link href="/challenges">
+                  <Button
+                    variant={isActive("/challenges") ? "default" : "ghost"}
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <Award className="h-4 w-4" />
+                    <span>Challenges</span>
+                  </Button>
+                </Link>
+                
+                <Link href="/groups">
+                  <Button
+                    variant={isActive("/groups") ? "default" : "ghost"}
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <Users className="h-4 w-4" />
+                    <span>Gruppen</span>
+                  </Button>
+                </Link>
+                
+                <Link href="/chat">
+                  <Button
+                    variant={isActive("/chat") ? "default" : "ghost"}
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                    <span>Chat</span>
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </div>
 
-          {/* Desktop-Navigation in der Kopfzeile */}
-          {!isMobile && (
-            <div className="flex items-center space-x-1">
-              <Link href="/">
-                <Button
-                  variant={isActive("/") ? "default" : "ghost"}
-                  size="sm"
-                  className="flex items-center gap-2"
-                >
-                  <Home className="h-4 w-4" />
-                  <span>Start</span>
-                </Button>
-              </Link>
-              
-              <Link href="/challenges">
-                <Button
-                  variant={isActive("/challenges") ? "default" : "ghost"}
-                  size="sm"
-                  className="flex items-center gap-2"
-                >
-                  <Award className="h-4 w-4" />
-                  <span>Challenges</span>
-                </Button>
-              </Link>
-              
-              <Link href="/groups">
-                <Button
-                  variant={isActive("/groups") ? "default" : "ghost"}
-                  size="sm"
-                  className="flex items-center gap-2"
-                >
-                  <Users className="h-4 w-4" />
-                  <span>Gruppen</span>
-                </Button>
-              </Link>
-              
-              <Link href="/chat">
-                <Button
-                  variant={isActive("/chat") ? "default" : "ghost"}
-                  size="sm"
-                  className="flex items-center gap-2"
-                >
-                  <MessageSquare className="h-4 w-4" />
-                  <span>Chat</span>
-                </Button>
-              </Link>
-              
-              {/* Erstellen-Button für Desktop */}
+          <div className="flex items-center gap-2">
+            {/* Erstellen-Button für Desktop */}
+            {!isMobile && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setCreateModalOpen(true)}
-                className="ml-2 flex items-center gap-2"
+                className="flex items-center gap-2 mr-2"
               >
                 <Plus className="h-4 w-4" />
                 <span>Erstellen</span>
               </Button>
-            </div>
-          )}
-
-          {/* Rechte Seite mit Benachrichtigungen und User-Menü - für Mobile und Desktop */}
-          <div className="flex items-center gap-2">
-            {/* Suchknopf - nur auf Desktop */}
-            {!isMobile && (
-              <Button variant="ghost" size="icon">
-                <Search className="h-5 w-5" />
-              </Button>
             )}
-            
             {/* Benachrichtigungen */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -300,17 +283,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      {/* Main Content - angepasst für Mobile und Desktop */}
+      {/* Main Content - angepasst für Desktop/Mobile */}
       <main className={cn(
-        "min-h-screen bg-background",
-        isMobile ? "pt-14 pb-16" : "pt-14 pb-4",
-        !isMobile && "container mx-auto px-4"
+        "pt-14", // Gemeinsame Einstellung
+        isMobile ? "pb-16" : "pb-4", // Unterschiedlicher Padding-Bottom je nach Gerät
+        !isMobile && "container mx-auto px-4" // Zusätzliche Styles für Desktop
       )}>
         {children}
       </main>
 
-      {/* Bottom Navigation - nur für Mobile sichtbar */}
-      {isMobile && <Navigation onCreateClick={() => setCreateModalOpen(true)} />}
+      {/* Navigation wird auch im Desktop-Modus angezeigt, wird aber intern angepasst */}
+      <Navigation onCreateClick={() => setCreateModalOpen(true)} />
 
       {/* Create Modal */}
       <CreateModal open={isCreateModalOpen} onClose={() => setCreateModalOpen(false)} />

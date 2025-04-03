@@ -1,6 +1,8 @@
 import { Home, Award, Users, MessageSquare, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
+import { useState, useEffect } from "react";
+import { cn } from "@/lib/utils";
 
 interface NavigationProps {
   onCreateClick: () => void;
@@ -8,9 +10,50 @@ interface NavigationProps {
 
 export default function Navigation({ onCreateClick }: NavigationProps) {
   const [location] = useLocation();
+  const [isMobile, setIsMobile] = useState(true);
+  
+  // Prüfe Bildschirmgröße für responsives Layout
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    
+    return () => {
+      window.removeEventListener('resize', checkScreenSize);
+    };
+  }, []);
 
   const isActive = (path: string) => location === path;
 
+  // Auf Desktop-Geräten einen unauffälligeren Footer anzeigen
+  if (!isMobile) {
+    return (
+      <footer className="mt-8 py-4 border-t text-center text-sm text-muted-foreground">
+        <div className="container max-w-7xl mx-auto">
+          <div className="flex flex-col items-center justify-center gap-2">
+            <p>© 2023 Multiness. Alle Rechte vorbehalten.</p>
+            <div className="flex items-center gap-4">
+              <Link href="/">Startseite</Link>
+              <Link href="/challenges">Challenges</Link>
+              <Link href="/groups">Gruppen</Link>
+              <Link href="/chat">Chat</Link>
+              <button 
+                className="inline underline cursor-pointer"
+                onClick={onCreateClick}
+              >
+                Erstellen
+              </button>
+            </div>
+          </div>
+        </div>
+      </footer>
+    );
+  }
+
+  // Auf mobilen Geräten die ursprüngliche Navigation anzeigen
   return (
     <nav className="fixed bottom-0 left-0 right-0 h-16 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
       <div className="container max-w-xl mx-auto h-full">
