@@ -53,6 +53,12 @@ type PostStore = {
   deleteDailyGoal: (userId: number) => void;
 };
 
+// Hilfsfunktion zum Abrufen aller Benutzer statt useUsers() zu verwenden
+const getUsersFromStorage = () => {
+  const savedUsers = localStorage.getItem('fitness-app-users');
+  return savedUsers ? JSON.parse(savedUsers) : [];
+};
+
 export const usePostStore = create<PostStore>()(
   persist(
     (set, get) => ({
@@ -195,21 +201,18 @@ export const usePostStore = create<PostStore>()(
           }
         }));
 
-        // Wir verwenden einen einfacheren Ansatz für die Benachrichtigungen
-        // um zirkuläre Abhängigkeiten und Typenprobleme zu vermeiden
-        setTimeout(() => {
-          import('../contexts/UserContext').then(module => {
-            const users = module.useUsers().getAllUsers();
-            const author = users.find((u: {id: number}) => u.id === userId);
-            
-            // Nur Benachrichtigungen für Admin-Posts
-            if (author?.isAdmin) {
-              import('./notificationStore').then(({ notifyNewPost }) => {
-                notifyNewPost(author.username || author.name || "Admin", postId);
-              });
-            }
-          });
-        }, 0);
+        // Wir verwenden einen direkten Zugriff auf localStorage statt den Hook useUsers()
+        const users = getUsersFromStorage();
+        const author = users.find((u: {id: number}) => u.id === userId);
+        
+        // Nur Benachrichtigungen für Admin-Posts
+        if (author?.isAdmin) {
+          setTimeout(() => {
+            import('./notificationStore').then(({ notifyNewPost }) => {
+              notifyNewPost(author.username || author.name || "Admin", postId);
+            });
+          }, 0);
+        }
 
         return postId;
       },
@@ -236,20 +239,18 @@ export const usePostStore = create<PostStore>()(
           }
         }));
 
-        // Verwende denselben Ansatz wie bei createPost
-        setTimeout(() => {
-          import('../contexts/UserContext').then(module => {
-            const users = module.useUsers().getAllUsers();
-            const author = users.find((u: {id: number}) => u.id === userId);
-            
-            // Nur Benachrichtigungen für Admin-Posts
-            if (author?.isAdmin) {
-              import('./notificationStore').then(({ notifyNewPost }) => {
-                notifyNewPost(author.username || author.name || "Admin", postId);
-              });
-            }
-          });
-        }, 0);
+        // Wir verwenden einen direkten Zugriff auf localStorage statt den Hook useUsers()
+        const users = getUsersFromStorage();
+        const author = users.find((u: {id: number}) => u.id === userId);
+        
+        // Nur Benachrichtigungen für Admin-Posts
+        if (author?.isAdmin) {
+          setTimeout(() => {
+            import('./notificationStore').then(({ notifyNewPost }) => {
+              notifyNewPost(author.username || author.name || "Admin", postId);
+            });
+          }, 0);
+        }
       },
 
       updatePost: (postId, content) =>
