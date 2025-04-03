@@ -51,6 +51,7 @@ function UserCard({ user, onVerify }: { user: any, onVerify: (id: number) => voi
             userId={user.id}
             size="lg"
             className="w-full h-full"
+            disableLink={true}
           />
           <Button 
             variant="ghost" 

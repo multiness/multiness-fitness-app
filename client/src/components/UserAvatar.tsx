@@ -16,6 +16,7 @@ interface UserAvatarProps {
   clickable?: boolean;
   hideVerifiedBadge?: boolean;
   enableImageModal?: boolean;
+  disableLink?: boolean; // Neue Prop zum expliziten Deaktivieren des Links
 }
 
 export function UserAvatar({
@@ -26,7 +27,8 @@ export function UserAvatar({
   isGroup = false,
   clickable = true,
   hideVerifiedBadge = false,
-  enableImageModal = false
+  enableImageModal = false,
+  disableLink = false
 }: UserAvatarProps) {
   const postStore = usePostStore();
   const { users } = useUsers();
@@ -79,7 +81,7 @@ export function UserAvatar({
       </div>
       {!hideVerifiedBadge && user.isVerified && (
         <div className="absolute -bottom-1 -right-1">
-          <VerifiedBadge size={size === "lg" ? "default" : "sm"} />
+          <VerifiedBadge size={size === "lg" ? "default" : "sm" as "sm" | "default"} />
         </div>
       )}
       {enableImageModal && (
@@ -93,7 +95,8 @@ export function UserAvatar({
     </div>
   );
 
-  if (clickable && !isGroup && !enableImageModal) {
+  // Verwende Link nur wenn explizit erlaubt und clickable
+  if (clickable && !isGroup && !enableImageModal && !disableLink) {
     return (
       <Link href={`/profile/${userId}`}>
         {AvatarComponent}

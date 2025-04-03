@@ -97,6 +97,7 @@ export default function ChallengeCard({ challenge, variant = "full" }: Challenge
                   <UserAvatar
                     userId={participants[0]?.id}
                     size="sm"
+                    disableLink={true}
                   />
                   <div>
                     <p className="text-sm font-medium">

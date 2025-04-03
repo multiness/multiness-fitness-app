@@ -64,6 +64,7 @@ export default function GroupPreview({ group }: GroupPreviewProps) {
               <UserAvatar
                 userId={creator.id}
                 size="sm"
+                disableLink={true}
               />
               <span className="text-sm text-muted-foreground">
                 Created by {creator.username}
@@ -81,6 +82,7 @@ export default function GroupPreview({ group }: GroupPreviewProps) {
                       key={participantId}
                       userId={participant.id}
                       size="sm"
+                      disableLink={true}
                     />
                   ) : null;
                 })}

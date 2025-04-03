@@ -155,6 +155,7 @@ function EventCard({ event, users }: { event: any, users: any[] }) {
                     <UserAvatar
                       userId={trainer.id}
                       size="sm"
+                      disableLink={true}
                     />
                     <div className="min-w-0">
                       <div className="text-xs font-medium truncate">{trainer.name}</div>

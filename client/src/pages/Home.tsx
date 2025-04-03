@@ -45,6 +45,8 @@ export default function Home() {
   useEffect(() => {
     loadInitialProducts();
     createInitialChallenges();
+    // Stelle sicher, dass Posts aus dem localStorage geladen werden
+    postStore.loadStoredPosts();
   }, []);
   
   // Lade Daten aus den stores statt aus den mock-Daten

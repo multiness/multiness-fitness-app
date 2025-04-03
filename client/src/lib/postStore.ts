@@ -51,6 +51,8 @@ type PostStore = {
   createPostWithGoal: (userId: number, content: string, goal: DailyGoal) => void;
   createPost: (userId: number, content: string, image?: string | null) => void;
   deleteDailyGoal: (userId: number) => void;
+  // Neue Methoden für bessere Datensynchronisierung
+  loadStoredPosts: () => void;
 };
 
 // Hilfsfunktion zum Abrufen aller Benutzer statt useUsers() zu verwenden
@@ -58,6 +60,9 @@ const getUsersFromStorage = () => {
   const savedUsers = localStorage.getItem('fitness-app-users');
   return savedUsers ? JSON.parse(savedUsers) : [];
 };
+
+// Konstante für den lokalen Speicher
+const LOCAL_STORAGE_POSTS_KEY = 'fitness-app-posts';
 
 export const usePostStore = create<PostStore>()(
   persist(
@@ -67,6 +72,19 @@ export const usePostStore = create<PostStore>()(
       dailyGoals: {},
       goalParticipants: {},
       posts: {},
+
+      // Methode zum expliziten Laden der Posts aus dem lokalen Speicher
+      loadStoredPosts: () => {
+        const savedPosts = localStorage.getItem(LOCAL_STORAGE_POSTS_KEY);
+        if (savedPosts) {
+          try {
+            const parsedPosts = JSON.parse(savedPosts);
+            set({ posts: parsedPosts });
+          } catch (e) {
+            console.error('Fehler beim Laden der Posts aus localStorage:', e);
+          }
+        }
+      },
 
       addLike: (postId, userId) =>
         set((state) => ({
@@ -194,12 +212,14 @@ export const usePostStore = create<PostStore>()(
           dailyGoal: null
         };
 
-        set((state) => ({
-          posts: {
-            ...state.posts,
-            [postId]: post
-          }
-        }));
+        const updatedPosts = {
+          ...get().posts,
+          [postId]: post
+        };
+        
+        // Speichere Posts im State und im lokalem Speicher
+        set({ posts: updatedPosts });
+        localStorage.setItem(LOCAL_STORAGE_POSTS_KEY, JSON.stringify(updatedPosts));
 
         // Wir verwenden einen direkten Zugriff auf localStorage statt den Hook useUsers()
         const users = getUsersFromStorage();
@@ -228,16 +248,24 @@ export const usePostStore = create<PostStore>()(
           dailyGoal: goal
         };
 
-        set((state) => ({
-          posts: {
-            ...state.posts,
-            [postId]: post
-          },
-          dailyGoals: {
-            ...state.dailyGoals,
-            [userId]: goal
-          }
-        }));
+        const updatedPosts = {
+          ...get().posts,
+          [postId]: post
+        };
+        
+        // Speichere Posts sowohl im State als auch direkt im localStorage
+        const updatedGoals = {
+          ...get().dailyGoals,
+          [userId]: goal
+        };
+        
+        set({ 
+          posts: updatedPosts,
+          dailyGoals: updatedGoals
+        });
+        
+        // Synchronisiere mit localStorage
+        localStorage.setItem(LOCAL_STORAGE_POSTS_KEY, JSON.stringify(updatedPosts));
 
         // Wir verwenden einen direkten Zugriff auf localStorage statt den Hook useUsers()
         const users = getUsersFromStorage();
@@ -253,30 +281,34 @@ export const usePostStore = create<PostStore>()(
         }
       },
 
-      updatePost: (postId, content) =>
-        set((state) => ({
-          posts: {
-            ...state.posts,
-            [postId]: {
-              ...state.posts[postId],
-              content,
-              updatedAt: new Date()
-            }
+      updatePost: (postId, content) => {
+        const updatedPosts = {
+          ...get().posts,
+          [postId]: {
+            ...get().posts[postId],
+            content,
+            updatedAt: new Date()
           }
-        })),
+        };
+        
+        set({ posts: updatedPosts });
+        localStorage.setItem(LOCAL_STORAGE_POSTS_KEY, JSON.stringify(updatedPosts));
+      },
 
-      deletePost: (postId) =>
-        set((state) => {
-          const { [postId]: deletedPost, ...remainingPosts } = state.posts;
-          const { [postId]: deletedLikes, ...remainingLikes } = state.likes;
-          const { [postId]: deletedComments, ...remainingComments } = state.comments;
+      deletePost: (postId) => {
+        const { [postId]: deletedPost, ...remainingPosts } = get().posts;
+        const { [postId]: deletedLikes, ...remainingLikes } = get().likes;
+        const { [postId]: deletedComments, ...remainingComments } = get().comments;
 
-          return {
-            posts: remainingPosts,
-            likes: remainingLikes,
-            comments: remainingComments
-          };
-        }),
+        const updatedState = {
+          posts: remainingPosts,
+          likes: remainingLikes,
+          comments: remainingComments
+        };
+        
+        set(updatedState);
+        localStorage.setItem(LOCAL_STORAGE_POSTS_KEY, JSON.stringify(remainingPosts));
+      },
 
       hasActiveGoal: (userId) => {
         return Boolean(get().getDailyGoal(userId));
@@ -412,6 +444,21 @@ export const usePostStore = create<PostStore>()(
     {
       name: 'post-interaction-storage',
       version: 1,
+      onRehydrateStorage: () => {
+        return (state) => {
+          if (state) {
+            // Übernimm explizit die Daten aus dem localStorage für Posts
+            const savedPosts = localStorage.getItem(LOCAL_STORAGE_POSTS_KEY);
+            if (savedPosts) {
+              try {
+                state.posts = JSON.parse(savedPosts);
+              } catch (e) {
+                console.error('Fehler beim Parsen der gespeicherten Posts:', e);
+              }
+            }
+          }
+        };
+      }
     }
   )
 );

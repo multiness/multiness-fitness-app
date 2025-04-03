@@ -77,6 +77,7 @@ export default function SharedContent({ content }: SharedContentProps) {
                       userId={user.id}
                       size="sm"
                       className="-ml-2 first:ml-0"
+                      disableLink={true}
                     />
                   ))}
                 </div>
@@ -140,6 +141,7 @@ export default function SharedContent({ content }: SharedContentProps) {
                     userId={user.id}
                     size="sm"
                     className="-ml-2 first:ml-0"
+                    disableLink={true}
                   />
                 ))}
               </div>

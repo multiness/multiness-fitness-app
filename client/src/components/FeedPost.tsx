@@ -88,6 +88,7 @@ function CommentItem({ comment, postId, onReplyClick }: any) {
         <UserAvatar
           userId={commentUser?.id || 0}
           size="sm"
+          disableLink={true}
         />
         <div className="flex-1 space-y-1">
           <div className="bg-muted p-3 rounded-lg">
@@ -290,6 +291,7 @@ export default function FeedPost({ post }: FeedPostProps) {
           <UserAvatar
             userId={user.id}
             size="sm"
+            disableLink={true}
           />
           <div>
             <h3 className="font-semibold">{user.username}</h3>
@@ -516,6 +518,7 @@ export default function FeedPost({ post }: FeedPostProps) {
                     <UserAvatar
                       userId={user.id}
                       size="sm"
+                      disableLink={true}
                     />
                     <div className="flex-1">
                       <p className="text-sm font-semibold">{user.username}</p>

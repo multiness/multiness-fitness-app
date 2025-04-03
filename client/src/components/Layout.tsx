@@ -60,22 +60,37 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     setUnreadCount(getUnreadCount());
   }, [notifications, getUnreadCount]);
   
-  const formatNotificationTime = (date: Date) => {
+  const formatNotificationTime = (date: Date | string) => {
+    // Stelle sicher, dass date ein Date-Objekt ist
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    
+    // Prüfe auf gültiges Datum
+    if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) {
+      return "Unbekannt";
+    }
+    
     const now = new Date();
-    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    const diffInMinutes = Math.floor((now.getTime() - dateObj.getTime()) / (1000 * 60));
 
     if (diffInMinutes < 1) return "Gerade eben";
     if (diffInMinutes < 60) return `Vor ${diffInMinutes} Minuten`;
     if (diffInMinutes < 1440) return `Vor ${Math.floor(diffInMinutes / 60)} Stunden`;
-    return format(date, "dd.MM.yyyy");
+    return format(dateObj, "dd.MM.yyyy");
   };
 
   if (!currentUser) return null;
 
   // Sortiere Benachrichtigungen nach Zeitstempel (neueste zuerst)
-  const sortedNotifications = Object.values(notifications).sort((a, b) => 
-    b.timestamp.getTime() - a.timestamp.getTime()
-  );
+  const sortedNotifications = Object.values(notifications).sort((a, b) => {
+    const dateA = new Date(a.timestamp);
+    const dateB = new Date(b.timestamp);
+    // Fallback falls ein oder beide Datumswerte ungültig sind
+    if (isNaN(dateA.getTime()) && isNaN(dateB.getTime())) return 0;
+    if (isNaN(dateA.getTime())) return 1; // A ist ungültig, B nach vorne
+    if (isNaN(dateB.getTime())) return -1; // B ist ungültig, A nach vorne
+    // Normale Sortierung wenn beide Datumsangaben gültig sind
+    return dateB.getTime() - dateA.getTime();
+  });
 
   return (
     <div className="min-h-screen bg-background">
