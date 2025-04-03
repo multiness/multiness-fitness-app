@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useLocation, Link } from "wouter";
-import { Bell, MessageSquare, Check } from "lucide-react";
+import { Bell, Home, Award, Users, MessageSquare, Plus, Check, Search } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useUsers } from "../contexts/UserContext";
 import { UserAvatar } from "./UserAvatar";
@@ -34,8 +34,27 @@ interface NotificationItem {
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const { currentUser } = useUsers();
+  const [isMobile, setIsMobile] = useState(false);
+  
+  // Ermittle, ob wir uns auf einem Mobilgerät befinden
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    // Initial check
+    checkIsMobile();
+    
+    // Event-Listener für Fenstergrößenänderungen
+    window.addEventListener('resize', checkIsMobile);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('resize', checkIsMobile);
+    };
+  }, []);
   
   // Verwende den Notification Store statt Mock-Daten
   const { 
@@ -69,12 +88,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   };
 
   if (!currentUser) return null;
+  
+  // Diese Funktion prüft, ob ein Navigationspfad aktiv ist
+  const isActive = (path: string) => location === path;
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Top Header */}
+      {/* Top Header - für Mobile und Desktop */}
       <header className="fixed top-0 left-0 right-0 h-14 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
-        <div className="flex items-center justify-between px-4 h-full">
+        <div className={cn(
+          "flex items-center justify-between h-full",
+          isMobile ? "px-4" : "container px-4 mx-auto"
+        )}>
+          {/* Logo - für Mobile und Desktop */}
           <Link href="/" className="flex items-center">
             <img
               src="/assets/logo.png"
@@ -83,8 +109,76 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             />
           </Link>
 
+          {/* Desktop-Navigation in der Kopfzeile */}
+          {!isMobile && (
+            <div className="flex items-center space-x-1">
+              <Link href="/">
+                <Button
+                  variant={isActive("/") ? "default" : "ghost"}
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <Home className="h-4 w-4" />
+                  <span>Start</span>
+                </Button>
+              </Link>
+              
+              <Link href="/challenges">
+                <Button
+                  variant={isActive("/challenges") ? "default" : "ghost"}
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <Award className="h-4 w-4" />
+                  <span>Challenges</span>
+                </Button>
+              </Link>
+              
+              <Link href="/groups">
+                <Button
+                  variant={isActive("/groups") ? "default" : "ghost"}
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <Users className="h-4 w-4" />
+                  <span>Gruppen</span>
+                </Button>
+              </Link>
+              
+              <Link href="/chat">
+                <Button
+                  variant={isActive("/chat") ? "default" : "ghost"}
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <MessageSquare className="h-4 w-4" />
+                  <span>Chat</span>
+                </Button>
+              </Link>
+              
+              {/* Erstellen-Button für Desktop */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCreateModalOpen(true)}
+                className="ml-2 flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Erstellen</span>
+              </Button>
+            </div>
+          )}
+
+          {/* Rechte Seite mit Benachrichtigungen und User-Menü - für Mobile und Desktop */}
           <div className="flex items-center gap-2">
-            {/* Notifications */}
+            {/* Suchknopf - nur auf Desktop */}
+            {!isMobile && (
+              <Button variant="ghost" size="icon">
+                <Search className="h-5 w-5" />
+              </Button>
+            )}
+            
+            {/* Benachrichtigungen */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="relative">
@@ -206,13 +300,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="pt-14 pb-16">
+      {/* Main Content - angepasst für Mobile und Desktop */}
+      <main className={cn(
+        "min-h-screen bg-background",
+        isMobile ? "pt-14 pb-16" : "pt-14 pb-4",
+        !isMobile && "container mx-auto px-4"
+      )}>
         {children}
       </main>
 
-      {/* Bottom Navigation */}
-      <Navigation onCreateClick={() => setCreateModalOpen(true)} />
+      {/* Bottom Navigation - nur für Mobile sichtbar */}
+      {isMobile && <Navigation onCreateClick={() => setCreateModalOpen(true)} />}
 
       {/* Create Modal */}
       <CreateModal open={isCreateModalOpen} onClose={() => setCreateModalOpen(false)} />
