@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navigation from "./Navigation";
 import CreateModal from "./CreateModal";
 import { Button } from "@/components/ui/button";
@@ -10,83 +10,53 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useLocation, Link } from "wouter";
-import { Bell, Dumbbell, Users2, Calendar, Package, Clock, Check } from "lucide-react";
+import { Bell, MessageSquare, Check } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useUsers } from "../contexts/UserContext";
 import { UserAvatar } from "./UserAvatar";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { useNotificationStore, getNotificationIcon } from "../lib/notificationStore";
 
-// Erweiterte Mock-Benachrichtigungen mit Typen und Links
-const mockNotifications = [
-  {
-    id: 1,
-    type: 'challenge',
-    title: "Neue Challenge",
-    message: "Eine neue Fitness Challenge wurde erstellt",
-    time: new Date(Date.now() - 5 * 60 * 1000),
-    unread: true,
-    link: "/challenges/123",
-    icon: Dumbbell
-  },
-  {
-    id: 2,
-    type: 'group',
-    title: "Gruppeneinladung",
-    message: "Du wurdest zur Gruppe 'Morning Workout' eingeladen",
-    time: new Date(Date.now() - 30 * 60 * 1000),
-    unread: true,
-    link: "/groups/456",
-    icon: Users2
-  },
-  {
-    id: 3,
-    type: 'event',
-    title: "Neues Event",
-    message: "Fitness Workshop am kommenden Samstag",
-    time: new Date(Date.now() - 2 * 60 * 60 * 1000),
-    unread: true,
-    link: "/events/789",
-    icon: Calendar
-  },
-  {
-    id: 4,
-    type: 'product',
-    title: "Neues Produkt",
-    message: "Neue Fitness-Ausrüstung im Shop verfügbar",
-    time: new Date(Date.now() - 3 * 60 * 60 * 1000),
-    unread: false,
-    link: "/products/101",
-    icon: Package
-  }
-];
+// Lokale Definition des Notification-Typs, falls der importierte nicht funktioniert
+interface NotificationItem {
+  id: number;
+  type: string;
+  title: string;
+  message: string;
+  time: Date;
+  unread: boolean;
+  link: string;
+  entityId?: number;
+  iconName: string;
+}
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [, setLocation] = useLocation();
   const { currentUser } = useUsers();
-  const [notifications, setNotifications] = useState(mockNotifications);
-  const unreadCount = notifications.filter(n => n.unread).length;
+  
+  // Verwende den Notification Store statt Mock-Daten
+  const { 
+    notifications,
+    markAllAsRead,
+    markAsRead,
+    getUnreadCount
+  } = useNotificationStore();
+  
+  // Berechne diese Werte in einem useEffect oder einer Memo-Funktion,
+  // um ungewollte Re-Renders zu vermeiden
+  const [groupedNotifications, setGroupedNotifications] = useState<Record<string, any>>({});
+  const [unreadCount, setUnreadCount] = useState(0);
+  
+  // Aktualisiere die Werte, wenn sich die Benachrichtigungen ändern
+  useEffect(() => {
+    setUnreadCount(getUnreadCount());
+    setGroupedNotifications(useNotificationStore.getState().getGroupedNotifications());
+  }, [notifications, getUnreadCount]);
 
-  // Gruppiere Benachrichtigungen nach Typ
-  const groupedNotifications = notifications.reduce((acc, notification) => {
-    if (!acc[notification.type]) {
-      acc[notification.type] = [];
-    }
-    acc[notification.type].push(notification);
-    return acc;
-  }, {} as Record<string, typeof mockNotifications>);
-
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, unread: false })));
-  };
-
-  const markAsRead = (id: number) => {
-    setNotifications(notifications.map(n =>
-      n.id === id ? { ...n, unread: false } : n
-    ));
-  };
+  // Keine Init-Benachrichtigungen mehr nötig, werden durch Events erzeugt
 
   const formatNotificationTime = (date: Date) => {
     const now = new Date();
@@ -140,53 +110,64 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   </Button>
                 </div>
                 <ScrollArea className="h-[400px]">
-                  {Object.entries(groupedNotifications).map(([type, typeNotifications]) => (
-                    <div key={type}>
-                      <div className="px-3 py-2 bg-muted/50">
-                        <span className="text-xs font-medium text-muted-foreground capitalize">
-                          {type === 'challenge' ? 'Challenges' :
-                            type === 'group' ? 'Gruppen' :
-                            type === 'event' ? 'Events' :
-                            type === 'product' ? 'Produkte' : type}
-                        </span>
-                      </div>
-                      {typeNotifications.map((notification) => (
-                        <DropdownMenuItem
-                          key={notification.id}
-                          className={cn(
-                            "p-3 cursor-pointer flex items-start gap-3",
-                            notification.unread && "bg-muted/50"
-                          )}
-                          onClick={() => {
-                            markAsRead(notification.id);
-                            setLocation(notification.link);
-                          }}
-                        >
-                          <div className="mt-1">
-                            <notification.icon className="h-5 w-5 text-muted-foreground" />
-                          </div>
-                          <div className="space-y-1 flex-1">
-                            <div className="flex items-center justify-between">
-                              <p className="font-medium text-sm">
-                                {notification.title}
-                                {notification.unread && (
-                                  <span className="ml-2">
-                                    <Badge variant="secondary" className="text-xs">Neu</Badge>
-                                  </span>
-                                )}
-                              </p>
-                              <span className="text-xs text-muted-foreground">
-                                {formatNotificationTime(notification.time)}
-                              </span>
-                            </div>
-                            <p className="text-sm text-muted-foreground">
-                              {notification.message}
-                            </p>
-                          </div>
-                        </DropdownMenuItem>
-                      ))}
+                  {Object.keys(groupedNotifications).length === 0 ? (
+                    <div className="p-4 text-center text-muted-foreground">
+                      Keine Benachrichtigungen vorhanden
                     </div>
-                  ))}
+                  ) : (
+                    Object.entries(groupedNotifications).map(([type, typeNotifications]) => (
+                      <div key={type}>
+                        <div className="px-3 py-2 bg-muted/50">
+                          <span className="text-xs font-medium text-muted-foreground capitalize">
+                            {type === 'challenge' ? 'Challenges' :
+                              type === 'group' ? 'Gruppen' :
+                              type === 'event' ? 'Events' :
+                              type === 'post' ? 'Beiträge' :
+                              type === 'admin' ? 'Admin-Mitteilungen' :
+                              type === 'product' ? 'Produkte' : type}
+                          </span>
+                        </div>
+                        {typeNotifications.map((notification: any) => {
+                          const IconComponent = getNotificationIcon(notification.iconName);
+                          return (
+                            <DropdownMenuItem
+                              key={notification.id}
+                              className={cn(
+                                "p-3 cursor-pointer flex items-start gap-3",
+                                notification.unread && "bg-muted/50"
+                              )}
+                              onClick={() => {
+                                markAsRead(notification.id);
+                                setLocation(notification.link);
+                              }}
+                            >
+                              <div className="mt-1">
+                                <IconComponent className="h-5 w-5 text-muted-foreground" />
+                              </div>
+                              <div className="space-y-1 flex-1">
+                                <div className="flex items-center justify-between">
+                                  <p className="font-medium text-sm">
+                                    {notification.title}
+                                    {notification.unread && (
+                                      <span className="ml-2">
+                                        <Badge variant="secondary" className="text-xs">Neu</Badge>
+                                      </span>
+                                    )}
+                                  </p>
+                                  <span className="text-xs text-muted-foreground">
+                                    {formatNotificationTime(notification.time)}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-muted-foreground">
+                                  {notification.message}
+                                </p>
+                              </div>
+                            </DropdownMenuItem>
+                          );
+                        })}
+                      </div>
+                    ))
+                  )}
                 </ScrollArea>
               </DropdownMenuContent>
             </DropdownMenu>

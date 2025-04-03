@@ -1,24 +1,13 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { mockUsers } from "../data/mockData";
-
-type User = {
-  id: number;
-  username: string;
-  name: string;
-  bio: string | null;
-  avatar: string | null;
-  bannerImage?: string | null;
-  isAdmin: boolean;
-  isVerified: boolean | null;
-  isTeamMember: boolean | null;
-  teamRole: string | null;
-};
+import { User } from "../types/userTypes";
 
 interface UserContextType {
   users: User[];
   currentUser: User | null;
   updateCurrentUser: (userData: Partial<User>) => void;
   toggleVerification: (userId: number) => void;
+  getAllUsers: () => User[];
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -57,7 +46,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setCurrentUser(updatedUser);
 
     // Update user in users list
-    const updatedUsers = users.map(user =>
+    const updatedUsers = users.map((user: User) =>
       user.id === currentUser.id ? updatedUser : user
     );
     setUsers(updatedUsers);
@@ -68,7 +57,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   };
 
   const toggleVerification = (userId: number) => {
-    const updatedUsers = users.map(user =>
+    const updatedUsers = users.map((user: User) =>
       user.id === userId
         ? { ...user, isVerified: !user.isVerified }
         : user
@@ -88,8 +77,19 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   }, [currentUser]);
 
+  // Hilfsfunktion zum Abrufen aller Benutzer
+  const getAllUsers = () => {
+    return users;
+  };
+
   return (
-    <UserContext.Provider value={{ users, currentUser, updateCurrentUser, toggleVerification }}>
+    <UserContext.Provider value={{ 
+      users, 
+      currentUser, 
+      updateCurrentUser, 
+      toggleVerification,
+      getAllUsers
+    }}>
       {children}
     </UserContext.Provider>
   );

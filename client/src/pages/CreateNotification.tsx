@@ -50,21 +50,29 @@ export default function CreateNotification() {
       return;
     }
 
-    // Hier würde in einer echten App die Notification erstellt werden
-    console.log("Notification Data:", data);
+    // Importiere notifyAdminMessage erst hier, um zirkuläre Abhängigkeiten zu vermeiden
+    import('../lib/notificationStore').then(({ notifyAdminMessage }) => {
+      // Erstelle die Admin-Notification mit den Formulardaten
+      notifyAdminMessage(
+        data.title,
+        data.message,
+        // In einer echten App könnte hier ein spezieller Link sein
+        '/'
+      );
 
-    toast({
-      title: "Push Notification erstellt!",
-      description: data.schedule 
-        ? "Die Push Notification wird zum geplanten Zeitpunkt versendet."
-        : "Die Push Notification wurde erfolgreich versendet.",
-      action: (
-        <div className="h-8 w-8 bg-green-500/20 rounded-full flex items-center justify-center">
-          <Check className="h-5 w-5 text-green-500" />
-        </div>
-      ),
+      toast({
+        title: "Push Notification erstellt!",
+        description: data.schedule 
+          ? "Die Push Notification wird zum geplanten Zeitpunkt versendet."
+          : "Die Push Notification wurde erfolgreich versendet.",
+        action: (
+          <div className="h-8 w-8 bg-green-500/20 rounded-full flex items-center justify-center">
+            <Check className="h-5 w-5 text-green-500" />
+          </div>
+        ),
+      });
+      setLocation("/admin");
     });
-    setLocation("/admin");
   };
 
   return (

@@ -183,8 +183,9 @@ export const usePostStore = create<PostStore>()(
           id: postId,
           userId,
           content,
-          image,
-          createdAt: new Date()
+          image: image ?? null, // Stelle sicher, dass undefined zu null wird
+          createdAt: new Date(),
+          dailyGoal: null
         };
 
         set((state) => ({
@@ -193,6 +194,22 @@ export const usePostStore = create<PostStore>()(
             [postId]: post
           }
         }));
+
+        // Wir verwenden einen einfacheren Ansatz für die Benachrichtigungen
+        // um zirkuläre Abhängigkeiten und Typenprobleme zu vermeiden
+        setTimeout(() => {
+          import('../contexts/UserContext').then(module => {
+            const users = module.useUsers().getAllUsers();
+            const author = users.find((u: {id: number}) => u.id === userId);
+            
+            // Nur Benachrichtigungen für Admin-Posts
+            if (author?.isAdmin) {
+              import('./notificationStore').then(({ notifyNewPost }) => {
+                notifyNewPost(author.username || author.name || "Admin", postId);
+              });
+            }
+          });
+        }, 0);
 
         return postId;
       },
@@ -218,6 +235,21 @@ export const usePostStore = create<PostStore>()(
             [userId]: goal
           }
         }));
+
+        // Verwende denselben Ansatz wie bei createPost
+        setTimeout(() => {
+          import('../contexts/UserContext').then(module => {
+            const users = module.useUsers().getAllUsers();
+            const author = users.find((u: {id: number}) => u.id === userId);
+            
+            // Nur Benachrichtigungen für Admin-Posts
+            if (author?.isAdmin) {
+              import('./notificationStore').then(({ notifyNewPost }) => {
+                notifyNewPost(author.username || author.name || "Admin", postId);
+              });
+            }
+          });
+        }, 0);
       },
 
       updatePost: (postId, content) =>
@@ -336,17 +368,26 @@ export const usePostStore = create<PostStore>()(
         const now = new Date();
         const goals = get().dailyGoals;
 
-        Object.entries(goals).forEach(([userId, goal]) => {
+        Object.entries(goals).forEach(([userIdStr, goal]) => {
           if (!goal) return;
+          
+          // Konvertieren des userId-Strings zu einer Nummer
+          const userId = parseInt(userIdStr, 10);
+          if (isNaN(userId)) return;
 
           const goalAge = now.getTime() - new Date(goal.createdAt).getTime();
           if (goalAge > 24 * 60 * 60 * 1000) {
             set((state) => {
-              const { [userId]: _, ...remainingGoals } = state.dailyGoals;
-              const { [userId]: __, ...remainingParticipants } = state.goalParticipants;
+              // Hier entfernen wir die einzelnen Einträge durch Nutzung von number als Index
+              const newDailyGoals = { ...state.dailyGoals };
+              const newGoalParticipants = { ...state.goalParticipants };
+              
+              delete newDailyGoals[userId];
+              delete newGoalParticipants[userId];
+              
               return {
-                dailyGoals: remainingGoals,
-                goalParticipants: remainingParticipants
+                dailyGoals: newDailyGoals,
+                goalParticipants: newGoalParticipants
               };
             });
           }
@@ -354,11 +395,16 @@ export const usePostStore = create<PostStore>()(
       },
       deleteDailyGoal: (userId: number) =>
         set((state) => {
-          const { [userId]: _, ...remainingGoals } = state.dailyGoals;
-          const { [userId]: __, ...remainingParticipants } = state.goalParticipants;
+          // Verwenden des gleichen Ansatzes wie bei checkExpiredGoals
+          const newDailyGoals = { ...state.dailyGoals };
+          const newGoalParticipants = { ...state.goalParticipants };
+          
+          delete newDailyGoals[userId];
+          delete newGoalParticipants[userId];
+          
           return {
-            dailyGoals: remainingGoals,
-            goalParticipants: remainingParticipants
+            dailyGoals: newDailyGoals,
+            goalParticipants: newGoalParticipants
           };
         }),
     }),
