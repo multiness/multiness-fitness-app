@@ -15,8 +15,9 @@ interface GroupPreviewProps {
 export default function GroupPreview({ group }: GroupPreviewProps) {
   const { users } = useUsers();
   const creator = users.find(u => u.id === group.creatorId);
-  const { isGroupMember, joinGroup, leaveGroup } = useGroupStore();
-  const isJoined = isGroupMember(group.id);
+  const groupStore = useGroupStore();
+  const userId = 1; // Für dieses Beispiel nehmen wir an, dass der aktuelle Benutzer die ID 1 hat
+  const isJoined = groupStore.isGroupMember(group.id, userId);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
@@ -24,13 +25,13 @@ export default function GroupPreview({ group }: GroupPreviewProps) {
     e.preventDefault();
 
     if (isJoined) {
-      leaveGroup(group.id);
+      groupStore.leaveGroup(group.id, userId);
       toast({
         title: "Gruppe verlassen",
         description: "Du hast die Gruppe erfolgreich verlassen.",
       });
     } else {
-      joinGroup(group.id);
+      groupStore.joinGroup(group.id, userId);
       toast({
         title: "Gruppe beigetreten",
         description: "Du bist der Gruppe erfolgreich beigetreten.",

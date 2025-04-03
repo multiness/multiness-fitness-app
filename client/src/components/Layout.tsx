@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useLocation, Link } from "wouter";
-import { Bell, Check, Home, Award, Users, MessageSquare, Plus, Search } from "lucide-react";
+import { Bell, Check, Home, Award, Users, MessageSquare, Plus } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useUsers } from "../contexts/UserContext";
 import { UserAvatar } from "./UserAvatar";
@@ -28,16 +28,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const isActive = (path: string) => location === path;
   
   // Responsives Design - prüfe Bildschirmgröße
-  const [isMobile, setIsMobile] = useState(true); // Standard: Mobile Ansicht
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   
   useEffect(() => {
     // Funktion zur Prüfung der Bildschirmgröße
     const checkScreenSize = () => {
       setIsMobile(window.innerWidth < 768); // Unter 768px gilt als mobil
     };
-    
-    // Initial beim Laden prüfen
-    checkScreenSize();
     
     // Event-Listener für Größenänderungen
     window.addEventListener('resize', checkScreenSize);
@@ -48,7 +45,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     };
   }, []);
   
-  // Verwende den Notification Store statt Mock-Daten
+  // Verwende den Notification Store
   const { 
     notifications,
     markAllAsRead,
@@ -56,19 +53,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     getUnreadCount
   } = useNotificationStore();
   
-  // Berechne diese Werte in einem useEffect oder einer Memo-Funktion,
-  // um ungewollte Re-Renders zu vermeiden
-  const [groupedNotifications, setGroupedNotifications] = useState<Record<string, any>>({});
   const [unreadCount, setUnreadCount] = useState(0);
   
-  // Aktualisiere die Werte, wenn sich die Benachrichtigungen ändern
+  // Aktualisiere den Unread-Count, wenn sich die Benachrichtigungen ändern
   useEffect(() => {
     setUnreadCount(getUnreadCount());
-    setGroupedNotifications(useNotificationStore.getState().getGroupedNotifications());
   }, [notifications, getUnreadCount]);
   
-  // Keine Init-Benachrichtigungen mehr nötig, werden durch Events erzeugt
-
   const formatNotificationTime = (date: Date) => {
     const now = new Date();
     const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
@@ -80,6 +71,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   };
 
   if (!currentUser) return null;
+
+  // Sortiere Benachrichtigungen nach Zeitstempel (neueste zuerst)
+  const sortedNotifications = Object.values(notifications).sort((a, b) => 
+    b.timestamp.getTime() - a.timestamp.getTime()
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -161,6 +157,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <span>Erstellen</span>
               </Button>
             )}
+            
             {/* Benachrichtigungen */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -187,63 +184,53 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   </Button>
                 </div>
                 <ScrollArea className="h-[400px]">
-                  {Object.keys(groupedNotifications).length === 0 ? (
+                  {sortedNotifications.length === 0 ? (
                     <div className="p-4 text-center text-muted-foreground">
                       Keine Benachrichtigungen vorhanden
                     </div>
                   ) : (
-                    Object.entries(groupedNotifications).map(([type, typeNotifications]) => (
-                      <div key={type}>
-                        <div className="px-3 py-2 bg-muted/50">
-                          <span className="text-xs font-medium text-muted-foreground capitalize">
-                            {type === 'challenge' ? 'Challenges' :
-                              type === 'group' ? 'Gruppen' :
-                              type === 'event' ? 'Events' :
-                              type === 'post' ? 'Beiträge' :
-                              type === 'admin' ? 'Admin-Mitteilungen' :
-                              type === 'product' ? 'Produkte' : type}
-                          </span>
-                        </div>
-                        {typeNotifications.map((notification: any) => {
-                          const IconComponent = getNotificationIcon(notification.iconName);
-                          return (
-                            <DropdownMenuItem
-                              key={notification.id}
-                              className={cn(
-                                "p-3 cursor-pointer flex items-start gap-3",
-                                notification.unread && "bg-muted/50"
-                              )}
-                              onClick={() => {
-                                markAsRead(notification.id);
-                                setLocation(notification.link);
-                              }}
-                            >
-                              <div className="mt-1">
-                                <IconComponent className="h-5 w-5 text-muted-foreground" />
-                              </div>
-                              <div className="space-y-1 flex-1">
-                                <div className="flex items-center justify-between">
-                                  <p className="font-medium text-sm">
-                                    {notification.title}
-                                    {notification.unread && (
-                                      <span className="ml-2">
-                                        <Badge variant="secondary" className="text-xs">Neu</Badge>
-                                      </span>
-                                    )}
-                                  </p>
-                                  <span className="text-xs text-muted-foreground">
-                                    {formatNotificationTime(notification.time)}
-                                  </span>
-                                </div>
-                                <p className="text-sm text-muted-foreground">
-                                  {notification.message}
+                    <div>
+                      {sortedNotifications.map((notification) => {
+                        const IconComponent = getNotificationIcon(notification.type);
+                        return (
+                          <DropdownMenuItem
+                            key={notification.id}
+                            className={cn(
+                              "p-3 cursor-pointer flex items-start gap-3",
+                              !notification.read && "bg-muted/50"
+                            )}
+                            onClick={() => {
+                              markAsRead(notification.id);
+                              if (notification.actionUrl) {
+                                setLocation(notification.actionUrl);
+                              }
+                            }}
+                          >
+                            <div className="mt-1">
+                              <IconComponent className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                            <div className="space-y-1 flex-1">
+                              <div className="flex items-center justify-between">
+                                <p className="font-medium text-sm">
+                                  {notification.type.charAt(0).toUpperCase() + notification.type.slice(1)}
+                                  {!notification.read && (
+                                    <span className="ml-2">
+                                      <Badge variant="secondary" className="text-xs">Neu</Badge>
+                                    </span>
+                                  )}
                                 </p>
+                                <span className="text-xs text-muted-foreground">
+                                  {formatNotificationTime(notification.timestamp)}
+                                </span>
                               </div>
-                            </DropdownMenuItem>
-                          );
-                        })}
-                      </div>
-                    ))
+                              <p className="text-sm text-muted-foreground">
+                                {notification.message}
+                              </p>
+                            </div>
+                          </DropdownMenuItem>
+                        );
+                      })}
+                    </div>
                   )}
                 </ScrollArea>
               </DropdownMenuContent>

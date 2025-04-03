@@ -14,23 +14,24 @@ interface GroupCarouselProps {
 }
 
 export default function GroupCarousel({ groups }: GroupCarouselProps) {
-  const { isGroupMember, joinGroup, leaveGroup } = useGroupStore();
+  const groupStore = useGroupStore();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const { users } = useUsers();
+  const userId = 1; // Für dieses Beispiel nehmen wir an, dass der aktuelle Benutzer die ID 1 hat
 
   const handleJoin = (e: React.MouseEvent, group: Group) => {
     e.preventDefault();
     e.stopPropagation();
-
-    if (isGroupMember(group.id)) {
-      leaveGroup(group.id);
+    
+    if (groupStore.isGroupMember(group.id, userId)) {
+      groupStore.leaveGroup(group.id, userId);
       toast({
         title: "Gruppe verlassen",
         description: "Du hast die Gruppe erfolgreich verlassen.",
       });
     } else {
-      joinGroup(group.id);
+      groupStore.joinGroup(group.id, userId);
       toast({
         title: "Gruppe beigetreten",
         description: "Du bist der Gruppe erfolgreich beigetreten.",
@@ -56,7 +57,7 @@ export default function GroupCarousel({ groups }: GroupCarouselProps) {
           >
             {chunk.map(group => {
               const creator = users.find(u => u.id === group.creatorId);
-              const isJoined = isGroupMember(group.id);
+              const isJoined = groupStore.isGroupMember(group.id, userId);
               const chatId = getChatId(group.id);
 
               return (

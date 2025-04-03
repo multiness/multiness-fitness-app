@@ -1,3 +1,5 @@
+
+import { useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import UserSlider from "@/components/UserSlider";
@@ -22,8 +24,8 @@ import GroupCarousel from "@/components/GroupCarousel";
 import { UserAvatar } from "@/components/UserAvatar";
 import ProductSlider from "@/components/ProductSlider";
 import { useGroupStore } from "../lib/groupStore";
-import { useChallengeStore } from "../lib/challengeStore";
-import { useProductStore } from "../lib/productStore";
+import { useChallengeStore, createInitialChallenges } from "../lib/challengeStore";
+import { useProductStore, loadInitialProducts } from "../lib/productStore";
 
 
 const format = (date: Date, formatStr: string) => {
@@ -38,6 +40,12 @@ export default function Home() {
   const groupStore = useGroupStore();
   const challengeStore = useChallengeStore();
   const productStore = useProductStore();
+  
+  // Lade initiale Beispiel-Daten beim ersten Rendern
+  useEffect(() => {
+    loadInitialProducts();
+    createInitialChallenges();
+  }, []);
   
   // Lade Daten aus den stores statt aus den mock-Daten
   const groups = Object.values(groupStore.groups);

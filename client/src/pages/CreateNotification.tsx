@@ -53,12 +53,7 @@ export default function CreateNotification() {
     // Importiere notifyAdminMessage erst hier, um zirkuläre Abhängigkeiten zu vermeiden
     import('../lib/notificationStore').then(({ notifyAdminMessage }) => {
       // Erstelle die Admin-Notification mit den Formulardaten
-      notifyAdminMessage(
-        data.title,
-        data.message,
-        // In einer echten App könnte hier ein spezieller Link sein
-        '/'
-      );
+      notifyAdminMessage(data.message);
 
       toast({
         title: "Push Notification erstellt!",
