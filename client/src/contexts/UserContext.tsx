@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { mockUsers } from "../data/mockData";
 import { User } from "../types/userTypes";
 
 interface UserContextType {
@@ -8,54 +7,84 @@ interface UserContextType {
   updateCurrentUser: (userData: Partial<User>) => void;
   toggleVerification: (userId: number) => void;
   getAllUsers: () => User[];
+  createUser: (userData: Partial<User>) => User;
+  getUsersFromStorage: () => User[];
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'fitness-app-user';
-const USERS_STORAGE_KEY = 'fitness-app-users';
+// Konstanten für localStorage Keys - für einheitliche Verwendung in der gesamten App
+export const STORAGE_KEY = 'fitness-app-user';
+export const USERS_STORAGE_KEY = 'fitness-app-users';
+
+// Standard-Benutzer, falls keine vorhanden sind
+const DEFAULT_USER: User = {
+  id: 1,
+  username: "fitness_coach",
+  name: "Coach Mo",
+  bio: "Certified Fitness Trainer & Nutrition Expert 🏋️‍♀️",
+  avatar: "https://images.unsplash.com/photo-1594381898411-846e7d193883?w=400&auto=format",
+  isAdmin: true,
+  isVerified: true,
+  isTeamMember: true,
+  teamRole: "head_trainer",
+};
 
 export function UserProvider({ children }: { children: ReactNode }) {
-  // Load users data from localStorage or use mockUsers as fallback
-  const loadInitialUsers = () => {
-    const savedUsers = localStorage.getItem(USERS_STORAGE_KEY);
-    if (savedUsers) {
-      return JSON.parse(savedUsers);
+  // Hilfsfunktion zum Laden der Benutzer aus dem localStorage
+  const getUsersFromStorage = (): User[] => {
+    try {
+      const savedUsers = localStorage.getItem(USERS_STORAGE_KEY);
+      if (savedUsers) {
+        const parsedUsers = JSON.parse(savedUsers);
+        return Array.isArray(parsedUsers) ? parsedUsers : [DEFAULT_USER];
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Benutzer:', error);
     }
-    return mockUsers;
+    // Default-Benutzer zurückgeben, wenn keine Benutzer gefunden wurden
+    return [DEFAULT_USER];
   };
 
-  // Load current user from localStorage
-  const loadCurrentUser = () => {
-    const savedUser = localStorage.getItem(STORAGE_KEY);
-    if (savedUser) {
-      return JSON.parse(savedUser);
+  // Hilfsfunktion zum Laden des aktuellen Benutzers
+  const loadCurrentUser = (): User => {
+    try {
+      const savedUser = localStorage.getItem(STORAGE_KEY);
+      if (savedUser) {
+        return JSON.parse(savedUser);
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden des aktuellen Benutzers:', error);
     }
-    // If no saved user, use the first user from loaded users
-    const initialUsers = loadInitialUsers();
-    return initialUsers[0];
+    
+    // Wenn kein gespeicherter Benutzer gefunden wird, den ersten Benutzer verwenden oder DEFAULT_USER
+    const allUsers = getUsersFromStorage();
+    return allUsers[0] || DEFAULT_USER;
   };
 
-  const [users, setUsers] = useState(loadInitialUsers());
-  const [currentUser, setCurrentUser] = useState(loadCurrentUser());
+  // Zustand initialisieren
+  const [users, setUsers] = useState<User[]>(getUsersFromStorage());
+  const [currentUser, setCurrentUser] = useState<User>(loadCurrentUser());
 
+  // Benutzer aktualisieren
   const updateCurrentUser = (userData: Partial<User>) => {
     if (!currentUser) return;
 
     const updatedUser = { ...currentUser, ...userData };
     setCurrentUser(updatedUser);
 
-    // Update user in users list
+    // Benutzer in der Benutzerliste aktualisieren
     const updatedUsers = users.map((user: User) =>
       user.id === currentUser.id ? updatedUser : user
     );
     setUsers(updatedUsers);
 
-    // Save to localStorage
+    // In localStorage speichern
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedUser));
     localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
   };
 
+  // Verifikationsstatus umschalten
   const toggleVerification = (userId: number) => {
     const updatedUsers = users.map((user: User) =>
       user.id === userId
@@ -63,10 +92,40 @@ export function UserProvider({ children }: { children: ReactNode }) {
         : user
     );
     setUsers(updatedUsers);
+    
+    // Aktuellen Benutzer aktualisieren, falls es sich um denselben handelt
+    if (currentUser && currentUser.id === userId) {
+      const updatedCurrentUser = { ...currentUser, isVerified: !currentUser.isVerified };
+      setCurrentUser(updatedCurrentUser);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedCurrentUser));
+    }
+    
     localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
   };
 
-  // Persist changes to localStorage whenever users or currentUser changes
+  // Neuen Benutzer erstellen
+  const createUser = (userData: Partial<User>): User => {
+    const newUserId = Math.max(0, ...users.map(u => u.id)) + 1;
+    const newUser: User = {
+      id: newUserId,
+      username: userData.username || `user_${newUserId}`,
+      name: userData.name || `User ${newUserId}`,
+      bio: userData.bio || "",
+      avatar: userData.avatar || "https://via.placeholder.com/150",
+      isAdmin: userData.isAdmin || false,
+      isVerified: userData.isVerified || false,
+      isTeamMember: userData.isTeamMember || false,
+      teamRole: userData.teamRole || null,
+      ...userData
+    };
+
+    const updatedUsers = [...users, newUser];
+    setUsers(updatedUsers);
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
+    return newUser;
+  };
+
+  // Änderungen im localStorage speichern
   useEffect(() => {
     localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
   }, [users]);
@@ -77,24 +136,22 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   }, [currentUser]);
 
-  // Hilfsfunktion zum Abrufen aller Benutzer
-  const getAllUsers = () => {
-    return users;
-  };
-
   return (
     <UserContext.Provider value={{ 
       users, 
       currentUser, 
       updateCurrentUser, 
       toggleVerification,
-      getAllUsers
+      getAllUsers: () => users,
+      createUser,
+      getUsersFromStorage
     }}>
       {children}
     </UserContext.Provider>
   );
 }
 
+// Hook für Zugriff auf die Benutzerliste
 export function useUsers() {
   const context = useContext(UserContext);
   if (context === undefined) {
@@ -103,10 +160,25 @@ export function useUsers() {
   return context;
 }
 
+// Hook für Zugriff auf den aktuellen Benutzer
 export function useUser() {
   const context = useContext(UserContext);
   if (context === undefined) {
     throw new Error("useUser must be used within a UserProvider");
   }
   return { user: context.currentUser };
+}
+
+// Hilfsfunktion für Komponenten, die den Hook nicht direkt nutzen können
+export function getUsersFromStorage(): User[] {
+  try {
+    const savedUsers = localStorage.getItem(USERS_STORAGE_KEY);
+    if (savedUsers) {
+      const parsedUsers = JSON.parse(savedUsers);
+      return Array.isArray(parsedUsers) ? parsedUsers : [DEFAULT_USER];
+    }
+  } catch (error) {
+    console.error('Fehler beim Laden der Benutzer:', error);
+  }
+  return [DEFAULT_USER];
 }

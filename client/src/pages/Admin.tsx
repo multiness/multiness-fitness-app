@@ -377,9 +377,8 @@ const mockBanners = [
 
 // Leere Arrays für Challenge- und Gruppen-Daten - später durch echte Daten ersetzen
 
-// Leere Mock-Daten für die Statistik-Karten - später durch echte Daten ersetzen
-const mockChallenges = [];
-const mockGroups = [];
+// Verwende echte Daten aus den Stores für Statistiken
+// Diese Daten werden direkt in der Komponente aus den Stores geholt
 
 // Mock Product Data
 const mockProducts = [
@@ -827,7 +826,7 @@ export default function Admin() {
             <Trophy className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockChallenges.length}</div>
+            <div className="text-2xl font-bold">{Object.keys(useChallengeStore.getState().challenges).length}</div>
             <p className="text-xs text-muted-foreground">
               3 ending this week
             </p>
@@ -840,7 +839,7 @@ export default function Admin() {
             <Users2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockGroups.length}</div>
+            <div className="text-2xl font-bold">{Object.keys(useGroupStore.getState().groups).length}</div>
             <p className="text-xs text-muted-foreground">
               2 new this week
             </p>
