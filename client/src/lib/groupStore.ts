@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { apiRequest } from './queryClient';
+import { Group as DbGroup, GroupMember } from '@shared/schema';
 
 export interface GroupGoal {
   id: number;
@@ -29,6 +31,14 @@ export interface Group {
 interface GroupStore {
   groups: Record<number, Group>;
   invitations: Record<number, number[]>; // groupId -> userId[]
+  isLoading: boolean;
+  lastFetched: number | null;
+  
+  // Neue Datenbankfunktionen
+  setGroups: (groups: DbGroup[], members: GroupMember[]) => void;
+  syncWithServer: () => Promise<void>;
+  
+  // Bestehende Funktionen
   addGroup: (group: Group) => number;
   updateGroup: (id: number, updatedGroup: Partial<Group>) => void;
   removeGroup: (id: number) => void;
@@ -46,9 +56,26 @@ interface GroupStore {
   isGroupMember: (groupId: number, userId?: number) => boolean;
 }
 
+// Hilfsfunktion zum Konvertieren einer DB-Gruppe in eine Client-Gruppe
+const mapDbGroupToClientGroup = (dbGroup: DbGroup, members: GroupMember[] = []): Group => {
+  // Extrahiere Admins und Mitglieder
+  const participantIds = members.map(m => m.userId);
+  const adminIds = members.filter(m => m.role === 'admin').map(m => m.userId);
+  
+  return {
+    ...dbGroup,
+    createdAt: new Date(dbGroup.createdAt),
+    participantIds,
+    adminIds,
+    goals: [] // Gruppenziele werden später implementiert
+  } as Group;
+};
+
 export const useGroupStore = create<GroupStore>()(
   persist(
     (set, get) => ({
+      isLoading: false,
+      lastFetched: null,
       groups: {
         1: {
           id: 1,
@@ -352,6 +379,50 @@ export const useGroupStore = create<GroupStore>()(
       },
       
       // Prüft, ob ein Benutzer Mitglied einer Gruppe ist
+      setGroups: (dbGroups, members) => {
+        const groupsRecord: Record<number, Group> = {};
+        
+        // Konvertiere die Daten in das Client-Format
+        dbGroups.forEach(dbGroup => {
+          // Finde alle Mitglieder für diese Gruppe
+          const groupMembers = members.filter(m => m.groupId === dbGroup.id);
+          const clientGroup = mapDbGroupToClientGroup(dbGroup, groupMembers);
+          groupsRecord[dbGroup.id] = clientGroup;
+        });
+        
+        set({ 
+          groups: groupsRecord,
+          lastFetched: Date.now()
+        });
+      },
+      
+      syncWithServer: async () => {
+        try {
+          set({ isLoading: true });
+          
+          // Rufe alle Gruppen vom Server ab
+          const groupsResponse = await fetch('/api/groups');
+          const dbGroups = await groupsResponse.json();
+          
+          // Für jede Gruppe die Mitglieder abrufen
+          const allMembers: GroupMember[] = [];
+          
+          for (const dbGroup of dbGroups) {
+            const membersResponse = await fetch(`/api/groups/${dbGroup.id}/members`);
+            const groupMembers = await membersResponse.json();
+            allMembers.push(...groupMembers);
+          }
+          
+          // Aktualisiere den Store
+          get().setGroups(dbGroups, allMembers);
+          set({ isLoading: false });
+          
+        } catch (error) {
+          console.error('Fehler bei der Synchronisation der Gruppen:', error);
+          set({ isLoading: false });
+        }
+      },
+      
       isGroupMember: (groupId, userId = 1) => {
         const group = get().groups[groupId];
         if (!group) return false;

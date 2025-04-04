@@ -46,16 +46,26 @@ interface ChallengeState {
 }
 
 interface ChallengeActions {
+  // Datenbankfunktionen
   syncWithServer: () => Promise<void>;
+  setChallenges: (challenges: Record<number, Challenge>) => void;
+  
+  // CRUD Operationen
   addChallenge: (challenge: Omit<Challenge, 'id' | 'createdAt'>) => Promise<number>;
   removeChallenge: (id: number) => Promise<void>;
   updateChallenge: (id: number, updatedChallenge: Partial<Challenge>) => Promise<void>;
+  
+  // Teilnehmer-Operationen
   joinChallenge: (challengeId: number, userId: number) => Promise<void>;
   leaveChallenge: (challengeId: number, userId: number) => Promise<void>;
+  
+  // Abfragen
   getActiveChallenges: () => Challenge[];
   getChallengesByUser: (userId: number) => Challenge[];
   getParticipants: (challengeId: number) => ChallengeParticipantModel[];
   updateParticipant: (challengeId: number, userId: number, data: Partial<ChallengeParticipantModel>) => Promise<void>;
+  
+  // Initialisierung
   createInitialChallenges: () => void;
 }
 
@@ -195,6 +205,13 @@ export const useChallengeStore = create<ChallengeStore>()(
       lastFetched: null,
       
       // Synchronisiere Daten mit dem Server
+      setChallenges: (challenges) => {
+        set({ 
+          challenges,
+          lastFetched: Date.now()
+        });
+      },
+      
       syncWithServer: async () => {
         try {
           set({ isLoading: true });

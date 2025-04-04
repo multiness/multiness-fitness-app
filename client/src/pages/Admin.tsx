@@ -807,11 +807,7 @@ export default function Admin() {
       await usePostStore.getState().loadStoredPosts();
       
       // Gruppen synchronisieren
-      const groupResponse = await fetch('/api/groups');
-      if (groupResponse.ok) {
-        const groupData = await groupResponse.json();
-        useGroupStore.getState().setGroups(groupData);
-      }
+      await useGroupStore.getState().syncWithServer();
       
       setSyncComplete(true);
       setLastSyncTime(format(new Date(), "dd.MM.yyyy HH:mm:ss"));
