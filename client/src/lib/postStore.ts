@@ -246,83 +246,195 @@ export const usePostStore = create<PostStore>()(
         return comment ? (comment.likes || []).includes(userId) : false;
       },
 
-      createPost: (userId, content, image) => {
-        const postId = Date.now();
-        const post: Post = {
-          id: postId,
-          userId,
-          content,
-          image: image ?? null, // Stelle sicher, dass undefined zu null wird
-          createdAt: new Date(),
-          dailyGoal: null
-        };
+      createPost: async (userId, content, image) => {
+        try {
+          // Erstelle Post über API
+          const postData = {
+            userId,
+            content,
+            image: image ?? null
+          };
+          
+          const response = await apiRequest('/api/posts', 'POST', postData);
+          
+          // Stelle sicher, dass wir ein korrektes Post-Objekt haben
+          if (response && typeof response === 'object' && 'id' in response) {
+            // Daten im lokalen Store aktualisieren
+            const newPost = response;
+            const post: Post = {
+              id: newPost.id,
+              userId: newPost.userId,
+              content: newPost.content,
+              image: newPost.image,
+              createdAt: new Date(newPost.createdAt),
+              updatedAt: newPost.updatedAt ? new Date(newPost.updatedAt) : undefined,
+              dailyGoal: null
+            };
 
-        const updatedPosts = {
-          ...get().posts,
-          [postId]: post
-        };
-        
-        // Speichere Posts im State und im lokalem Speicher
-        set({ posts: updatedPosts });
-        localStorage.setItem(LOCAL_STORAGE_POSTS_KEY, JSON.stringify(updatedPosts));
+            const updatedPosts = {
+              ...get().posts,
+              [post.id]: post
+            };
+            
+            // Speichere Posts im State
+            set({ posts: updatedPosts });
+            
+            // Wir verwenden einen direkten Zugriff auf localStorage statt den Hook useUsers()
+            const users = getUsersFromStorage();
+            const author = users.find((u: {id: number}) => u.id === userId);
+            
+            // Nur Benachrichtigungen für Admin-Posts
+            if (author?.isAdmin) {
+              setTimeout(() => {
+                import('./notificationStore').then(({ notifyNewPost }) => {
+                  notifyNewPost(author.username || author.name || "Admin", post.id);
+                });
+              }, 0);
+            }
 
-        // Wir verwenden einen direkten Zugriff auf localStorage statt den Hook useUsers()
-        const users = getUsersFromStorage();
-        const author = users.find((u: {id: number}) => u.id === userId);
-        
-        // Nur Benachrichtigungen für Admin-Posts
-        if (author?.isAdmin) {
-          setTimeout(() => {
-            import('./notificationStore').then(({ notifyNewPost }) => {
-              notifyNewPost(author.username || author.name || "Admin", postId);
-            });
-          }, 0);
+            // Lade die aktuellen Posts neu
+            await get().loadStoredPosts();
+            
+            return post.id;
+          } else {
+            throw new Error('Ungültige Antwort vom Server');
+          }
+        } catch (error) {
+          console.error('Fehler beim Erstellen des Posts:', error);
+          
+          // Fallback: Lokales Erstellen
+          const postId = Date.now();
+          const post: Post = {
+            id: postId,
+            userId,
+            content,
+            image: image ?? null,
+            createdAt: new Date(),
+            dailyGoal: null
+          };
+          
+          const updatedPosts = {
+            ...get().posts,
+            [postId]: post
+          };
+          
+          set({ posts: updatedPosts });
+          
+          // Lade aktuelle Posts nach der Aktualisierung
+          await get().loadStoredPosts();
+          
+          return postId;
         }
-
-        return postId;
       },
 
-      createPostWithGoal: (userId, content, goal) => {
-        const postId = Date.now();
-        const post: Post = {
-          id: postId,
-          userId,
-          content,
-          image: null,
-          createdAt: new Date(),
-          dailyGoal: goal
-        };
+      createPostWithGoal: async (userId, content, goal) => {
+        try {
+          // Erstelle das DailyGoal zuerst
+          const dailyGoalData = {
+            userId,
+            type: goal.type,
+            target: goal.target,
+            unit: goal.unit,
+            progress: goal.progress,
+            completed: goal.completed,
+            customName: goal.customName
+          };
+          
+          // Speichere Goals sowohl im State als auch für den API-Aufruf
+          const updatedGoals = {
+            ...get().dailyGoals,
+            [userId]: goal
+          };
+          
+          // Erstelle den Post mit DailyGoal über API
+          const postData = {
+            userId,
+            content,
+            image: null,
+            dailyGoalId: null // Wird in der späteren Version hinzugefügt, wenn DailyGoals API verfügbar ist
+          };
+          
+          const response = await apiRequest('/api/posts', 'POST', postData);
+          
+          // Stelle sicher, dass wir ein korrektes Post-Objekt haben
+          if (response && typeof response === 'object' && 'id' in response) {
+            // Daten im lokalen Store aktualisieren
+            const newPost = response;
+            const post: Post = {
+              id: newPost.id,
+              userId: newPost.userId,
+              content: newPost.content,
+              image: newPost.image,
+              createdAt: new Date(newPost.createdAt),
+              updatedAt: newPost.updatedAt ? new Date(newPost.updatedAt) : undefined,
+              dailyGoal: goal
+            };
 
-        const updatedPosts = {
-          ...get().posts,
-          [postId]: post
-        };
-        
-        // Speichere Posts sowohl im State als auch direkt im localStorage
-        const updatedGoals = {
-          ...get().dailyGoals,
-          [userId]: goal
-        };
-        
-        set({ 
-          posts: updatedPosts,
-          dailyGoals: updatedGoals
-        });
-        
-        // Synchronisiere mit localStorage
-        localStorage.setItem(LOCAL_STORAGE_POSTS_KEY, JSON.stringify(updatedPosts));
-
-        // Wir verwenden einen direkten Zugriff auf localStorage statt den Hook useUsers()
-        const users = getUsersFromStorage();
-        const author = users.find((u: {id: number}) => u.id === userId);
-        
-        // Nur Benachrichtigungen für Admin-Posts
-        if (author?.isAdmin) {
-          setTimeout(() => {
-            import('./notificationStore').then(({ notifyNewPost }) => {
-              notifyNewPost(author.username || author.name || "Admin", postId);
+            const updatedPosts = {
+              ...get().posts,
+              [post.id]: post
+            };
+            
+            // Speichere Posts im State
+            set({ 
+              posts: updatedPosts,
+              dailyGoals: updatedGoals
             });
-          }, 0);
+            
+            // Wir verwenden einen direkten Zugriff auf localStorage statt den Hook useUsers()
+            const users = getUsersFromStorage();
+            const author = users.find((u: {id: number}) => u.id === userId);
+            
+            // Nur Benachrichtigungen für Admin-Posts
+            if (author?.isAdmin) {
+              setTimeout(() => {
+                import('./notificationStore').then(({ notifyNewPost }) => {
+                  notifyNewPost(author.username || author.name || "Admin", post.id);
+                });
+              }, 0);
+            }
+
+            // Lade die aktuellen Posts neu
+            await get().loadStoredPosts();
+            
+            return post.id;
+          } else {
+            throw new Error('Ungültige Antwort vom Server');
+          }
+        } catch (error) {
+          console.error('Fehler beim Erstellen des Posts mit Goal:', error);
+          
+          // Fallback: Lokales Erstellen
+          const postId = Date.now();
+          const post: Post = {
+            id: postId,
+            userId,
+            content,
+            image: null,
+            createdAt: new Date(),
+            dailyGoal: goal
+          };
+          
+          const updatedPosts = {
+            ...get().posts,
+            [postId]: post
+          };
+          
+          // Speichere Posts sowohl im State als auch direkt im localStorage
+          const updatedGoals = {
+            ...get().dailyGoals,
+            [userId]: goal
+          };
+          
+          set({ 
+            posts: updatedPosts,
+            dailyGoals: updatedGoals
+          });
+          
+          // Lade aktuelle Posts nach der Aktualisierung
+          await get().loadStoredPosts();
+          
+          return postId;
         }
       },
 

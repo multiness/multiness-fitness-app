@@ -72,17 +72,25 @@ interface ChallengeActions {
 type ChallengeStore = ChallengeState & ChallengeActions;
 
 // Hilfsfunktion zum Konvertieren vom Server-Modell zum Client-Modell
-const mapDbChallengeToClientChallenge = (dbChallenge: DbChallenge, participants: ChallengeParticipant[] = []): Challenge => {
+const mapDbChallengeToClientChallenge = (dbChallenge: any, participants: ChallengeParticipant[] = []): Challenge => {
+  // Stelle sicher, dass participantIds immer ein Array ist
+  const participantIds = participants.map(p => p.userId);
+  
   return {
-    ...dbChallenge,
+    id: dbChallenge.id,
+    title: dbChallenge.title,
+    description: dbChallenge.description,
+    image: dbChallenge.image || undefined,
     startDate: new Date(dbChallenge.startDate),
     endDate: new Date(dbChallenge.endDate),
     createdAt: new Date(dbChallenge.createdAt),
-    participantIds: participants.map(p => p.userId),
-    // Stelle sicher, dass der Typ korrekt ist
-    type: dbChallenge.type as 'emom' | 'amrap' | 'hiit' | 'running' | 'custom',
-    status: dbChallenge.status as 'active' | 'completed' | 'upcoming'
-  } as Challenge;
+    type: (dbChallenge.type || 'custom') as 'emom' | 'amrap' | 'hiit' | 'running' | 'custom',
+    status: (dbChallenge.status || 'active') as 'active' | 'completed' | 'upcoming',
+    creatorId: dbChallenge.creatorId,
+    participantIds: participantIds,
+    workoutDetails: dbChallenge.workoutDetails || {},
+    points: dbChallenge.points || { bronze: 50, silver: 75, gold: 100 }
+  };
 };
 
 // Standard-Beispiel Challenges
