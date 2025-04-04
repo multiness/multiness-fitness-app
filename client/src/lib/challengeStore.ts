@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { mockChallenges } from '../data/mockData';
+import { Challenge as DbChallenge, ChallengeParticipant } from '@shared/schema';
+import { apiRequest } from './queryClient';
 
 // Konstante für den lokalen Speicher
 export const CHALLENGE_STORAGE_KEY = 'fitness-app-challenges';
@@ -15,7 +17,7 @@ export interface Challenge {
   type: 'emom' | 'amrap' | 'hiit' | 'running' | 'custom';
   status: 'active' | 'completed' | 'upcoming';
   creatorId: number;
-  participantIds: number[];
+  participantIds: number[];  // Wird aus den Teilnehmerdaten abgeleitet
   workoutDetails: any;
   points?: {
     bronze: number;
@@ -25,22 +27,50 @@ export interface Challenge {
   createdAt: Date;
 }
 
+export interface ChallengeParticipantModel {
+  id: number;
+  challengeId: number;
+  userId: number;
+  joinedAt: Date;
+  completedAt?: Date;
+  currentProgress?: number;
+  achievementLevel?: 'bronze' | 'silver' | 'gold';
+  result?: any;
+}
+
 interface ChallengeState {
   challenges: Record<number, Challenge>;
+  participants: Record<number, ChallengeParticipantModel[]>;
+  isLoading: boolean;
+  lastFetched: number | null;
 }
 
 interface ChallengeActions {
-  addChallenge: (challenge: Omit<Challenge, 'id' | 'createdAt'>) => number;
-  removeChallenge: (id: number) => void;
-  updateChallenge: (id: number, updatedChallenge: Partial<Challenge>) => void;
-  joinChallenge: (challengeId: number, userId: number) => void;
-  leaveChallenge: (challengeId: number, userId: number) => void;
+  syncWithServer: () => Promise<void>;
+  addChallenge: (challenge: Omit<Challenge, 'id' | 'createdAt'>) => Promise<number>;
+  removeChallenge: (id: number) => Promise<void>;
+  updateChallenge: (id: number, updatedChallenge: Partial<Challenge>) => Promise<void>;
+  joinChallenge: (challengeId: number, userId: number) => Promise<void>;
+  leaveChallenge: (challengeId: number, userId: number) => Promise<void>;
   getActiveChallenges: () => Challenge[];
   getChallengesByUser: (userId: number) => Challenge[];
+  getParticipants: (challengeId: number) => ChallengeParticipantModel[];
+  updateParticipant: (challengeId: number, userId: number, data: Partial<ChallengeParticipantModel>) => Promise<void>;
   createInitialChallenges: () => void;
 }
 
 type ChallengeStore = ChallengeState & ChallengeActions;
+
+// Hilfsfunktion zum Konvertieren vom Server-Modell zum Client-Modell
+const mapDbChallengeToClientChallenge = (dbChallenge: DbChallenge, participants: ChallengeParticipant[] = []): Challenge => {
+  return {
+    ...dbChallenge,
+    startDate: new Date(dbChallenge.startDate),
+    endDate: new Date(dbChallenge.endDate),
+    createdAt: new Date(dbChallenge.createdAt),
+    participantIds: participants.map(p => p.userId)
+  } as Challenge;
+};
 
 // Standard-Beispiel Challenges
 const defaultChallenges: Challenge[] = [
@@ -147,99 +177,122 @@ export function createInitialChallenges() {
   }
 }
 
+// Hilfsfunktion zum Konvertieren von ChallengeParticipant zu ChallengeParticipantModel
+const mapDbParticipantToClientParticipant = (participant: ChallengeParticipant): ChallengeParticipantModel => {
+  return {
+    ...participant,
+    joinedAt: new Date(participant.joinedAt),
+    completedAt: participant.completedAt ? new Date(participant.completedAt) : undefined
+  } as ChallengeParticipantModel;
+};
+
 export const useChallengeStore = create<ChallengeStore>()(
   persist(
     (set, get) => ({
       challenges: loadChallengesFromStorage(),
+      participants: {},
+      isLoading: false,
+      lastFetched: null,
+      
+      // Synchronisiere Daten mit dem Server
+      syncWithServer: async () => {
+        try {
+          set({ isLoading: true });
+          
+          // Hole alle Challenges vom Server
+          const response = await fetch('/api/challenges');
+          const challenges = await response.json();
+          
+          // Konvertiere das Array in ein Record-Objekt und wandle Datumsangaben um
+          const challengesRecord: Record<number, Challenge> = {};
+          const participantsRecord: Record<number, ChallengeParticipantModel[]> = {};
+          
+          // Hole für jede Challenge die Teilnehmer
+          for (const dbChallenge of challenges) {
+            const participantsResponse = await fetch(`/api/challenges/${dbChallenge.id}/participants`);
+            const participants = await participantsResponse.json();
+            
+            // Konvertiere DB-Challenge in Client-Challenge
+            const clientChallenge = mapDbChallengeToClientChallenge(dbChallenge, participants);
+            challengesRecord[dbChallenge.id] = clientChallenge;
+            
+            // Speichere Teilnehmer
+            participantsRecord[dbChallenge.id] = participants.map(mapDbParticipantToClientParticipant);
+          }
+          
+          set({ 
+            challenges: challengesRecord,
+            participants: participantsRecord,
+            isLoading: false,
+            lastFetched: Date.now()
+          });
+          
+          return challengesRecord;
+        } catch (error) {
+          console.error('Fehler bei der Synchronisation mit dem Server:', error);
+          set({ isLoading: false });
+          return get().challenges;
+        }
+      },
       
       createInitialChallenges: () => {
         const currentChallenges = get().challenges;
         
         if (Object.keys(currentChallenges).length === 0) {
-          // Kombiniere Basis-Challenges mit denen aus mockData wenn vorhanden
+          // Lade Beispiel-Challenges
           const allInitialChallenges = [...defaultChallenges, ...mockChallenges];
           const recordChallenges = arrayToRecord(allInitialChallenges);
           
           set({ challenges: recordChallenges });
-          localStorage.setItem(CHALLENGE_STORAGE_KEY, JSON.stringify(recordChallenges));
+          
+          // Wenn möglich, sende die Challenges an den Server
+          try {
+            Promise.all(Object.values(recordChallenges).map(async (challenge) => {
+              // Bereite die Daten für den Server vor
+              const challengeData = {
+                title: challenge.title,
+                description: challenge.description,
+                image: challenge.image,
+                creatorId: challenge.creatorId,
+                startDate: challenge.startDate.toISOString(),
+                endDate: challenge.endDate.toISOString(),
+                type: challenge.type,
+                status: challenge.status,
+                workoutDetails: challenge.workoutDetails,
+                points: challenge.points
+              };
+              
+              try {
+                // Sende Challenge an Server
+                await apiRequest('/api/challenges', 'POST', challengeData);
+                
+                // Füge Teilnehmer hinzu
+                for (const userId of challenge.participantIds) {
+                  await apiRequest(`/api/challenges/${challenge.id}/participants`, 'POST', { userId });
+                }
+              } catch (error) {
+                console.error('Fehler beim Erstellen der initialen Challenge:', error);
+              }
+            }));
+          } catch (error) {
+            console.error('Fehler beim Erstellen der initialen Challenges:', error);
+          }
         }
       },
       
-      addChallenge: (challengeData) => {
-        const id = Date.now();
-        const now = new Date();
-        
-        // Definiere den Challenge-Status basierend auf Start- und Enddatum
-        let status: 'active' | 'completed' | 'upcoming';
-        const startDate = challengeData.startDate instanceof Date 
-          ? challengeData.startDate 
-          : new Date(challengeData.startDate);
-        
-        const endDate = challengeData.endDate instanceof Date 
-          ? challengeData.endDate 
-          : new Date(challengeData.endDate);
-        
-        if (startDate > now) {
-          status = 'upcoming';
-        } else if (endDate < now) {
-          status = 'completed';
-        } else {
-          status = 'active';
-        }
-        
-        const newChallenge: Challenge = {
-          ...challengeData,
-          id,
-          createdAt: new Date(),
-          status, // Explizit den berechneten Status setzen
-          participantIds: challengeData.participantIds || [challengeData.creatorId]
-        };
-        
-        console.log("Neue Challenge erstellt:", newChallenge);
-        
-        const updatedChallenges = {
-          ...get().challenges,
-          [id]: newChallenge
-        };
-        
-        set({ challenges: updatedChallenges });
-        localStorage.setItem(CHALLENGE_STORAGE_KEY, JSON.stringify(updatedChallenges));
-        
-        return id;
-      },
-      
-      removeChallenge: (id) => {
-        const { [id]: removed, ...remainingChallenges } = get().challenges;
-        
-        set({ challenges: remainingChallenges });
-        localStorage.setItem(CHALLENGE_STORAGE_KEY, JSON.stringify(remainingChallenges));
-      },
-      
-      updateChallenge: (id, updatedChallenge) => {
-        const challenge = get().challenges[id];
-        
-        if (!challenge) return;
-        
-        // Wenn Start- oder Enddatum geändert wurden, aktualisiere den Status
-        let status = updatedChallenge.status || challenge.status;
-        const now = new Date();
-        
-        if (updatedChallenge.startDate || updatedChallenge.endDate) {
-          const startDate = updatedChallenge.startDate 
-            ? (updatedChallenge.startDate instanceof Date 
-              ? updatedChallenge.startDate 
-              : new Date(updatedChallenge.startDate))
-            : (challenge.startDate instanceof Date 
-              ? challenge.startDate 
-              : new Date(challenge.startDate));
-            
-          const endDate = updatedChallenge.endDate 
-            ? (updatedChallenge.endDate instanceof Date 
-              ? updatedChallenge.endDate 
-              : new Date(updatedChallenge.endDate))
-            : (challenge.endDate instanceof Date 
-              ? challenge.endDate 
-              : new Date(challenge.endDate));
+      addChallenge: async (challengeData) => {
+        try {
+          const now = new Date();
+          
+          // Definiere den Challenge-Status basierend auf Start- und Enddatum
+          let status: 'active' | 'completed' | 'upcoming';
+          const startDate = challengeData.startDate instanceof Date 
+            ? challengeData.startDate 
+            : new Date(challengeData.startDate);
+          
+          const endDate = challengeData.endDate instanceof Date 
+            ? challengeData.endDate 
+            : new Date(challengeData.endDate);
           
           if (startDate > now) {
             status = 'upcoming';
@@ -248,64 +301,206 @@ export const useChallengeStore = create<ChallengeStore>()(
           } else {
             status = 'active';
           }
+          
+          // Bereite Daten für Server vor
+          const serverChallengeData = {
+            title: challengeData.title,
+            description: challengeData.description,
+            image: challengeData.image,
+            creatorId: challengeData.creatorId,
+            startDate: startDate.toISOString(),
+            endDate: endDate.toISOString(),
+            type: challengeData.type,
+            status,
+            workoutDetails: challengeData.workoutDetails,
+            points: challengeData.points
+          };
+          
+          // Sende an Server
+          const response = await apiRequest('/api/challenges', 'POST', serverChallengeData);
+          const newChallenge = response.data;
+          
+          // Erstelle Client-Challenge
+          const clientChallenge: Challenge = {
+            ...newChallenge,
+            startDate: new Date(newChallenge.startDate),
+            endDate: new Date(newChallenge.endDate),
+            createdAt: new Date(newChallenge.createdAt),
+            participantIds: [newChallenge.creatorId]
+          };
+          
+          const updatedChallenges = {
+            ...get().challenges,
+            [clientChallenge.id]: clientChallenge
+          };
+          
+          set({ challenges: updatedChallenges });
+          
+          return clientChallenge.id;
+        } catch (error) {
+          console.error('Fehler beim Erstellen der Challenge:', error);
+          throw error;
         }
-        
-        const updatedObj = { ...challenge, ...updatedChallenge, status };
-        
-        console.log("Challenge aktualisiert:", updatedObj);
-        
-        const updatedChallenges = {
-          ...get().challenges,
-          [id]: updatedObj
-        };
-        
-        set({ challenges: updatedChallenges });
-        localStorage.setItem(CHALLENGE_STORAGE_KEY, JSON.stringify(updatedChallenges));
       },
       
-      joinChallenge: (challengeId, userId) => {
-        const challenge = get().challenges[challengeId];
-        
-        if (!challenge) return;
-        
-        if (challenge.participantIds.includes(userId)) return;
-        
-        const updatedChallenge = {
-          ...challenge,
-          participantIds: [...challenge.participantIds, userId]
-        };
-        
-        const updatedChallenges = {
-          ...get().challenges,
-          [challengeId]: updatedChallenge
-        };
-        
-        set({ challenges: updatedChallenges });
-        localStorage.setItem(CHALLENGE_STORAGE_KEY, JSON.stringify(updatedChallenges));
+      removeChallenge: async (id) => {
+        try {
+          // Entferne Challenge vom Server (API noch nicht implementiert)
+          // await apiRequest(`/api/challenges/${id}`, 'DELETE');
+          
+          // Lokalen Store aktualisieren
+          const { [id]: removed, ...remainingChallenges } = get().challenges;
+          set({ challenges: remainingChallenges });
+        } catch (error) {
+          console.error('Fehler beim Löschen der Challenge:', error);
+          throw error;
+        }
       },
       
-      leaveChallenge: (challengeId, userId) => {
-        const challenge = get().challenges[challengeId];
-        
-        if (!challenge) return;
-        
-        const updatedChallenge = {
-          ...challenge,
-          participantIds: challenge.participantIds.filter(id => id !== userId)
-        };
-        
-        const updatedChallenges = {
-          ...get().challenges,
-          [challengeId]: updatedChallenge
-        };
-        
-        set({ challenges: updatedChallenges });
-        localStorage.setItem(CHALLENGE_STORAGE_KEY, JSON.stringify(updatedChallenges));
+      updateChallenge: async (id, updatedChallenge) => {
+        try {
+          const challenge = get().challenges[id];
+          
+          if (!challenge) throw new Error('Challenge nicht gefunden');
+          
+          // Wenn Start- oder Enddatum geändert wurden, aktualisiere den Status
+          let status = updatedChallenge.status || challenge.status;
+          const now = new Date();
+          
+          if (updatedChallenge.startDate || updatedChallenge.endDate) {
+            const startDate = updatedChallenge.startDate 
+              ? (updatedChallenge.startDate instanceof Date 
+                ? updatedChallenge.startDate 
+                : new Date(updatedChallenge.startDate))
+              : challenge.startDate;
+              
+            const endDate = updatedChallenge.endDate 
+              ? (updatedChallenge.endDate instanceof Date 
+                ? updatedChallenge.endDate 
+                : new Date(updatedChallenge.endDate))
+              : challenge.endDate;
+            
+            if (startDate > now) {
+              status = 'upcoming';
+            } else if (endDate < now) {
+              status = 'completed';
+            } else {
+              status = 'active';
+            }
+          }
+          
+          // Bereite Daten für Server vor
+          const serverUpdateData = {
+            ...updatedChallenge,
+            status,
+            startDate: updatedChallenge.startDate ? 
+              (updatedChallenge.startDate instanceof Date ? 
+                updatedChallenge.startDate.toISOString() : 
+                updatedChallenge.startDate) : 
+              undefined,
+            endDate: updatedChallenge.endDate ? 
+              (updatedChallenge.endDate instanceof Date ? 
+                updatedChallenge.endDate.toISOString() : 
+                updatedChallenge.endDate) : 
+              undefined
+          };
+          
+          // Sende an Server
+          await apiRequest(`/api/challenges/${id}`, 'PATCH', serverUpdateData);
+          
+          // Lokalen Store aktualisieren
+          const updatedObj = { ...challenge, ...updatedChallenge, status };
+          
+          const updatedChallenges = {
+            ...get().challenges,
+            [id]: updatedObj
+          };
+          
+          set({ challenges: updatedChallenges });
+        } catch (error) {
+          console.error('Fehler beim Aktualisieren der Challenge:', error);
+          throw error;
+        }
+      },
+      
+      joinChallenge: async (challengeId, userId) => {
+        try {
+          const challenge = get().challenges[challengeId];
+          
+          if (!challenge) throw new Error('Challenge nicht gefunden');
+          
+          if (challenge.participantIds.includes(userId)) return; // Bereits Teilnehmer
+          
+          // An Server senden
+          await apiRequest(`/api/challenges/${challengeId}/participants`, 'POST', { userId });
+          
+          // Lokalen Store aktualisieren
+          const participants = get().participants;
+          const challengeParticipants = participants[challengeId] || [];
+          
+          // Neue Teilnehmerdaten
+          const newParticipant: ChallengeParticipantModel = {
+            id: Date.now(), // Temporäre ID, bis vom Server ersetzt
+            challengeId,
+            userId,
+            joinedAt: new Date()
+          };
+          
+          // Aktualisiere Teilnehmer
+          set({
+            participants: {
+              ...participants,
+              [challengeId]: [...challengeParticipants, newParticipant]
+            },
+            challenges: {
+              ...get().challenges,
+              [challengeId]: {
+                ...challenge,
+                participantIds: [...challenge.participantIds, userId]
+              }
+            }
+          });
+        } catch (error) {
+          console.error('Fehler beim Beitreten zur Challenge:', error);
+          throw error;
+        }
+      },
+      
+      leaveChallenge: async (challengeId, userId) => {
+        try {
+          const challenge = get().challenges[challengeId];
+          
+          if (!challenge) throw new Error('Challenge nicht gefunden');
+          
+          // An Server senden (API noch nicht implementiert)
+          // await apiRequest(`/api/challenges/${challengeId}/participants/${userId}`, 'DELETE');
+          
+          // Lokalen Store aktualisieren
+          const participants = get().participants;
+          const challengeParticipants = participants[challengeId] || [];
+          
+          set({
+            participants: {
+              ...participants,
+              [challengeId]: challengeParticipants.filter(p => p.userId !== userId)
+            },
+            challenges: {
+              ...get().challenges,
+              [challengeId]: {
+                ...challenge,
+                participantIds: challenge.participantIds.filter(id => id !== userId)
+              }
+            }
+          });
+        } catch (error) {
+          console.error('Fehler beim Verlassen der Challenge:', error);
+          throw error;
+        }
       },
       
       getActiveChallenges: () => {
         const now = new Date();
-        console.log("Aktuelle Zeit:", now);
+        
         const challenges = Object.values(get().challenges)
           .map(processChallengeDates)
           .filter(challenge => {
@@ -317,14 +512,6 @@ export const useChallengeStore = create<ChallengeStore>()(
             const endDate = challenge.endDate instanceof Date 
               ? challenge.endDate 
               : new Date(challenge.endDate);
-            
-            console.log(
-              `Challenge ${challenge.id}: ${challenge.title}`,
-              "Start:", startDate,
-              "Ende:", endDate,
-              "Aktiv:", startDate <= now && endDate >= now,
-              "Status:", challenge.status
-            );
             
             // Aktualisiere den Status der Challenge basierend auf dem Datum
             if (startDate > now) {
@@ -339,7 +526,6 @@ export const useChallengeStore = create<ChallengeStore>()(
             return challenge.status !== 'completed';
           });
         
-        console.log("Aktive Challenges:", challenges.length);
         return challenges;
       },
       
@@ -349,22 +535,63 @@ export const useChallengeStore = create<ChallengeStore>()(
           .filter(challenge => 
             challenge.participantIds.includes(userId) || challenge.creatorId === userId
           );
+      },
+      
+      getParticipants: (challengeId) => {
+        return get().participants[challengeId] || [];
+      },
+      
+      updateParticipant: async (challengeId, userId, data) => {
+        try {
+          // An Server senden
+          await apiRequest(
+            `/api/challenges/${challengeId}/participants/${userId}`, 
+            'PATCH', 
+            data
+          );
+          
+          // Lokalen Store aktualisieren
+          const participants = get().participants;
+          const challengeParticipants = participants[challengeId] || [];
+          
+          const updatedParticipants = challengeParticipants.map(participant => {
+            if (participant.userId === userId) {
+              return { ...participant, ...data };
+            }
+            return participant;
+          });
+          
+          set({
+            participants: {
+              ...participants,
+              [challengeId]: updatedParticipants
+            }
+          });
+        } catch (error) {
+          console.error('Fehler beim Aktualisieren des Teilnehmers:', error);
+          throw error;
+        }
       }
     }),
     {
       name: 'challenge-store',
-      version: 1,
+      version: 2, // Neue Version für Datenmodell
+      partialize: (state) => ({
+        challenges: state.challenges,
+        participants: state.participants,
+        lastFetched: state.lastFetched
+      }),
       onRehydrateStorage: () => {
         return (state) => {
           if (state) {
-            // Überprüfe und lade Challenges aus localStorage
-            const storedChallenges = localStorage.getItem(CHALLENGE_STORAGE_KEY);
-            if (storedChallenges) {
-              try {
-                state.challenges = JSON.parse(storedChallenges);
-              } catch (e) {
-                console.error('Fehler beim Parsen der gespeicherten Challenges:', e);
-              }
+            // Nach der Rehydrierung, überprüfe, ob eine Aktualisierung vom Server nötig ist
+            const lastFetched = state.lastFetched || 0;
+            const now = Date.now();
+            const twoHoursInMs = 2 * 60 * 60 * 1000;
+            
+            // Wenn die letzte Aktualisierung mehr als 2 Stunden her ist oder nie erfolgt ist
+            if (!lastFetched || (now - lastFetched) > twoHoursInMs) {
+              state.syncWithServer();
             }
           }
         };

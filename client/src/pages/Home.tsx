@@ -1,5 +1,5 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import UserSlider from "@/components/UserSlider";
@@ -7,7 +7,7 @@ import GroupPreview from "@/components/GroupPreview";
 import ChallengeCard from "@/components/ChallengeCard";
 import FeedPost from "@/components/FeedPost";
 import EventSlider from "@/components/EventSlider";
-import { ArrowRight, Crown, Heart, Share2, Users, Trophy, Package } from "lucide-react";
+import { ArrowRight, Crown, Heart, Share2, Users, Trophy, Package, RefreshCw, Check, Loader2 } from "lucide-react";
 import { useLocation, Link } from "wouter";
 import { usePostStore } from "../lib/postStore";
 import { getChatId } from "../lib/chatService";
@@ -20,12 +20,14 @@ import {
 } from "@/components/ui/carousel";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import GroupCarousel from "@/components/GroupCarousel";
 import { UserAvatar } from "@/components/UserAvatar";
 import ProductSlider from "@/components/ProductSlider";
 import { useGroupStore } from "../lib/groupStore";
 import { useChallengeStore, createInitialChallenges } from "../lib/challengeStore";
 import { useProductStore, loadInitialProducts } from "../lib/productStore";
+import { useToast } from "@/hooks/use-toast";
 
 
 const format = (date: Date, formatStr: string) => {
@@ -34,6 +36,9 @@ const format = (date: Date, formatStr: string) => {
 
 export default function Home() {
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const [syncing, setSyncing] = useState(false);
+  const [syncComplete, setSyncComplete] = useState(false);
   
   // Stores verwenden statt mockDaten
   const postStore = usePostStore();
@@ -41,12 +46,47 @@ export default function Home() {
   const challengeStore = useChallengeStore();
   const productStore = useProductStore();
   
+  // Synchronisieren der Challenges mit der Datenbank
+  const syncWithServer = async () => {
+    setSyncing(true);
+    setSyncComplete(false);
+    
+    try {
+      await challengeStore.syncWithServer();
+      
+      setSyncComplete(true);
+      toast({
+        title: "Synchronisierung erfolgreich",
+        description: "Alle Challenges wurden erfolgreich aktualisiert.",
+        variant: "default"
+      });
+    } catch (error) {
+      console.error("Fehler bei der Synchronisierung:", error);
+      toast({
+        title: "Synchronisierungsfehler",
+        description: "Die Daten konnten nicht mit dem Server synchronisiert werden.",
+        variant: "destructive"
+      });
+    } finally {
+      setSyncing(false);
+      // Nach 3 Sekunden den Erfolgs-Indikator ausblenden
+      setTimeout(() => {
+        setSyncComplete(false);
+      }, 3000);
+    }
+  };
+  
   // Lade initiale Beispiel-Daten beim ersten Rendern
   useEffect(() => {
     loadInitialProducts();
     challengeStore.createInitialChallenges();
     // Stelle sicher, dass Posts aus dem localStorage geladen werden
     postStore.loadStoredPosts();
+    
+    // Synchronisiere mit Server, falls nötig (wenn lastFetched zu alt ist)
+    if (!challengeStore.lastFetched || (Date.now() - challengeStore.lastFetched > 2 * 60 * 60 * 1000)) {
+      syncWithServer();
+    }
   }, []);
   
   // Lade Daten aus den stores statt aus den mock-Daten
@@ -59,7 +99,15 @@ export default function Home() {
   // Verwende alle aktiven und bevorstehenden Challenges
   const activeChallenges = challenges;
   
-  console.log("Aktive Challenges in Home.tsx:", activeChallenges.length);
+  // Berechne das Datum der letzten Synchronisierung
+  const lastSyncTime = challengeStore.lastFetched ? 
+    new Date(challengeStore.lastFetched).toLocaleString('de-DE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }) : 'Noch nie';
 
   // Lade Posts aus dem postStore
   const allPosts = Object.values(postStore.posts).sort((a, b) =>
@@ -73,6 +121,44 @@ export default function Home() {
 
   return (
     <div className="w-full max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Synchronisierungs-Status */}
+      <section className="mb-6">
+        <Alert className="border-primary/20 bg-primary/5">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+            <AlertDescription className="flex-1">
+              <p className="text-sm">
+                <span className="font-semibold">Datenbank-Synchronisierung:</span>{" "}
+                Letzte Synchronisierung am {lastSyncTime}
+              </p>
+            </AlertDescription>
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="gap-1"
+              onClick={syncWithServer}
+              disabled={syncing}
+            >
+              {syncing ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Synchronisiere...
+                </>
+              ) : syncComplete ? (
+                <>
+                  <Check className="h-4 w-4 text-green-500" />
+                  Synchronisiert
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4" />
+                  Synchronisieren
+                </>
+              )}
+            </Button>
+          </div>
+        </Alert>
+      </section>
+
       {/* Marketing Banner */}
       <section className="mb-12">
         <Card className="relative aspect-square overflow-hidden">

@@ -31,11 +31,22 @@ export const challenges = pgTable("challenges", {
   creatorId: integer("creator_id").references(() => users.id).notNull(),
   startDate: timestamp("start_date").notNull(),
   endDate: timestamp("end_date").notNull(),
-  prize: text("prize").notNull(),
-  prizeDescription: text("prize_description").notNull(),
-  prizeImage: text("prize_image"),
-  workoutType: text("workout_type").notNull(),
+  type: text("type").notNull(), // 'emom', 'amrap', 'hiit', 'running', 'custom'
+  status: text("status").notNull(), // 'active', 'completed', 'upcoming'
   workoutDetails: jsonb("workout_details").notNull(),
+  points: jsonb("points"), // { bronze: number, silver: number, gold: number }
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const challengeParticipants = pgTable("challenge_participants", {
+  id: serial("id").primaryKey(),
+  challengeId: integer("challenge_id").references(() => challenges.id, { onDelete: "cascade" }).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  joinedAt: timestamp("joined_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at"),
+  currentProgress: integer("current_progress").default(0),
+  achievementLevel: text("achievement_level"), // 'bronze', 'silver', 'gold'
+  result: jsonb("result"),
 });
 
 export const groups = pgTable("groups", {
@@ -100,6 +111,7 @@ export type WorkoutDetails = EmomWorkout | AmrapWorkout | HitWorkout | RunningWo
 export type User = typeof users.$inferSelect;
 export type Post = typeof posts.$inferSelect;
 export type Challenge = typeof challenges.$inferSelect;
+export type ChallengeParticipant = typeof challengeParticipants.$inferSelect;
 export type Group = typeof groups.$inferSelect;
 
 export const workoutTemplates = pgTable("workout_templates", {
@@ -302,6 +314,35 @@ export const insertEventExternalRegistrationSchema = createInsertSchema(eventExt
     id: true,
     createdAt: true,
   });
+
+// Challenge Schemas
+export const insertChallengeSchema = createInsertSchema(challenges)
+  .extend({
+    startDate: z.string().datetime(),
+    endDate: z.string().datetime(),
+    points: z.object({
+      bronze: z.number(),
+      silver: z.number(),
+      gold: z.number()
+    }).optional(),
+  })
+  .omit({
+    id: true,
+    createdAt: true,
+  });
+
+export const insertChallengeParticipantSchema = createInsertSchema(challengeParticipants)
+  .extend({
+    joinedAt: z.string().datetime().optional(),
+    completedAt: z.string().datetime().optional(),
+    result: z.record(z.unknown()).optional(),
+  })
+  .omit({
+    id: true,
+  });
+
+export type InsertChallenge = z.infer<typeof insertChallengeSchema>;
+export type InsertChallengeParticipant = z.infer<typeof insertChallengeParticipantSchema>;
 
 export type InsertEvent = z.infer<typeof insertEventSchema>;
 export type InsertEventComment = z.infer<typeof insertEventCommentSchema>;

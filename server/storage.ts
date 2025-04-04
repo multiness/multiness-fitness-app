@@ -1,8 +1,9 @@
 import { users, type User, type InsertUser } from "@shared/schema";
 import { products, type Product, type InsertProduct } from "@shared/schema";
 import { events, eventExternalRegistrations, type Event, type EventExternalRegistration, type InsertEventExternalRegistration, type InsertEvent } from "@shared/schema";
+import { challenges, challengeParticipants, type Challenge, type ChallengeParticipant, type InsertChallenge, type InsertChallengeParticipant } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, and, gte, lte } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -22,6 +23,18 @@ export interface IStorage {
   createEvent(event: InsertEvent): Promise<Event>;
   createEventExternalRegistration(registration: InsertEventExternalRegistration): Promise<EventExternalRegistration>;
   getEventExternalRegistrations(eventId: number): Promise<EventExternalRegistration[]>;
+  
+  // Challenge methods
+  getChallenges(): Promise<Challenge[]>;
+  getChallenge(id: number): Promise<Challenge | undefined>;
+  createChallenge(challenge: InsertChallenge): Promise<Challenge>;
+  updateChallenge(id: number, challenge: Partial<Challenge>): Promise<Challenge>;
+  
+  // Challenge Participant methods
+  getChallengeParticipants(challengeId: number): Promise<ChallengeParticipant[]>;
+  getChallengeParticipant(challengeId: number, userId: number): Promise<ChallengeParticipant | undefined>;
+  addChallengeParticipant(participant: InsertChallengeParticipant): Promise<ChallengeParticipant>;
+  updateChallengeParticipant(challengeId: number, userId: number, data: Partial<ChallengeParticipant>): Promise<ChallengeParticipant | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -113,6 +126,116 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(eventExternalRegistrations)
       .where(eq(eventExternalRegistrations.eventId, eventId));
+  }
+
+  // Challenge methods
+  async getChallenges(): Promise<Challenge[]> {
+    return await db.select().from(challenges);
+  }
+
+  async getChallenge(id: number): Promise<Challenge | undefined> {
+    const [challenge] = await db.select().from(challenges).where(eq(challenges.id, id));
+    return challenge;
+  }
+
+  async createChallenge(challenge: InsertChallenge): Promise<Challenge> {
+    const challengeData = { ...challenge };
+    if (challengeData.startDate) {
+      challengeData.startDate = new Date(challengeData.startDate);
+    }
+    if (challengeData.endDate) {
+      challengeData.endDate = new Date(challengeData.endDate);
+    }
+
+    const [newChallenge] = await db.insert(challenges).values(challengeData).returning();
+    return newChallenge;
+  }
+
+  async updateChallenge(id: number, challenge: Partial<Challenge>): Promise<Challenge> {
+    try {
+      const updateData = { ...challenge };
+      if (updateData.startDate) {
+        updateData.startDate = new Date(updateData.startDate);
+      }
+      if (updateData.endDate) {
+        updateData.endDate = new Date(updateData.endDate);
+      }
+
+      const [updatedChallenge] = await db
+        .update(challenges)
+        .set(updateData)
+        .where(eq(challenges.id, id))
+        .returning();
+      return updatedChallenge;
+    } catch (error) {
+      console.error('Error updating challenge:', error);
+      throw error;
+    }
+  }
+
+  // Challenge Participant methods
+  async getChallengeParticipants(challengeId: number): Promise<ChallengeParticipant[]> {
+    return await db
+      .select()
+      .from(challengeParticipants)
+      .where(eq(challengeParticipants.challengeId, challengeId));
+  }
+
+  async getChallengeParticipant(challengeId: number, userId: number): Promise<ChallengeParticipant | undefined> {
+    const [participant] = await db
+      .select()
+      .from(challengeParticipants)
+      .where(
+        and(
+          eq(challengeParticipants.challengeId, challengeId),
+          eq(challengeParticipants.userId, userId)
+        )
+      );
+    return participant;
+  }
+
+  async addChallengeParticipant(participant: InsertChallengeParticipant): Promise<ChallengeParticipant> {
+    const participantData = { ...participant };
+    if (participantData.joinedAt) {
+      participantData.joinedAt = new Date(participantData.joinedAt);
+    }
+    if (participantData.completedAt) {
+      participantData.completedAt = new Date(participantData.completedAt);
+    }
+
+    const [newParticipant] = await db
+      .insert(challengeParticipants)
+      .values(participantData)
+      .returning();
+    return newParticipant;
+  }
+
+  async updateChallengeParticipant(
+    challengeId: number,
+    userId: number,
+    data: Partial<ChallengeParticipant>
+  ): Promise<ChallengeParticipant | undefined> {
+    try {
+      const updateData = { ...data };
+      if (updateData.completedAt) {
+        updateData.completedAt = new Date(updateData.completedAt);
+      }
+
+      const [updatedParticipant] = await db
+        .update(challengeParticipants)
+        .set(updateData)
+        .where(
+          and(
+            eq(challengeParticipants.challengeId, challengeId),
+            eq(challengeParticipants.userId, userId)
+          )
+        )
+        .returning();
+      return updatedParticipant;
+    } catch (error) {
+      console.error('Error updating challenge participant:', error);
+      throw error;
+    }
   }
 }
 

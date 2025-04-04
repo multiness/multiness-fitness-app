@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
+  CardFooter,
 } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,10 @@ import {
   Plus,
   Settings,
   Calendar,
+  RefreshCw,
+  Check,
+  Loader2,
+  Database,
 } from "lucide-react";
 import { DEFAULT_BANNER_POSITIONS } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
@@ -44,6 +49,7 @@ import { useProducts } from "@/contexts/ProductContext";
 import { usePostStore } from "../lib/postStore";
 import { useChallengeStore } from "../lib/challengeStore";
 import { useGroupStore } from "../lib/groupStore";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // Product Management Section Component
 function ProductManagement() {
@@ -781,10 +787,51 @@ export default function Admin() {
   const { users, toggleVerification } = useUsers();
   const [searchQuery, setSearchQuery] = useState("");
   const [showVerifiedOnly, setShowVerifiedOnly] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+  const [syncComplete, setSyncComplete] = useState(false);
   const { toast } = useToast();
   const postStore = usePostStore();
   const challengeStore = useChallengeStore();
   const groupStore = useGroupStore();
+  
+  // Synchronisieren der Challenges mit der Datenbank
+  const syncWithServer = async () => {
+    setSyncing(true);
+    setSyncComplete(false);
+    
+    try {
+      await challengeStore.syncWithServer();
+      
+      setSyncComplete(true);
+      toast({
+        title: "Synchronisierung erfolgreich",
+        description: "Alle Challenges wurden erfolgreich aktualisiert.",
+      });
+    } catch (error) {
+      console.error("Fehler bei der Synchronisierung:", error);
+      toast({
+        title: "Synchronisierungsfehler",
+        description: "Die Daten konnten nicht mit dem Server synchronisiert werden.",
+        variant: "destructive"
+      });
+    } finally {
+      setSyncing(false);
+      // Nach 3 Sekunden den Erfolgs-Indikator ausblenden
+      setTimeout(() => {
+        setSyncComplete(false);
+      }, 3000);
+    }
+  };
+  
+  // Berechne das Datum der letzten Synchronisierung
+  const lastSyncTime = challengeStore.lastFetched ? 
+    new Date(challengeStore.lastFetched).toLocaleString('de-DE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }) : 'Noch nie';
 
   // Filtere Benutzer basierend auf Suche und Verifizierungsstatus
   const filteredUsers = users.filter(user => {
@@ -860,6 +907,112 @@ export default function Admin() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Datenbank Synchronisierung */}
+      <section className="mb-6">
+        <h2 className="text-2xl font-bold mb-6">Datenbank & Synchronisation</h2>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Database className="h-5 w-5" />
+              Daten synchronisieren
+            </CardTitle>
+            <CardDescription>
+              Synchronisieren Sie die Challenge-Daten mit der Datenbank, um Geräteübergreifend konsistente Daten zu gewährleisten
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Alert className="border-primary/20 bg-primary/5 mb-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                <AlertDescription className="flex-1">
+                  <p className="text-sm">
+                    <span className="font-semibold">Datenbank-Synchronisierung:</span>{" "}
+                    Letzte Synchronisierung am {lastSyncTime}
+                  </p>
+                </AlertDescription>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="gap-1"
+                  onClick={syncWithServer}
+                  disabled={syncing}
+                >
+                  {syncing ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Synchronisiere...
+                    </>
+                  ) : syncComplete ? (
+                    <>
+                      <Check className="h-4 w-4 text-green-500" />
+                      Synchronisiert
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="h-4 w-4" />
+                      Synchronisieren
+                    </>
+                  )}
+                </Button>
+              </div>
+            </Alert>
+            
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card>
+                  <CardHeader className="py-4">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Trophy className="h-4 w-4 text-primary" />
+                      Challenges
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="py-2">
+                    <div className="text-2xl font-bold">{Object.keys(challengeStore.challenges).length}</div>
+                    <p className="text-xs text-muted-foreground">Synchronisiert</p>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader className="py-4">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Users className="h-4 w-4 text-primary" />
+                      Teilnehmer
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="py-2">
+                    <div className="text-2xl font-bold">
+                      {Object.values(challengeStore.participants).reduce(
+                        (acc, participants) => acc + participants.length, 0
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Synchronisiert</p>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader className="py-4">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-primary" />
+                      Aktive Challenges
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="py-2">
+                    <div className="text-2xl font-bold">
+                      {challengeStore.getActiveChallenges().filter(c => c.status === 'active').length}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Synchronisiert</p>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter className="border-t px-6 py-4">
+            <p className="text-xs text-muted-foreground">
+              Die Daten werden alle 2 Stunden automatisch synchronisiert, um eine konsistente Erfahrung auf allen Geräten zu gewährleisten.
+            </p>
+          </CardFooter>
+        </Card>
+      </section>
 
       {/* Marketing Banner Section */}
       <section>

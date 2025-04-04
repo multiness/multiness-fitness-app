@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertProductSchema, insertEventExternalRegistrationSchema } from "@shared/schema";
+import { insertProductSchema, insertEventExternalRegistrationSchema, insertChallengeSchema, insertChallengeParticipantSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Alle Produkte abrufen
@@ -144,6 +144,198 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Challenge Routes
+  // Alle Challenges abrufen
+  app.get("/api/challenges", async (req, res) => {
+    try {
+      const challenges = await storage.getChallenges();
+      res.json(challenges);
+    } catch (error) {
+      console.error("Error fetching challenges:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Eine einzelne Challenge abrufen
+  app.get("/api/challenges/:id", async (req, res) => {
+    try {
+      const challenge = await storage.getChallenge(Number(req.params.id));
+      if (!challenge) {
+        return res.status(404).json({ error: "Challenge nicht gefunden" });
+      }
+      res.json(challenge);
+    } catch (error) {
+      console.error("Error fetching challenge:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Neue Challenge erstellen
+  app.post("/api/challenges", async (req, res) => {
+    try {
+      const now = new Date();
+      const challengeData = insertChallengeSchema.parse(req.body);
+      
+      // Status automatisch basierend auf Datum setzen
+      const startDate = new Date(challengeData.startDate);
+      const endDate = new Date(challengeData.endDate);
+      
+      let status;
+      if (startDate > now) {
+        status = 'upcoming';
+      } else if (endDate < now) {
+        status = 'completed';
+      } else {
+        status = 'active';
+      }
+      
+      const challenge = await storage.createChallenge({
+        ...challengeData,
+        status
+      });
+      
+      res.status(201).json(challenge);
+    } catch (error) {
+      console.error("Error creating challenge:", error);
+      res.status(400).json({ error: "Ungültige Challenge-Daten" });
+    }
+  });
+
+  // Challenge aktualisieren
+  app.patch("/api/challenges/:id", async (req, res) => {
+    try {
+      const challengeId = Number(req.params.id);
+      const challenge = await storage.getChallenge(challengeId);
+      
+      if (!challenge) {
+        return res.status(404).json({ error: "Challenge nicht gefunden" });
+      }
+      
+      // Status neu berechnen wenn Start- oder Enddatum geändert wurden
+      const updateData = { ...req.body };
+      if (updateData.startDate || updateData.endDate) {
+        const now = new Date();
+        const startDate = updateData.startDate 
+          ? new Date(updateData.startDate) 
+          : challenge.startDate;
+        const endDate = updateData.endDate 
+          ? new Date(updateData.endDate) 
+          : challenge.endDate;
+        
+        if (startDate > now) {
+          updateData.status = 'upcoming';
+        } else if (endDate < now) {
+          updateData.status = 'completed';
+        } else {
+          updateData.status = 'active';
+        }
+      }
+      
+      const updatedChallenge = await storage.updateChallenge(challengeId, updateData);
+      res.json(updatedChallenge);
+    } catch (error) {
+      console.error("Error updating challenge:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Challenge Teilnehmer Routes
+  // Alle Teilnehmer einer Challenge abrufen
+  app.get("/api/challenges/:id/participants", async (req, res) => {
+    try {
+      const challengeId = Number(req.params.id);
+      const participants = await storage.getChallengeParticipants(challengeId);
+      res.json(participants);
+    } catch (error) {
+      console.error("Error fetching challenge participants:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Einen Teilnehmer einer Challenge abrufen
+  app.get("/api/challenges/:challengeId/participants/:userId", async (req, res) => {
+    try {
+      const challengeId = Number(req.params.challengeId);
+      const userId = Number(req.params.userId);
+      
+      const participant = await storage.getChallengeParticipant(challengeId, userId);
+      
+      if (!participant) {
+        return res.status(404).json({ error: "Teilnehmer nicht gefunden" });
+      }
+      
+      res.json(participant);
+    } catch (error) {
+      console.error("Error fetching challenge participant:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Teilnehmer einer Challenge hinzufügen
+  app.post("/api/challenges/:id/participants", async (req, res) => {
+    try {
+      const challengeId = Number(req.params.id);
+      const challenge = await storage.getChallenge(challengeId);
+      
+      if (!challenge) {
+        return res.status(404).json({ error: "Challenge nicht gefunden" });
+      }
+      
+      const participantData = insertChallengeParticipantSchema.parse({
+        ...req.body,
+        challengeId,
+        joinedAt: new Date().toISOString(),
+      });
+      
+      // Prüfen, ob der Teilnehmer bereits existiert
+      const existingParticipant = await storage.getChallengeParticipant(
+        challengeId, 
+        participantData.userId
+      );
+      
+      if (existingParticipant) {
+        return res.status(400).json({ error: "Teilnehmer bereits angemeldet" });
+      }
+      
+      const participant = await storage.addChallengeParticipant(participantData);
+      
+      res.status(201).json(participant);
+    } catch (error) {
+      console.error("Error adding challenge participant:", error);
+      res.status(400).json({ error: "Ungültige Teilnehmer-Daten" });
+    }
+  });
+
+  // Teilnehmer einer Challenge aktualisieren
+  app.patch("/api/challenges/:challengeId/participants/:userId", async (req, res) => {
+    try {
+      const challengeId = Number(req.params.challengeId);
+      const userId = Number(req.params.userId);
+      
+      const participant = await storage.getChallengeParticipant(challengeId, userId);
+      
+      if (!participant) {
+        return res.status(404).json({ error: "Teilnehmer nicht gefunden" });
+      }
+      
+      // Wenn der Teilnehmer als abgeschlossen markiert wird, setze das completedAt-Datum
+      const updateData = { ...req.body };
+      if (updateData.achievementLevel && !participant.completedAt) {
+        updateData.completedAt = new Date().toISOString();
+      }
+      
+      const updatedParticipant = await storage.updateChallengeParticipant(
+        challengeId, 
+        userId, 
+        updateData
+      );
+      
+      res.json(updatedParticipant);
+    } catch (error) {
+      console.error("Error updating challenge participant:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
