@@ -167,12 +167,35 @@ export const useChallengeStore = create<ChallengeStore>()(
       
       addChallenge: (challengeData) => {
         const id = Date.now();
+        const now = new Date();
+        
+        // Definiere den Challenge-Status basierend auf Start- und Enddatum
+        let status: 'active' | 'completed' | 'upcoming';
+        const startDate = challengeData.startDate instanceof Date 
+          ? challengeData.startDate 
+          : new Date(challengeData.startDate);
+        
+        const endDate = challengeData.endDate instanceof Date 
+          ? challengeData.endDate 
+          : new Date(challengeData.endDate);
+        
+        if (startDate > now) {
+          status = 'upcoming';
+        } else if (endDate < now) {
+          status = 'completed';
+        } else {
+          status = 'active';
+        }
+        
         const newChallenge: Challenge = {
           ...challengeData,
           id,
           createdAt: new Date(),
+          status, // Explizit den berechneten Status setzen
           participantIds: challengeData.participantIds || [challengeData.creatorId]
         };
+        
+        console.log("Neue Challenge erstellt:", newChallenge);
         
         const updatedChallenges = {
           ...get().challenges,
@@ -197,9 +220,43 @@ export const useChallengeStore = create<ChallengeStore>()(
         
         if (!challenge) return;
         
+        // Wenn Start- oder Enddatum geändert wurden, aktualisiere den Status
+        let status = updatedChallenge.status || challenge.status;
+        const now = new Date();
+        
+        if (updatedChallenge.startDate || updatedChallenge.endDate) {
+          const startDate = updatedChallenge.startDate 
+            ? (updatedChallenge.startDate instanceof Date 
+              ? updatedChallenge.startDate 
+              : new Date(updatedChallenge.startDate))
+            : (challenge.startDate instanceof Date 
+              ? challenge.startDate 
+              : new Date(challenge.startDate));
+            
+          const endDate = updatedChallenge.endDate 
+            ? (updatedChallenge.endDate instanceof Date 
+              ? updatedChallenge.endDate 
+              : new Date(updatedChallenge.endDate))
+            : (challenge.endDate instanceof Date 
+              ? challenge.endDate 
+              : new Date(challenge.endDate));
+          
+          if (startDate > now) {
+            status = 'upcoming';
+          } else if (endDate < now) {
+            status = 'completed';
+          } else {
+            status = 'active';
+          }
+        }
+        
+        const updatedObj = { ...challenge, ...updatedChallenge, status };
+        
+        console.log("Challenge aktualisiert:", updatedObj);
+        
         const updatedChallenges = {
           ...get().challenges,
-          [id]: { ...challenge, ...updatedChallenge }
+          [id]: updatedObj
         };
         
         set({ challenges: updatedChallenges });
@@ -248,13 +305,42 @@ export const useChallengeStore = create<ChallengeStore>()(
       
       getActiveChallenges: () => {
         const now = new Date();
-        return Object.values(get().challenges)
+        console.log("Aktuelle Zeit:", now);
+        const challenges = Object.values(get().challenges)
           .map(processChallengeDates)
           .filter(challenge => {
-            const startDate = new Date(challenge.startDate);
-            const endDate = new Date(challenge.endDate);
-            return startDate <= now && endDate >= now;
+            // Stelle sicher, dass wir mit echten Date-Objekten arbeiten
+            const startDate = challenge.startDate instanceof Date 
+              ? challenge.startDate 
+              : new Date(challenge.startDate);
+            
+            const endDate = challenge.endDate instanceof Date 
+              ? challenge.endDate 
+              : new Date(challenge.endDate);
+            
+            console.log(
+              `Challenge ${challenge.id}: ${challenge.title}`,
+              "Start:", startDate,
+              "Ende:", endDate,
+              "Aktiv:", startDate <= now && endDate >= now,
+              "Status:", challenge.status
+            );
+            
+            // Aktualisiere den Status der Challenge basierend auf dem Datum
+            if (startDate > now) {
+              challenge.status = 'upcoming';
+            } else if (endDate < now) {
+              challenge.status = 'completed';
+            } else {
+              challenge.status = 'active';
+            }
+            
+            // Eine Challenge gilt als aktiv, wenn sie nicht beendet ist
+            return challenge.status !== 'completed';
           });
+        
+        console.log("Aktive Challenges:", challenges.length);
+        return challenges;
       },
       
       getChallengesByUser: (userId) => {

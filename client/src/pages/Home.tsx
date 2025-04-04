@@ -51,11 +51,15 @@ export default function Home() {
   
   // Lade Daten aus den stores statt aus den mock-Daten
   const groups = Object.values(groupStore.groups);
-  const challenges = challengeStore.getActiveChallenges();
+  // Hole aktive und bevorstehende Challenges, sortiere nach Startdatum (neueste zuerst)
+  const challenges = challengeStore.getActiveChallenges()
+    .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
   const products = Object.values(productStore.products);
   
-  // Aktive Challenges sind bereits gefiltert durch getActiveChallenges()
+  // Verwende alle aktiven und bevorstehenden Challenges
   const activeChallenges = challenges;
+  
+  console.log("Aktive Challenges in Home.tsx:", activeChallenges.length);
 
   // Lade Posts aus dem postStore
   const allPosts = Object.values(postStore.posts).sort((a, b) =>
