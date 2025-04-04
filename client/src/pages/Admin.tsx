@@ -375,9 +375,7 @@ const mockBanners = [
   }
 ];
 
-// Leere Arrays für Challenge- und Gruppen-Daten - später durch echte Daten ersetzen
-
-// Verwende echte Daten aus den Stores für Statistiken
+// Verwende echte Daten aus den Stores für Statistiken und Verwaltung
 // Diese Daten werden direkt in der Komponente aus den Stores geholt
 
 // Mock Product Data
@@ -784,6 +782,9 @@ export default function Admin() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showVerifiedOnly, setShowVerifiedOnly] = useState(true);
   const { toast } = useToast();
+  const postStore = usePostStore();
+  const challengeStore = useChallengeStore();
+  const groupStore = useGroupStore();
 
   // Filtere Benutzer basierend auf Suche und Verifizierungsstatus
   const filteredUsers = users.filter(user => {

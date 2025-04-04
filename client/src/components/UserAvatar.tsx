@@ -2,9 +2,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { usePostStore } from "../lib/postStore";
 import { cn } from "@/lib/utils";
 import { Link } from "wouter";
-import { useUsers } from "../contexts/UserContext";
+import { useUsers, getUsersFromStorage } from "../contexts/UserContext";
 import { VerifiedBadge } from "./VerifiedBadge";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ImageModal from "./ImageModal";
 
 interface UserAvatarProps {
@@ -16,7 +16,7 @@ interface UserAvatarProps {
   clickable?: boolean;
   hideVerifiedBadge?: boolean;
   enableImageModal?: boolean;
-  disableLink?: boolean; // Neue Prop zum expliziten Deaktivieren des Links
+  disableLink?: boolean;
 }
 
 export function UserAvatar({
@@ -31,11 +31,34 @@ export function UserAvatar({
   disableLink = false
 }: UserAvatarProps) {
   const postStore = usePostStore();
-  const { users } = useUsers();
-  const user = users.find(u => u.id === userId);
+  const { users: contextUsers } = useUsers();
+  
+  // Implementiere eine robuste User-Suche-Logik
+  const [user, setUser] = useState(() => {
+    // Versuche zuerst den Benutzer aus dem Context zu holen
+    const contextUser = contextUsers.find(u => u.id === userId);
+    if (contextUser) return contextUser;
+    
+    // Andernfalls versuche direkt aus dem localStorage zu laden
+    const storageUsers = getUsersFromStorage();
+    return storageUsers.find(u => u.id === userId);
+  });
+
+  // Aktualisiere den Benutzer, wenn sich der Context ändert
+  useEffect(() => {
+    const updatedUser = contextUsers.find(u => u.id === userId);
+    if (updatedUser) {
+      setUser(updatedUser);
+    }
+  }, [contextUsers, userId]);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  if (!user) return null;
+  // Fallback-Benutzer, wenn kein Benutzer gefunden wurde
+  if (!user) {
+    console.warn(`Benutzer mit ID ${userId} nicht gefunden`);
+    return null;
+  }
 
   const hasActiveGoal = showActiveGoal && postStore.getDailyGoal(userId);
 
@@ -76,7 +99,7 @@ export function UserAvatar({
       <div className={containerClasses} onClick={handleClick}>
         <Avatar className={avatarClasses}>
           <AvatarImage src={user.avatar || undefined} alt={user.username} className="object-cover rounded-full" />
-          <AvatarFallback className="rounded-full">{user.username[0].toUpperCase()}</AvatarFallback>
+          <AvatarFallback className="rounded-full">{user.username?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
         </Avatar>
       </div>
       {!hideVerifiedBadge && user.isVerified && (

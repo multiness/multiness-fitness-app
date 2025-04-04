@@ -44,20 +44,18 @@ export default function Home() {
   // Lade initiale Beispiel-Daten beim ersten Rendern
   useEffect(() => {
     loadInitialProducts();
-    createInitialChallenges();
+    challengeStore.createInitialChallenges();
     // Stelle sicher, dass Posts aus dem localStorage geladen werden
     postStore.loadStoredPosts();
   }, []);
   
   // Lade Daten aus den stores statt aus den mock-Daten
   const groups = Object.values(groupStore.groups);
-  const challenges = Object.values(challengeStore.challenges);
+  const challenges = challengeStore.getActiveChallenges();
   const products = Object.values(productStore.products);
   
-  // Aktive Challenges filtern
-  const activeChallenges = challenges.filter(
-    (challenge: any) => new Date() <= new Date(challenge.endDate)
-  );
+  // Aktive Challenges sind bereits gefiltert durch getActiveChallenges()
+  const activeChallenges = challenges;
 
   // Lade Posts aus dem postStore
   const allPosts = Object.values(postStore.posts).sort((a, b) =>
