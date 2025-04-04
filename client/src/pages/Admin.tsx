@@ -800,12 +800,24 @@ export default function Admin() {
     setSyncComplete(false);
     
     try {
+      // Challenge-Daten synchronisieren
       await challengeStore.syncWithServer();
       
+      // Post-Daten synchronisieren
+      await usePostStore.getState().loadStoredPosts();
+      
+      // Gruppen synchronisieren
+      const groupResponse = await fetch('/api/groups');
+      if (groupResponse.ok) {
+        const groupData = await groupResponse.json();
+        useGroupStore.getState().setGroups(groupData);
+      }
+      
       setSyncComplete(true);
+      setLastSyncTime(format(new Date(), "dd.MM.yyyy HH:mm:ss"));
       toast({
         title: "Synchronisierung erfolgreich",
-        description: "Alle Challenges wurden erfolgreich aktualisiert.",
+        description: "Alle Daten wurden erfolgreich mit der Datenbank synchronisiert.",
       });
     } catch (error) {
       console.error("Fehler bei der Synchronisierung:", error);

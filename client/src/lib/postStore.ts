@@ -1,6 +1,18 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Post } from '@shared/schema';
+import { Post as DbPost, DailyGoal as DbDailyGoal } from '@shared/schema';
+import { apiRequest } from './queryClient';
+
+export type Post = {
+  id: number;
+  userId: number;
+  content: string;
+  image: string | null;
+  createdAt: Date;
+  updatedAt?: Date;
+  groupId?: number | null;
+  dailyGoal: any | null;
+};
 
 export type DailyGoal = {
   type: 'water' | 'steps' | 'distance' | 'custom';
@@ -29,6 +41,7 @@ type PostStore = {
   dailyGoals: Record<number, DailyGoal>;
   goalParticipants: Record<number, number[]>;
   posts: Record<number, Post>;
+  isLoading: boolean;
   addLike: (postId: number, userId: number) => void;
   removeLike: (postId: number, userId: number) => void;
   hasLiked: (postId: number, userId: number) => boolean;
@@ -52,7 +65,7 @@ type PostStore = {
   createPost: (userId: number, content: string, image?: string | null) => void;
   deleteDailyGoal: (userId: number) => void;
   // Neue Methoden für bessere Datensynchronisierung
-  loadStoredPosts: () => void;
+  loadStoredPosts: () => Promise<void>;
 };
 
 // Hilfsfunktion zum Abrufen aller Benutzer statt useUsers() zu verwenden
@@ -72,16 +85,48 @@ export const usePostStore = create<PostStore>()(
       dailyGoals: {},
       goalParticipants: {},
       posts: {},
+      isLoading: false,
 
-      // Methode zum expliziten Laden der Posts aus dem lokalen Speicher
-      loadStoredPosts: () => {
-        const savedPosts = localStorage.getItem(LOCAL_STORAGE_POSTS_KEY);
-        if (savedPosts) {
-          try {
-            const parsedPosts = JSON.parse(savedPosts);
-            set({ posts: parsedPosts });
-          } catch (e) {
-            console.error('Fehler beim Laden der Posts aus localStorage:', e);
+      // Methode zum Laden der Posts von der API
+      loadStoredPosts: async () => {
+        try {
+          set({ isLoading: true });
+          const response = await fetch('/api/posts');
+          const posts = await response.json();
+          
+          // Konvertiere das Array in ein Record-Objekt und bearbeite Daten
+          const postsRecord: Record<number, Post> = {};
+          posts.forEach((post: DbPost) => {
+            postsRecord[post.id] = {
+              ...post,
+              createdAt: new Date(post.createdAt),
+              updatedAt: post.updatedAt ? new Date(post.updatedAt) : undefined,
+              // Wenn wir dailyGoalId haben, können wir dailyGoal aus der separaten DB-Tabelle laden
+              dailyGoal: post.dailyGoalId ? { 
+                type: 'custom',
+                target: 100,
+                unit: 'Stück',
+                progress: 0,
+                completed: false,
+                createdAt: new Date()
+              } : null
+            };
+          });
+          
+          set({ posts: postsRecord, isLoading: false });
+        } catch (e) {
+          console.error('Fehler beim Laden der Posts von API:', e);
+          set({ isLoading: false });
+          
+          // Fallback: Lokale Daten laden
+          const savedPosts = localStorage.getItem(LOCAL_STORAGE_POSTS_KEY);
+          if (savedPosts) {
+            try {
+              const parsedPosts = JSON.parse(savedPosts);
+              set({ posts: parsedPosts });
+            } catch (e) {
+              console.error('Fehler beim Laden der Posts aus localStorage:', e);
+            }
           }
         }
       },
