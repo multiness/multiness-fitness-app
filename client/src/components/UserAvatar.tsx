@@ -34,15 +34,51 @@ export function UserAvatar({
   const { users: contextUsers } = useUsers();
   
   // Implementiere eine robuste User-Suche-Logik
-  const [user, setUser] = useState(() => {
-    // Versuche zuerst den Benutzer aus dem Context zu holen
-    const contextUser = contextUsers.find(u => u.id === userId);
-    if (contextUser) return contextUser;
+  const [user, setUser] = useState<any>(null);
+
+  // Lade Benutzer von API und lokalen Quellen
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        // Versuche zuerst den Benutzer aus dem Context zu holen
+        const contextUser = contextUsers.find(u => u.id === userId);
+        if (contextUser) {
+          setUser(contextUser);
+          return;
+        }
+        
+        // Andernfalls versuche direkt aus dem localStorage zu laden
+        const storageUsers = getUsersFromStorage();
+        const storageUser = storageUsers.find(u => u.id === userId);
+        if (storageUser) {
+          setUser(storageUser);
+          return;
+        }
+        
+        // Als letzte Option: Versuche den Benutzer direkt von der API zu laden
+        try {
+          const response = await fetch(`/api/users/${userId}`);
+          if (response.ok) {
+            const apiUser = await response.json();
+            if (apiUser && typeof apiUser === 'object') {
+              console.log(`Benutzer mit ID ${userId} von API geladen:`, apiUser);
+              setUser(apiUser);
+              return;
+            }
+          }
+        } catch (apiError) {
+          console.warn(`Fehler beim Laden des Benutzers mit ID ${userId} von API:`, apiError);
+        }
+        
+        // Standard-Fallback
+        console.warn(`Benutzer mit ID ${userId} konnte nicht gefunden werden`);
+      } catch (error) {
+        console.error(`Fehler beim Laden des Benutzers mit ID ${userId}:`, error);
+      }
+    };
     
-    // Andernfalls versuche direkt aus dem localStorage zu laden
-    const storageUsers = getUsersFromStorage();
-    return storageUsers.find(u => u.id === userId);
-  });
+    loadUser();
+  }, [contextUsers, userId]);
 
   // Aktualisiere den Benutzer, wenn sich der Context ändert
   useEffect(() => {

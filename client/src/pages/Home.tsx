@@ -81,6 +81,8 @@ export default function Home() {
     // Lade alle Daten synchronisiert vom Server
     const loadAllData = async () => {
       try {
+        console.log("Lade alle Daten vom Server...");
+        
         // Synchronisiere Posts
         await postStore.loadStoredPosts();
         
@@ -92,12 +94,27 @@ export default function Home() {
         
         // Synchronisiere Challenges
         await syncWithServer();
+        
+        console.log("Alle Daten erfolgreich geladen");
       } catch (error) {
         console.error("Fehler beim Laden der Daten:", error);
       }
     };
     
     loadAllData();
+    
+    // Setze ein Intervall für regelmäßige Updates (alle 20 Sekunden)
+    const intervalId = setInterval(async () => {
+      try {
+        console.log("Automatische Aktualisierung...");
+        await postStore.loadStoredPosts();
+      } catch (error) {
+        console.error("Fehler bei der automatischen Aktualisierung:", error);
+      }
+    }, 20000);
+    
+    // Bereinige das Intervall beim Unmount der Komponente
+    return () => clearInterval(intervalId);
   }, []);
   
   // Lade Daten aus den stores statt aus den mock-Daten
