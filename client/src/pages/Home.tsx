@@ -76,17 +76,28 @@ export default function Home() {
     }
   };
   
-  // Lade initiale Beispiel-Daten beim ersten Rendern
+  // Synchronisiere Daten mit dem Server beim ersten Rendern
   useEffect(() => {
-    loadInitialProducts();
-    challengeStore.createInitialChallenges();
-    // Stelle sicher, dass Posts aus dem localStorage geladen werden
-    postStore.loadStoredPosts();
+    // Lade alle Daten synchronisiert vom Server
+    const loadAllData = async () => {
+      try {
+        // Synchronisiere Posts
+        await postStore.loadStoredPosts();
+        
+        // Synchronisiere Produkte
+        await loadInitialProducts();
+        
+        // Synchronisiere Gruppen
+        await groupStore.syncWithServer();
+        
+        // Synchronisiere Challenges
+        await syncWithServer();
+      } catch (error) {
+        console.error("Fehler beim Laden der Daten:", error);
+      }
+    };
     
-    // Synchronisiere mit Server, falls nötig (wenn lastFetched zu alt ist)
-    if (!challengeStore.lastFetched || (Date.now() - challengeStore.lastFetched > 2 * 60 * 60 * 1000)) {
-      syncWithServer();
-    }
+    loadAllData();
   }, []);
   
   // Lade Daten aus den stores statt aus den mock-Daten

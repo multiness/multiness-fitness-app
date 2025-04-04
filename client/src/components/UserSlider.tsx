@@ -7,9 +7,28 @@ import { Button } from "@/components/ui/button";
 import { useUsers } from "../contexts/UserContext";
 import { UserAvatar } from "./UserAvatar";
 import { Card, CardContent } from "@/components/ui/card";
+import { useState, useEffect } from "react";
 
 export default function UserSlider() {
-  const { users, toggleVerification } = useUsers();
+  const { toggleVerification } = useUsers();
+  const [users, setUsers] = useState<any[]>([]);
+  
+  // Lade Benutzer vom Server
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch('/api/users');
+        if (response.ok) {
+          const data = await response.json();
+          setUsers(data);
+        }
+      } catch (error) {
+        console.error('Fehler beim Laden der Benutzer:', error);
+      }
+    };
+    
+    fetchUsers();
+  }, []);
 
   return (
     <>

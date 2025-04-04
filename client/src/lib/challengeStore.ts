@@ -78,7 +78,10 @@ const mapDbChallengeToClientChallenge = (dbChallenge: DbChallenge, participants:
     startDate: new Date(dbChallenge.startDate),
     endDate: new Date(dbChallenge.endDate),
     createdAt: new Date(dbChallenge.createdAt),
-    participantIds: participants.map(p => p.userId)
+    participantIds: participants.map(p => p.userId),
+    // Stelle sicher, dass der Typ korrekt ist
+    type: dbChallenge.type as 'emom' | 'amrap' | 'hiit' | 'running' | 'custom',
+    status: dbChallenge.status as 'active' | 'completed' | 'upcoming'
   } as Challenge;
 };
 
@@ -226,15 +229,33 @@ export const useChallengeStore = create<ChallengeStore>()(
           
           // Hole für jede Challenge die Teilnehmer
           for (const dbChallenge of challenges) {
-            const participantsResponse = await fetch(`/api/challenges/${dbChallenge.id}/participants`);
-            const participants = await participantsResponse.json();
-            
-            // Konvertiere DB-Challenge in Client-Challenge
-            const clientChallenge = mapDbChallengeToClientChallenge(dbChallenge, participants);
-            challengesRecord[dbChallenge.id] = clientChallenge;
-            
-            // Speichere Teilnehmer
-            participantsRecord[dbChallenge.id] = participants.map(mapDbParticipantToClientParticipant);
+            try {
+              const participantsResponse = await fetch(`/api/challenges/${dbChallenge.id}/participants`);
+              const participants = await participantsResponse.json();
+              
+              // Wenn participantIds nicht vorhanden ist, füge leeres Array hinzu
+              if (!dbChallenge.participantIds) {
+                dbChallenge.participantIds = participants.map((p: ChallengeParticipant) => p.userId);
+              }
+              
+              // Konvertiere DB-Challenge in Client-Challenge
+              const clientChallenge = mapDbChallengeToClientChallenge(dbChallenge, participants);
+              challengesRecord[dbChallenge.id] = clientChallenge;
+              
+              // Speichere Teilnehmer
+              participantsRecord[dbChallenge.id] = participants.map(mapDbParticipantToClientParticipant);
+            } catch (err) {
+              console.error(`Fehler beim Abrufen der Teilnehmer für Challenge ${dbChallenge.id}:`, err);
+              
+              // Falls Teilnehmer nicht abrufbar, nutze leeres Array
+              if (!dbChallenge.participantIds) {
+                dbChallenge.participantIds = [];
+              }
+              
+              const clientChallenge = mapDbChallengeToClientChallenge(dbChallenge, []);
+              challengesRecord[dbChallenge.id] = clientChallenge;
+              participantsRecord[dbChallenge.id] = [];
+            }
           }
           
           set({ 
@@ -243,12 +264,9 @@ export const useChallengeStore = create<ChallengeStore>()(
             isLoading: false,
             lastFetched: Date.now()
           });
-          
-          return challengesRecord;
         } catch (error) {
           console.error('Fehler bei der Synchronisation mit dem Server:', error);
           set({ isLoading: false });
-          return get().challenges;
         }
       },
       
@@ -256,9 +274,8 @@ export const useChallengeStore = create<ChallengeStore>()(
         const currentChallenges = get().challenges;
         
         if (Object.keys(currentChallenges).length === 0) {
-          // Lade Beispiel-Challenges
-          const allInitialChallenges = [...defaultChallenges, ...mockChallenges];
-          const recordChallenges = arrayToRecord(allInitialChallenges);
+          // Verwende nur die vordefinierten defaultChallenges
+          const recordChallenges = arrayToRecord(defaultChallenges);
           
           set({ challenges: recordChallenges });
           
@@ -334,8 +351,14 @@ export const useChallengeStore = create<ChallengeStore>()(
           };
           
           // Sende an Server
-          const response = await apiRequest('/api/challenges', 'POST', serverChallengeData);
-          const newChallenge = response.data;
+          const response = await fetch('/api/challenges', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(serverChallengeData),
+          });
+          const newChallenge = await response.json();
           
           // Erstelle Client-Challenge
           const clientChallenge: Challenge = {

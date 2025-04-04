@@ -14,7 +14,6 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, MapPin, Share2, MessageCircle, Users2 } from "lucide-react";
 import { Link } from "wouter";
 import { UserAvatar } from "./UserAvatar";
-import { useEvents } from "@/contexts/EventContext";
 import { useUsers } from "@/contexts/UserContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,11 +23,28 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import ShareDialog from "./ShareDialog";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function EventSlider() {
-  const { events } = useEvents();
   const { users } = useUsers();
+  const [events, setEvents] = useState<any[]>([]);
+  
+  // Lade Events vom Server
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const response = await fetch('/api/events');
+        if (response.ok) {
+          const data = await response.json();
+          setEvents(data);
+        }
+      } catch (error) {
+        console.error('Fehler beim Laden der Events:', error);
+      }
+    };
+    
+    fetchEvents();
+  }, []);
 
   // Sort events by date and filter out archived events
   const activeEvents = events
