@@ -107,7 +107,15 @@ export default function Home() {
     const intervalId = setInterval(async () => {
       try {
         console.log("Automatische Aktualisierung...");
+        
+        // Posts aktualisieren
         await postStore.loadStoredPosts();
+        
+        // Challenges aktualisieren
+        await syncWithServer();
+        
+        // Gruppen aktualisieren
+        await groupStore.syncWithServer();
       } catch (error) {
         console.error("Fehler bei der automatischen Aktualisierung:", error);
       }
