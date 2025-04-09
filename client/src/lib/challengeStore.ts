@@ -14,7 +14,7 @@ export interface Challenge {
   image?: string;
   startDate: Date;
   endDate: Date;
-  type: 'emom' | 'amrap' | 'hiit' | 'running' | 'custom';
+  type: 'emom' | 'amrap' | 'hiit' | 'running' | 'custom' | 'fitness_test' | 'badge';
   status: 'active' | 'completed' | 'upcoming';
   creatorId: number;
   participantIds: number[];  // Wird aus den Teilnehmerdaten abgeleitet
@@ -84,7 +84,7 @@ const mapDbChallengeToClientChallenge = (dbChallenge: any, participants: Challen
     startDate: new Date(dbChallenge.startDate),
     endDate: new Date(dbChallenge.endDate),
     createdAt: new Date(dbChallenge.createdAt),
-    type: (dbChallenge.type || 'custom') as 'emom' | 'amrap' | 'hiit' | 'running' | 'custom',
+    type: (dbChallenge.type || 'custom') as 'emom' | 'amrap' | 'hiit' | 'running' | 'custom' | 'fitness_test' | 'badge',
     status: (dbChallenge.status || 'active') as 'active' | 'completed' | 'upcoming',
     creatorId: dbChallenge.creatorId,
     participantIds: participantIds,

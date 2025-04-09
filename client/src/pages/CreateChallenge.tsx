@@ -73,7 +73,7 @@ interface ChallengeData extends Omit<Challenge, 'id' | 'createdAt'> {
   startDate: Date;
   endDate: Date;
   // Type MUSS einen der erlaubten Werte haben
-  type: 'emom' | 'amrap' | 'hiit' | 'running' | 'custom';
+  type: 'emom' | 'amrap' | 'hiit' | 'running' | 'custom' | 'fitness_test' | 'badge';
   creatorId: number;
   workoutDetails: any;
   points: { bronze: number; silver: number; gold: number };
@@ -378,14 +378,15 @@ ${template.workoutType === 'amrap' ?
       console.log("Erstelle Challenge mit folgenden Daten:");
       
       // Wir müssen sicherstellen, dass der Typ einer der erwarteten Werte ist
-      // Da 'type' im Challenge-Objekt als 'emom' | 'amrap' | 'hiit' | 'running' | 'custom' typisiert ist
-      let actualType: 'emom' | 'amrap' | 'hiit' | 'running' | 'custom';
+      // Da 'type' im Challenge-Objekt als 'emom' | 'amrap' | 'hiit' | 'running' | 'custom' | 'fitness_test' | 'badge' typisiert ist
+      let actualType: 'emom' | 'amrap' | 'hiit' | 'running' | 'custom' | 'fitness_test' | 'badge';
       
       if (creationMethod === "manual") {
         // Wandle workoutType in einen der akzeptierten Typen um
         if (workoutType === "emom") actualType = "emom";
         else if (workoutType === "amrap") actualType = "amrap"; 
         else if (workoutType === "distance") actualType = "running";
+        else if (workoutType === "fortime") actualType = "hiit";
         else actualType = "custom"; // Standardwert für alle anderen Typen
       } else if (creationMethod === "generator") {
         // Wandle den generatorType in einen akzeptierten Typ um
@@ -394,10 +395,11 @@ ${template.workoutType === 'amrap' ?
         else if (genType === "amrap") actualType = "amrap";
         else if (genType === "running" || genType === "distance") actualType = "running";
         else if (genType === "hiit") actualType = "hiit";
+        else if (genType === "fitness" || genType === "fitness_test") actualType = "fitness_test";
         else actualType = "custom";
       } else {
-        // Badge-Typ ist immer custom
-        actualType = "custom";
+        // Badge-Typ
+        actualType = "badge";
       }
 
       // Bereite Challenge-Daten gemäß dem erwarteten Format vor

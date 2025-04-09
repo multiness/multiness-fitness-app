@@ -151,7 +151,7 @@ export const challenges = pgTable("challenges", {
   creatorId: integer("creator_id").references(() => users.id).notNull(),
   startDate: timestamp("start_date").notNull(),
   endDate: timestamp("end_date").notNull(),
-  type: text("type").notNull(), // 'emom', 'amrap', 'hiit', 'running', 'custom'
+  type: text("type").notNull(), // 'emom', 'amrap', 'hiit', 'running', 'custom', 'fitness_test', 'badge'
   status: text("status").notNull().default('active'), // 'active', 'completed', 'upcoming'
   workoutDetails: jsonb("workout_details").notNull(),
   participantCount: integer("participant_count").default(0).notNull(),
