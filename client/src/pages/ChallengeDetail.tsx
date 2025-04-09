@@ -7,7 +7,7 @@ import {
   Dumbbell, Waves, Bike, Timer, Award, ChevronRight
 } from "lucide-react";
 import { format } from "date-fns";
-import { mockChallenges, badgeTests } from "../data/mockData";
+import { badgeTests } from "../data/mockData";
 import { de } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -20,6 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useChallengeStore } from "../lib/challengeStore";
 
 interface Participant {
   id: number;
@@ -40,6 +41,7 @@ export default function ChallengeDetail() {
   const { id } = useParams();
   const { toast } = useToast();
   const { users, currentUser } = useUsers();
+  const { challenges } = useChallengeStore();
 
   // Initialize all states at the beginning
   const [isParticipating, setIsParticipating] = useState(false);
@@ -47,14 +49,17 @@ export default function ChallengeDetail() {
   const [showParticipants, setShowParticipants] = useState(false);
   const [exerciseResults, setExerciseResults] = useState<Record<string, ExerciseResult>>({});
   const [participants, setParticipants] = useState<Participant[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // Get challenge and creator
-  const challenge = mockChallenges.find(c => c.id === parseInt(id || ""));
+  const challenge = challenges[Number(id)];
   const creator = challenge ? users.find(u => u.id === challenge.creatorId) : undefined;
 
   // Early return if no challenge or creator
-  if (!challenge || !creator) {
-    return <div>Challenge nicht gefunden</div>;
+  if (!challenge) {
+    return <div className="container p-4 text-center">
+      <div className="text-lg font-semibold">Challenge wird geladen oder existiert nicht</div>
+    </div>;
   }
 
   // Calculate dates and states
@@ -65,25 +70,27 @@ export default function ChallengeDetail() {
   const isEnded = currentDate > endDate;
 
   // Get badge details if applicable
-  const badgeDetails = challenge.workoutType === 'badge'
+  const badgeDetails = challenge.type === 'badge'
     ? badgeTests.find(test => test.name === challenge.title.replace(' Challenge', ''))
     : null;
 
   useEffect(() => {
     if (challenge) {
-      // Initialize mock participants
-      const mockParticipants: Participant[] = users
-        .slice(0, Math.floor(Math.random() * 8) + 3)
+      // In einer echten Anwendung würden wir hier die Challenge-Teilnehmer vom Server laden
+      // Aktuell verwenden wir temporär einige Test-Teilnehmer
+      const testParticipants: Participant[] = users
+        .slice(0, 3)
         .map(user => ({
           id: user.id,
           username: user.username,
-          points: Math.floor(Math.random() * 1000),
-          lastUpdate: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000)
+          points: 0,
+          lastUpdate: new Date()
         }));
-      setParticipants(mockParticipants.sort((a, b) => b.points - a.points));
+      setParticipants(testParticipants);
+      setLoading(false);
 
-      // Check if current user is already participating
-      const isCurrentUserParticipating = mockParticipants.some(p => p.id === currentUser?.id);
+      // Prüfen, ob der aktuelle Benutzer bereits teilnimmt
+      const isCurrentUserParticipating = challenge.participantIds?.includes(currentUser?.id || 0) || false;
       setIsParticipating(isCurrentUserParticipating);
     }
   }, [challenge, users, currentUser?.id]);
@@ -221,7 +228,7 @@ export default function ChallengeDetail() {
       </Card>
 
       {/* Challenge Type Specific Details */}
-      {challenge.workoutType === 'badge' && badgeDetails && (
+      {challenge.type === 'badge' && badgeDetails && (
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -296,7 +303,7 @@ export default function ChallengeDetail() {
                     <Dumbbell className="h-5 w-5 text-primary mb-2" />
                     <span className="text-sm font-medium">Typ</span>
                     <span className="text-sm text-muted-foreground">
-                      {challenge.workoutType.toUpperCase()}
+                      {challenge.type.toUpperCase()}
                     </span>
                   </div>
                   {challenge.workoutDetails?.timePerRound && (
@@ -341,7 +348,7 @@ export default function ChallengeDetail() {
                       isParticipating={isParticipating}
                       onSubmitResult={handleSubmitExerciseResult}
                       currentResult={exerciseResults[exercise.name]}
-                      workoutType={challenge.workoutType}
+                      workoutType={challenge.type}
                       totalRounds={challenge.workoutDetails.rounds}
                     />
                   ))}
@@ -352,29 +359,7 @@ export default function ChallengeDetail() {
         </Card>
       )}
 
-      {(challenge.prize || challenge.prizeDescription) && (
-        <Card className="mb-6">
-          <CardHeader className="flex flex-row items-center gap-2">
-            <Gift className="h-5 w-5 text-primary" />
-            <CardTitle>Gewinn</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-start gap-4">
-              {challenge.prizeImage && (
-                <img
-                  src={challenge.prizeImage}
-                  alt={challenge.prize || ""}
-                  className="w-24 h-24 object-cover rounded-lg"
-                />
-              )}
-              <div>
-                <h3 className="font-semibold text-lg mb-1">{challenge.prize}</h3>
-                <p className="text-muted-foreground">{challenge.prizeDescription}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Gewinnkarte wird nur angezeigt, wenn es einen Preis gibt */}
 
       {!isEnded && (
         <div className="flex flex-col sm:flex-row gap-3">
