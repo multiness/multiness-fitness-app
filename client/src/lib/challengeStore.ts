@@ -696,15 +696,24 @@ export const useChallengeStore = create<ChallengeStore>()(
             return; // Bereits Teilnehmer
           }
           
+          // Stelle sicher, dass wir hier eine Zahl haben und keinen String
+          const numUserId = Number(userId);
+          if (isNaN(numUserId)) {
+            throw new Error(`Ungültige User-ID: ${userId}`);
+          }
+          
           // Verwende direkten Fetch-Aufruf statt apiRequest
-          console.log(`Sende Beitrittsanfrage an Server für Challenge ${challengeId} und User ${userId}`);
+          console.log(`Sende Beitrittsanfrage an Server für Challenge ${challengeId} und User ${numUserId}`);
           const response = await fetch(`/api/challenges/${challengeId}/participants`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ userId })
+            body: JSON.stringify({ userId: numUserId })
           });
+          
+          // Logge die Anfrage für Debugging
+          console.log("Anfrage-Daten:", { challengeId, userId: numUserId });
           
           if (!response.ok) {
             const errorText = await response.text();
@@ -719,15 +728,20 @@ export const useChallengeStore = create<ChallengeStore>()(
           const participants = get().participants;
           const challengeParticipants = participants[challengeId] || [];
           
-          // Neue Teilnehmerdaten mit Serverdaten (falls vorhanden) oder Fallback
-          const newParticipant: ChallengeParticipantModel = serverResponse || {
-            id: Date.now(), // Temporäre ID, falls nicht vom Server bereitgestellt
-            challengeId,
-            userId,
-            joinedAt: new Date()
+          // Stellen Sie sicher, dass die Serverantwort verwendet wird
+          const newParticipant: ChallengeParticipantModel = {
+            id: serverResponse.id || Date.now(),
+            challengeId: serverResponse.challengeId || challengeId,
+            userId: serverResponse.userId || numUserId,
+            joinedAt: serverResponse.joinedAt ? new Date(serverResponse.joinedAt) : new Date(),
+            result: serverResponse.result || null,
+            completedAt: serverResponse.completedAt ? new Date(serverResponse.completedAt) : null,
+            achievementLevel: serverResponse.achievementLevel || null,
+            currentProgress: serverResponse.currentProgress || 0,
+            points: serverResponse.points || 0
           };
           
-          console.log("Füge neuen Teilnehmer hinzu:", newParticipant);
+          console.log("Neuer Teilnehmer mit Serverdaten:", newParticipant);
           
           const updatedParticipants = {
             ...participants,
@@ -738,7 +752,7 @@ export const useChallengeStore = create<ChallengeStore>()(
             ...get().challenges,
             [challengeId]: {
               ...challenge,
-              participantIds: [...challenge.participantIds, userId]
+              participantIds: [...challenge.participantIds, numUserId]
             }
           };
           
@@ -757,10 +771,16 @@ export const useChallengeStore = create<ChallengeStore>()(
             console.error("Fehler beim Speichern der Teilnahme im localStorage:", err);
           }
           
-          // Synchronisiere mit dem Server nach kurzer Verzögerung
+          // Synchronisiere sofort und nach einer kurzen Verzögerung nochmals
+          get().syncWithServer(); // Sofortiger Aufruf
+          
+          // Erneute Synchronisierung nach kurzer Verzögerung für mehr Zuverlässigkeit
           setTimeout(() => {
+            console.log("Wiederholte Server-Synchronisierung nach Teilnahme");
             get().syncWithServer();
-          }, 1000);
+          }, 2000);
+          
+          return newParticipant; // Gib den neuen Teilnehmer zurück für weitere Verarbeitung
         } catch (error) {
           console.error('Fehler beim Beitreten zur Challenge:', error);
           throw error;

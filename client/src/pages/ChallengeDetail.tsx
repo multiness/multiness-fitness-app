@@ -14,13 +14,13 @@ import { UserAvatar } from "@/components/UserAvatar";
 import { useUsers } from "../contexts/UserContext";
 import { Badge } from "@/components/ui/badge";
 import { ExerciseDetails } from "@/components/ExerciseDetails";
+import { useChallengeStore } from "../lib/challengeStore";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useChallengeStore } from "../lib/challengeStore";
 
 interface Participant {
   id: number;
@@ -51,8 +51,9 @@ export default function ChallengeDetail() {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Get challenge and creator
-  const challenge = challenges[Number(id)];
+  // Get challenge from challenges state
+  const challengeId = Number(id);
+  const challenge = challenges[challengeId];
   const creator = challenge ? users.find(u => u.id === challenge.creatorId) : undefined;
 
   // Early return if no challenge
@@ -92,24 +93,54 @@ export default function ChallengeDetail() {
 
   useEffect(() => {
     if (challenge) {
-      // In einer echten Anwendung würden wir hier die Challenge-Teilnehmer vom Server laden
-      // Aktuell verwenden wir temporär einige Test-Teilnehmer
-      const testParticipants: Participant[] = users
-        .slice(0, 3)
-        .map(user => ({
-          id: user.id,
-          username: user.username,
-          points: 0,
-          lastUpdate: new Date()
-        }));
-      setParticipants(testParticipants);
-      setLoading(false);
-
-      // Prüfen, ob der aktuelle Benutzer bereits teilnimmt
-      const isCurrentUserParticipating = challenge.participantIds?.includes(currentUser?.id || 0) || false;
-      setIsParticipating(isCurrentUserParticipating);
+      // Lade die tatsächlichen Teilnehmer vom Server
+      const fetchParticipants = async () => {
+        try {
+          setLoading(true);
+          console.log(`Lade Teilnehmer für Challenge ${challenge.id}...`);
+          const response = await fetch(`/api/challenges/${challenge.id}/participants`);
+          
+          if (!response.ok) {
+            throw new Error(`Fehler beim Laden der Teilnehmer: ${response.status}`);
+          }
+          
+          const participantData = await response.json();
+          console.log(`${participantData.length} Teilnehmer für Challenge ${challenge.id} geladen:`, participantData);
+          
+          // Wandle die Teilnehmerdaten in das Participant-Format um
+          const formattedParticipants: Participant[] = participantData.map((p: any) => {
+            const matchingUser = users.find(u => u.id === p.userId);
+            return {
+              id: p.userId,
+              username: matchingUser?.username || `Benutzer ${p.userId}`,
+              points: p.points || 0,
+              lastUpdate: p.updatedAt ? new Date(p.updatedAt) : new Date(),
+              achievementLevel: p.achievementLevel
+            };
+          });
+          
+          setParticipants(formattedParticipants);
+          
+          // Prüfen, ob der aktuelle Benutzer bereits teilnimmt
+          const isCurrentUserParticipating = participantData.some((p: any) => p.userId === currentUser?.id);
+          setIsParticipating(isCurrentUserParticipating);
+          
+          console.log("Teilnahme Status:", isCurrentUserParticipating ? "Nimmt teil" : "Nimmt nicht teil");
+        } catch (error) {
+          console.error("Fehler beim Laden der Challenge-Teilnehmer:", error);
+          toast({
+            title: "Fehler",
+            description: "Die Teilnehmer konnten nicht geladen werden.",
+            variant: "destructive"
+          });
+        } finally {
+          setLoading(false);
+        }
+      };
+      
+      fetchParticipants();
     }
-  }, [challenge, users, currentUser?.id]);
+  }, [challenge, users, currentUser?.id, toast]);
 
   const calculateTotalPoints = () => {
     const results = Object.values(exerciseResults);
@@ -126,27 +157,68 @@ export default function ChallengeDetail() {
     return { total, level };
   };
 
-  const handleSubmitExerciseResult = (result: ExerciseResult) => {
+  const handleSubmitExerciseResult = async (result: ExerciseResult) => {
+    if (!currentUser?.id) {
+      toast({
+        title: "Nicht angemeldet",
+        description: "Du musst angemeldet sein, um Ergebnisse zu speichern.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Lokales State-Update
     setExerciseResults(prev => ({
       ...prev,
       [result.name]: result
     }));
 
-    const { total } = calculateTotalPoints();
-
-    setParticipants(prev => prev.map(p =>
-      p.id === (currentUser?.id || 0)
-        ? { ...p, points: total, lastUpdate: new Date() }
-        : p
-    ).sort((a, b) => b.points - a.points));
-
-    toast({
-      title: "Ergebnis gespeichert!",
-      description: `${result.name}: ${result.value} ${result.unit} (${result.achievementLevel})`,
-    });
+    const { total, level } = calculateTotalPoints();
+    
+    try {
+      // Ergebnisse an den Server senden
+      console.log(`Sende Übungsergebnis für Challenge ${challenge.id}, User ${currentUser.id}:`, result);
+      
+      const participantData = {
+        result: { ...exerciseResults, [result.name]: result },
+        points: total,
+        achievementLevel: level
+      };
+      
+      // Server-Update
+      await fetch(`/api/challenges/${challenge.id}/participants/${currentUser.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(participantData)
+      });
+      
+      // Update local store
+      await fetch(`/api/challenges/sync`, { method: 'POST' });
+      
+      // UI aktualisieren
+      setParticipants(prev => prev.map(p =>
+        p.id === currentUser.id
+          ? { ...p, points: total, lastUpdate: new Date(), achievementLevel: level }
+          : p
+      ).sort((a, b) => b.points - a.points));
+      
+      toast({
+        title: "Ergebnis gespeichert!",
+        description: `${result.name}: ${result.value} ${result.unit} (${result.achievementLevel})`,
+      });
+    } catch (error) {
+      console.error("Fehler beim Speichern des Ergebnisses:", error);
+      toast({
+        title: "Fehler",
+        description: "Dein Ergebnis konnte nicht gespeichert werden.",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleJoinChallenge = () => {
+  const handleJoinChallenge = async () => {
     if (isEnded) {
       toast({
         title: "Challenge beendet",
@@ -155,25 +227,75 @@ export default function ChallengeDetail() {
       });
       return;
     }
-
-    setIsParticipating(true);
-
-    if (!participants.some(p => p.id === currentUser?.id)) {
-      setParticipants(prev => [
-        ...prev,
-        {
-          id: currentUser?.id || 0,
-          username: currentUser?.username || "",
-          points: 0,
-          lastUpdate: new Date()
-        }
-      ]);
+    
+    if (!currentUser?.id) {
+      toast({
+        title: "Nicht angemeldet",
+        description: "Du musst angemeldet sein, um an einer Challenge teilzunehmen.",
+        variant: "destructive",
+      });
+      return;
     }
-
-    toast({
-      title: "Erfolgreich beigetreten!",
-      description: "Du nimmst jetzt an der Challenge teil.",
-    });
+    
+    try {
+      setLoading(true);
+      // API-Aufruf, um der Challenge beizutreten
+      console.log(`Sende Anfrage zum Beitreten zu Challenge ${challenge.id}...`);
+      
+      const response = await fetch(`/api/challenges/${challenge.id}/participants`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ userId: currentUser.id })
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Server antwortete mit ${response.status}: ${errorText}`);
+      }
+      
+      const newParticipant = await response.json();
+      console.log("Erfolgreicher Beitritt zur Challenge:", newParticipant);
+      
+      // UI aktualisieren
+      setIsParticipating(true);
+      
+      // Teilnehmerliste aktualisieren
+      if (!participants.some(p => p.id === currentUser.id)) {
+        setParticipants(prev => [
+          ...prev,
+          {
+            id: currentUser.id || 0,
+            username: currentUser.username || "",
+            points: 0,
+            lastUpdate: new Date()
+          }
+        ]);
+      }
+      
+      // Store aktualisieren
+      try {
+        await fetch(`/api/challenges/sync`, { method: 'POST' });
+        console.log("Challenge-Store aktualisiert");
+      } catch (storeError) {
+        console.error("Fehler beim Aktualisieren des Challenge-Stores:", storeError);
+      }
+      
+      toast({
+        title: "Erfolgreich beigetreten!",
+        description: "Du nimmst jetzt an der Challenge teil.",
+      });
+    } catch (error) {
+      console.error("Fehler beim Beitreten zur Challenge:", error);
+      toast({
+        title: "Fehler",
+        description: "Es gab ein Problem beim Beitreten zur Challenge. Bitte versuche es später erneut.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getExerciseIcon = (name: string) => {

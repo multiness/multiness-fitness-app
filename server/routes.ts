@@ -510,11 +510,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/challenges/:id/participants", async (req, res) => {
     try {
       const challengeId = Number(req.params.id);
+      console.log(`GET /api/challenges/${challengeId}/participants - Teilnehmer werden abgefragt`);
       try {
         const participants = await storage.getChallengeParticipants(challengeId);
+        console.log(`Teilnehmer für Challenge ${challengeId} gefunden:`, participants);
         res.json(participants);
       } catch (error) {
-        console.log("Error fetching challenge participants, returning empty array:", error);
+        console.error("Error fetching challenge participants, returning empty array:", error);
         res.json([]);
       }
     } catch (error) {
