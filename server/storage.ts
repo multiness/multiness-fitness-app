@@ -593,19 +593,30 @@ export class DatabaseStorage implements IStorage {
   }
 
   async addChallengeParticipant(participant: InsertChallengeParticipant): Promise<ChallengeParticipant> {
-    const participantData = { ...participant };
-    if (participantData.joinedAt) {
-      participantData.joinedAt = new Date(participantData.joinedAt);
-    }
-    if (participantData.completedAt) {
-      participantData.completedAt = new Date(participantData.completedAt);
-    }
+    try {
+      const participantData = { ...participant };
+      console.log("AddChallengeParticipant - Originaldaten:", participant);
+      
+      if (participantData.joinedAt) {
+        participantData.joinedAt = new Date(participantData.joinedAt);
+      }
+      if (participantData.completedAt) {
+        participantData.completedAt = new Date(participantData.completedAt);
+      }
+      
+      console.log("AddChallengeParticipant - Aufbereitete Daten:", participantData);
 
-    const [newParticipant] = await db
-      .insert(challengeParticipants)
-      .values(participantData)
-      .returning();
-    return newParticipant;
+      const [newParticipant] = await db
+        .insert(challengeParticipants)
+        .values(participantData)
+        .returning();
+      
+      console.log("AddChallengeParticipant - Neuer Teilnehmer in DB gespeichert:", newParticipant);
+      return newParticipant;
+    } catch (error) {
+      console.error("Fehler beim Hinzufügen des Challenge-Teilnehmers:", error);
+      throw error;
+    }
   }
 
   async updateChallengeParticipant(

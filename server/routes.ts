@@ -550,10 +550,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Teilnehmer einer Challenge hinzufügen
   app.post("/api/challenges/:id/participants", async (req, res) => {
     try {
+      console.log("Challenge-Teilnahme-Anfrage erhalten:", req.params, req.body);
       const challengeId = Number(req.params.id);
       const challenge = await storage.getChallenge(challengeId);
       
       if (!challenge) {
+        console.log(`Challenge mit ID ${challengeId} nicht gefunden`);
         return res.status(404).json({ error: "Challenge nicht gefunden" });
       }
       
@@ -563,6 +565,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         joinedAt: new Date().toISOString(),
       });
       
+      console.log("Validierte Teilnehmer-Daten:", participantData);
+      
       // Prüfen, ob der Teilnehmer bereits existiert
       const existingParticipant = await storage.getChallengeParticipant(
         challengeId, 
@@ -570,11 +574,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       
       if (existingParticipant) {
+        console.log(`Teilnehmer ${participantData.userId} bereits zur Challenge ${challengeId} angemeldet`);
         return res.status(400).json({ error: "Teilnehmer bereits angemeldet" });
       }
       
+      console.log("Füge neuen Teilnehmer zur Datenbank hinzu:", participantData);
       const participant = await storage.addChallengeParticipant(participantData);
       
+      console.log("Teilnehmer erfolgreich hinzugefügt:", participant);
       res.status(201).json(participant);
     } catch (error) {
       console.error("Error adding challenge participant:", error);
