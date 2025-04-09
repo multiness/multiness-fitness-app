@@ -12,14 +12,55 @@ const loadStoredChallenges = (): Challenge[] => {
 };
 
 // Funktion zum Speichern einer neuen Challenge
-export const saveNewChallenge = (challenge: Challenge) => {
+export const saveNewChallenge = async (challenge: Challenge) => {
   try {
-    const storedChallenges = loadStoredChallenges();
-    const updatedChallenges = [...storedChallenges, {...challenge, id: Date.now()}];
-    localStorage.setItem('userChallenges', JSON.stringify(updatedChallenges));
-    // Update auch die in-memory Challenges
+    console.log("Speichere Challenge über API:", challenge);
+    
+    // Bereite die Challenge-Daten für den Server vor
+    const serverData = {
+      title: challenge.title,
+      description: challenge.description,
+      image: challenge.image,
+      startDate: challenge.startDate instanceof Date 
+        ? challenge.startDate.toISOString() 
+        : challenge.startDate,
+      endDate: challenge.endDate instanceof Date 
+        ? challenge.endDate.toISOString() 
+        : challenge.endDate,
+      creatorId: challenge.creatorId || 1, // Default auf User 1
+      type: challenge.type,
+      status: challenge.status,
+      workoutDetails: challenge.workoutDetails || {},
+      points: challenge.points || { bronze: 50, silver: 75, gold: 100 },
+    };
+    
+    // Sende an API
+    const response = await fetch('/api/challenges', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(serverData)
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Server antwortete mit ${response.status}`);
+    }
+    
+    console.log("Challenge erfolgreich über API gespeichert");
+    return await response.json();
   } catch (error) {
-    console.error('Error saving challenge to localStorage:', error);
+    console.error('Error saving challenge to API:', error);
+    
+    // Fallback zu localStorage
+    try {
+      const storedChallenges = loadStoredChallenges();
+      const updatedChallenges = [...storedChallenges, {...challenge, id: Date.now()}];
+      localStorage.setItem('userChallenges', JSON.stringify(updatedChallenges));
+      console.log("Challenge in localStorage gespeichert (Fallback)");
+    } catch (localError) {
+      console.error('Error saving challenge to localStorage:', localError);
+    }
   }
 };
 

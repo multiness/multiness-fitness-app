@@ -431,6 +431,7 @@ export const useChallengeStore = create<ChallengeStore>()(
       
       addChallenge: async (challengeData) => {
         try {
+          console.log("Challenge hinzufügen gestartet mit Daten:", challengeData);
           const now = new Date();
           
           // Definiere den Challenge-Status basierend auf Start- und Enddatum
@@ -465,6 +466,8 @@ export const useChallengeStore = create<ChallengeStore>()(
             points: challengeData.points
           };
           
+          console.log("Sende Challenge an Server:", serverChallengeData);
+          
           // Sende an Server
           const response = await fetch('/api/challenges', {
             method: 'POST',
@@ -473,7 +476,15 @@ export const useChallengeStore = create<ChallengeStore>()(
             },
             body: JSON.stringify(serverChallengeData),
           });
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Server-Fehlerantwort:", errorText);
+            throw new Error(`Server antwortete mit ${response.status}: ${errorText}`);
+          }
+          
           const newChallenge = await response.json();
+          console.log("Neue Challenge vom Server erhalten:", newChallenge);
           
           // Erstelle Client-Challenge
           const clientChallenge: Challenge = {
@@ -489,7 +500,17 @@ export const useChallengeStore = create<ChallengeStore>()(
             [clientChallenge.id]: clientChallenge
           };
           
+          console.log("Aktualisiere lokale Challenges:", updatedChallenges);
+          
           set({ challenges: updatedChallenges });
+          
+          // Speichere in localStorage für Persistenz
+          localStorage.setItem(CHALLENGE_STORAGE_KEY, JSON.stringify(updatedChallenges));
+          
+          // Sofortige Synchronisierung mit dem Server auslösen
+          setTimeout(() => {
+            get().syncWithServer();
+          }, 1000);
           
           return clientChallenge.id;
         } catch (error) {
@@ -514,6 +535,7 @@ export const useChallengeStore = create<ChallengeStore>()(
       
       updateChallenge: async (id, updatedChallenge) => {
         try {
+          console.log("Challenge aktualisieren gestartet mit ID:", id, "und Daten:", updatedChallenge);
           const challenge = get().challenges[id];
           
           if (!challenge) throw new Error('Challenge nicht gefunden');
@@ -560,18 +582,52 @@ export const useChallengeStore = create<ChallengeStore>()(
               undefined
           };
           
-          // Sende an Server
-          await apiRequest(`/api/challenges/${id}`, 'PATCH', serverUpdateData);
+          console.log("Sende Challenge-Update an Server:", serverUpdateData);
+          
+          // Verwende direkten Fetch-Aufruf statt apiRequest
+          const response = await fetch(`/api/challenges/${id}`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(serverUpdateData)
+          });
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`Server antwortete mit ${response.status}: ${errorText}`);
+            throw new Error(`Server antwortete mit ${response.status}: ${errorText}`);
+          }
+          
+          const updatedFromServer = await response.json();
+          console.log("Aktualisierte Challenge vom Server erhalten:", updatedFromServer);
           
           // Lokalen Store aktualisieren
-          const updatedObj = { ...challenge, ...updatedChallenge, status };
+          const updatedObj = { 
+            ...challenge, 
+            ...updatedChallenge, 
+            status,
+            startDate: new Date(updatedFromServer.startDate || challenge.startDate),
+            endDate: new Date(updatedFromServer.endDate || challenge.endDate),
+            updatedAt: new Date(updatedFromServer.updatedAt || new Date())
+          };
           
           const updatedChallenges = {
             ...get().challenges,
             [id]: updatedObj
           };
           
+          console.log("Aktualisiere lokale Challenges:", updatedChallenges);
+          
           set({ challenges: updatedChallenges });
+          
+          // Speichere in localStorage für Persistenz
+          localStorage.setItem(CHALLENGE_STORAGE_KEY, JSON.stringify(updatedChallenges));
+          
+          // Synchronisiere mit dem Server, um sicherzustellen, dass alle Ansichten aktuell sind
+          setTimeout(() => {
+            get().syncWithServer();
+          }, 1000);
         } catch (error) {
           console.error('Fehler beim Aktualisieren der Challenge:', error);
           throw error;
@@ -580,41 +636,79 @@ export const useChallengeStore = create<ChallengeStore>()(
       
       joinChallenge: async (challengeId, userId) => {
         try {
+          console.log("Challenge beitreten gestartet mit Challenge-ID:", challengeId, "und User-ID:", userId);
           const challenge = get().challenges[challengeId];
           
           if (!challenge) throw new Error('Challenge nicht gefunden');
           
-          if (challenge.participantIds.includes(userId)) return; // Bereits Teilnehmer
+          if (challenge.participantIds.includes(userId)) {
+            console.log("Benutzer ist bereits Teilnehmer dieser Challenge");
+            return; // Bereits Teilnehmer
+          }
           
-          // An Server senden
-          await apiRequest(`/api/challenges/${challengeId}/participants`, 'POST', { userId });
+          // Verwende direkten Fetch-Aufruf statt apiRequest
+          console.log(`Sende Beitrittsanfrage an Server für Challenge ${challengeId} und User ${userId}`);
+          const response = await fetch(`/api/challenges/${challengeId}/participants`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ userId })
+          });
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`Server antwortete mit ${response.status}: ${errorText}`);
+            throw new Error(`Server antwortete mit ${response.status}: ${errorText}`);
+          }
+          
+          const serverResponse = await response.json();
+          console.log("Server-Antwort nach Beitritt:", serverResponse);
           
           // Lokalen Store aktualisieren
           const participants = get().participants;
           const challengeParticipants = participants[challengeId] || [];
           
-          // Neue Teilnehmerdaten
-          const newParticipant: ChallengeParticipantModel = {
-            id: Date.now(), // Temporäre ID, bis vom Server ersetzt
+          // Neue Teilnehmerdaten mit Serverdaten (falls vorhanden) oder Fallback
+          const newParticipant: ChallengeParticipantModel = serverResponse || {
+            id: Date.now(), // Temporäre ID, falls nicht vom Server bereitgestellt
             challengeId,
             userId,
             joinedAt: new Date()
           };
           
+          console.log("Füge neuen Teilnehmer hinzu:", newParticipant);
+          
+          const updatedParticipants = {
+            ...participants,
+            [challengeId]: [...challengeParticipants, newParticipant]
+          };
+          
+          const updatedChallenges = {
+            ...get().challenges,
+            [challengeId]: {
+              ...challenge,
+              participantIds: [...challenge.participantIds, userId]
+            }
+          };
+          
           // Aktualisiere Teilnehmer
           set({
-            participants: {
-              ...participants,
-              [challengeId]: [...challengeParticipants, newParticipant]
-            },
-            challenges: {
-              ...get().challenges,
-              [challengeId]: {
-                ...challenge,
-                participantIds: [...challenge.participantIds, userId]
-              }
-            }
+            participants: updatedParticipants,
+            challenges: updatedChallenges
           });
+          
+          // Speichere in localStorage für Persistenz
+          try {
+            localStorage.setItem(CHALLENGE_STORAGE_KEY, JSON.stringify(updatedChallenges));
+          } catch (storageError) {
+            console.warn("Konnte Challenges nicht in localStorage speichern:", storageError);
+          }
+          
+          // Synchronisiere mit dem Server nach kurzer Verzögerung
+          setTimeout(() => {
+            get().syncWithServer();
+          }, 1000);
         } catch (error) {
           console.error('Fehler beim Beitreten zur Challenge:', error);
           throw error;
