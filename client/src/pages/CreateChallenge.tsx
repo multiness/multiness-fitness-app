@@ -9,7 +9,7 @@ import WorkoutGenerator from "@/components/WorkoutGenerator";
 import { useToast } from "@/hooks/use-toast";
 import { format, addDays } from "date-fns";
 import { badgeTests, exerciseDatabase } from "../data/mockData";
-import { useChallengeStore } from "@/lib/challengeStore";
+import { Challenge, useChallengeStore } from "../lib/challengeStore";
 import {
   Dialog,
   DialogContent,
@@ -59,8 +59,41 @@ interface BadgeTest {
   }[];
 }
 
-// Zuerst die ImageUploadSection Komponente definieren
-const ImageUploadSection = ({ type, image, onChange }: { type: 'challenge' | 'prize', image: string | null, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) => (
+// Definiere den Typ für Challenge-Status
+type ChallengeStatus = 'active' | 'completed' | 'upcoming';
+
+// Definiere den Typ für Challenge-Daten
+// Das Challenge-Type wird bereits oben importiert
+
+// Definiere Typ für unsere internen Challenge-Daten, der mit dem Store-Typ kompatibel ist
+interface ChallengeData extends Omit<Challenge, 'id' | 'createdAt'> {
+  title: string;
+  description: string;
+  image?: string;
+  startDate: Date;
+  endDate: Date;
+  // Type MUSS einen der erlaubten Werte haben
+  type: 'emom' | 'amrap' | 'hiit' | 'running' | 'custom';
+  creatorId: number;
+  workoutDetails: any;
+  points: { bronze: number; silver: number; gold: number };
+  isPublic: boolean;
+  status: ChallengeStatus;
+  participantIds: number[];
+}
+
+// Einfachere ImageUploadSection-Komponente
+const ImageUploadSection = ({ 
+  type, 
+  image, 
+  onChange,
+  onClear
+}: { 
+  type: 'challenge' | 'prize', 
+  image: string | null, 
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void,
+  onClear: () => void 
+}) => (
   <div className="space-y-2">
     <Label>{type === 'challenge' ? 'Challenge Bild (Optional)' : 'Gewinn Bild (Optional)'}</Label>
     <div className="flex items-center gap-4">
@@ -77,7 +110,7 @@ const ImageUploadSection = ({ type, image, onChange }: { type: 'challenge' | 'pr
             variant="ghost"
             size="sm"
             className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
-            onClick={() => type === 'challenge' ? setChallengeImage(null) : setPrizeImage(null)}
+            onClick={onClear}
           >
             <X className="h-4 w-4" />
           </Button>
@@ -174,17 +207,24 @@ ${template.workoutType === 'amrap' ?
     if (selectedTest) {
       setSelectedBadgeTest(badgeId);
       setChallengeTitle(`${selectedTest.name} Challenge`);
-      const description = `${selectedTest.description}\n\nAnforderungen:\n${selectedTest.requirements
-        .map(req => {
-          if ('levels' in req && req.levels) {
-            return `\n${req.name}:\n${req.levels
-              .map(level => `- ${level.level}: ${level.requirement}`)
-              .join('\n')}`;
-          }
-          return `\n${req.name}: ${req.requirement}`;
-        })
-        .join('\n')}`;
-      setChallengeDescription(description);
+      
+      // Sicherer Zugriff auf requirements mit Typenprüfung
+      if (Array.isArray(selectedTest.requirements)) {
+        const description = `${selectedTest.description}\n\nAnforderungen:\n${selectedTest.requirements
+          .map(req => {
+            if (req && 'levels' in req && Array.isArray(req.levels)) {
+              return `\n${req.name}:\n${req.levels
+                .map((level: {level: string, requirement: string}) => 
+                  `- ${level.level}: ${level.requirement}`)
+                .join('\n')}`;
+            }
+            return `\n${req.name}: ${req.requirement}`;
+          })
+          .join('\n')}`;
+        setChallengeDescription(description);
+      } else {
+        setChallengeDescription(selectedTest.description);
+      }
     }
   };
 
@@ -297,106 +337,130 @@ ${template.workoutType === 'amrap' ?
     }
   };
 
-  const handleCreateChallenge = () => {
-    if (creationMethod === "generator" && !selectedWorkout) {
-      toast({
-        title: "Kein Workout ausgewählt",
-        description: "Bitte generiere zuerst ein Workout für deine Challenge.",
-        variant: "destructive",
-      });
-      return;
-    }
+  // Hole die addChallenge-Funktion direkt vom Store (ohne Hook)
+  const { addChallenge } = useChallengeStore();
+  
+  const handleCreateChallenge = async () => {
+    try {
+      if (creationMethod === "generator" && !selectedWorkout) {
+        toast({
+          title: "Kein Workout ausgewählt",
+          description: "Bitte generiere zuerst ein Workout für deine Challenge.",
+          variant: "destructive",
+        });
+        return;
+      }
 
-    if (creationMethod === "manual" && (!workoutType || (needsExercises(workoutType) && exercises.length === 0))) {
-      toast({
-        title: "Unvollständige Workout-Details",
-        description: "Bitte fülle alle Workout-Details aus und füge mindestens eine Übung hinzu.",
-        variant: "destructive",
-      });
-      return;
-    }
+      if (creationMethod === "manual" && (!workoutType || (needsExercises(workoutType) && exercises.length === 0))) {
+        toast({
+          title: "Unvollständige Workout-Details",
+          description: "Bitte fülle alle Workout-Details aus und füge mindestens eine Übung hinzu.",
+          variant: "destructive",
+        });
+        return;
+      }
 
-    const workoutDetails = creationMethod === "manual" ? {
-      type: workoutType,
-      timePerRound: Number(timePerRound) || undefined,
-      rounds: Number(rounds) || undefined,
-      exercises: exercises,
-      distance: distance ? Number(distance) : undefined,
-      targetType: workoutType === 'distance' ? targetType : undefined,
-      isCircuit: workoutType === 'custom' ? isCircuit : undefined,
-      restBetweenSets: restBetweenSets ? Number(restBetweenSets) : undefined,
-      timeLimit: timeLimit ? Number(timeLimit) : undefined,
-    } : creationMethod === "generator" ? selectedWorkout.workoutDetails : {
-      type: "badge",
-      exercises: []
-    };
+      const workoutDetails = creationMethod === "manual" ? {
+        type: workoutType,
+        timePerRound: Number(timePerRound) || undefined,
+        rounds: Number(rounds) || undefined,
+        exercises: exercises,
+        distance: distance ? Number(distance) : undefined,
+        targetType: workoutType === 'distance' ? targetType : undefined,
+        isCircuit: workoutType === 'custom' ? isCircuit : undefined,
+        restBetweenSets: restBetweenSets ? Number(restBetweenSets) : undefined,
+        timeLimit: timeLimit ? Number(timeLimit) : undefined,
+      } : creationMethod === "generator" ? selectedWorkout.workoutDetails : {
+        type: "badge",
+        exercises: []
+      };
 
-    const newChallenge = {
-      id: Date.now(), // Unique ID based on timestamp
-      title: challengeTitle,
-      description: challengeDescription,
-      startDate: new Date(startDate).toISOString(),
-      endDate: new Date(endDate).toISOString(),
-      prize: prize || null,
-      prizeDescription: prizeDescription || null,
-      workoutType: creationMethod === "manual" ? workoutType :
-                  creationMethod === "generator" ? selectedWorkout.workoutType : "badge",
-      workoutDetails,
-      creatorId: 1, // Current user ID -  Should be replaced with actual user ID
-      image: challengeImage,
-      prizeImage: prizeImage
-    };
+      console.log("Erstelle Challenge mit folgenden Daten:");
+      
+      // Wir müssen sicherstellen, dass der Typ einer der erwarteten Werte ist
+      // Da 'type' im Challenge-Objekt als 'emom' | 'amrap' | 'hiit' | 'running' | 'custom' typisiert ist
+      let actualType: 'emom' | 'amrap' | 'hiit' | 'running' | 'custom';
+      
+      if (creationMethod === "manual") {
+        // Wandle workoutType in einen der akzeptierten Typen um
+        if (workoutType === "emom") actualType = "emom";
+        else if (workoutType === "amrap") actualType = "amrap"; 
+        else if (workoutType === "distance") actualType = "running";
+        else actualType = "custom"; // Standardwert für alle anderen Typen
+      } else if (creationMethod === "generator") {
+        // Wandle den generatorType in einen akzeptierten Typ um
+        const genType = selectedWorkout.workoutType;
+        if (genType === "emom") actualType = "emom";
+        else if (genType === "amrap") actualType = "amrap";
+        else if (genType === "running" || genType === "distance") actualType = "running";
+        else if (genType === "hiit") actualType = "hiit";
+        else actualType = "custom";
+      } else {
+        // Badge-Typ ist immer custom
+        actualType = "custom";
+      }
 
-    // Challenge im Server und lokalen Store speichern
-    const { addChallenge } = useChallengeStore();
-    
-    // Save the challenge to the database via the store's addChallenge method
-    const newChallengeId = addChallenge({
+      // Bereite Challenge-Daten gemäß dem erwarteten Format vor
+      const challengeData = {
         title: challengeTitle,
         description: challengeDescription,
-        image: challengeImage,
+        image: challengeImage || undefined,
         startDate: new Date(startDate),
         endDate: new Date(endDate),
-        type: creationMethod === "manual" ? workoutType : 
-              creationMethod === "generator" ? selectedWorkout.workoutType : "badge",
+        type: actualType, // Jetzt korrekt typisiert als einer der erwarteten Werte
         creatorId: 1, // Current user ID - should be replaced with actual user ID
         workoutDetails,
         points: { bronze: 10, silver: 20, gold: 30 },
-        isPublic: true
-      });
+        isPublic: true,
+        status: 'active' as const, // Mit "as const" wird es korrekt als Literal-Typ erkannt
+        participantIds: [] // Leeres Array für Teilnehmer
+      };
       
-      console.log("Challenge erstellt");
+      console.log("Challenge-Daten:", challengeData);
+      
+      // Speichere die Challenge in der Datenbank via die addChallenge-Methode des Stores
+      const newChallengeId = await addChallenge(challengeData);
+      
+      console.log("Challenge erfolgreich erstellt mit ID:", newChallengeId);
       
       toast({
         title: "Challenge erstellt!",
         description: "Deine Challenge wurde erfolgreich erstellt und gespeichert.",
       });
       
-      // Reset form
-    setSelectedWorkout(null);
-    setChallengeTitle("");
-    setChallengeDescription("");
-    setPrize("");
-    setPrizeDescription("");
-    setStartDate(format(new Date(), "yyyy-MM-dd"));
-    setEndDate(format(addDays(new Date(), 30), "yyyy-MM-dd"));
-    setCurrentStep(1);
-    setCreationMethod(null);
-    setWorkoutType("");
-    setTimePerRound("");
-    setRounds("");
-    setExercises([]);
-    setDistance("");
-    setTimeLimit("");
-    setSelectedBadgeTest("");
-    setChallengeImage(null);
-    setPrizeImage(null);
-    setTargetType('distance');
-    setIsCircuit(false);
-    setRestBetweenSets("");
+      // Formular zurücksetzen
+      setSelectedWorkout(null);
+      setChallengeTitle("");
+      setChallengeDescription("");
+      setPrize("");
+      setPrizeDescription("");
+      setStartDate(format(new Date(), "yyyy-MM-dd"));
+      setEndDate(format(addDays(new Date(), 30), "yyyy-MM-dd"));
+      setCurrentStep(1);
+      setCreationMethod(null);
+      setWorkoutType("");
+      setTimePerRound("");
+      setRounds("");
+      setExercises([]);
+      setDistance("");
+      setTimeLimit("");
+      setSelectedBadgeTest("");
+      setChallengeImage(null);
+      setPrizeImage(null);
+      setTargetType('distance');
+      setIsCircuit(false);
+      setRestBetweenSets("");
 
-    // Optional: Redirect to the challenges page
-    window.location.href = '/challenges';
+      // Weiterleitung zur Challenges-Seite
+      window.location.href = '/challenges';
+    } catch (error) {
+      console.error("Fehler beim Erstellen der Challenge:", error);
+      toast({
+        title: "Fehler beim Erstellen",
+        description: "Die Challenge konnte nicht erstellt werden. Bitte versuche es erneut.",
+        variant: "destructive",
+      });
+    }
   };
 
   const steps = [
@@ -731,15 +795,21 @@ ${template.workoutType === 'amrap' ?
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Anderes Workout wählen
               </Button>
-              {selectedWorkout.workoutDetails.exercises.map((exercise: any, index: number) => (
-                <ExerciseDetails
-                  key={index}
-                  name={exercise.name}
-                  description={exercise.description}
-                  instruction={exerciseDatabase.exercises[exercise.name.toLowerCase()]?.instruction}
-                  tips={exerciseDatabase.exercises[exercise.name.toLowerCase()]?.tips}
-                />
-              ))}
+              {selectedWorkout.workoutDetails.exercises && 
+                Array.isArray(selectedWorkout.workoutDetails.exercises) && 
+                selectedWorkout.workoutDetails.exercises.map((exercise: any, index: number) => {
+                  const exerciseName = exercise.name.toLowerCase();
+                  const exerciseInfo = exerciseDatabase.exercises[exerciseName as keyof typeof exerciseDatabase.exercises];
+                  return (
+                    <ExerciseDetails
+                      key={index}
+                      name={exercise.name}
+                      description={exercise.description}
+                      instruction={exerciseInfo?.instruction}
+                      tips={exerciseInfo?.tips}
+                    />
+                  );
+                })}
             </>
           )}
 
@@ -833,6 +903,7 @@ ${template.workoutType === 'amrap' ?
             type="challenge"
             image={challengeImage}
             onChange={(e) => handleImageUpload(e, 'challenge')}
+            onClear={() => setChallengeImage(null)}
           />
         </div>
       ),
@@ -866,6 +937,7 @@ ${template.workoutType === 'amrap' ?
             type="prize"
             image={prizeImage}
             onChange={(e) => handleImageUpload(e, 'prize')}
+            onClear={() => setPrizeImage(null)}
           />
         </div>
       ),
