@@ -400,6 +400,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/challenges", async (req, res) => {
     try {
       const now = new Date();
+      console.log("Challenge Erstellungsanfrage erhalten:", req.body);
       const challengeData = insertChallengeSchema.parse(req.body);
       
       // Status automatisch basierend auf Datum setzen
@@ -415,15 +416,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status = 'active';
       }
       
+      // Stelle sicher, dass isPublic gesetzt wird, wenn es nicht im Request enthalten ist
+      if (challengeData.isPublic === undefined) {
+        challengeData.isPublic = true;
+      }
+      
+      console.log("Erstelle neue Challenge in der Datenbank:", {
+        ...challengeData,
+        status
+      });
+      
       const challenge = await storage.createChallenge({
         ...challengeData,
         status
       });
       
+      console.log("Neue Challenge erstellt mit ID:", challenge.id);
       res.status(201).json(challenge);
     } catch (error) {
       console.error("Error creating challenge:", error);
-      res.status(400).json({ error: "Ungültige Challenge-Daten" });
+      res.status(400).json({ 
+        error: "Ungültige Challenge-Daten", 
+        details: error instanceof Error ? error.message : String(error) 
+      });
     }
   });
 

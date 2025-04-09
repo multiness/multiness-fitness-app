@@ -452,6 +452,11 @@ export const useChallengeStore = create<ChallengeStore>()(
             status = 'active';
           }
           
+          // Stelle sicher, dass isPublic gesetzt ist
+          if (challengeData.isPublic === undefined) {
+            challengeData.isPublic = true;
+          }
+          
           // Bereite Daten für Server vor
           const serverChallengeData = {
             title: challengeData.title,
@@ -462,8 +467,9 @@ export const useChallengeStore = create<ChallengeStore>()(
             endDate: endDate.toISOString(),
             type: challengeData.type,
             status,
-            workoutDetails: challengeData.workoutDetails,
-            points: challengeData.points
+            workoutDetails: challengeData.workoutDetails || {},
+            points: challengeData.points,
+            isPublic: challengeData.isPublic
           };
           
           console.log("Sende Challenge an Server:", serverChallengeData);
@@ -477,22 +483,42 @@ export const useChallengeStore = create<ChallengeStore>()(
             body: JSON.stringify(serverChallengeData),
           });
           
+          // Erfasse vollständige Antwort für Debugging
+          const responseText = await response.text();
+          console.log(`Server-Antwort HTTP ${response.status}:`, responseText);
+          
           if (!response.ok) {
-            const errorText = await response.text();
-            console.error("Server-Fehlerantwort:", errorText);
-            throw new Error(`Server antwortete mit ${response.status}: ${errorText}`);
+            console.error("Server-Fehlerantwort:", responseText);
+            throw new Error(`Server antwortete mit ${response.status}: ${responseText}`);
           }
           
-          const newChallenge = await response.json();
-          console.log("Neue Challenge vom Server erhalten:", newChallenge);
+          // Parse die Antwort
+          let newChallenge;
+          try {
+            newChallenge = JSON.parse(responseText);
+            console.log("Neue Challenge vom Server erhalten:", newChallenge);
+          } catch (parseError) {
+            console.error("Fehler beim Parsen der Server-Antwort:", parseError);
+            throw new Error("Server-Antwort konnte nicht als JSON geparst werden");
+          }
           
-          // Erstelle Client-Challenge
+          // Stelle sicher, dass alle erwarteten Felder existieren
+          if (!newChallenge || !newChallenge.id) {
+            console.error("Ungültige Challenge-Daten vom Server erhalten:", newChallenge);
+            throw new Error("Server hat ungültige Challenge-Daten zurückgegeben");
+          }
+          
+          // Erstelle Client-Challenge mit allen notwendigen Standardwerten
           const clientChallenge: Challenge = {
             ...newChallenge,
             startDate: new Date(newChallenge.startDate),
             endDate: new Date(newChallenge.endDate),
-            createdAt: new Date(newChallenge.createdAt),
-            participantIds: [newChallenge.creatorId]
+            createdAt: new Date(newChallenge.createdAt || now),
+            updatedAt: new Date(newChallenge.updatedAt || now),
+            participantIds: newChallenge.participantIds || [newChallenge.creatorId],
+            workoutDetails: newChallenge.workoutDetails || {},
+            points: newChallenge.points || { bronze: 0, silver: 0, gold: 0 },
+            isPublic: newChallenge.isPublic !== undefined ? newChallenge.isPublic : true,
           };
           
           const updatedChallenges = {
@@ -505,12 +531,24 @@ export const useChallengeStore = create<ChallengeStore>()(
           set({ challenges: updatedChallenges });
           
           // Speichere in localStorage für Persistenz
-          localStorage.setItem(CHALLENGE_STORAGE_KEY, JSON.stringify(updatedChallenges));
+          try {
+            localStorage.setItem(CHALLENGE_STORAGE_KEY, JSON.stringify(updatedChallenges));
+          } catch (storageError) {
+            console.warn("Konnte Challenges nicht in localStorage speichern:", storageError);
+          }
           
           // Sofortige Synchronisierung mit dem Server auslösen
           setTimeout(() => {
+            console.log("Synchronisiere mit Server nach Challenge-Erstellung");
             get().syncWithServer();
-          }, 1000);
+          }, 500);
+          
+          // Erneute Synchronisierung nach kurzer Verzögerung, um sicherzustellen,
+          // dass die Challenge überall angezeigt wird
+          setTimeout(() => {
+            console.log("Zweite Synchronisierung mit Server nach Challenge-Erstellung");
+            get().syncWithServer();
+          }, 2000);
           
           return clientChallenge.id;
         } catch (error) {

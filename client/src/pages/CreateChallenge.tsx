@@ -8,7 +8,8 @@ import { Gift, Dumbbell, ChevronRight, ChevronLeft, Clock, RefreshCw, Plus, X, A
 import WorkoutGenerator from "@/components/WorkoutGenerator";
 import { useToast } from "@/hooks/use-toast";
 import { format, addDays } from "date-fns";
-import { mockChallenges, badgeTests, exerciseDatabase, saveNewChallenge } from "../data/mockData";
+import { badgeTests, exerciseDatabase } from "../data/mockData";
+import { useChallengeStore } from "@/lib/challengeStore";
 import {
   Dialog,
   DialogContent,
@@ -346,15 +347,32 @@ ${template.workoutType === 'amrap' ?
       prizeImage: prizeImage
     };
 
-    // Save the new challenge to localStorage
-    saveNewChallenge(newChallenge);
-
-    toast({
-      title: "Challenge erstellt!",
-      description: "Deine Challenge wurde erfolgreich erstellt und gespeichert.",
-    });
-
-    // Reset form
+    // Challenge im Server und lokalen Store speichern
+    const { addChallenge } = useChallengeStore();
+    
+    // Save the challenge to the database via the store's addChallenge method
+    const newChallengeId = addChallenge({
+        title: challengeTitle,
+        description: challengeDescription,
+        image: challengeImage,
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
+        type: creationMethod === "manual" ? workoutType : 
+              creationMethod === "generator" ? selectedWorkout.workoutType : "badge",
+        creatorId: 1, // Current user ID - should be replaced with actual user ID
+        workoutDetails,
+        points: { bronze: 10, silver: 20, gold: 30 },
+        isPublic: true
+      });
+      
+      console.log("Challenge erstellt");
+      
+      toast({
+        title: "Challenge erstellt!",
+        description: "Deine Challenge wurde erfolgreich erstellt und gespeichert.",
+      });
+      
+      // Reset form
     setSelectedWorkout(null);
     setChallengeTitle("");
     setChallengeDescription("");
