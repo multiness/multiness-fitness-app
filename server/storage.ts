@@ -499,16 +499,44 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createChallenge(challenge: InsertChallenge): Promise<Challenge> {
-    const challengeData = { ...challenge };
-    if (challengeData.startDate) {
-      challengeData.startDate = new Date(challengeData.startDate);
+    try {
+      console.log("Storage: Erstelle Challenge mit Daten:", JSON.stringify(challenge));
+      
+      // Konvertiere Datums-Strings in Date-Objekte
+      const challengeData = { ...challenge };
+      if (challengeData.startDate) {
+        challengeData.startDate = new Date(challengeData.startDate);
+      }
+      if (challengeData.endDate) {
+        challengeData.endDate = new Date(challengeData.endDate);
+      }
+      
+      // Stelle sicher, dass JSON-Felder korrekt formatiert sind
+      if (typeof challengeData.workoutDetails === 'string') {
+        try {
+          challengeData.workoutDetails = JSON.parse(challengeData.workoutDetails as any);
+        } catch (e) {
+          console.warn("Storage: Konnte workoutDetails nicht parsen:", e);
+        }
+      }
+      
+      if (typeof challengeData.points === 'string') {
+        try {
+          challengeData.points = JSON.parse(challengeData.points as any);
+        } catch (e) {
+          console.warn("Storage: Konnte points nicht parsen:", e);
+        }
+      }
+      
+      console.log("Storage: Füge Challenge in Datenbank ein:", JSON.stringify(challengeData));
+      
+      const [newChallenge] = await db.insert(challenges).values(challengeData).returning();
+      console.log("Storage: Neue Challenge erstellt:", JSON.stringify(newChallenge));
+      return newChallenge;
+    } catch (error) {
+      console.error("Storage: Fehler beim Erstellen der Challenge:", error);
+      throw error;
     }
-    if (challengeData.endDate) {
-      challengeData.endDate = new Date(challengeData.endDate);
-    }
-
-    const [newChallenge] = await db.insert(challenges).values(challengeData).returning();
-    return newChallenge;
   }
 
   async updateChallenge(id: number, challenge: Partial<Challenge>): Promise<Challenge> {

@@ -400,7 +400,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/challenges", async (req, res) => {
     try {
       const now = new Date();
-      console.log("Challenge Erstellungsanfrage erhalten:", req.body);
+      console.log("Challenge Erstellungsanfrage erhalten:", JSON.stringify(req.body));
+      
+      // Validierung mit Zod
       const challengeData = insertChallengeSchema.parse(req.body);
       
       // Status automatisch basierend auf Datum setzen
@@ -421,18 +423,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         challengeData.isPublic = true;
       }
       
-      console.log("Erstelle neue Challenge in der Datenbank:", {
+      // Stelle sicher, dass workoutDetails ein gültiges JSON-Objekt ist
+      if (typeof challengeData.workoutDetails === 'string') {
+        try {
+          challengeData.workoutDetails = JSON.parse(challengeData.workoutDetails);
+        } catch (e) {
+          console.warn("Konnte workoutDetails nicht parsen, verwende als String", e);
+        }
+      }
+      
+      // Stelle sicher, dass points ein gültiges JSON-Objekt ist
+      if (typeof challengeData.points === 'string') {
+        try {
+          challengeData.points = JSON.parse(challengeData.points);
+        } catch (e) {
+          console.warn("Konnte points nicht parsen, verwende als String", e);
+        }
+      }
+      
+      console.log("Erstelle neue Challenge in der Datenbank:", JSON.stringify({
         ...challengeData,
         status
-      });
+      }));
       
-      const challenge = await storage.createChallenge({
-        ...challengeData,
-        status
-      });
-      
-      console.log("Neue Challenge erstellt mit ID:", challenge.id);
-      res.status(201).json(challenge);
+      try {
+        const challenge = await storage.createChallenge({
+          ...challengeData,
+          status
+        });
+        
+        console.log("Neue Challenge erstellt mit ID:", challenge.id);
+        res.status(201).json(challenge);
+      } catch (storageError) {
+        console.error("Fehler beim Speichern der Challenge in der Datenbank:", storageError);
+        throw storageError;
+      }
     } catch (error) {
       console.error("Error creating challenge:", error);
       res.status(400).json({ 
