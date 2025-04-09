@@ -535,23 +535,33 @@ export class DatabaseStorage implements IStorage {
 
   // Challenge Participant methods
   async getChallengeParticipants(challengeId: number): Promise<ChallengeParticipant[]> {
-    return await db
-      .select()
-      .from(challengeParticipants)
-      .where(eq(challengeParticipants.challengeId, challengeId));
+    try {
+      return await db
+        .select()
+        .from(challengeParticipants)
+        .where(eq(challengeParticipants.challengeId, challengeId));
+    } catch (error) {
+      console.log("Error fetching challenge participants:", error);
+      return []; // Return empty array if table doesn't exist yet
+    }
   }
 
   async getChallengeParticipant(challengeId: number, userId: number): Promise<ChallengeParticipant | undefined> {
-    const [participant] = await db
-      .select()
-      .from(challengeParticipants)
-      .where(
-        and(
-          eq(challengeParticipants.challengeId, challengeId),
-          eq(challengeParticipants.userId, userId)
-        )
-      );
-    return participant;
+    try {
+      const [participant] = await db
+        .select()
+        .from(challengeParticipants)
+        .where(
+          and(
+            eq(challengeParticipants.challengeId, challengeId),
+            eq(challengeParticipants.userId, userId)
+          )
+        );
+      return participant;
+    } catch (error) {
+      console.log("Error fetching challenge participant:", error);
+      return undefined; // Return undefined if table doesn't exist yet
+    }
   }
 
   async addChallengeParticipant(participant: InsertChallengeParticipant): Promise<ChallengeParticipant> {

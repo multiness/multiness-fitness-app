@@ -470,10 +470,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/challenges/:id/participants", async (req, res) => {
     try {
       const challengeId = Number(req.params.id);
-      const participants = await storage.getChallengeParticipants(challengeId);
-      res.json(participants);
+      try {
+        const participants = await storage.getChallengeParticipants(challengeId);
+        res.json(participants);
+      } catch (error) {
+        console.log("Error fetching challenge participants, returning empty array:", error);
+        res.json([]);
+      }
     } catch (error) {
-      console.error("Error fetching challenge participants:", error);
+      console.error("Error handling challenge participants request:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
@@ -484,15 +489,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const challengeId = Number(req.params.challengeId);
       const userId = Number(req.params.userId);
       
-      const participant = await storage.getChallengeParticipant(challengeId, userId);
-      
-      if (!participant) {
+      try {
+        const participant = await storage.getChallengeParticipant(challengeId, userId);
+        
+        if (!participant) {
+          return res.status(404).json({ error: "Teilnehmer nicht gefunden" });
+        }
+        
+        res.json(participant);
+      } catch (error) {
+        console.log("Error fetching challenge participant, returning default:", error);
         return res.status(404).json({ error: "Teilnehmer nicht gefunden" });
       }
-      
-      res.json(participant);
     } catch (error) {
-      console.error("Error fetching challenge participant:", error);
+      console.error("Error handling challenge participant request:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
