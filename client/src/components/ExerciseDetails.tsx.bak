@@ -96,7 +96,6 @@ export const ExerciseDetails: React.FC<ExerciseDetailsProps> = ({
     if (lowerName.includes('kreuzheben') || lowerName.includes('gewicht')) return 'kg';
     if (lowerName.includes('wurf')) return 'm';
     if (lowerName.includes('sprint')) return 'min:ss';
-    if (lowerName.includes('meilen')) return 'min:ss';
     if (lowerName.includes('meter')) return 'm';
     if (lowerName.includes('pendel')) return 'Sekunden';
     if (lowerName.includes('plank')) return 'min:ss';
@@ -111,22 +110,14 @@ export const ExerciseDetails: React.FC<ExerciseDetailsProps> = ({
     
     // Spezielle Behandlung für Zeitformate (mm:ss)
     if (typeof value === 'string' && (lowerName.includes('time') || value.includes(':') || 
-        lowerName.includes('sprint') || lowerName.includes('lauf') || lowerName.includes('plank') || 
-        lowerName.includes('meilen'))) {
-      const parts = value.split(':');
-      if (parts.length === 2) {
-        const minutes = parseInt(parts[0], 10);
-        const seconds = parseInt(parts[1], 10);
-        
-        if (!isNaN(minutes) && !isNaN(seconds)) {
-          numericValue = minutes * 60 + seconds;
-          console.log(`Zeitwert konvertiert: ${value} zu ${numericValue} Sekunden`);
-        } else {
-          // Fallback, wenn das Format ungültig ist
-          console.warn(`Ungültiges Zeitformat: ${value}, verwende direkten Wert`);
-          numericValue = parseFloat(value) || 0;
-        }
+        lowerName.includes('sprint') || lowerName.includes('lauf') || lowerName.includes('plank'))) {
+      const [minutes, seconds] = value.split(':').map(Number);
+      if (!isNaN(minutes) && !isNaN(seconds)) {
+        numericValue = minutes * 60 + seconds;
+        console.log(`Zeitwert konvertiert: ${value} zu ${numericValue} Sekunden`);
       } else {
+        // Fallback, wenn das Format ungültig ist
+        console.warn(`Ungültiges Zeitformat: ${value}, verwende direkten Wert`);
         numericValue = parseFloat(value) || 0;
       }
     } else if (typeof value === 'string') {
@@ -147,7 +138,7 @@ export const ExerciseDetails: React.FC<ExerciseDetailsProps> = ({
       };
     }
 
-    if (lowerName.includes('lauf') || lowerName.includes('sprint') || lowerName.includes('meilen')) {
+    if (lowerName.includes('lauf') || lowerName.includes('sprint')) {
       if (selectedMetric === 'time') {
         if (numericValue <= 180) return { points: 100, achievementLevel: 'Gold' };
         if (numericValue <= 240) return { points: 75, achievementLevel: 'Silber' };
@@ -229,7 +220,7 @@ export const ExerciseDetails: React.FC<ExerciseDetailsProps> = ({
           points: calculatePoints(finalValue, name).points,
           achievementLevel: calculatePoints(finalValue, name).achievementLevel
         });
-      } else if (workoutType === 'badge' || workoutType === 'fitness_test' || workoutType === 'custom') {
+      } else if (workoutType === 'badge' || workoutType === 'custom') {
         // Für Fitness-Tests und benutzerdefinierte Workouts
         if (additionalValue && unit === 'kg') {
           finalValue = `${resultValue} x ${additionalValue}kg`;
@@ -302,7 +293,7 @@ export const ExerciseDetails: React.FC<ExerciseDetailsProps> = ({
 
   const isRunningExercise = (exerciseName: string) => {
     const lowerName = exerciseName.toLowerCase();
-    return lowerName.includes('lauf') || lowerName.includes('meilen') || lowerName.includes('distance');
+    return lowerName.includes('lauf') || lowerName.includes('distance');
   };
 
   return (
