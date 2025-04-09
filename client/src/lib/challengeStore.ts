@@ -313,7 +313,13 @@ export const useChallengeStore = create<ChallengeStore>()(
           });
           
           // Speichere im localStorage für Fallback
-          localStorage.setItem(CHALLENGE_STORAGE_KEY, JSON.stringify(mergedChallenges));
+          try {
+            localStorage.setItem(CHALLENGE_STORAGE_KEY, JSON.stringify(mergedChallenges));
+            localStorage.setItem('fitness-app-participants', JSON.stringify(mergedParticipants));
+            console.log("Challenges und Teilnehmer erfolgreich im localStorage nach Sync gespeichert");
+          } catch (storageError) {
+            console.error("Fehler beim Speichern im localStorage nach Sync:", storageError);
+          }
         } catch (error) {
           console.error('Fehler bei der Synchronisation der Challenges:', error);
           set({ isLoading: false });
@@ -736,17 +742,19 @@ export const useChallengeStore = create<ChallengeStore>()(
             }
           };
           
-          // Aktualisiere Teilnehmer
+          // Aktualisiere Teilnehmer im State
           set({
             participants: updatedParticipants,
             challenges: updatedChallenges
           });
           
-          // Speichere in localStorage für Persistenz
+          // Speichere explizit in localStorage für Persistenz
           try {
             localStorage.setItem(CHALLENGE_STORAGE_KEY, JSON.stringify(updatedChallenges));
-          } catch (storageError) {
-            console.warn("Konnte Challenges nicht in localStorage speichern:", storageError);
+            localStorage.setItem('fitness-app-participants', JSON.stringify(updatedParticipants));
+            console.log("Teilnahme erfolgreich im localStorage gespeichert");
+          } catch (err) {
+            console.error("Fehler beim Speichern der Teilnahme im localStorage:", err);
           }
           
           // Synchronisiere mit dem Server nach kurzer Verzögerung
@@ -772,19 +780,33 @@ export const useChallengeStore = create<ChallengeStore>()(
           const participants = get().participants;
           const challengeParticipants = participants[challengeId] || [];
           
-          set({
-            participants: {
-              ...participants,
-              [challengeId]: challengeParticipants.filter(p => p.userId !== userId)
-            },
-            challenges: {
-              ...get().challenges,
-              [challengeId]: {
-                ...challenge,
-                participantIds: challenge.participantIds.filter(id => id !== userId)
-              }
+          const updatedParticipants = {
+            ...participants,
+            [challengeId]: challengeParticipants.filter(p => p.userId !== userId)
+          };
+          
+          const updatedChallenges = {
+            ...get().challenges,
+            [challengeId]: {
+              ...challenge,
+              participantIds: challenge.participantIds.filter(id => id !== userId)
             }
+          };
+          
+          // Setze im State
+          set({
+            participants: updatedParticipants,
+            challenges: updatedChallenges
           });
+          
+          // Speichere im localStorage für Persistenz
+          try {
+            localStorage.setItem(CHALLENGE_STORAGE_KEY, JSON.stringify(updatedChallenges));
+            localStorage.setItem('fitness-app-participants', JSON.stringify(updatedParticipants));
+            console.log("Teilnahmebeendigung im localStorage gespeichert");
+          } catch (storageError) {
+            console.warn("Konnte Challenges/Teilnehmer nicht in localStorage speichern:", storageError);
+          }
         } catch (error) {
           console.error('Fehler beim Verlassen der Challenge:', error);
           throw error;
@@ -836,12 +858,25 @@ export const useChallengeStore = create<ChallengeStore>()(
       
       updateParticipant: async (challengeId, userId, data) => {
         try {
+          console.log(`Aktualisiere Ergebnis für Challenge ${challengeId}, User ${userId}:`, data);
+          
           // An Server senden
-          await apiRequest(
-            `/api/challenges/${challengeId}/participants/${userId}`, 
-            'PATCH', 
-            data
-          );
+          const response = await fetch(`/api/challenges/${challengeId}/participants/${userId}`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+          });
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`Server antwortete mit ${response.status}: ${errorText}`);
+            throw new Error(`Server antwortete mit ${response.status}: ${errorText}`);
+          }
+          
+          const serverResponse = await response.json();
+          console.log("Server-Antwort nach Ergebnis-Update:", serverResponse);
           
           // Lokalen Store aktualisieren
           const participants = get().participants;
@@ -854,12 +889,28 @@ export const useChallengeStore = create<ChallengeStore>()(
             return participant;
           });
           
+          const updatedParticipantsState = {
+            ...participants,
+            [challengeId]: updatedParticipants
+          };
+          
+          // State aktualisieren
           set({
-            participants: {
-              ...participants,
-              [challengeId]: updatedParticipants
-            }
+            participants: updatedParticipantsState
           });
+          
+          // Explizit in localStorage speichern
+          try {
+            localStorage.setItem('fitness-app-participants', JSON.stringify(updatedParticipantsState));
+            console.log("Teilnahme-Ergebnis erfolgreich im localStorage gespeichert");
+          } catch (storageError) {
+            console.error("Fehler beim Speichern des Teilnahme-Ergebnisses im localStorage:", storageError);
+          }
+          
+          // Synchronisiere mit dem Server nach kurzer Verzögerung
+          setTimeout(() => {
+            get().syncWithServer();
+          }, 1000);
         } catch (error) {
           console.error('Fehler beim Aktualisieren des Teilnehmers:', error);
           throw error;
@@ -877,15 +928,25 @@ export const useChallengeStore = create<ChallengeStore>()(
       onRehydrateStorage: () => {
         return (state) => {
           if (state) {
+            // Versuche Teilnehmerdaten aus localStorage zu laden
+            try {
+              const storedParticipants = localStorage.getItem('fitness-app-participants');
+              if (storedParticipants) {
+                const parsedParticipants = JSON.parse(storedParticipants);
+                console.log("Lade gespeicherte Teilnehmerdaten:", parsedParticipants);
+                state.participants = parsedParticipants;
+              }
+            } catch (e) {
+              console.error('Fehler beim Laden der Teilnehmerdaten aus localStorage:', e);
+            }
+            
             // Nach der Rehydrierung, überprüfe, ob eine Aktualisierung vom Server nötig ist
             const lastFetched = state.lastFetched || 0;
             const now = Date.now();
             const twoHoursInMs = 2 * 60 * 60 * 1000;
             
-            // Wenn die letzte Aktualisierung mehr als 2 Stunden her ist oder nie erfolgt ist
-            if (!lastFetched || (now - lastFetched) > twoHoursInMs) {
-              state.syncWithServer();
-            }
+            // Immer sofort mit dem Server synchronisieren, um die neuesten Daten zu haben
+            state.syncWithServer();
           }
         };
       }
