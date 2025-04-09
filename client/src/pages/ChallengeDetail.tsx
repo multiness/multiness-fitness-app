@@ -55,12 +55,19 @@ export default function ChallengeDetail() {
   const challenge = challenges[Number(id)];
   const creator = challenge ? users.find(u => u.id === challenge.creatorId) : undefined;
 
-  // Early return if no challenge or creator
+  // Early return if no challenge
   if (!challenge) {
     return <div className="container p-4 text-center">
       <div className="text-lg font-semibold">Challenge wird geladen oder existiert nicht</div>
     </div>;
   }
+  
+  // Default creator if not found
+  const creatorInfo = creator || {
+    id: 1,
+    username: "unbekannt",
+    name: "Unbekannter Ersteller"
+  };
 
   // Calculate dates and states
   const currentDate = new Date();
@@ -70,9 +77,18 @@ export default function ChallengeDetail() {
   const isEnded = currentDate > endDate;
 
   // Get badge details if applicable
-  const badgeDetails = challenge.type === 'badge'
-    ? badgeTests.find(test => test.name === challenge.title.replace(' Challenge', ''))
+  const isBadgeType = challenge.type && ['badge', 'fitness_test'].includes(challenge.type);
+  const badgeDetails = isBadgeType
+    ? badgeTests.find(test => test.name === challenge.title.replace(' Challenge', '').replace(' Test', '').trim())
     : null;
+  
+  // Debug-Infos
+  console.log("Challenge info:", {
+    challengeType: challenge.type,
+    challengeTitle: challenge.title,
+    badgeDetails: badgeDetails,
+    isParticipating
+  });
 
   useEffect(() => {
     if (challenge) {
@@ -203,13 +219,13 @@ export default function ChallengeDetail() {
       <Card className="mb-6">
         <CardContent className="flex items-center gap-4 py-4">
           <UserAvatar
-            userId={creator.id}
+            userId={creatorInfo.id}
             size="md"
             clickable={true}
           />
           <div>
-            <div className="font-semibold">{creator.name}</div>
-            <div className="text-sm text-muted-foreground">@{creator.username}</div>
+            <div className="font-semibold">{creatorInfo.name}</div>
+            <div className="text-sm text-muted-foreground">@{creatorInfo.username}</div>
           </div>
           <Button variant="secondary" className="ml-auto">
             <MessageCircle className="h-4 w-4 mr-2" />
@@ -228,7 +244,7 @@ export default function ChallengeDetail() {
       </Card>
 
       {/* Challenge Type Specific Details */}
-      {challenge.type === 'badge' && badgeDetails && (
+      {isBadgeType && badgeDetails && (
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -279,6 +295,7 @@ export default function ChallengeDetail() {
                   isParticipating={isParticipating}
                   onSubmitResult={handleSubmitExerciseResult}
                   currentResult={exerciseResults[req.name]}
+                  workoutType="badge"
                 />
               ))}
             </div>

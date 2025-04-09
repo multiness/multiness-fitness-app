@@ -76,6 +76,15 @@ export const ExerciseDetails = ({
   const [selectedMetric, setSelectedMetric] = useState<'time' | 'distance'>(
     requirements?.targetType || 'distance'
   );
+  
+  // Debug-Infos
+  console.log("ExerciseDetails props", {
+    name,
+    description,
+    workoutType,
+    isParticipating,
+    requirements
+  });
 
   const getUnitForExercise = (exerciseName: string, metric?: 'time' | 'distance') => {
     const lowerName = exerciseName.toLowerCase();
@@ -163,8 +172,9 @@ export const ExerciseDetails = ({
       const unit = getUnitForExercise(name, selectedMetric);
       let finalValue = resultValue;
 
+      // Behandle verschiedene Workout-Typen
       if (workoutType === 'emom') {
-        // For EMOM, only track completed rounds
+        // Für EMOM, verfolge abgeschlossene Runden
         onSubmitResult({
           name: "Total Rounds",
           value: parseInt(resultValue),
@@ -172,8 +182,50 @@ export const ExerciseDetails = ({
           points: calculatePoints(parseInt(resultValue), "emom").points,
           achievementLevel: calculatePoints(parseInt(resultValue), "emom").achievementLevel
         });
+      } else if (workoutType === 'amrap') {
+        // Für AMRAP, erfasse die Anzahl der Wiederholungen
+        onSubmitResult({
+          name,
+          value: parseInt(resultValue),
+          unit: "Wiederholungen",
+          points: calculatePoints(parseInt(resultValue), name).points,
+          achievementLevel: calculatePoints(parseInt(resultValue), name).achievementLevel
+        });
+      } else if (workoutType === 'hiit') {
+        // Für HIIT, erfasse erfolgreich absolvierte Intervalle
+        onSubmitResult({
+          name,
+          value: parseInt(resultValue),
+          unit: "Intervalle",
+          points: calculatePoints(parseInt(resultValue), name).points,
+          achievementLevel: calculatePoints(parseInt(resultValue), name).achievementLevel
+        });
+      } else if (workoutType === 'running') {
+        // Für Lauf-Workouts, erfasse Zeit oder Distanz
+        onSubmitResult({
+          name,
+          value: finalValue,
+          unit: selectedMetric === 'time' ? 'min:ss' : 'km',
+          points: calculatePoints(finalValue, name).points,
+          achievementLevel: calculatePoints(finalValue, name).achievementLevel
+        });
+      } else if (workoutType === 'badge' || workoutType === 'custom') {
+        // Für Fitness-Tests und benutzerdefinierte Workouts
+        if (additionalValue && unit === 'kg') {
+          finalValue = `${resultValue} x ${additionalValue}kg`;
+        }
+
+        const { points, achievementLevel } = calculatePoints(resultValue, name);
+
+        onSubmitResult({
+          name,
+          value: finalValue,
+          unit,
+          points,
+          achievementLevel
+        });
       } else {
-        // For other workout types, handle as before
+        // Fallback für andere oder nicht spezifizierte Workout-Typen
         if (additionalValue && unit === 'kg') {
           finalValue = `${resultValue} x ${additionalValue}kg`;
         }
