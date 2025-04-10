@@ -2,7 +2,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { usePostStore } from "../lib/postStore";
 import { cn } from "@/lib/utils";
 import { Link } from "wouter";
-import { useUsers, getUsersFromStorage } from "../contexts/UserContext";
+import { useUsers, getUsersFromStorage, loadAPIUsers } from "../contexts/UserContext";
 import { VerifiedBadge } from "./VerifiedBadge";
 import { useState, useEffect } from "react";
 import ImageModal from "./ImageModal";
@@ -63,12 +63,17 @@ export function UserAvatar({
             if (apiUser && typeof apiUser === 'object') {
               console.log(`Benutzer mit ID ${userId} von API geladen:`, apiUser);
               setUser(apiUser);
+              // Aktualisiere die Benutzer-Liste im Context und Storage
+              loadAPIUsers();
               return;
             }
           }
         } catch (apiError) {
           console.warn(`Fehler beim Laden des Benutzers mit ID ${userId} von API:`, apiError);
         }
+        
+        // Wenn immer noch nicht gefunden, aktualisiere die Benutzer-Liste und versuche erneut
+        loadAPIUsers();
         
         // Standard-Fallback
         console.warn(`Benutzer mit ID ${userId} konnte nicht gefunden werden`);
