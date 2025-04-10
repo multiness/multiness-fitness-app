@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import ShareDialog from "./ShareDialog";
+import { useChallengeStore } from "../lib/challengeStore";
 
 interface ChallengeCardProps {
   challenge: any;
@@ -21,8 +22,16 @@ interface ChallengeCardProps {
 }
 
 export default function ChallengeCard({ challenge, variant = "full" }: ChallengeCardProps) {
+  const challengeStore = useChallengeStore();
   const creator = mockUsers.find(u => u.id === challenge.creatorId);
-  const participants = mockUsers.slice(0, Math.floor(Math.random() * 5) + 3);
+  
+  // Holen der echten Teilnehmer für die Challenge aus dem Store
+  const actualParticipants = challengeStore.getParticipants(challenge.id);
+  const participantCount = challenge.participantIds?.length || actualParticipants.length || 0;
+  
+  // Erste Person auswählen für die Anzeige - falls vorhanden
+  const firstParticipant = actualParticipants.length > 0 ? actualParticipants[0] : null;
+  
   const currentDate = new Date();
   const isActive = currentDate >= challenge.startDate && currentDate <= challenge.endDate;
 
@@ -91,20 +100,28 @@ export default function ChallengeCard({ challenge, variant = "full" }: Challenge
               {/* Challenge Title */}
               <h3 className="text-lg font-semibold mb-3">{challenge.title}</h3>
 
-              {/* Top 3 */}
+              {/* Challenge Info */}
               <div className="flex items-center gap-4 bg-muted/50 rounded-lg p-3 mb-4">
                 <div className="flex items-center gap-2">
-                  <UserAvatar
-                    userId={participants[0]?.id}
-                    size="sm"
-                    disableLink={true}
-                  />
+                  {actualParticipants.length > 0 ? (
+                    <UserAvatar
+                      userId={actualParticipants[0]?.userId}
+                      size="sm"
+                      disableLink={true}
+                    />
+                  ) : (
+                    <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                      <Trophy className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                  )}
                   <div>
                     <p className="text-sm font-medium">
-                      {participants[0]?.username}
+                      {actualParticipants.length > 0 
+                        ? "Aktive Teilnehmer" 
+                        : "Keine Teilnehmer"}
                     </p>
-                    <p className="text-xs text-yellow-500 font-medium">
-                      1. Platz • {1000}P
+                    <p className="text-xs text-primary font-medium">
+                      {challenge.type.toUpperCase()} Challenge
                     </p>
                   </div>
                 </div>
@@ -142,7 +159,7 @@ export default function ChallengeCard({ challenge, variant = "full" }: Challenge
                 <div className="flex items-center gap-2">
                   <div className="text-sm text-muted-foreground flex items-center gap-1">
                     <Users className="h-4 w-4" />
-                    {participants.length}
+                    {participantCount}
                   </div>
                   <Button size="sm" variant="secondary">Details</Button>
                 </div>
