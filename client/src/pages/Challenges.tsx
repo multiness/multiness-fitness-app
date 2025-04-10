@@ -101,39 +101,44 @@ export default function Challenges() {
 
   return (
     <div className="container max-w-4xl mx-auto p-4 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* Header - für Mobile optimiert */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <Trophy className="h-6 w-6 text-primary" />
           <h1 className="text-2xl font-bold">Challenges</h1>
         </div>
-        <Button onClick={() => setLocation("/create/challenge")}>
-          Challenge erstellen
-        </Button>
-        <Button 
-          size="sm" 
-          variant="outline" 
-          className="gap-1 ml-2"
-          onClick={() => challengeStore.syncWithServer()}
-          disabled={loading}
-        >
-          {loading ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Aktualisieren...
-            </>
-          ) : syncComplete ? (
-            <>
-              <Check className="h-4 w-4 text-green-500" />
-              Aktualisiert
-            </>
-          ) : (
-            <>
-              <Search className="h-4 w-4" />
-              Aktualisieren
-            </>
-          )}
-        </Button>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Button 
+            onClick={() => setLocation("/create/challenge")} 
+            className="flex-1 sm:flex-none"
+          >
+            Challenge erstellen
+          </Button>
+          <Button 
+            size="sm" 
+            variant="outline" 
+            className="gap-1"
+            onClick={() => challengeStore.syncWithServer()}
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="hidden sm:inline">Aktualisieren...</span>
+              </>
+            ) : syncComplete ? (
+              <>
+                <Check className="h-4 w-4 text-green-500" />
+                <span className="hidden sm:inline">Aktualisiert</span>
+              </>
+            ) : (
+              <>
+                <Search className="h-4 w-4" />
+                <span className="hidden sm:inline">Aktualisieren</span>
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* Search Bar */}
@@ -147,16 +152,16 @@ export default function Challenges() {
         />
       </div>
 
-      {/* Tabs and Content */}
+      {/* Tabs and Content - für Mobile optimiert */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-2 mb-6">
-          <TabsTrigger value="active">Aktive & Kommende Challenges</TabsTrigger>
-          <TabsTrigger value="past">Vergangene Challenges</TabsTrigger>
+          <TabsTrigger value="active" className="text-xs sm:text-sm">Aktive & Kommende</TabsTrigger>
+          <TabsTrigger value="past" className="text-xs sm:text-sm">Vergangene Challenges</TabsTrigger>
         </TabsList>
 
         <TabsContent value="active">
-          <ScrollArea className="h-[calc(100vh-280px)]">
-            <div className="grid gap-6">
+          <ScrollArea className="h-[calc(100vh-320px)] sm:h-[calc(100vh-280px)]">
+            <div className="grid gap-4 sm:gap-6">
               {filteredActiveChallenges.map(challenge => (
                 <ChallengeCard 
                   key={challenge.id} 
@@ -174,8 +179,8 @@ export default function Challenges() {
         </TabsContent>
 
         <TabsContent value="past">
-          <ScrollArea className="h-[calc(100vh-280px)]">
-            <div className="grid gap-6">
+          <ScrollArea className="h-[calc(100vh-320px)] sm:h-[calc(100vh-280px)]">
+            <div className="grid gap-4 sm:gap-6">
               {filteredPastChallenges.map(challenge => (
                 <ChallengeCard 
                   key={challenge.id} 
