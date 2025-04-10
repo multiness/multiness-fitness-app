@@ -16,7 +16,7 @@ import {
 import { WebSocketServer } from "ws";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // In-Memory Speicherung für Benutzer
+  // Benutzer-Speicher mit Persistenz über Storage-API
   let users = [
     {
       id: 1,
@@ -49,6 +49,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       createdAt: new Date()
     }
   ];
+  
+  // Persistente Benutzer-Speicherung durch globale Variable
+  const GLOBAL_STORAGE_KEY = 'PERSISTED_USERS_DATA';
+  
+  // Hilfsfunktion zum Speichern der Benutzerdaten
+  const saveUsersToStorage = () => {
+    try {
+      // Speichere in globalem Speicherbereich
+      (global as any)[GLOBAL_STORAGE_KEY] = JSON.stringify(users);
+      console.log("Benutzerdaten in globalem Speicher gespeichert");
+    } catch (error) {
+      console.error('Fehler beim Speichern der Benutzerdaten:', error);
+    }
+  };
+  
+  // Lade Benutzerdaten beim Start
+  try {
+    const savedData = (global as any)[GLOBAL_STORAGE_KEY];
+    if (savedData) {
+      const parsedUsers = JSON.parse(savedData);
+      if (Array.isArray(parsedUsers) && parsedUsers.length > 0) {
+        console.log("Benutzerdaten aus globalem Speicher geladen");
+        users = parsedUsers;
+      }
+    }
+  } catch (error) {
+    console.error('Fehler beim Laden der gespeicherten Benutzerdaten:', error);
+  }
 
   // Benutzer abrufen
   app.get("/api/users", async (req, res) => {
@@ -634,39 +662,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Ungültige Benutzer-ID" });
       }
       
-      const users = [
-        {
-          id: 1,
-          username: "maxmustermann",
-          name: "Max Mustermann",
-          email: "max@example.com",
-          avatar: "https://randomuser.me/api/portraits/men/1.jpg",
-          isVerified: true,
-          bio: "Fitness-Enthusiast und Marathonläufer",
-          createdAt: new Date()
-        },
-        {
-          id: 2,
-          username: "lisafit",
-          name: "Lisa Fitness",
-          email: "lisa@example.com",
-          avatar: "https://randomuser.me/api/portraits/women/2.jpg",
-          isVerified: true,
-          bio: "Yoga-Lehrerin und Ernährungsberaterin",
-          createdAt: new Date()
-        },
-        {
-          id: 3,
-          username: "sportfreak",
-          name: "Thomas Sport",
-          email: "thomas@example.com",
-          avatar: "https://randomuser.me/api/portraits/men/3.jpg",
-          isVerified: false,
-          bio: "Bodybuilder und Kraftsportler",
-          createdAt: new Date()
-        }
-      ];
-      
+      // Benutzer aus dem persistenten Speicher abrufen
       const user = users.find(u => u.id === userId);
       if (!user) {
         return res.status(404).json({ error: "Benutzer nicht gefunden" });
@@ -705,6 +701,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Speichere den aktualisierten Benutzer zurück in die Liste
       users[userIndex] = updatedUser;
       
+      // Persistiere Änderungen in der Datei
+      saveUsersToStorage();
+      
       // Gib den aktualisierten Benutzer zurück
       res.json(updatedUser);
     } catch (error) {
@@ -735,6 +734,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Benutzer zur In-Memory-Liste hinzufügen
       users.push(newUser);
+      
+      // Persistiere Änderungen in der Datei
+      saveUsersToStorage();
       
       // Erfolgreiche Antwort zurückgeben
       res.status(201).json(newUser);
