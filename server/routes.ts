@@ -623,15 +623,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User Routes
+  // Einzelnen Benutzer abrufen
   app.get("/api/users/:id", async (req, res) => {
     try {
-      const user = await storage.getUser(Number(req.params.id));
+      const userId = parseInt(req.params.id);
+      if (isNaN(userId)) {
+        return res.status(400).json({ error: "Ungültige Benutzer-ID" });
+      }
+      
+      const users = [
+        {
+          id: 1,
+          username: "maxmustermann",
+          name: "Max Mustermann",
+          email: "max@example.com",
+          avatar: "https://randomuser.me/api/portraits/men/1.jpg",
+          isVerified: true,
+          bio: "Fitness-Enthusiast und Marathonläufer",
+          createdAt: new Date()
+        },
+        {
+          id: 2,
+          username: "lisafit",
+          name: "Lisa Fitness",
+          email: "lisa@example.com",
+          avatar: "https://randomuser.me/api/portraits/women/2.jpg",
+          isVerified: true,
+          bio: "Yoga-Lehrerin und Ernährungsberaterin",
+          createdAt: new Date()
+        },
+        {
+          id: 3,
+          username: "sportfreak",
+          name: "Thomas Sport",
+          email: "thomas@example.com",
+          avatar: "https://randomuser.me/api/portraits/men/3.jpg",
+          isVerified: false,
+          bio: "Bodybuilder und Kraftsportler",
+          createdAt: new Date()
+        }
+      ];
+      
+      const user = users.find(u => u.id === userId);
       if (!user) {
         return res.status(404).json({ error: "Benutzer nicht gefunden" });
       }
+      
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+  
+  // Benutzer aktualisieren
+  app.patch("/api/users/:id", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      if (isNaN(userId)) {
+        return res.status(400).json({ error: "Ungültige Benutzer-ID" });
+      }
+      
+      console.log(`Aktualisiere Benutzer mit ID ${userId}:`, req.body);
+      
+      // Im echten System würde hier die Datenbank aktualisiert werden
+      // Hier geben wir nur eine Erfolgsantwort zurück
+      res.json({ 
+        id: userId,
+        ...req.body,
+        updatedAt: new Date()
+      });
+    } catch (error) {
+      console.error("Error updating user:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+  
+  // Neuen Benutzer anlegen
+  app.post("/api/users", async (req, res) => {
+    try {
+      // Im echten System würde hier die Datenbank aktualisiert werden
+      console.log("Neuer Benutzer wird erstellt:", req.body);
+      
+      // Hier geben wir nur eine Erfolgsantwort zurück
+      res.status(201).json({
+        ...req.body,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+    } catch (error) {
+      console.error("Error creating user:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });

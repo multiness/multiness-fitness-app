@@ -200,7 +200,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   };
 
   // Neuen Benutzer erstellen und zum Server senden
-  const createUser = async (userData: Partial<User>): Promise<User> => {
+  const createUser = (userData: Partial<User>): User => {
     const newUserId = Math.max(0, ...users.map(u => u.id)) + 1;
     const newUser: User = {
       id: newUserId,
@@ -215,31 +215,32 @@ export function UserProvider({ children }: { children: ReactNode }) {
       ...userData
     };
 
-    // Zum Server senden
-    try {
-      const response = await fetch('/api/users', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(newUser),
-      });
-      
+    // Zum Server senden (async, aber für Interface-Kompatibilität synchron)
+    fetch('/api/users', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(newUser),
+    })
+    .then(response => {
       if (response.ok) {
-        const savedUser = await response.json();
-        console.log("Neuer Benutzer wurde erfolgreich erstellt:", savedUser);
-        
-        // Verwenden der vom Server zurückgegebenen Daten (inkl. korrekter ID)
-        const updatedUsers = [...users, savedUser];
-        setUsers(updatedUsers);
-        localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
-        return savedUser;
+        return response.json();
       } else {
-        console.error("Fehler beim Erstellen des Benutzers:", await response.text());
+        throw new Error(`Fehler beim Erstellen des Benutzers: ${response.status}`);
       }
-    } catch (error) {
+    })
+    .then(savedUser => {
+      console.log("Neuer Benutzer wurde erfolgreich erstellt:", savedUser);
+      
+      // Verwenden der vom Server zurückgegebenen Daten (inkl. korrekter ID)
+      const updatedUsers = [...users, savedUser];
+      setUsers(updatedUsers);
+      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
+    })
+    .catch(error => {
       console.error("Fehler bei der Kommunikation mit dem Server:", error);
-    }
+    });
 
     // Lokale Fallback-Lösung, falls Server-Kommunikation fehlschlägt
     const updatedUsers = [...users, newUser];
