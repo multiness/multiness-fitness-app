@@ -16,42 +16,45 @@ import {
 import { WebSocketServer } from "ws";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // In-Memory Speicherung für Benutzer
+  let users = [
+    {
+      id: 1,
+      username: "maxmustermann",
+      name: "Max Mustermann",
+      email: "max@example.com",
+      avatar: "https://randomuser.me/api/portraits/men/1.jpg",
+      isVerified: true,
+      bio: "Fitness-Enthusiast und Marathonläufer",
+      createdAt: new Date()
+    },
+    {
+      id: 2,
+      username: "lisafit",
+      name: "Lisa Fitness",
+      email: "lisa@example.com",
+      avatar: "https://randomuser.me/api/portraits/women/2.jpg",
+      isVerified: true,
+      bio: "Yoga-Lehrerin und Ernährungsberaterin",
+      createdAt: new Date()
+    },
+    {
+      id: 3,
+      username: "sportfreak",
+      name: "Thomas Sport",
+      email: "thomas@example.com",
+      avatar: "https://randomuser.me/api/portraits/men/3.jpg",
+      isVerified: false,
+      bio: "Bodybuilder und Kraftsportler",
+      createdAt: new Date()
+    }
+  ];
+
   // Benutzer abrufen
   app.get("/api/users", async (req, res) => {
     try {
-      // Demo-Benutzer für die Darstellung zurückgeben
-      res.json([
-        {
-          id: 1,
-          username: "maxmustermann",
-          name: "Max Mustermann",
-          email: "max@example.com",
-          avatar: "https://randomuser.me/api/portraits/men/1.jpg",
-          isVerified: true,
-          bio: "Fitness-Enthusiast und Marathonläufer",
-          createdAt: new Date()
-        },
-        {
-          id: 2,
-          username: "lisafit",
-          name: "Lisa Fitness",
-          email: "lisa@example.com",
-          avatar: "https://randomuser.me/api/portraits/women/2.jpg",
-          isVerified: true,
-          bio: "Yoga-Lehrerin und Ernährungsberaterin",
-          createdAt: new Date()
-        },
-        {
-          id: 3,
-          username: "sportfreak",
-          name: "Thomas Sport",
-          email: "thomas@example.com",
-          avatar: "https://randomuser.me/api/portraits/men/3.jpg",
-          isVerified: false,
-          bio: "Bodybuilder und Kraftsportler",
-          createdAt: new Date()
-        }
-      ]);
+      // Aktuelle Benutzerliste zurückgeben
+      res.json(users);
     } catch (error) {
       console.error("Error fetching users:", error);
       res.status(500).json({ error: "Internal server error" });
@@ -686,13 +689,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Aktualisiere Benutzer mit ID ${userId}:`, req.body);
       
-      // Im echten System würde hier die Datenbank aktualisiert werden
-      // Hier geben wir nur eine Erfolgsantwort zurück
-      res.json({ 
-        id: userId,
+      // Benutzer in In-Memory Store aktualisieren
+      const userIndex = users.findIndex(user => user.id === userId);
+      if (userIndex === -1) {
+        return res.status(404).json({ error: "Benutzer nicht gefunden" });
+      }
+
+      // Aktualisiere den Benutzer mit den neuen Daten
+      const updatedUser = {
+        ...users[userIndex],
         ...req.body,
         updatedAt: new Date()
-      });
+      };
+      
+      // Speichere den aktualisierten Benutzer zurück in die Liste
+      users[userIndex] = updatedUser;
+      
+      // Gib den aktualisierten Benutzer zurück
+      res.json(updatedUser);
     } catch (error) {
       console.error("Error updating user:", error);
       res.status(500).json({ error: "Internal server error" });
@@ -702,15 +716,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Neuen Benutzer anlegen
   app.post("/api/users", async (req, res) => {
     try {
-      // Im echten System würde hier die Datenbank aktualisiert werden
       console.log("Neuer Benutzer wird erstellt:", req.body);
       
-      // Hier geben wir nur eine Erfolgsantwort zurück
-      res.status(201).json({
+      // In-Memory-Speicherung: Neuen Benutzer erstellen und in Liste speichern
+      const newUserId = Math.max(0, ...users.map(u => u.id)) + 1;
+      const newUser = {
+        id: newUserId,
         ...req.body,
         createdAt: new Date(),
         updatedAt: new Date()
-      });
+      };
+      
+      // Sicherstellen, dass erforderliche Felder vorhanden sind
+      if (!newUser.username) newUser.username = `user_${newUserId}`;
+      if (!newUser.name) newUser.name = `User ${newUserId}`;
+      if (!newUser.bio) newUser.bio = "";
+      if (!newUser.avatar) newUser.avatar = "https://via.placeholder.com/150";
+      
+      // Benutzer zur In-Memory-Liste hinzufügen
+      users.push(newUser);
+      
+      // Erfolgreiche Antwort zurückgeben
+      res.status(201).json(newUser);
     } catch (error) {
       console.error("Error creating user:", error);
       res.status(500).json({ error: "Internal server error" });
