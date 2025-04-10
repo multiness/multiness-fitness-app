@@ -117,8 +117,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
     loadUsers();
   }, []);
 
-  // Benutzer aktualisieren
-  const updateCurrentUser = (userData: Partial<User>) => {
+  // Benutzer aktualisieren und zum Server senden
+  const updateCurrentUser = async (userData: Partial<User>) => {
     if (!currentUser) return;
 
     const updatedUser = { ...currentUser, ...userData };
@@ -130,32 +130,77 @@ export function UserProvider({ children }: { children: ReactNode }) {
     );
     setUsers(updatedUsers);
 
+    // Zum Server senden
+    try {
+      const response = await fetch(`/api/users/${currentUser.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+      });
+      
+      if (response.ok) {
+        console.log("Profiländerungen wurden erfolgreich auf dem Server gespeichert");
+      } else {
+        console.error("Fehler beim Speichern der Profiländerungen auf dem Server:", await response.text());
+      }
+    } catch (error) {
+      console.error("Fehler bei der Kommunikation mit dem Server:", error);
+    }
+
     // In localStorage speichern
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedUser));
     localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
   };
 
-  // Verifikationsstatus umschalten
-  const toggleVerification = (userId: number) => {
+  // Verifikationsstatus umschalten und zum Server senden
+  const toggleVerification = async (userId: number) => {
+    // Suche den betroffenen Benutzer
+    const userToUpdate = users.find(user => user.id === userId);
+    if (!userToUpdate) return;
+    
+    const isVerified = !userToUpdate.isVerified;
+    
+    // In lokaler Liste aktualisieren
     const updatedUsers = users.map((user: User) =>
       user.id === userId
-        ? { ...user, isVerified: !user.isVerified }
+        ? { ...user, isVerified }
         : user
     );
     setUsers(updatedUsers);
     
     // Aktuellen Benutzer aktualisieren, falls es sich um denselben handelt
     if (currentUser && currentUser.id === userId) {
-      const updatedCurrentUser = { ...currentUser, isVerified: !currentUser.isVerified };
+      const updatedCurrentUser = { ...currentUser, isVerified };
       setCurrentUser(updatedCurrentUser);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedCurrentUser));
+    }
+    
+    // Zum Server senden
+    try {
+      const response = await fetch(`/api/users/${userId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ isVerified }),
+      });
+      
+      if (response.ok) {
+        console.log(`Verifikationsstatus des Benutzers ${userId} wurde erfolgreich aktualisiert`);
+      } else {
+        console.error(`Fehler beim Aktualisieren des Verifikationsstatus für Benutzer ${userId}:`, await response.text());
+      }
+    } catch (error) {
+      console.error("Fehler bei der Kommunikation mit dem Server:", error);
     }
     
     localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
   };
 
-  // Neuen Benutzer erstellen
-  const createUser = (userData: Partial<User>): User => {
+  // Neuen Benutzer erstellen und zum Server senden
+  const createUser = async (userData: Partial<User>): Promise<User> => {
     const newUserId = Math.max(0, ...users.map(u => u.id)) + 1;
     const newUser: User = {
       id: newUserId,
@@ -170,6 +215,33 @@ export function UserProvider({ children }: { children: ReactNode }) {
       ...userData
     };
 
+    // Zum Server senden
+    try {
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newUser),
+      });
+      
+      if (response.ok) {
+        const savedUser = await response.json();
+        console.log("Neuer Benutzer wurde erfolgreich erstellt:", savedUser);
+        
+        // Verwenden der vom Server zurückgegebenen Daten (inkl. korrekter ID)
+        const updatedUsers = [...users, savedUser];
+        setUsers(updatedUsers);
+        localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
+        return savedUser;
+      } else {
+        console.error("Fehler beim Erstellen des Benutzers:", await response.text());
+      }
+    } catch (error) {
+      console.error("Fehler bei der Kommunikation mit dem Server:", error);
+    }
+
+    // Lokale Fallback-Lösung, falls Server-Kommunikation fehlschlägt
     const updatedUsers = [...users, newUser];
     setUsers(updatedUsers);
     localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
