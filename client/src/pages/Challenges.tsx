@@ -110,32 +110,25 @@ export default function Challenges() {
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <Button 
             onClick={() => setLocation("/create/challenge")} 
-            className="flex-1 sm:flex-none"
+            className="flex-1 sm:flex-none h-10 px-3 sm:px-4 text-sm font-medium"
+            size="default"
           >
-            Challenge erstellen
+            Erstellen
           </Button>
           <Button 
-            size="sm" 
+            size="icon"
             variant="outline" 
-            className="gap-1"
+            className="h-10 w-10 flex items-center justify-center"
             onClick={() => challengeStore.syncWithServer()}
             disabled={loading}
+            title={loading ? "Aktualisieren..." : syncComplete ? "Aktualisiert" : "Aktualisieren"}
           >
             {loading ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="hidden sm:inline">Aktualisieren...</span>
-              </>
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : syncComplete ? (
-              <>
-                <Check className="h-4 w-4 text-green-500" />
-                <span className="hidden sm:inline">Aktualisiert</span>
-              </>
+              <Check className="h-4 w-4 text-green-500" />
             ) : (
-              <>
-                <Search className="h-4 w-4" />
-                <span className="hidden sm:inline">Aktualisieren</span>
-              </>
+              <Search className="h-4 w-4" />
             )}
           </Button>
         </div>
@@ -155,8 +148,8 @@ export default function Challenges() {
       {/* Tabs and Content - für Mobile optimiert */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-2 mb-6">
-          <TabsTrigger value="active" className="text-xs sm:text-sm">Aktive & Kommende</TabsTrigger>
-          <TabsTrigger value="past" className="text-xs sm:text-sm">Vergangene Challenges</TabsTrigger>
+          <TabsTrigger value="active" className="px-2 py-1.5 text-xs sm:text-sm truncate">Aktive & Kommende</TabsTrigger>
+          <TabsTrigger value="past" className="px-2 py-1.5 text-xs sm:text-sm truncate">Vergangene</TabsTrigger>
         </TabsList>
 
         <TabsContent value="active">
