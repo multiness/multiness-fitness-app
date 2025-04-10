@@ -20,86 +20,131 @@ export const USERS_STORAGE_KEY = 'fitness-app-users';
 // Standard-Benutzer, falls keine vorhanden sind
 const DEFAULT_USER: User = {
   id: 1,
-  username: "fitness_coach",
-  name: "Coach Mo",
-  bio: "Certified Fitness Trainer & Nutrition Expert 🏋️‍♀️",
-  avatar: "https://images.unsplash.com/photo-1594381898411-846e7d193883?w=400&auto=format",
+  username: "maxmustermann",
+  name: "Max Mustermann",
+  bio: "Fitness-Enthusiast und Marathonläufer",
+  avatar: "https://randomuser.me/api/portraits/men/1.jpg",
   isAdmin: true,
   isVerified: true,
   isTeamMember: true,
   teamRole: "head_trainer",
+  email: "max@example.com",
+  createdAt: new Date().toISOString()
 };
 
 export function UserProvider({ children }: { children: ReactNode }) {
-  // Hilfsfunktion zum Laden der Benutzer aus der API und als Fallback aus localStorage
-  const getUsersFromStorage = async (): Promise<User[]> => {
-    try {
-      // Versuche, Benutzer von der API zu laden
-      const response = await fetch('/api/users');
-      if (response.ok) {
-        const users = await response.json();
-        // Speichere die geladenen Benutzer im localStorage
-        localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
-        console.log("Benutzer erfolgreich von API geladen:", users);
-        return Array.isArray(users) ? users : [DEFAULT_USER];
-      } else {
-        throw new Error('Benutzer konnten nicht von der API geladen werden');
-      }
-    } catch (error) {
-      console.error('Fehler beim Laden der Benutzer von API, versuche localStorage:', error);
-      
-      // Fallback: Versuche, Benutzer aus dem localStorage zu laden
-      try {
-        const savedUsers = localStorage.getItem(USERS_STORAGE_KEY);
-        if (savedUsers) {
-          const parsedUsers = JSON.parse(savedUsers);
-          return Array.isArray(parsedUsers) ? parsedUsers : [DEFAULT_USER];
-        }
-      } catch (localError) {
-        console.error('Fehler beim Laden der Benutzer aus localStorage:', localError);
-      }
-    }
-    // Default-Benutzer zurückgeben, wenn keine Benutzer gefunden wurden
-    return [DEFAULT_USER];
-  };
-
-  // Hilfsfunktion zum Laden des aktuellen Benutzers - nur als Fallback
-  const loadCurrentUser = (): User => {
-    try {
-      const savedUser = localStorage.getItem(STORAGE_KEY);
-      if (savedUser) {
-        return JSON.parse(savedUser);
-      }
-    } catch (error) {
-      console.error('Fehler beim Laden des aktuellen Benutzers:', error);
-    }
-    
-    // Default-Benutzer zurückgeben
-    return DEFAULT_USER;
-  };
-
-  // Zustand initialisieren
   const [users, setUsers] = useState<User[]>([DEFAULT_USER]);
-  const [currentUser, setCurrentUser] = useState<User>(DEFAULT_USER);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Lade Benutzer von der API beim ersten Rendern
+  // Hilfsfunktion zum Komprimieren von Bildern
+  const compressImage = (dataUrl: string, maxWidth: number): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        
+        // Skaliere das Bild herunter, wenn es zu groß ist
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Konnte Canvas-Kontext nicht erstellen'));
+          return;
+        }
+        
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Qualität auf 0.7 (70%) reduzieren
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        resolve(compressedDataUrl);
+      };
+      
+      img.onerror = (err) => {
+        reject(err);
+      };
+      
+      img.src = dataUrl;
+    });
+  };
+
+  // Initialisierung: Lade Benutzer aus localStorage oder API
   useEffect(() => {
     const loadUsers = async () => {
-      setIsLoading(true);
       try {
-        const loadedUsers = await getUsersFromStorage();
+        // Zuerst versuchen, Benutzer vom Server zu laden
+        try {
+          const response = await fetch('/api/users');
+          if (response.ok) {
+            const apiUsers = await response.json();
+            if (Array.isArray(apiUsers) && apiUsers.length > 0) {
+              console.log("Benutzer von API geladen:", apiUsers);
+              setUsers(apiUsers);
+              localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(apiUsers));
+              
+              // Versuche, den aktuellen Benutzer aus dem localStorage zu laden
+              const savedUser = localStorage.getItem(STORAGE_KEY);
+              if (savedUser) {
+                const parsedUser = JSON.parse(savedUser);
+                const foundUser = apiUsers.find((u: User) => u.id === parsedUser.id);
+                if (foundUser) {
+                  setCurrentUser(foundUser);
+                } else {
+                  setCurrentUser(apiUsers[0]);
+                  localStorage.setItem(STORAGE_KEY, JSON.stringify(apiUsers[0]));
+                }
+              } else {
+                setCurrentUser(apiUsers[0]);
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(apiUsers[0]));
+              }
+              
+              setIsLoading(false);
+              return;
+            }
+          }
+        } catch (apiError) {
+          console.warn("Konnte Benutzer nicht von API laden:", apiError);
+        }
+        
+        // Wenn API-Abruf fehlschlägt, lade aus localStorage
+        const savedUsers = localStorage.getItem(USERS_STORAGE_KEY);
+        const savedCurrentUser = localStorage.getItem(STORAGE_KEY);
+        
+        let loadedUsers = [DEFAULT_USER];
+        if (savedUsers) {
+          try {
+            const parsedUsers = JSON.parse(savedUsers);
+            if (Array.isArray(parsedUsers) && parsedUsers.length > 0) {
+              loadedUsers = parsedUsers;
+            }
+          } catch (e) {
+            console.error('Fehler beim Parsen der gespeicherten Benutzer:', e);
+          }
+        }
+        
         setUsers(loadedUsers);
         
-        // Setze den aktuellen Benutzer auf den ersten Benutzer oder DEFAULT_USER
-        const savedUser = localStorage.getItem(STORAGE_KEY);
-        if (savedUser) {
-          const parsedUser = JSON.parse(savedUser);
-          // Prüfe, ob der Benutzer in der geladenen Liste existiert
-          const foundUser = loadedUsers.find((u: User) => u.id === parsedUser.id);
-          if (foundUser) {
-            setCurrentUser(foundUser);
-          } else {
+        if (savedCurrentUser) {
+          try {
+            const parsedUser = JSON.parse(savedCurrentUser);
+            const foundUser = loadedUsers.find(u => u.id === parsedUser.id);
+            
+            if (foundUser) {
+              setCurrentUser(foundUser);
+            } else {
+              setCurrentUser(loadedUsers[0] || DEFAULT_USER);
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(loadedUsers[0] || DEFAULT_USER));
+            }
+          } catch (e) {
+            console.error('Fehler beim Parsen des aktuellen Benutzers:', e);
             setCurrentUser(loadedUsers[0] || DEFAULT_USER);
             localStorage.setItem(STORAGE_KEY, JSON.stringify(loadedUsers[0] || DEFAULT_USER));
           }
@@ -122,6 +167,19 @@ export function UserProvider({ children }: { children: ReactNode }) {
     if (!currentUser) return;
 
     const updatedUser = { ...currentUser, ...userData };
+    
+    // Komprimierung für Avatar-Bilder, wenn sie groß sind
+    if (userData.avatar && typeof userData.avatar === 'string' && userData.avatar.startsWith('data:image')) {
+      try {
+        // Reduziere die Bild-Qualität, wenn es ein Data-URL ist
+        const compressedAvatar = await compressImage(userData.avatar, 800);
+        updatedUser.avatar = compressedAvatar;
+        userData = { ...userData, avatar: compressedAvatar };
+      } catch (err) {
+        console.warn("Fehler bei der Bildkomprimierung:", err);
+      }
+    }
+    
     setCurrentUser(updatedUser);
 
     // Benutzer in der Benutzerliste aktualisieren
@@ -129,6 +187,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
       user.id === currentUser.id ? updatedUser : user
     );
     setUsers(updatedUsers);
+    
+    // In localStorage speichern, damit die Änderungen sofort sichtbar sind
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedUser));
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
 
     // Zum Server senden
     try {
@@ -141,17 +203,27 @@ export function UserProvider({ children }: { children: ReactNode }) {
       });
       
       if (response.ok) {
-        console.log("Profiländerungen wurden erfolgreich auf dem Server gespeichert");
+        const savedUser = await response.json();
+        console.log("Profiländerungen wurden erfolgreich auf dem Server gespeichert", savedUser);
+        
+        // Aktualisiere mit dem vom Server zurückgegebenen Benutzer
+        setCurrentUser(savedUser);
+        
+        // Aktualisiere auch in der Benutzerliste
+        const finalUpdatedUsers = users.map((user: User) =>
+          user.id === currentUser.id ? savedUser : user
+        );
+        setUsers(finalUpdatedUsers);
+        
+        // Aktualisiere localStorage erneut mit den bestätigten Daten
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(savedUser));
+        localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(finalUpdatedUsers));
       } else {
         console.error("Fehler beim Speichern der Profiländerungen auf dem Server:", await response.text());
       }
     } catch (error) {
       console.error("Fehler bei der Kommunikation mit dem Server:", error);
     }
-
-    // In localStorage speichern
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedUser));
-    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
   };
 
   // Verifikationsstatus umschalten und zum Server senden
@@ -212,6 +284,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
       isVerified: userData.isVerified || false,
       isTeamMember: userData.isTeamMember || false,
       teamRole: userData.teamRole || null,
+      email: userData.email || `user${newUserId}@example.com`,
+      createdAt: new Date().toISOString(),
       ...userData
     };
 
