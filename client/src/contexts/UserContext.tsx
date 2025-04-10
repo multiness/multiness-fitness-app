@@ -31,22 +31,39 @@ const DEFAULT_USER: User = {
 };
 
 export function UserProvider({ children }: { children: ReactNode }) {
-  // Hilfsfunktion zum Laden der Benutzer aus dem localStorage
-  const getUsersFromStorage = (): User[] => {
+  // Hilfsfunktion zum Laden der Benutzer aus der API und als Fallback aus localStorage
+  const getUsersFromStorage = async (): Promise<User[]> => {
     try {
-      const savedUsers = localStorage.getItem(USERS_STORAGE_KEY);
-      if (savedUsers) {
-        const parsedUsers = JSON.parse(savedUsers);
-        return Array.isArray(parsedUsers) ? parsedUsers : [DEFAULT_USER];
+      // Versuche, Benutzer von der API zu laden
+      const response = await fetch('/api/users');
+      if (response.ok) {
+        const users = await response.json();
+        // Speichere die geladenen Benutzer im localStorage
+        localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+        console.log("Benutzer erfolgreich von API geladen:", users);
+        return Array.isArray(users) ? users : [DEFAULT_USER];
+      } else {
+        throw new Error('Benutzer konnten nicht von der API geladen werden');
       }
     } catch (error) {
-      console.error('Fehler beim Laden der Benutzer:', error);
+      console.error('Fehler beim Laden der Benutzer von API, versuche localStorage:', error);
+      
+      // Fallback: Versuche, Benutzer aus dem localStorage zu laden
+      try {
+        const savedUsers = localStorage.getItem(USERS_STORAGE_KEY);
+        if (savedUsers) {
+          const parsedUsers = JSON.parse(savedUsers);
+          return Array.isArray(parsedUsers) ? parsedUsers : [DEFAULT_USER];
+        }
+      } catch (localError) {
+        console.error('Fehler beim Laden der Benutzer aus localStorage:', localError);
+      }
     }
     // Default-Benutzer zurückgeben, wenn keine Benutzer gefunden wurden
     return [DEFAULT_USER];
   };
 
-  // Hilfsfunktion zum Laden des aktuellen Benutzers
+  // Hilfsfunktion zum Laden des aktuellen Benutzers - nur als Fallback
   const loadCurrentUser = (): User => {
     try {
       const savedUser = localStorage.getItem(STORAGE_KEY);
@@ -57,14 +74,48 @@ export function UserProvider({ children }: { children: ReactNode }) {
       console.error('Fehler beim Laden des aktuellen Benutzers:', error);
     }
     
-    // Wenn kein gespeicherter Benutzer gefunden wird, den ersten Benutzer verwenden oder DEFAULT_USER
-    const allUsers = getUsersFromStorage();
-    return allUsers[0] || DEFAULT_USER;
+    // Default-Benutzer zurückgeben
+    return DEFAULT_USER;
   };
 
   // Zustand initialisieren
-  const [users, setUsers] = useState<User[]>(getUsersFromStorage());
-  const [currentUser, setCurrentUser] = useState<User>(loadCurrentUser());
+  const [users, setUsers] = useState<User[]>([DEFAULT_USER]);
+  const [currentUser, setCurrentUser] = useState<User>(DEFAULT_USER);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Lade Benutzer von der API beim ersten Rendern
+  useEffect(() => {
+    const loadUsers = async () => {
+      setIsLoading(true);
+      try {
+        const loadedUsers = await getUsersFromStorage();
+        setUsers(loadedUsers);
+        
+        // Setze den aktuellen Benutzer auf den ersten Benutzer oder DEFAULT_USER
+        const savedUser = localStorage.getItem(STORAGE_KEY);
+        if (savedUser) {
+          const parsedUser = JSON.parse(savedUser);
+          // Prüfe, ob der Benutzer in der geladenen Liste existiert
+          const foundUser = loadedUsers.find((u: User) => u.id === parsedUser.id);
+          if (foundUser) {
+            setCurrentUser(foundUser);
+          } else {
+            setCurrentUser(loadedUsers[0] || DEFAULT_USER);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(loadedUsers[0] || DEFAULT_USER));
+          }
+        } else {
+          setCurrentUser(loadedUsers[0] || DEFAULT_USER);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(loadedUsers[0] || DEFAULT_USER));
+        }
+      } catch (error) {
+        console.error('Fehler beim Initialisieren der Benutzer:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadUsers();
+  }, []);
 
   // Benutzer aktualisieren
   const updateCurrentUser = (userData: Partial<User>) => {
