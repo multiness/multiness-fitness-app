@@ -65,6 +65,7 @@ export default function Profile() {
     bio?: string;
     avatar?: string;
     bannerImage?: string;
+    teamRole?: string;
   }) => {
     if (userId === currentUser?.id) {
       // Wenn es der aktuelle Benutzer ist, aktualisiere über den Context
@@ -129,6 +130,14 @@ export default function Profile() {
 
           <h1 className="text-2xl font-bold mt-4">{user.name}</h1>
           <h2 className="text-lg text-muted-foreground">@{user.username}</h2>
+          
+          {user.teamRole && (
+            <div className="mt-1">
+              <Badge variant="outline" className="font-medium">
+                {user.teamRole}
+              </Badge>
+            </div>
+          )}
 
           {user.bio && (
             <p className="text-center mt-2 max-w-md text-muted-foreground">{user.bio}</p>
