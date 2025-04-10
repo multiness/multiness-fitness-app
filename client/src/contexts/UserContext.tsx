@@ -76,32 +76,48 @@ export function UserProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  // Initialisierung: Lade Benutzer aus localStorage oder API
+  // Initialisierung: Lade Benutzer IMMER vom Server, falls verfügbar
   useEffect(() => {
     const loadUsers = async () => {
       try {
-        // Zuerst versuchen, Benutzer vom Server zu laden
+        // IMMER zuerst vom Server laden (wichtig für Desktop/Mobile-Konsistenz)
         try {
+          console.log("Lade Benutzerdaten vom Server bei Initialisierung...");
           const response = await fetch('/api/users');
           if (response.ok) {
             const apiUsers = await response.json();
             if (Array.isArray(apiUsers) && apiUsers.length > 0) {
-              console.log("Benutzer von API geladen:", apiUsers);
+              console.log("Benutzer vom Server geladen:", apiUsers);
               setUsers(apiUsers);
+              
+              // Aktualisiere lokalen Speicher mit Server-Daten
               localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(apiUsers));
               
-              // Versuche, den aktuellen Benutzer aus dem localStorage zu laden
+              // Prüfe auf gespeicherten Current User ID
               const savedUser = localStorage.getItem(STORAGE_KEY);
               if (savedUser) {
-                const parsedUser = JSON.parse(savedUser);
-                const foundUser = apiUsers.find((u: User) => u.id === parsedUser.id);
-                if (foundUser) {
-                  setCurrentUser(foundUser);
-                } else {
+                try {
+                  const parsedUser = JSON.parse(savedUser);
+                  // WICHTIG: Immer den aktuellen Benutzer aus der API-Liste nehmen
+                  const foundUser = apiUsers.find((u: User) => u.id === parsedUser.id);
+                  if (foundUser) {
+                    console.log("Aktueller Benutzer von API aktualisiert:", foundUser);
+                    setCurrentUser(foundUser);
+                    // Aktualisiere den lokalen Speicher mit der aktualisierten Version
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(foundUser));
+                  } else {
+                    console.log("Benutzer nicht in API-Daten gefunden, verwende ersten Benutzer");
+                    setCurrentUser(apiUsers[0]);
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(apiUsers[0]));
+                  }
+                } catch (parseError) {
+                  console.warn("Fehler beim Parsen des gespeicherten Benutzers:", parseError);
                   setCurrentUser(apiUsers[0]);
                   localStorage.setItem(STORAGE_KEY, JSON.stringify(apiUsers[0]));
                 }
               } else {
+                // Kein gespeicherter Benutzer, verwende den ersten aus der API
+                console.log("Kein gespeicherter Benutzer, verwende ersten Benutzer aus API");
                 setCurrentUser(apiUsers[0]);
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(apiUsers[0]));
               }
@@ -109,12 +125,15 @@ export function UserProvider({ children }: { children: ReactNode }) {
               setIsLoading(false);
               return;
             }
+          } else {
+            console.warn("API Antwort nicht OK:", response.status);
           }
         } catch (apiError) {
-          console.warn("Konnte Benutzer nicht von API laden:", apiError);
+          console.warn("Fehler beim Laden der Benutzer von der API:", apiError);
         }
         
-        // Wenn API-Abruf fehlschlägt, lade aus localStorage
+        // NUR wenn Server nicht verfügbar ist: Aus localStorage laden
+        console.log("Server nicht verfügbar, lade aus localStorage...");
         const savedUsers = localStorage.getItem(USERS_STORAGE_KEY);
         const savedCurrentUser = localStorage.getItem(STORAGE_KEY);
         
