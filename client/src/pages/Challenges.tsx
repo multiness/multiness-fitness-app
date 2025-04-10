@@ -59,8 +59,17 @@ export default function Challenges() {
     };
   }, []);
   
-  // Holen der Challenges direkt aus dem Store
-  const allChallenges = Object.values(challengeStore.challenges);
+  // Holen der Challenges direkt aus dem Store mit useEffect, um bei Änderungen zu aktualisieren
+  const [allChallenges, setAllChallenges] = useState(Object.values(challengeStore.challenges));
+  
+  // Aktualisiere die lokale Zustandsvariable, wenn sich Daten im Store ändern
+  useEffect(() => {
+    setAllChallenges(Object.values(challengeStore.challenges));
+    
+    // Log zur Überprüfung
+    console.log("Challenges in der Challenges.tsx aktualisiert:", 
+      Object.values(challengeStore.challenges).length, "Challenges gefunden");
+  }, [challengeStore.challenges, challengeStore.lastFetched]);
   
   // Gruppieren der Challenges basierend auf ihrem Status
   const activeChallenges = allChallenges.filter(challenge => {
