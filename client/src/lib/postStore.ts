@@ -125,12 +125,13 @@ export const usePostStore = create<PostStore>()(
                 groupId: post.groupId,
                 // Wenn wir dailyGoalId haben, können wir dailyGoal später aus der separaten DB-Tabelle laden
                 dailyGoal: post.dailyGoalId ? { 
-                  type: 'custom',
-                  target: 100,
-                  unit: 'Stück',
-                  progress: 0,
-                  completed: false,
-                  createdAt: new Date()
+                  type: post.dailyGoal?.type || 'custom',
+                  target: post.dailyGoal?.target || 100,
+                  unit: post.dailyGoal?.unit || 'l',
+                  progress: post.dailyGoal?.progress || 0,
+                  completed: post.dailyGoal?.completed || false,
+                  createdAt: post.dailyGoal?.createdAt ? new Date(post.dailyGoal.createdAt) : new Date(),
+                  customName: post.dailyGoal?.customName || null
                 } : null
               };
             } else {

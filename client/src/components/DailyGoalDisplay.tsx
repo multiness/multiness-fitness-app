@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { usePostStore } from "../lib/postStore";
 import { useUsers } from "../contexts/UserContext";
 import { useToast } from "@/hooks/use-toast";
-import { mockUsers } from "../data/mockData";
+
 import { formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
 import {
