@@ -187,6 +187,50 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   }, [currentUser]);
 
+  // Synchronisierung mit der API alle 30 Sekunden
+  useEffect(() => {
+    const syncUsers = async () => {
+      try {
+        const response = await fetch('/api/users');
+        if (response.ok) {
+          const apiUsers = await response.json();
+          console.log("API-Benutzer synchronisiert:", apiUsers);
+          
+          // Aktuellen Benutzer in der neuen Liste finden
+          const currentId = currentUser?.id;
+          const currentInList = apiUsers.find((u: User) => u.id === currentId);
+          
+          // Setze die neuen Benutzer
+          setUsers(apiUsers);
+          
+          // Aktualisiere den aktuellen Benutzer, wenn er in der neuen Liste gefunden wurde
+          if (currentInList) {
+            setCurrentUser(currentInList);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(currentInList));
+          } else if (apiUsers.length > 0) {
+            // Fallback: Ersten Benutzer verwenden
+            setCurrentUser(apiUsers[0]);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(apiUsers[0]));
+          }
+          
+          localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(apiUsers));
+        }
+      } catch (error) {
+        console.error("Fehler bei der Benutzersynchronisierung:", error);
+      }
+    };
+    
+    // Erste Synchronisierung
+    syncUsers();
+    
+    // Synchronisierung alle 30 Sekunden
+    const intervalId = setInterval(syncUsers, 30000);
+    
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, []);
+
   return (
     <UserContext.Provider value={{ 
       users, 
@@ -195,9 +239,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
       toggleVerification,
       getAllUsers: () => users,
       createUser,
-      getUsersFromStorage
+      getUsersFromStorage: () => users // Gib die aktuelle Benutzerliste zurück, nicht mehr async
     }}>
-      {children}
+      {isLoading ? <div>Lade Benutzerdaten...</div> : children}
     </UserContext.Provider>
   );
 }
@@ -232,4 +276,18 @@ export function getUsersFromStorage(): User[] {
     console.error('Fehler beim Laden der Benutzer:', error);
   }
   return [DEFAULT_USER];
+}
+
+// Hilfsfunktion zum synchronen Laden der API-Benutzer (nur für andere Komponenten)
+export function loadAPIUsers() {
+  fetch('/api/users')
+    .then(response => response.json())
+    .then(users => {
+      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+      console.log("Benutzer von API aktualisiert:", users);
+      return users;
+    })
+    .catch(error => {
+      console.error("Fehler beim Aktualisieren der Benutzer von der API:", error);
+    });
 }

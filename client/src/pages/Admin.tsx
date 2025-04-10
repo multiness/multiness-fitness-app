@@ -40,7 +40,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
 import { format } from "date-fns";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
-import { useUsers } from "../contexts/UserContext";
+import { useUsers, loadAPIUsers } from "../contexts/UserContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Link, useLocation } from "wouter";
@@ -789,10 +789,29 @@ export default function Admin() {
   const [showVerifiedOnly, setShowVerifiedOnly] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [syncComplete, setSyncComplete] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const { toast } = useToast();
   const postStore = usePostStore();
   const challengeStore = useChallengeStore();
   const groupStore = useGroupStore();
+  
+  // Funktion zum manuellen Aktualisieren der Benutzerdaten
+  const refreshUsers = () => {
+    setIsRefreshing(true);
+    loadAPIUsers();
+    setTimeout(() => {
+      setIsRefreshing(false);
+      toast({
+        title: "Benutzerdaten aktualisiert",
+        description: "Die Benutzerdaten wurden erfolgreich von der API synchronisiert.",
+      });
+    }, 1000);
+  };
+
+  // Automatische Aktualisierung beim Laden der Seite
+  useEffect(() => {
+    refreshUsers();
+  }, []);
   
   // Synchronisieren der Challenges mit der Datenbank
   const syncWithServer = async () => {
@@ -809,8 +828,10 @@ export default function Admin() {
       // Gruppen synchronisieren
       await useGroupStore.getState().syncWithServer();
       
+      // Benutzer synchronisieren
+      refreshUsers();
+      
       setSyncComplete(true);
-      setLastSyncTime(format(new Date(), "dd.MM.yyyy HH:mm:ss"));
       toast({
         title: "Synchronisierung erfolgreich",
         description: "Alle Daten wurden erfolgreich mit der Datenbank synchronisiert.",
@@ -966,7 +987,7 @@ export default function Admin() {
             </Alert>
             
             <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <Card>
                   <CardHeader className="py-4">
                     <CardTitle className="text-base flex items-center gap-2">
@@ -1009,6 +1030,41 @@ export default function Admin() {
                       {challengeStore.getActiveChallenges().filter(c => c.status === 'active').length}
                     </div>
                     <p className="text-xs text-muted-foreground">Synchronisiert</p>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader className="py-4">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Users className="h-4 w-4 text-primary" />
+                      Benutzer
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="py-2">
+                    <div className="text-2xl font-bold">
+                      {users.length}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      <Button 
+                        variant="link" 
+                        size="sm" 
+                        className="p-0 h-auto text-xs text-muted-foreground flex items-center gap-1"
+                        onClick={refreshUsers}
+                        disabled={isRefreshing}
+                      >
+                        {isRefreshing ? (
+                          <>
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            Aktualisiere...
+                          </>
+                        ) : (
+                          <>
+                            <RefreshCw className="h-3 w-3" />
+                            Aktualisieren
+                          </>
+                        )}
+                      </Button>
+                    </p>
                   </CardContent>
                 </Card>
               </div>
