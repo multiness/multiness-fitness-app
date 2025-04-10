@@ -106,7 +106,7 @@ export default function DailyGoalDisplay({
         description: "Du verfolgst dieses Ziel nicht mehr.",
       });
     } else {
-      // Erstelle ein neues Tagesziel für den Teilnehmer
+      // Erstelle ein neues Tagesziel für den Teilnehmer mit gleicher Einheit
       const newGoal: DailyGoal = {
         ...currentGoal,
         progress: 0,
@@ -115,11 +115,19 @@ export default function DailyGoalDisplay({
       };
 
       // Erstelle einen Post und setze das Ziel
-      postStore.createPostWithGoal(
-        currentUser.id,
-        `Ich mache bei @${users.find(u => u.id === userId)?.username}'s Tagesziel mit: ${goalTypes[currentGoal.type]}`,
-        newGoal
-      );
+      const userDetail = fetch(`/api/users/${userId}`).then(res => res.json()).catch(() => ({username: "einem Benutzer"}));
+      let username = "einem Benutzer";
+      
+      // Benutzername aus der API holen oder Standardwert verwenden
+      userDetail.then((user) => {
+        username = user.username || "einem Benutzer";
+        // Erstelle einen Post und setze das Ziel
+        postStore.createPostWithGoal(
+          currentUser.id,
+          `Ich mache bei @${username}'s Tagesziel mit: ${goalTypes[currentGoal.type]}`,
+          newGoal
+        );
+      });
 
       // Füge den Teilnehmer zum Original-Ziel hinzu
       postStore.joinDailyGoal(userId, currentUser.id);
@@ -326,7 +334,7 @@ export default function DailyGoalDisplay({
                     <UserAvatar
                       key={participantId}
                       userId={participantId}
-                      size="xs"
+                      size="sm"
                       className="-ml-1 first:ml-0"
                     />
                   ))}
@@ -473,14 +481,14 @@ export default function DailyGoalDisplay({
         <div className="pt-3 border-t">
           <p className="text-sm text-muted-foreground mb-2">Machen auch mit:</p>
           <div className="flex flex-wrap gap-2">
-            {participants.map(participantId => {
-              const participant = mockUsers.find(u => u.id === participantId);
-              return (
-                <span key={participantId} className="text-sm bg-primary/10 px-2 py-1 rounded-full">
-                  {participant?.username}
-                </span>
-              );
-            })}
+            {participants.map(participantId => (
+              <UserAvatar
+                key={participantId}
+                userId={participantId}
+                size="sm"
+                className="mr-1"
+              />
+            ))}
           </div>
         </div>
       )}
