@@ -157,44 +157,8 @@ export default function Home() {
 
   return (
     <div className="w-full max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
-      {/* Synchronisierungs-Status */}
-      <section className="mb-6">
-        <Alert className="border-primary/20 bg-primary/5">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-            <AlertDescription className="flex-1">
-              <p className="text-sm">
-                <span className="font-semibold">Datenbank-Synchronisierung:</span>{" "}
-                Letzte Synchronisierung am {lastSyncTime}
-              </p>
-            </AlertDescription>
-            <Button 
-              size="sm" 
-              variant="outline" 
-              className="gap-1"
-              onClick={syncWithServer}
-              disabled={syncing}
-            >
-              {syncing ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Synchronisiere...
-                </>
-              ) : syncComplete ? (
-                <>
-                  <Check className="h-4 w-4 text-green-500" />
-                  Synchronisiert
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="h-4 w-4" />
-                  Synchronisieren
-                </>
-              )}
-            </Button>
-          </div>
-        </Alert>
-      </section>
-
+      {/* Synchronisierung läuft jetzt im Hintergrund ohne Benutzeroberfläche */}
+      
       {/* Marketing Banner */}
       <section className="mb-12">
         <Card className="relative aspect-square overflow-hidden">
