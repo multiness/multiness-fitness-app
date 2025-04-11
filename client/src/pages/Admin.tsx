@@ -276,12 +276,33 @@ function BackupManagement() {
     loadBackups();
   }, []);
 
-  // Backups laden
+  // Backups laden mit Polling für bessere mobile und Desktop Synchronisation
   const loadBackups = async () => {
     setIsLoading(true);
     try {
+      // Erste Abfrage der Backups
       const availableBackups = await adminViewBackups();
       setBackups(availableBackups);
+      
+      // Nach einer kurzen Verzögerung erneut abfragen, um sicherzustellen, dass wir die neuesten Daten haben
+      // Dies hilft besonders auf mobilen Geräten, die möglicherweise eine schlechtere Verbindung haben
+      setTimeout(async () => {
+        try {
+          const refreshedBackups = await adminViewBackups();
+          
+          // Nur aktualisieren, wenn sich die Anzahl der Backups geändert hat
+          if (refreshedBackups.length !== availableBackups.length) {
+            console.log("🔄 Backup-Liste aktualisiert: Neue Anzahl =", refreshedBackups.length);
+            setBackups(refreshedBackups);
+          } else {
+            console.log("✓ Backup-Liste ist aktuell");
+          }
+        } catch (refreshError) {
+          console.warn("Fehler bei der Aktualisierung der Backup-Liste:", refreshError);
+        } finally {
+          setIsLoading(false);
+        }
+      }, 1000); // 1 Sekunde Verzögerung für die Aktualisierung
     } catch (error) {
       console.error("Fehler beim Laden der Backups:", error);
       toast({
@@ -289,7 +310,6 @@ function BackupManagement() {
         description: "Die Backups konnten nicht geladen werden.",
         variant: "destructive"
       });
-    } finally {
       setIsLoading(false);
     }
   };

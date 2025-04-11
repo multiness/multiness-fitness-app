@@ -171,27 +171,66 @@ type BackupInfo = {
   isServerBackup?: boolean;
 };
 
-// Hilfsfunktion zum Abrufen der Server-Backups
+// Hilfsfunktion zum Abrufen der Server-Backups mit Retry-Mechanismus
 const getServerBackups = async (): Promise<BackupInfo[]> => {
-  try {
-    const response = await fetch(`${SERVER_BACKUP_PREFIX}/list`);
-    
-    if (response.ok) {
-      const serverBackups = await response.json();
-      console.log('✅ Server-Backups erfolgreich geladen');
-      return serverBackups.map((backup: any) => ({
-        name: backup.name,
-        timestamp: backup.timestamp,
-        isServerBackup: true // Markiere als Server-Backup
-      }));
-    } else {
-      console.error('❌ Fehler beim Laden der Server-Backups:', await response.text());
-      return [];
+  // Maximale Anzahl an Versuchen und Anfangsverzögerung
+  const maxRetries = 3;
+  const initialDelay = 500; // ms
+  
+  // Retry-Funktion mit exponentieller Verzögerung
+  const retryFetch = async (retries: number): Promise<BackupInfo[]> => {
+    try {
+      const response = await fetch(`${SERVER_BACKUP_PREFIX}/list`, {
+        // Cache-Header hinzufügen, um sicherzustellen, dass wir immer neue Daten erhalten
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
+      
+      if (response.ok) {
+        const serverBackups = await response.json();
+        console.log('✅ Server-Backups erfolgreich geladen:', serverBackups.length, 'Backups gefunden');
+        
+        // Formatiere und gib die Backup-Informationen zurück
+        return serverBackups.map((backup: any) => ({
+          name: backup.name,
+          timestamp: backup.timestamp,
+          isServerBackup: true // Markiere als Server-Backup
+        }));
+      } else {
+        const errorText = await response.text();
+        console.error('❌ Fehler beim Laden der Server-Backups:', errorText);
+        
+        // Wenn wir noch Versuche übrig haben, versuche es erneut
+        if (retries > 0) {
+          const delay = initialDelay * Math.pow(2, maxRetries - retries);
+          console.log(`🔄 Wiederhole Server-Backup-Abruf in ${delay}ms... (${retries} Versuche übrig)`);
+          
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return retryFetch(retries - 1);
+        } else {
+          return [];
+        }
+      }
+    } catch (error) {
+      console.error('❌ Netzwerkfehler beim Abrufen der Server-Backups:', error);
+      
+      // Wenn wir noch Versuche übrig haben, versuche es erneut
+      if (retries > 0) {
+        const delay = initialDelay * Math.pow(2, maxRetries - retries);
+        console.log(`🔄 Wiederhole Server-Backup-Abruf in ${delay}ms... (${retries} Versuche übrig)`);
+        
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return retryFetch(retries - 1);
+      } else {
+        return [];
+      }
     }
-  } catch (error) {
-    console.error('❌ Netzwerkfehler beim Abrufen der Server-Backups:', error);
-    return [];
-  }
+  };
+  
+  // Starte den ersten Versuch
+  return retryFetch(maxRetries);
 };
 
 // Holt lokale Backups aus dem localStorage
