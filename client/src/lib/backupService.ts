@@ -2,6 +2,7 @@ import { STORAGE_KEY, USERS_STORAGE_KEY } from "../contexts/UserContext";
 
 // Constants for backup
 const BACKUP_PREFIX = 'fitness-app-backup';
+const SERVER_BACKUP_PREFIX = '/api/backups';
 const MAX_BACKUPS = 5;
 
 // Timestamp formatter for readable backup names
@@ -10,8 +11,38 @@ const formatTimestamp = (): string => {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}`;
 };
 
+// Hilfsfunktion, um Backups mit dem Server zu synchronisieren
+const syncBackupWithServer = async (backupName: string, backupData: any): Promise<boolean> => {
+  try {
+    // Sende Backup an den Server zur Speicherung in der Datenbank
+    const response = await fetch(`${SERVER_BACKUP_PREFIX}/create`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: backupName,
+        data: backupData,
+        timestamp: new Date().toISOString()
+      }),
+    });
+    
+    if (response.ok) {
+      console.log('✅ Backup wurde erfolgreich mit dem Server synchronisiert');
+      return true;
+    } else {
+      console.error('❌ Server-Synchronisierung des Backups fehlgeschlagen:', 
+                    await response.text());
+      return false;
+    }
+  } catch (error) {
+    console.error('❌ Fehler bei der Backup-Synchronisierung mit dem Server:', error);
+    return false;
+  }
+};
+
 // Create a backup of all important data before major app changes
-export const createDataBackup = (): string => {
+export const createDataBackup = async (): Promise<string> => {
   try {
     // Get all data that needs to be backed up
     const backupData = {
@@ -30,14 +61,19 @@ export const createDataBackup = (): string => {
       // Gruppen hinzufügen
       groups: localStorage.getItem('fitness-app-groups'),
       groupMembers: localStorage.getItem('fitness-app-group-members'),
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      device: navigator.userAgent, // Hilft bei der Identifizierung des Geräts
+      isAdmin: true // Zeigt an, dass dieses Backup von einem Admin erstellt wurde
     };
 
     // Create a backup name with timestamp
     const backupName = `${BACKUP_PREFIX}-${formatTimestamp()}`;
     
-    // Save the backup
+    // Save the backup locally first
     localStorage.setItem(backupName, JSON.stringify(backupData));
+    
+    // Versuche, das Backup mit dem Server zu synchronisieren
+    await syncBackupWithServer(backupName, backupData);
     
     // Clean up old backups if we have too many
     cleanupOldBackups();
@@ -50,16 +86,51 @@ export const createDataBackup = (): string => {
   }
 };
 
-// Restore a specific backup
-export const restoreBackup = (backupName: string): boolean => {
+// Hilfsfunktion: Holt ein Backup vom Server
+const fetchBackupFromServer = async (backupName: string): Promise<any> => {
   try {
-    const backupDataStr = localStorage.getItem(backupName);
-    if (!backupDataStr) {
-      console.error(`Backup ${backupName} nicht gefunden!`);
-      return false;
-    }
+    // Extrahiere nur den Namen ohne Präfix, wenn vorhanden
+    const cleanName = backupName.startsWith(BACKUP_PREFIX) 
+      ? backupName 
+      : backupName.replace(`${BACKUP_PREFIX}-`, '');
+      
+    const response = await fetch(`${SERVER_BACKUP_PREFIX}/${encodeURIComponent(cleanName)}`);
     
-    const backupData = JSON.parse(backupDataStr);
+    if (response.ok) {
+      const serverBackup = await response.json();
+      console.log('✅ Backup vom Server geladen');
+      return serverBackup.data;
+    } else {
+      console.error('❌ Fehler beim Laden des Backups vom Server:', await response.text());
+      return null;
+    }
+  } catch (error) {
+    console.error('❌ Netzwerkfehler beim Abrufen des Backups vom Server:', error);
+    return null;
+  }
+};
+
+// Restore a specific backup
+export const restoreBackup = async (backupName: string): Promise<boolean> => {
+  try {
+    // Versuche zunächst, das Backup lokal zu laden
+    let backupDataStr = localStorage.getItem(backupName);
+    let backupData: any = null;
+    
+    if (backupDataStr) {
+      // Lokales Backup gefunden
+      backupData = JSON.parse(backupDataStr);
+      console.log('📦 Lokales Backup gefunden');
+    } else {
+      // Versuche, das Backup vom Server zu laden
+      console.log('🔄 Kein lokales Backup gefunden, versuche vom Server zu laden');
+      backupData = await fetchBackupFromServer(backupName);
+      
+      if (!backupData) {
+        console.error(`Backup ${backupName} weder lokal noch auf dem Server gefunden!`);
+        return false;
+      }
+    }
     
     // Restore all backed up data
     if (backupData.currentUser) localStorage.setItem(STORAGE_KEY, backupData.currentUser);
@@ -79,6 +150,11 @@ export const restoreBackup = (backupName: string): boolean => {
     if (backupData.groups) localStorage.setItem('fitness-app-groups', backupData.groups);
     if (backupData.groupMembers) localStorage.setItem('fitness-app-group-members', backupData.groupMembers);
     
+    // Speicher das Backup auch lokal, wenn es vom Server kam
+    if (!backupDataStr && backupData) {
+      localStorage.setItem(backupName, JSON.stringify(backupData));
+    }
+    
     console.log(`✅ Backup erfolgreich wiederhergestellt: ${backupName}`);
     return true;
   } catch (error) {
@@ -87,9 +163,40 @@ export const restoreBackup = (backupName: string): boolean => {
   }
 };
 
-// Get list of all available backups
-export const getAvailableBackups = (): {name: string, timestamp: string}[] => {
-  const backups: {name: string, timestamp: string}[] = [];
+// Typ-Definitionen für Backups
+type BackupInfo = {
+  name: string;
+  timestamp: string;
+  isLocalBackup?: boolean;
+  isServerBackup?: boolean;
+};
+
+// Hilfsfunktion zum Abrufen der Server-Backups
+const getServerBackups = async (): Promise<BackupInfo[]> => {
+  try {
+    const response = await fetch(`${SERVER_BACKUP_PREFIX}/list`);
+    
+    if (response.ok) {
+      const serverBackups = await response.json();
+      console.log('✅ Server-Backups erfolgreich geladen');
+      return serverBackups.map((backup: any) => ({
+        name: backup.name,
+        timestamp: backup.timestamp,
+        isServerBackup: true // Markiere als Server-Backup
+      }));
+    } else {
+      console.error('❌ Fehler beim Laden der Server-Backups:', await response.text());
+      return [];
+    }
+  } catch (error) {
+    console.error('❌ Netzwerkfehler beim Abrufen der Server-Backups:', error);
+    return [];
+  }
+};
+
+// Holt lokale Backups aus dem localStorage
+const getLocalBackups = (): BackupInfo[] => {
+  const backups: BackupInfo[] = [];
   
   // Loop through all localStorage items
   for (let i = 0; i < localStorage.length; i++) {
@@ -101,7 +208,8 @@ export const getAvailableBackups = (): {name: string, timestamp: string}[] => {
           const backupData = JSON.parse(backupDataStr);
           backups.push({
             name: key, 
-            timestamp: backupData.timestamp || 'Unbekanntes Datum'
+            timestamp: backupData.timestamp || 'Unbekanntes Datum',
+            isLocalBackup: true // Markiere als lokales Backup
           });
         }
       } catch (error) {
@@ -110,34 +218,69 @@ export const getAvailableBackups = (): {name: string, timestamp: string}[] => {
     }
   }
   
+  return backups;
+};
+
+// Get list of all available backups (local und remote)
+export const getAvailableBackups = async (): Promise<BackupInfo[]> => {
+  // Lokale Backups holen
+  const localBackups = getLocalBackups();
+  
+  // Server-Backups holen (asynchron)
+  let serverBackups: BackupInfo[] = [];
+  try {
+    serverBackups = await getServerBackups();
+  } catch (error) {
+    console.error('Fehler beim Abrufen der Server-Backups:', error);
+  }
+  
+  // Beide Listen zusammenführen und Duplikate entfernen
+  // Wenn ein Backup sowohl lokal als auch auf dem Server existiert, bevorzugen wir die lokale Version
+  const allBackups = [...localBackups];
+  
+  // Füge nur Server-Backups hinzu, die nicht bereits lokal vorhanden sind
+  for (const serverBackup of serverBackups) {
+    if (!localBackups.some(local => local.name === serverBackup.name)) {
+      allBackups.push(serverBackup);
+    }
+  }
+  
   // Sort by newest first
-  return backups.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  return allBackups.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 };
 
 // Remove old backups if we have too many
-const cleanupOldBackups = (): void => {
-  const backups = getAvailableBackups();
-  
-  if (backups.length > MAX_BACKUPS) {
-    // Remove oldest backups that exceed the limit
-    for (let i = MAX_BACKUPS; i < backups.length; i++) {
-      localStorage.removeItem(backups[i].name);
-      console.log(`🗑️ Altes Backup entfernt: ${backups[i].name}`);
+const cleanupOldBackups = async (): Promise<void> => {
+  try {
+    // Nur lokale Backups für die Bereinigung berücksichtigen
+    const localBackups = getLocalBackups();
+    
+    if (localBackups.length > MAX_BACKUPS) {
+      // Remove oldest backups that exceed the limit
+      for (let i = MAX_BACKUPS; i < localBackups.length; i++) {
+        localStorage.removeItem(localBackups[i].name);
+        console.log(`🗑️ Altes Backup entfernt: ${localBackups[i].name}`);
+      }
     }
+  } catch (error) {
+    console.error('Fehler bei der Backup-Bereinigung:', error);
   }
 };
 
 // Create an automatic backup before app updates
-export const scheduleAutoBackup = (): void => {
+export const scheduleAutoBackup = async (): Promise<void> => {
   // Create a backup immediately
-  createDataBackup();
+  await createDataBackup();
   
   // Schedule regular backups (daily)
   const backupInterval = 24 * 60 * 60 * 1000; // 24 hours
-  setInterval(createDataBackup, backupInterval);
+  setInterval(async () => {
+    await createDataBackup();
+  }, backupInterval);
   
   // Backup when the user is about to close the app
   window.addEventListener('beforeunload', () => {
+    // Wir können hier nicht auf das Promise warten, daher nur aufrufen
     createDataBackup();
   });
   
@@ -145,25 +288,47 @@ export const scheduleAutoBackup = (): void => {
 };
 
 // Create a handler for the Admin panel to manage backups
-export const adminCreateBackup = (): string => {
-  return createDataBackup();
+export const adminCreateBackup = async (): Promise<string> => {
+  return await createDataBackup();
 };
 
-export const adminRestoreBackup = (backupName: string): boolean => {
-  return restoreBackup(backupName);
+export const adminRestoreBackup = async (backupName: string): Promise<boolean> => {
+  return await restoreBackup(backupName);
 };
 
-export const adminViewBackups = (): {name: string, timestamp: string}[] => {
-  return getAvailableBackups();
+export const adminViewBackups = async (): Promise<BackupInfo[]> => {
+  return await getAvailableBackups();
 };
 
-export const adminDeleteBackup = (backupName: string): boolean => {
+// Löscht ein Backup lokal und auf dem Server
+export const adminDeleteBackup = async (backupName: string): Promise<boolean> => {
+  let success = true;
+  
+  // Lokal löschen
   try {
     localStorage.removeItem(backupName);
-    console.log(`🗑️ Backup gelöscht: ${backupName}`);
-    return true;
+    console.log(`🗑️ Lokales Backup gelöscht: ${backupName}`);
   } catch (error) {
-    console.error(`❌ Fehler beim Löschen des Backups ${backupName}:`, error);
-    return false;
+    console.error(`❌ Fehler beim Löschen des lokalen Backups ${backupName}:`, error);
+    success = false;
   }
+  
+  // Auf dem Server löschen
+  try {
+    const response = await fetch(`${SERVER_BACKUP_PREFIX}/${encodeURIComponent(backupName)}`, {
+      method: 'DELETE',
+    });
+    
+    if (response.ok) {
+      console.log(`🗑️ Server-Backup gelöscht: ${backupName}`);
+    } else {
+      console.warn(`⚠️ Server-Backup ${backupName} konnte nicht gelöscht werden:`, await response.text());
+      // Wir betrachten es trotzdem als Erfolg, wenn das lokale Backup gelöscht wurde
+    }
+  } catch (error) {
+    console.warn(`⚠️ Netzwerkfehler beim Löschen des Server-Backups ${backupName}:`, error);
+    // Wir betrachten es trotzdem als Erfolg, wenn das lokale Backup gelöscht wurde
+  }
+  
+  return success;
 };
