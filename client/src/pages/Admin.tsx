@@ -560,8 +560,9 @@ function BackupManagement() {
                             selectedBackup === backup.name ? 'border-primary' : ''
                           }`}
                         >
-                          <div className="flex flex-col sm:flex-row justify-between">
-                            <div className="mb-2 sm:mb-0">
+                          {/* Desktop Ansicht */}
+                          <div className="hidden sm:flex sm:flex-row justify-between">
+                            <div>
                               <div className="flex items-center gap-1.5">
                                 <HardDrive className="h-4 w-4 text-muted-foreground" />
                                 <span className="font-medium">{backup.name.replace('fitness-app-backup-', '')}</span>
@@ -582,7 +583,7 @@ function BackupManagement() {
                                 ) : (
                                   <RotateCcw className="h-4 w-4" />
                                 )}
-                                <span className="ml-1 hidden sm:inline">Wiederherstellen</span>
+                                <span className="ml-1">Wiederherstellen</span>
                               </Button>
                               <Button 
                                 variant="outline" 
@@ -590,7 +591,45 @@ function BackupManagement() {
                                 onClick={() => handleDeleteBackup(backup.name)}
                               >
                                 <Trash className="h-4 w-4 text-red-500" />
-                                <span className="ml-1 hidden sm:inline">Löschen</span>
+                                <span className="ml-1">Löschen</span>
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Mobile Ansicht */}
+                          <div className="sm:hidden">
+                            <div className="mb-2">
+                              <div className="flex items-center gap-1.5">
+                                <HardDrive className="h-4 w-4 text-muted-foreground" />
+                                <span className="font-medium">{backup.name.replace('fitness-app-backup-', '')}</span>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Erstellt am {formatDate(backup.timestamp)}
+                              </p>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 mt-3">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => handleRestoreBackup(backup.name)}
+                                disabled={isRestoring}
+                                className="flex justify-center"
+                              >
+                                {isRestoring && selectedBackup === backup.name ? (
+                                  <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                                ) : (
+                                  <RotateCcw className="h-4 w-4 mr-1" />
+                                )}
+                                Wiederherstellen
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => handleDeleteBackup(backup.name)}
+                                className="flex justify-center"
+                              >
+                                <Trash className="h-4 w-4 text-red-500 mr-1" />
+                                Löschen
                               </Button>
                             </div>
                           </div>
