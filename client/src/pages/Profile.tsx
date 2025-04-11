@@ -162,7 +162,26 @@ export default function Profile() {
           {/* Action Buttons */}
           <div className="flex gap-2 mt-4">
             {currentUser?.id === userId ? (
-              <Button onClick={() => setIsEditDialogOpen(true)}>Profil bearbeiten</Button>
+              <>
+                <Button onClick={() => setIsEditDialogOpen(true)}>Profil bearbeiten</Button>
+                {/* Admin-Button - nur für Administratoren anzeigen */}
+                {currentUser.isAdmin && (
+                  <Button 
+                    variant="outline" 
+                    className="flex items-center gap-2"
+                    onClick={() => setLocation("/admin")}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 4.5a17.4 17.4 0 0 0-2 2.5"/>
+                      <path d="M8.5 11c.2.8.3 1.5.3 2.5"/>
+                      <path d="M9 18h6"/>
+                      <path d="M10 8v.9a4.1 4.1 0 0 0 -2 1.9"/>
+                      <path d="M11 2a2 2 0 0 0 -2 2v10a2 2 0 0 0 2 2h2a2 2 0 0 0 2 -2v-10a2 2 0 0 0 -2 -2h-2z"/>
+                    </svg>
+                    Admin
+                  </Button>
+                )}
+              </>
             ) : (
               <Button
                 variant="default"
