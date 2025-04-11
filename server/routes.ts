@@ -1,6 +1,8 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { db } from "./db";
+import { eq, desc } from "drizzle-orm";
 import { 
   insertProductSchema, 
   insertEventExternalRegistrationSchema, 
@@ -11,8 +13,9 @@ import {
   insertDailyGoalSchema,
   insertUserSchema,
   insertWorkoutTemplateSchema,
-  insertNotificationSchema
-} from "@shared/schema";
+  insertNotificationSchema,
+  backups
+} from "../shared/schema";
 import { WebSocketServer } from "ws";
 
 export async function registerRoutes(app: Express): Promise<Server> {
