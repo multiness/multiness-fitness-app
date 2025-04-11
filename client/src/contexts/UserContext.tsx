@@ -6,6 +6,9 @@ interface UserContextType {
   currentUser: User | null;
   updateCurrentUser: (userData: Partial<User>) => void;
   toggleVerification: (userId: number) => void;
+  toggleTeamMember: (userId: number) => void;
+  toggleAdmin: (userId: number) => void;
+  updateTeamRole: (userId: number, teamRole: string) => void;
   getAllUsers: () => User[];
   createUser: (userData: Partial<User>) => User;
   getUsersFromStorage: () => User[];
@@ -343,7 +346,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
             ...user, 
             isTeamMember,
             // Wenn ein Benutzer zum Team-Mitglied wird, erhält er die Standardrolle "member"
-            teamRole: isTeamMember ? (user.teamRole || "member") : undefined
+            teamRole: isTeamMember ? (user.teamRole || "member") : null
           }
         : user
     );
@@ -354,7 +357,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       const updatedCurrentUser = { 
         ...currentUser, 
         isTeamMember,
-        teamRole: isTeamMember ? (currentUser.teamRole || "member") : undefined
+        teamRole: isTeamMember ? (currentUser.teamRole || "member") : null
       };
       setCurrentUser(updatedCurrentUser);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedCurrentUser));
@@ -369,7 +372,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         },
         body: JSON.stringify({ 
           isTeamMember,
-          teamRole: isTeamMember ? (userToUpdate.teamRole || "member") : undefined
+          teamRole: isTeamMember ? (userToUpdate.teamRole || "member") : null
         }),
       });
       
@@ -624,6 +627,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
       currentUser, 
       updateCurrentUser, 
       toggleVerification,
+      toggleTeamMember,  // Neue Funktion hinzugefügt
+      toggleAdmin,       // Neue Funktion hinzugefügt
+      updateTeamRole,    // Neue Funktion hinzugefügt
       getAllUsers: () => users,
       createUser,
       getUsersFromStorage: () => users // Gib die aktuelle Benutzerliste zurück, nicht mehr async

@@ -24,7 +24,12 @@ export interface UserContextType {
   currentUser: User | null;
   updateCurrentUser: (userData: Partial<User>) => void;
   toggleVerification: (userId: number) => void;
+  toggleTeamMember: (userId: number) => void;
+  toggleAdmin: (userId: number) => void;
+  updateTeamRole: (userId: number, teamRole: string) => void;
   getAllUsers: () => User[];
+  createUser: (userData: Partial<User>) => User;
+  getUsersFromStorage: () => User[];
 }
 
 export type NotificationUser = {
