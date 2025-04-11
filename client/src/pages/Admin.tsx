@@ -249,73 +249,89 @@ function TeamManagement() {
               <ScrollArea className="h-[400px]">
                 {filteredUsers.map(user => (
                   <div key={user.id} className="p-3 border-b last:border-b-0">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <img 
-                          src={user.avatar || "https://via.placeholder.com/32"} 
-                          alt={user.name}
-                          className="w-8 h-8 rounded-full object-cover"
-                          onError={(e) => {
-                            e.currentTarget.src = "https://via.placeholder.com/32";
-                          }}
-                        />
-                        <div>
-                          <div className="font-medium flex items-center gap-1">
-                            {user.name}
-                            {user.isVerified && <VerifiedBadge size="sm" />}
-                          </div>
-                          <div className="text-xs text-muted-foreground">@{user.username}</div>
+                    {/* Benutzerinfo und Avatar */}
+                    <div className="flex items-center gap-2 mb-3">
+                      <img 
+                        src={user.avatar || "https://via.placeholder.com/32"} 
+                        alt={user.name}
+                        className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                        onError={(e) => {
+                          e.currentTarget.src = "https://via.placeholder.com/32";
+                        }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium flex items-center gap-1 truncate">
+                          {user.name}
+                          {user.isVerified && <VerifiedBadge size="sm" />}
                         </div>
+                        <div className="text-xs text-muted-foreground">@{user.username}</div>
                       </div>
+                    </div>
+                    
+                    {/* Aktionsbuttons */}
+                    <div className="flex justify-between mb-4">
                       <Button 
                         variant="outline" 
                         size="sm"
                         asChild
+                        className="w-full"
                       >
                         <Link href={`/profile/${user.id}`}>
-                          Profil
+                          <User className="h-4 w-4 mr-1" />
+                          Profil ansehen
                         </Link>
                       </Button>
                     </div>
-                    <div className="grid grid-cols-2 gap-4 mt-3">
-                      <div className="space-y-1">
-                        <div className="text-xs font-medium">Team-Mitglied</div>
-                        <Switch
-                          checked={!!user.isTeamMember}
-                          disabled={user.id === 1 && user.username === "maxmustermann"}
-                          onCheckedChange={() => {
-                            toggleTeamMember(user.id);
-                            toast({
-                              title: user.isTeamMember ? "Aus Team entfernt" : "Zum Team hinzugefügt",
-                              description: user.isTeamMember
-                                ? `${user.name} ist kein Team-Mitglied mehr.`
-                                : `${user.name} ist jetzt Teil des Teams.`,
-                            });
-                          }}
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-xs font-medium">Administrator</div>
-                        <Switch
-                          checked={!!user.isAdmin}
-                          disabled={user.id === 1 && user.username === "maxmustermann"}
-                          onCheckedChange={() => {
-                            toggleAdmin(user.id);
-                            toast({
-                              title: user.isAdmin ? "Admin-Rechte entzogen" : "Als Admin festgelegt",
-                              description: user.isAdmin
-                                ? `${user.name} ist kein Administrator mehr.`
-                                : `${user.name} hat jetzt Administrator-Rechte.`,
-                            });
-                          }}
-                        />
+
+                    {/* Berechtigungen */}
+                    <div className="border rounded-md p-2 mb-3 bg-muted/20">
+                      <h4 className="text-xs font-semibold mb-2 px-1">Berechtigungen</h4>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1 bg-background p-2 rounded-md">
+                          <div className="text-xs font-medium flex items-center justify-between">
+                            <span>Team-Mitglied</span>
+                            <Switch
+                              checked={!!user.isTeamMember}
+                              disabled={user.id === 1 && user.username === "maxmustermann"}
+                              onCheckedChange={() => {
+                                toggleTeamMember(user.id);
+                                toast({
+                                  title: user.isTeamMember ? "Aus Team entfernt" : "Zum Team hinzugefügt",
+                                  description: user.isTeamMember
+                                    ? `${user.name} ist kein Team-Mitglied mehr.`
+                                    : `${user.name} ist jetzt Teil des Teams.`,
+                                });
+                              }}
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-1 bg-background p-2 rounded-md">
+                          <div className="text-xs font-medium flex items-center justify-between">
+                            <span>Administrator</span>
+                            <Switch
+                              checked={!!user.isAdmin}
+                              disabled={user.id === 1 && user.username === "maxmustermann"}
+                              onCheckedChange={() => {
+                                toggleAdmin(user.id);
+                                toast({
+                                  title: user.isAdmin ? "Admin-Rechte entzogen" : "Als Admin festgelegt",
+                                  description: user.isAdmin
+                                    ? `${user.name} ist kein Administrator mehr.`
+                                    : `${user.name} hat jetzt Administrator-Rechte.`,
+                                });
+                              }}
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
+
+                    {/* Team-Rolle Auswahl (nur anzeigen wenn Team-Mitglied) */}
                     {user.isTeamMember && (
-                      <div className="mt-3">
-                        <div className="text-xs font-medium mb-1">Team-Rolle</div>
+                      <div className="border rounded-md p-2 bg-muted/20">
+                        <h4 className="text-xs font-semibold mb-2 px-1">Team-Rolle zuweisen</h4>
                         <select
-                          className="w-full p-2 text-sm rounded border"
+                          className="w-full p-2 text-sm rounded border bg-background"
                           value={user.teamRole || "member"}
                           onChange={(e) => {
                             updateTeamRole(user.id, e.target.value);
