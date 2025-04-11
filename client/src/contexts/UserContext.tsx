@@ -28,7 +28,7 @@ const DEFAULT_USER: User = {
   isVerified: true,
   isTeamMember: true,
   teamRole: "head_trainer",
-  createdAt: new Date().toISOString()
+  createdAt: new Date()
 };
 
 export function UserProvider({ children }: { children: ReactNode }) {
@@ -335,7 +335,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       isVerified: userData.isVerified || false,
       isTeamMember: userData.isTeamMember || false,
       teamRole: userData.teamRole || null,
-      createdAt: new Date().toISOString(),
+      createdAt: new Date(),
       ...userData
     };
 
