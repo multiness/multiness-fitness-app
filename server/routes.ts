@@ -25,6 +25,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       email: "max@example.com",
       avatar: "https://randomuser.me/api/portraits/men/1.jpg",
       isVerified: true,
+      isAdmin: true,
+      isTeamMember: true,
+      teamRole: "head_trainer",
       bio: "Fitness-Enthusiast und Marathonläufer",
       createdAt: new Date()
     },
@@ -35,6 +38,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       email: "lisa@example.com",
       avatar: "https://randomuser.me/api/portraits/women/2.jpg",
       isVerified: true,
+      isAdmin: false,
+      isTeamMember: true,
+      teamRole: "yoga_trainer",
       bio: "Yoga-Lehrerin und Ernährungsberaterin",
       createdAt: new Date()
     },
@@ -45,6 +51,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       email: "thomas@example.com",
       avatar: "https://randomuser.me/api/portraits/men/3.jpg",
       isVerified: false,
+      isAdmin: false,
+      isTeamMember: false,
       bio: "Bodybuilder und Kraftsportler",
       createdAt: new Date()
     }
@@ -81,6 +89,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Benutzer abrufen
   app.get("/api/users", async (req, res) => {
     try {
+      // Stellen sicher, dass Max Mustermann immer Admin ist
+      users = users.map(user => {
+        if (user.id === 1 && user.username === "maxmustermann") {
+          return {
+            ...user,
+            isAdmin: true,
+            isTeamMember: true,
+            teamRole: "head_trainer"
+          };
+        }
+        return user;
+      });
+      
+      // Speichern der aktualisierten Benutzerliste
+      saveUsersToStorage();
+      
       // Aktuelle Benutzerliste zurückgeben
       res.json(users);
     } catch (error) {
@@ -663,9 +687,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Benutzer aus dem persistenten Speicher abrufen
-      const user = users.find(u => u.id === userId);
+      let user = users.find(u => u.id === userId);
       if (!user) {
         return res.status(404).json({ error: "Benutzer nicht gefunden" });
+      }
+      
+      // Stelle sicher, dass Max Mustermann immer Admin-Rechte hat
+      if (userId === 1 && user.username === "maxmustermann") {
+        user = {
+          ...user,
+          isAdmin: true,
+          isTeamMember: true,
+          teamRole: "head_trainer"
+        };
       }
       
       res.json(user);
@@ -692,11 +726,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Aktualisiere den Benutzer mit den neuen Daten
-      const updatedUser = {
+      let updatedUser = {
         ...users[userIndex],
         ...req.body,
         updatedAt: new Date()
       };
+      
+      // Stelle sicher, dass Max Mustermann immer Admin-Rechte behält
+      if (userId === 1 && updatedUser.username === "maxmustermann") {
+        updatedUser = {
+          ...updatedUser,
+          isAdmin: true,
+          isTeamMember: true,
+          teamRole: updatedUser.teamRole || "head_trainer"
+        };
+      }
       
       // Speichere den aktualisierten Benutzer zurück in die Liste
       users[userIndex] = updatedUser;
