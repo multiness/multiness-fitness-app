@@ -28,6 +28,7 @@ import {
   Clock,
   Archive,
   Plus,
+  User,
   Save,
   Trash,
   Database,
