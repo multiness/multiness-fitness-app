@@ -62,6 +62,206 @@ import {
   adminDeleteBackup 
 } from "../lib/backupService";
 
+// Team-Mitglied-Verwaltung
+function TeamManagement() {
+  const { users, toggleTeamMember, toggleAdmin, updateTeamRole } = useUsers();
+  const [searchQuery, setSearchQuery] = useState("");
+  const { toast } = useToast();
+
+  // Benutzer nach Name oder Benutzernamen filtern
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = 
+      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.username.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSearch;
+  });
+
+  // Team-Rollen für Auswahlfeld
+  const teamRoles = [
+    { id: "member", label: "Mitglied" },
+    { id: "trainer", label: "Trainer" },
+    { id: "coach", label: "Coach" },
+    { id: "support", label: "Support" },
+    { id: "moderator", label: "Moderator" },
+    { id: "marketing", label: "Marketing" },
+    { id: "event_manager", label: "Event-Manager" },
+    { id: "product_manager", label: "Produkt-Manager" },
+    { id: "community_manager", label: "Community-Manager" },
+    { id: "content_creator", label: "Content-Creator" },
+    { id: "head_trainer", label: "Cheftrainer" },
+  ];
+
+  return (
+    <section>
+      <h2 className="text-2xl font-bold mb-6">Team-Verwaltung</h2>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users2 className="h-5 w-5" />
+            Teammitglieder verwalten
+          </CardTitle>
+          <CardDescription>
+            Hier können Sie Team-Mitglieder hinzufügen oder entfernen und deren Rollen verwalten.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            {/* Statistik */}
+            <div className="grid grid-cols-3 gap-4 mb-6">
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-2xl font-bold text-primary">
+                    {users.filter(u => u.isTeamMember).length}
+                  </div>
+                  <p className="text-sm text-muted-foreground">Team-Mitglieder</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {users.filter(u => u.isAdmin).length}
+                  </div>
+                  <p className="text-sm text-muted-foreground">Administratoren</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-2xl font-bold text-orange-600">
+                    {users.filter(u => u.isVerified).length}
+                  </div>
+                  <p className="text-sm text-muted-foreground">Verifizierte Benutzer</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Suchleiste */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Nutzer suchen..."
+                className="pl-9"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+
+            {/* Benutzerliste */}
+            <div className="border rounded-md">
+              <div className="grid grid-cols-12 gap-2 p-3 font-medium text-sm border-b bg-muted/40">
+                <div className="col-span-3">Benutzer</div>
+                <div className="col-span-2">Rolle</div>
+                <div className="col-span-2 text-center">Team-Mitglied</div>
+                <div className="col-span-2 text-center">Admin</div>
+                <div className="col-span-3 text-right">Aktionen</div>
+              </div>
+              <ScrollArea className="h-[400px]">
+                {filteredUsers.map(user => (
+                  <div key={user.id} className="grid grid-cols-12 gap-2 p-3 items-center border-b last:border-b-0">
+                    <div className="col-span-3 flex items-center gap-2">
+                      <img 
+                        src={user.avatar || "https://via.placeholder.com/32"} 
+                        alt={user.name}
+                        className="w-8 h-8 rounded-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src = "https://via.placeholder.com/32";
+                        }}
+                      />
+                      <div>
+                        <div className="font-medium flex items-center gap-1">
+                          {user.name}
+                          {user.isVerified && <VerifiedBadge size="sm" />}
+                        </div>
+                        <div className="text-xs text-muted-foreground">@{user.username}</div>
+                      </div>
+                    </div>
+                    <div className="col-span-2">
+                      {user.isTeamMember ? (
+                        <select
+                          className="w-full p-1 text-sm rounded border"
+                          value={user.teamRole || "member"}
+                          onChange={(e) => {
+                            updateTeamRole(user.id, e.target.value);
+                            toast({
+                              title: "Rolle aktualisiert",
+                              description: `Die Rolle von ${user.name} wurde geändert.`,
+                            });
+                          }}
+                        >
+                          {teamRoles.map(role => (
+                            <option key={role.id} value={role.id}>{role.label}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">-</span>
+                      )}
+                    </div>
+                    <div className="col-span-2 text-center">
+                      <Switch
+                        checked={!!user.isTeamMember}
+                        disabled={user.id === 1 && user.username === "maxmustermann"}
+                        onCheckedChange={() => {
+                          toggleTeamMember(user.id);
+                          toast({
+                            title: user.isTeamMember ? "Aus Team entfernt" : "Zum Team hinzugefügt",
+                            description: user.isTeamMember
+                              ? `${user.name} ist kein Team-Mitglied mehr.`
+                              : `${user.name} ist jetzt Teil des Teams.`,
+                          });
+                        }}
+                      />
+                    </div>
+                    <div className="col-span-2 text-center">
+                      <Switch
+                        checked={!!user.isAdmin}
+                        disabled={user.id === 1 && user.username === "maxmustermann"}
+                        onCheckedChange={() => {
+                          toggleAdmin(user.id);
+                          toast({
+                            title: user.isAdmin ? "Admin-Rechte entzogen" : "Als Admin festgelegt",
+                            description: user.isAdmin
+                              ? `${user.name} ist kein Administrator mehr.`
+                              : `${user.name} hat jetzt Administrator-Rechte.`,
+                          });
+                        }}
+                      />
+                    </div>
+                    <div className="col-span-3 flex justify-end gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        asChild
+                      >
+                        <Link href={`/profile/${user.id}`}>
+                          Profil
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </ScrollArea>
+            </div>
+
+            <Alert>
+              <AlertDescription>
+                <div className="flex items-start gap-2">
+                  <Info className="h-4 w-4 mt-0.5 text-blue-500" />
+                  <div>
+                    <p className="font-semibold text-sm mb-1">Team-Mitglieder Berechtigungen</p>
+                    <p className="text-sm text-muted-foreground">
+                      Team-Mitglieder können je nach Rolle Push-Nachrichten senden, 
+                      Events erstellen und verwalten, Marketing-Banner erstellen und weitere Funktionen nutzen.
+                    </p>
+                  </div>
+                </div>
+              </AlertDescription>
+            </Alert>
+          </div>
+        </CardContent>
+      </Card>
+    </section>
+  );
+}
+
 // Backup Management Component
 function BackupManagement() {
   const [backups, setBackups] = useState<{name: string, timestamp: string, isLocalBackup?: boolean, isServerBackup?: boolean}[]>([]);
@@ -1349,6 +1549,9 @@ export default function Admin() {
       {/* Event Management Section */}
       <EventSection />
 
+      {/* Team Management Section */}
+      <TeamManagement />
+      
       {/* User Verification Section */}
       <section>
         <h2 className="text-2xl font-bold mb-6">User Verification</h2>
