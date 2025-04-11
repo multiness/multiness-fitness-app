@@ -142,7 +142,7 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
     checkExpiredEvents(); // Initial check
 
     return () => clearInterval(interval);
-  }, [events]);
+  }, []);
 
   const refreshEvents = async () => {
     await fetchEvents();
@@ -156,8 +156,11 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
       }
       
       const newEvent = await response.json();
-      setEvents(prev => [...prev, newEvent]);
-      saveEventsToLocalStorage([...events, newEvent]);
+      setEvents(prev => {
+        const updated = [...prev, newEvent];
+        saveEventsToLocalStorage(updated);
+        return updated;
+      });
       
       toast({
         title: "Event erstellt",
