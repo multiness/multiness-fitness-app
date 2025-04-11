@@ -321,6 +321,163 @@ export function UserProvider({ children }: { children: ReactNode }) {
     
     localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
   };
+  
+  // Team-Mitglied-Status umschalten und zum Server senden
+  const toggleTeamMember = async (userId: number) => {
+    // Suche den betroffenen Benutzer
+    const userToUpdate = users.find(user => user.id === userId);
+    if (!userToUpdate) return;
+    
+    // Max Mustermann (ID 1) muss immer Team-Mitglied sein
+    if (userId === 1 && userToUpdate.username === "maxmustermann") {
+      console.warn("Max Mustermann muss immer Team-Mitglied sein!");
+      return;
+    }
+    
+    const isTeamMember = !userToUpdate.isTeamMember;
+    
+    // In lokaler Liste aktualisieren
+    const updatedUsers = users.map((user: User) =>
+      user.id === userId
+        ? { 
+            ...user, 
+            isTeamMember,
+            // Wenn ein Benutzer zum Team-Mitglied wird, erhält er die Standardrolle "member"
+            teamRole: isTeamMember ? (user.teamRole || "member") : undefined
+          }
+        : user
+    );
+    setUsers(updatedUsers);
+    
+    // Aktuellen Benutzer aktualisieren, falls es sich um denselben handelt
+    if (currentUser && currentUser.id === userId) {
+      const updatedCurrentUser = { 
+        ...currentUser, 
+        isTeamMember,
+        teamRole: isTeamMember ? (currentUser.teamRole || "member") : undefined
+      };
+      setCurrentUser(updatedCurrentUser);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedCurrentUser));
+    }
+    
+    // Zum Server senden
+    try {
+      const response = await fetch(`/api/users/${userId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          isTeamMember,
+          teamRole: isTeamMember ? (userToUpdate.teamRole || "member") : undefined
+        }),
+      });
+      
+      if (response.ok) {
+        console.log(`Team-Mitglied-Status des Benutzers ${userId} wurde erfolgreich aktualisiert`);
+      } else {
+        console.error(`Fehler beim Aktualisieren des Team-Mitglied-Status für Benutzer ${userId}:`, await response.text());
+      }
+    } catch (error) {
+      console.error("Fehler bei der Kommunikation mit dem Server:", error);
+    }
+    
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
+  };
+  
+  // Team-Rolle aktualisieren und zum Server senden
+  const updateTeamRole = async (userId: number, teamRole: string) => {
+    // Suche den betroffenen Benutzer
+    const userToUpdate = users.find(user => user.id === userId);
+    if (!userToUpdate || !userToUpdate.isTeamMember) return;
+    
+    // In lokaler Liste aktualisieren
+    const updatedUsers = users.map((user: User) =>
+      user.id === userId
+        ? { ...user, teamRole }
+        : user
+    );
+    setUsers(updatedUsers);
+    
+    // Aktuellen Benutzer aktualisieren, falls es sich um denselben handelt
+    if (currentUser && currentUser.id === userId) {
+      const updatedCurrentUser = { ...currentUser, teamRole };
+      setCurrentUser(updatedCurrentUser);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedCurrentUser));
+    }
+    
+    // Zum Server senden
+    try {
+      const response = await fetch(`/api/users/${userId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ teamRole }),
+      });
+      
+      if (response.ok) {
+        console.log(`Team-Rolle des Benutzers ${userId} wurde erfolgreich aktualisiert`);
+      } else {
+        console.error(`Fehler beim Aktualisieren der Team-Rolle für Benutzer ${userId}:`, await response.text());
+      }
+    } catch (error) {
+      console.error("Fehler bei der Kommunikation mit dem Server:", error);
+    }
+    
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
+  };
+  
+  // Admin-Status umschalten und zum Server senden (ähnlich wie toggleVerification)
+  const toggleAdmin = async (userId: number) => {
+    // Suche den betroffenen Benutzer
+    const userToUpdate = users.find(user => user.id === userId);
+    if (!userToUpdate) return;
+    
+    // Max Mustermann (ID 1) muss immer Admin sein
+    if (userId === 1 && userToUpdate.username === "maxmustermann") {
+      console.warn("Max Mustermann muss immer Admin sein!");
+      return;
+    }
+    
+    const isAdmin = !userToUpdate.isAdmin;
+    
+    // In lokaler Liste aktualisieren
+    const updatedUsers = users.map((user: User) =>
+      user.id === userId
+        ? { ...user, isAdmin }
+        : user
+    );
+    setUsers(updatedUsers);
+    
+    // Aktuellen Benutzer aktualisieren, falls es sich um denselben handelt
+    if (currentUser && currentUser.id === userId) {
+      const updatedCurrentUser = { ...currentUser, isAdmin };
+      setCurrentUser(updatedCurrentUser);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedCurrentUser));
+    }
+    
+    // Zum Server senden
+    try {
+      const response = await fetch(`/api/users/${userId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ isAdmin }),
+      });
+      
+      if (response.ok) {
+        console.log(`Admin-Status des Benutzers ${userId} wurde erfolgreich aktualisiert`);
+      } else {
+        console.error(`Fehler beim Aktualisieren des Admin-Status für Benutzer ${userId}:`, await response.text());
+      }
+    } catch (error) {
+      console.error("Fehler bei der Kommunikation mit dem Server:", error);
+    }
+    
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
+  };
 
   // Neuen Benutzer erstellen und zum Server senden
   const createUser = (userData: Partial<User>): User => {

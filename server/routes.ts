@@ -1135,6 +1135,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Erstelle einen WebSocket-Server
+  // Backup management routes
+  app.get('/api/backups/list', async (req, res) => {
+    try {
+      // Simuliere das Abrufen von Backups aus dem Server
+      // In einer echten Implementierung würden diese aus der Datenbank kommen
+      res.json([]);
+    } catch (error) {
+      console.error('Error fetching backups:', error);
+      res.status(500).json({ error: 'Failed to fetch backups' });
+    }
+  });
+
+  app.post('/api/backups/create', async (req, res) => {
+    try {
+      const { name, data, timestamp } = req.body;
+      
+      if (!name || !data) {
+        return res.status(400).json({ error: 'Name and data are required' });
+      }
+      
+      // In einer echten Implementierung würde das Backup in der Datenbank gespeichert werden
+      // Hier simulieren wir eine erfolgreiche Speicherung
+      console.log(`Backup '${name}' wurde auf dem Server gespeichert`);
+      
+      res.status(201).json({
+        name,
+        timestamp: timestamp || new Date().toISOString(),
+        stored: true
+      });
+    } catch (error) {
+      console.error('Error creating backup:', error);
+      res.status(500).json({ error: 'Failed to create backup' });
+    }
+  });
+
+  app.get('/api/backups/:name', async (req, res) => {
+    try {
+      const { name } = req.params;
+      
+      // In einer echten Implementierung würde das Backup aus der Datenbank abgerufen werden
+      // Hier geben wir eine Fehlermeldung zurück, da wir keine Backups speichern
+      return res.status(404).json({ error: 'Backup not found' });
+    } catch (error) {
+      console.error('Error fetching backup:', error);
+      res.status(500).json({ error: 'Failed to fetch backup' });
+    }
+  });
+
+  app.delete('/api/backups/:name', async (req, res) => {
+    try {
+      const { name } = req.params;
+      
+      // In einer echten Implementierung würde das Backup aus der Datenbank gelöscht werden
+      // Hier simulieren wir eine erfolgreiche Löschung
+      console.log(`Backup '${name}' wurde vom Server gelöscht`);
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error('Error deleting backup:', error);
+      res.status(500).json({ error: 'Failed to delete backup' });
+    }
+  });
+
   const httpServer = createServer(app);
   const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
 

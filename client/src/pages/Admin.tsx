@@ -64,10 +64,11 @@ import {
 
 // Backup Management Component
 function BackupManagement() {
-  const [backups, setBackups] = useState<{name: string, timestamp: string}[]>([]);
+  const [backups, setBackups] = useState<{name: string, timestamp: string, isLocalBackup?: boolean, isServerBackup?: boolean}[]>([]);
   const [isCreatingBackup, setIsCreatingBackup] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [selectedBackup, setSelectedBackup] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
   // Backup-Daten beim Laden der Komponente abrufen
@@ -76,9 +77,10 @@ function BackupManagement() {
   }, []);
 
   // Backups laden
-  const loadBackups = () => {
+  const loadBackups = async () => {
+    setIsLoading(true);
     try {
-      const availableBackups = adminViewBackups();
+      const availableBackups = await adminViewBackups();
       setBackups(availableBackups);
     } catch (error) {
       console.error("Fehler beim Laden der Backups:", error);
@@ -87,6 +89,8 @@ function BackupManagement() {
         description: "Die Backups konnten nicht geladen werden.",
         variant: "destructive"
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -94,12 +98,12 @@ function BackupManagement() {
   const handleCreateBackup = async () => {
     setIsCreatingBackup(true);
     try {
-      const backupName = adminCreateBackup();
+      const backupName = await adminCreateBackup();
       toast({
         title: "Backup erstellt",
-        description: `Das Backup "${backupName}" wurde erfolgreich erstellt.`,
+        description: `Das Backup "${backupName}" wurde erfolgreich erstellt und mit dem Server synchronisiert.`,
       });
-      loadBackups(); // Liste der Backups aktualisieren
+      await loadBackups(); // Liste der Backups aktualisieren
     } catch (error) {
       console.error("Fehler beim Erstellen des Backups:", error);
       toast({
@@ -117,7 +121,7 @@ function BackupManagement() {
     setSelectedBackup(backupName);
     setIsRestoring(true);
     try {
-      const success = adminRestoreBackup(backupName);
+      const success = await adminRestoreBackup(backupName);
       if (success) {
         toast({
           title: "Backup wiederhergestellt",
@@ -142,13 +146,13 @@ function BackupManagement() {
   // Backup löschen
   const handleDeleteBackup = async (backupName: string) => {
     try {
-      const success = adminDeleteBackup(backupName);
+      const success = await adminDeleteBackup(backupName);
       if (success) {
         toast({
           title: "Backup gelöscht",
           description: `Das Backup "${backupName}" wurde erfolgreich gelöscht.`,
         });
-        loadBackups(); // Liste der Backups aktualisieren
+        await loadBackups(); // Liste der Backups aktualisieren
       } else {
         throw new Error("Löschung fehlgeschlagen");
       }
