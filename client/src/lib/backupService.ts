@@ -22,6 +22,14 @@ export const createDataBackup = (): string => {
       challenges: localStorage.getItem('fitness-app-challenges'),
       dailyGoals: localStorage.getItem('fitness-app-daily-goals'),
       challengeParticipants: localStorage.getItem('fitness-app-challenge-participants'),
+      // Events und Produkte hinzufügen
+      events: localStorage.getItem('fitness-app-events'),
+      eventParticipants: localStorage.getItem('fitness-app-event-participants'),
+      products: localStorage.getItem('fitness-app-products'),
+      orders: localStorage.getItem('fitness-app-orders'),
+      // Gruppen hinzufügen
+      groups: localStorage.getItem('fitness-app-groups'),
+      groupMembers: localStorage.getItem('fitness-app-group-members'),
       timestamp: new Date().toISOString()
     };
 
@@ -60,6 +68,16 @@ export const restoreBackup = (backupName: string): boolean => {
     if (backupData.challenges) localStorage.setItem('fitness-app-challenges', backupData.challenges);
     if (backupData.dailyGoals) localStorage.setItem('fitness-app-daily-goals', backupData.dailyGoals);
     if (backupData.challengeParticipants) localStorage.setItem('fitness-app-challenge-participants', backupData.challengeParticipants);
+    
+    // Events und Produkte wiederherstellen
+    if (backupData.events) localStorage.setItem('fitness-app-events', backupData.events);
+    if (backupData.eventParticipants) localStorage.setItem('fitness-app-event-participants', backupData.eventParticipants);
+    if (backupData.products) localStorage.setItem('fitness-app-products', backupData.products);
+    if (backupData.orders) localStorage.setItem('fitness-app-orders', backupData.orders);
+    
+    // Gruppen wiederherstellen
+    if (backupData.groups) localStorage.setItem('fitness-app-groups', backupData.groups);
+    if (backupData.groupMembers) localStorage.setItem('fitness-app-group-members', backupData.groupMembers);
     
     console.log(`✅ Backup erfolgreich wiederhergestellt: ${backupName}`);
     return true;
