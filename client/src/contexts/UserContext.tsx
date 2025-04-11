@@ -28,7 +28,6 @@ const DEFAULT_USER: User = {
   isVerified: true,
   isTeamMember: true,
   teamRole: "head_trainer",
-  email: "max@example.com",
   createdAt: new Date().toISOString()
 };
 
@@ -199,6 +198,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       }
     }
     
+    // Direkt UI aktualisieren, damit Änderungen sofort sichtbar sind
     setCurrentUser(updatedUser);
 
     // Benutzer in der Benutzerliste aktualisieren
@@ -207,11 +207,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
     );
     setUsers(updatedUsers);
     
-    // In localStorage speichern, damit die Änderungen sofort sichtbar sind
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedUser));
-    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
-
-    // Zum Server senden
+    // Zum Server senden - WICHTIG für Persistenz über App-Updates hinweg
+    console.log("Sende Profiländerungen zum Server...", userData);
+    
     try {
       const response = await fetch(`/api/users/${currentUser.id}`, {
         method: 'PATCH',
@@ -223,25 +221,59 @@ export function UserProvider({ children }: { children: ReactNode }) {
       
       if (response.ok) {
         const savedUser = await response.json();
-        console.log("Profiländerungen wurden erfolgreich auf dem Server gespeichert", savedUser);
+        console.log("✅ Profiländerungen wurden erfolgreich auf dem Server gespeichert", savedUser);
         
-        // Aktualisiere mit dem vom Server zurückgegebenen Benutzer
-        setCurrentUser(savedUser);
+        // Benutzer mit Server-Daten aktualisieren
+        // Aber wichtig: Lokale Änderungen haben Vorrang bei Konflikten!
+        const mergedUser = {
+          ...savedUser,
+          ...userData
+        };
+        
+        // Aktualisiere mit dem vom Server zurückgegebenen + lokalen Änderungen
+        setCurrentUser(mergedUser);
         
         // Aktualisiere auch in der Benutzerliste
         const finalUpdatedUsers = users.map((user: User) =>
-          user.id === currentUser.id ? savedUser : user
+          user.id === currentUser.id ? mergedUser : user
         );
         setUsers(finalUpdatedUsers);
         
-        // Aktualisiere localStorage erneut mit den bestätigten Daten
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(savedUser));
+        // Jetzt erst im localStorage speichern, nachdem die Serverdaten empfangen wurden
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(mergedUser));
         localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(finalUpdatedUsers));
+        
+        return true; // Erfolgreiche Aktualisierung
       } else {
-        console.error("Fehler beim Speichern der Profiländerungen auf dem Server:", await response.text());
+        console.error("❌ Fehler beim Speichern der Profiländerungen auf dem Server:", await response.text());
+        
+        // Trotz Server-Fehler: Lokale Änderungen speichern, damit sie nicht verloren gehen
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedUser));
+        localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
+        
+        // Benutzer über Fehlschlag informieren
+        return false;
       }
     } catch (error) {
-      console.error("Fehler bei der Kommunikation mit dem Server:", error);
+      console.error("❌ Netzwerkfehler bei der Kommunikation mit dem Server:", error);
+      
+      // Bei Netzwerkfehler: Lokale Änderungen speichern
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedUser));
+      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
+      
+      // Erneuter Versuch der Synchronisierung später
+      setTimeout(() => {
+        console.log("🔄 Wiederhole Server-Synchronisierung nach Fehler...");
+        fetch(`/api/users/${currentUser.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(userData),
+        }).catch(e => console.warn("Erneuter Synchronisierungsversuch fehlgeschlagen:", e));
+      }, 10000); // Nach 10 Sekunden erneut versuchen
+      
+      return false;
     }
   };
 
@@ -303,7 +335,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
       isVerified: userData.isVerified || false,
       isTeamMember: userData.isTeamMember || false,
       teamRole: userData.teamRole || null,
-      email: userData.email || `user${newUserId}@example.com`,
       createdAt: new Date().toISOString(),
       ...userData
     };
@@ -353,33 +384,66 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   }, [currentUser]);
 
-  // Synchronisierung mit der API alle 30 Sekunden
+  // Synchronisierung mit der API - respektiert lokale Änderungen
   useEffect(() => {
     const syncUsers = async () => {
       try {
+        // Speichern des aktuellen lokalen Status, bevor wir neue Daten holen
+        const currentId = currentUser?.id;
+        const localUser = currentUser ? { ...currentUser } : null;
+        
         const response = await fetch('/api/users');
         if (response.ok) {
           const apiUsers = await response.json();
-          console.log("API-Benutzer synchronisiert:", apiUsers);
+          console.log("API-Benutzer empfangen:", apiUsers);
           
-          // Aktuellen Benutzer in der neuen Liste finden
-          const currentId = currentUser?.id;
-          const currentInList = apiUsers.find((u: User) => u.id === currentId);
+          // Holen des aktuellen lokalen Benutzerstatus aus dem localStorage
+          const savedCurrentUser = localStorage.getItem(STORAGE_KEY);
+          const localUserData = savedCurrentUser ? JSON.parse(savedCurrentUser) : null;
           
-          // Setze die neuen Benutzer
-          setUsers(apiUsers);
+          // Suche nach dem aktuellen Benutzer in der API-Liste
+          const apiCurrentUser = apiUsers.find((u: User) => u.id === currentId);
           
-          // Aktualisiere den aktuellen Benutzer, wenn er in der neuen Liste gefunden wurde
-          if (currentInList) {
-            setCurrentUser(currentInList);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(currentInList));
-          } else if (apiUsers.length > 0) {
-            // Fallback: Ersten Benutzer verwenden
+          // Andere Benutzer aktualisieren
+          const mergedUsers = apiUsers.map((apiUser: User) => {
+            // Für alle anderen Benutzer: Verwende immer die Server-Version
+            if (apiUser.id !== currentId) {
+              return apiUser;
+            }
+            
+            // Für den aktuellen Benutzer: Kombiniere Server- und lokale Daten
+            // WICHTIG: Lokale Änderungen haben Vorrang
+            return {
+              ...apiUser,
+              ...(localUserData || {})
+            };
+          });
+          
+          setUsers(mergedUsers);
+          localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(mergedUsers));
+          
+          // Aktuellen Benutzer nur aktualisieren, wenn nötig
+          if (apiCurrentUser && localUser) {
+            // Kombiniere die Daten, aber lokale Änderungen haben Vorrang
+            const combinedUser = {
+              ...apiCurrentUser,
+              ...localUser
+            };
+            
+            setCurrentUser(combinedUser);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(combinedUser));
+            console.log("🔁 Aktueller Benutzer synchronisiert mit Serverdaten + lokalen Änderungen");
+          } else if (apiCurrentUser) {
+            // Falls kein lokaler Benutzer, verwende API-Version
+            setCurrentUser(apiCurrentUser);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(apiCurrentUser));
+            console.log("🔁 Aktueller Benutzer aus API geladen (kein lokaler Benutzer)");
+          } else if (apiUsers.length > 0 && !currentUser) {
+            // Fallback: Ersten Benutzer verwenden, wenn kein aktueller Benutzer vorhanden
             setCurrentUser(apiUsers[0]);
             localStorage.setItem(STORAGE_KEY, JSON.stringify(apiUsers[0]));
+            console.log("🔁 Erster Benutzer aus API als aktueller Benutzer gesetzt");
           }
-          
-          localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(apiUsers));
         }
       } catch (error) {
         console.error("Fehler bei der Benutzersynchronisierung:", error);
@@ -389,8 +453,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
     // Erste Synchronisierung
     syncUsers();
     
-    // Synchronisierung alle 30 Sekunden
-    const intervalId = setInterval(syncUsers, 30000);
+    // Synchronisierung alle 60 Sekunden (weniger häufig um Server zu entlasten)
+    const intervalId = setInterval(syncUsers, 60000);
     
     return () => {
       clearInterval(intervalId);
