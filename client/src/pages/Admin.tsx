@@ -62,6 +62,248 @@ import {
   adminDeleteBackup 
 } from "../lib/backupService";
 
+// Backup Management Component
+function BackupManagement() {
+  const [backups, setBackups] = useState<{name: string, timestamp: string}[]>([]);
+  const [isCreatingBackup, setIsCreatingBackup] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
+  const [selectedBackup, setSelectedBackup] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  // Backup-Daten beim Laden der Komponente abrufen
+  useEffect(() => {
+    loadBackups();
+  }, []);
+
+  // Backups laden
+  const loadBackups = () => {
+    try {
+      const availableBackups = adminViewBackups();
+      setBackups(availableBackups);
+    } catch (error) {
+      console.error("Fehler beim Laden der Backups:", error);
+      toast({
+        title: "Fehler",
+        description: "Die Backups konnten nicht geladen werden.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Neues Backup erstellen
+  const handleCreateBackup = async () => {
+    setIsCreatingBackup(true);
+    try {
+      const backupName = adminCreateBackup();
+      toast({
+        title: "Backup erstellt",
+        description: `Das Backup "${backupName}" wurde erfolgreich erstellt.`,
+      });
+      loadBackups(); // Liste der Backups aktualisieren
+    } catch (error) {
+      console.error("Fehler beim Erstellen des Backups:", error);
+      toast({
+        title: "Fehler",
+        description: "Das Backup konnte nicht erstellt werden.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsCreatingBackup(false);
+    }
+  };
+
+  // Backup wiederherstellen
+  const handleRestoreBackup = async (backupName: string) => {
+    setSelectedBackup(backupName);
+    setIsRestoring(true);
+    try {
+      const success = adminRestoreBackup(backupName);
+      if (success) {
+        toast({
+          title: "Backup wiederhergestellt",
+          description: `Das Backup "${backupName}" wurde erfolgreich wiederhergestellt.`,
+        });
+      } else {
+        throw new Error("Wiederherstellung fehlgeschlagen");
+      }
+    } catch (error) {
+      console.error("Fehler bei der Wiederherstellung des Backups:", error);
+      toast({
+        title: "Fehler",
+        description: "Das Backup konnte nicht wiederhergestellt werden.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsRestoring(false);
+      setSelectedBackup(null);
+    }
+  };
+
+  // Backup löschen
+  const handleDeleteBackup = async (backupName: string) => {
+    try {
+      const success = adminDeleteBackup(backupName);
+      if (success) {
+        toast({
+          title: "Backup gelöscht",
+          description: `Das Backup "${backupName}" wurde erfolgreich gelöscht.`,
+        });
+        loadBackups(); // Liste der Backups aktualisieren
+      } else {
+        throw new Error("Löschung fehlgeschlagen");
+      }
+    } catch (error) {
+      console.error("Fehler beim Löschen des Backups:", error);
+      toast({
+        title: "Fehler",
+        description: "Das Backup konnte nicht gelöscht werden.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Formatiere das Datum für die Anzeige
+  const formatDate = (isoDate: string) => {
+    if (!isoDate) return "Unbekanntes Datum";
+    
+    try {
+      const date = new Date(isoDate);
+      return date.toLocaleString('de-DE', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (e) {
+      return isoDate;
+    }
+  };
+
+  return (
+    <section>
+      <h2 className="text-2xl font-bold mb-6">Systemsicherung</h2>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <HardDrive className="h-5 w-5" />
+            Backup-Management
+          </CardTitle>
+          <CardDescription>
+            Erstellen und Verwalten Sie Sicherungen der App-Daten, um Datenverlust zu vermeiden.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-semibold mb-2">Verfügbare Backups</h3>
+                <p className="text-sm text-muted-foreground">
+                  {backups.length} Backup(s) verfügbar. Die letzten 5 Backups werden automatisch gespeichert.
+                </p>
+              </div>
+              <Button
+                onClick={handleCreateBackup}
+                disabled={isCreatingBackup}
+                className="w-full sm:w-auto"
+              >
+                {isCreatingBackup ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Wird erstellt...
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    Neues Backup erstellen
+                  </>
+                )}
+              </Button>
+            </div>
+
+            <Card className="bg-muted/40">
+              <CardContent className="p-4">
+                {backups.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Database className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-muted-foreground">Keine Backups verfügbar</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Erstellen Sie ein neues Backup, um Ihre Daten zu sichern
+                    </p>
+                  </div>
+                ) : (
+                  <ScrollArea className="h-[300px]">
+                    <div className="space-y-2">
+                      {backups.map((backup) => (
+                        <div 
+                          key={backup.name} 
+                          className={`border rounded-md p-3 ${
+                            selectedBackup === backup.name ? 'border-primary' : ''
+                          }`}
+                        >
+                          <div className="flex flex-col sm:flex-row justify-between">
+                            <div className="mb-2 sm:mb-0">
+                              <div className="flex items-center gap-1.5">
+                                <HardDrive className="h-4 w-4 text-muted-foreground" />
+                                <span className="font-medium">{backup.name.replace('fitness-app-backup-', '')}</span>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Erstellt am {formatDate(backup.timestamp)}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => handleRestoreBackup(backup.name)}
+                                disabled={isRestoring}
+                              >
+                                {isRestoring && selectedBackup === backup.name ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <RotateCcw className="h-4 w-4" />
+                                )}
+                                <span className="ml-1 hidden sm:inline">Wiederherstellen</span>
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => handleDeleteBackup(backup.name)}
+                              >
+                                <Trash className="h-4 w-4 text-red-500" />
+                                <span className="ml-1 hidden sm:inline">Löschen</span>
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                )}
+              </CardContent>
+            </Card>
+
+            <Alert>
+              <AlertDescription>
+                <div className="flex items-start gap-2">
+                  <Info className="h-4 w-4 mt-0.5 text-blue-500" />
+                  <div>
+                    <p className="font-semibold text-sm mb-1">Hinweis zur Backup-Strategie</p>
+                    <p className="text-sm text-muted-foreground">
+                      Es wird empfohlen, vor größeren Änderungen am System ein Backup zu erstellen. 
+                      Die Daten werden lokal im Browser gespeichert und beim Aktualisieren mit dem Server synchronisiert.
+                    </p>
+                  </div>
+                </div>
+              </AlertDescription>
+            </Alert>
+          </div>
+        </CardContent>
+      </Card>
+    </section>
+  );
+}
+
 // Product Management Section Component
 function ProductManagement() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -794,258 +1036,7 @@ function EventSection() {
 }
 
 
-// Backup-System Verwaltungskomponente
-function BackupManagement() {
-  const [backups, setBackups] = useState<{name: string, timestamp: string}[]>([]);
-  const [isCreatingBackup, setIsCreatingBackup] = useState(false);
-  const [isRestoring, setIsRestoring] = useState(false);
-  const [selectedBackup, setSelectedBackup] = useState<string | null>(null);
-  const { toast } = useToast();
-
-  // Lade verfügbare Backups beim Laden der Komponente
-  useEffect(() => {
-    refreshBackups();
-  }, []);
-
-  // Aktualisiere die Backup-Liste
-  const refreshBackups = () => {
-    const availableBackups = adminViewBackups();
-    setBackups(availableBackups);
-  };
-
-  // Erstelle ein neues Backup
-  const handleCreateBackup = async () => {
-    setIsCreatingBackup(true);
-    try {
-      const backupName = adminCreateBackup();
-      refreshBackups();
-      
-      toast({
-        title: "Backup erstellt",
-        description: `Backup wurde erfolgreich erstellt: ${backupName}`,
-      });
-    } catch (error) {
-      console.error("Fehler beim Erstellen des Backups:", error);
-      toast({
-        title: "Fehler beim Erstellen des Backups",
-        description: "Ein unerwarteter Fehler ist aufgetreten.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsCreatingBackup(false);
-    }
-  };
-
-  // Stelle ein Backup wieder her
-  const handleRestoreBackup = async (backupName: string) => {
-    if (!confirm(`Möchten Sie wirklich das Backup "${backupName}" wiederherstellen? Aktuelle ungespeicherte Änderungen gehen verloren.`)) {
-      return;
-    }
-
-    setIsRestoring(true);
-    try {
-      const success = adminRestoreBackup(backupName);
-      
-      if (success) {
-        toast({
-          title: "Backup wiederhergestellt",
-          description: "Die Daten wurden erfolgreich wiederhergestellt.",
-        });
-        
-        // Seite nach kurzer Verzögerung neu laden, um alle Komponenten zu aktualisieren
-        setTimeout(() => {
-          window.location.reload();
-        }, 1000);
-      } else {
-        toast({
-          title: "Fehler bei der Wiederherstellung",
-          description: "Das Backup konnte nicht wiederhergestellt werden.",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      console.error("Fehler bei der Wiederherstellung des Backups:", error);
-      toast({
-        title: "Fehler bei der Wiederherstellung",
-        description: "Ein unerwarteter Fehler ist aufgetreten.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsRestoring(false);
-    }
-  };
-
-  // Lösche ein Backup
-  const handleDeleteBackup = async (backupName: string) => {
-    if (!confirm(`Möchten Sie wirklich das Backup "${backupName}" löschen?`)) {
-      return;
-    }
-
-    try {
-      const success = adminDeleteBackup(backupName);
-      
-      if (success) {
-        refreshBackups();
-        toast({
-          title: "Backup gelöscht",
-          description: "Das Backup wurde erfolgreich gelöscht.",
-        });
-      } else {
-        toast({
-          title: "Fehler beim Löschen",
-          description: "Das Backup konnte nicht gelöscht werden.",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      console.error("Fehler beim Löschen des Backups:", error);
-      toast({
-        title: "Fehler beim Löschen",
-        description: "Ein unerwarteter Fehler ist aufgetreten.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  // Formatiere das Datum für die Anzeige
-  const formatDate = (isoDate: string) => {
-    try {
-      const date = new Date(isoDate);
-      return date.toLocaleString('de-DE', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch (e) {
-      return isoDate;
-    }
-  };
-
-  return (
-    <section>
-      <h2 className="text-2xl font-bold mb-6">Systemsicherung</h2>
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <HardDrive className="h-5 w-5" />
-            Backup-Management
-          </CardTitle>
-          <CardDescription>
-            Erstellen und Verwalten Sie Sicherungen der App-Daten, um Datenverlust zu vermeiden.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between gap-4">
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Verfügbare Backups</h3>
-                <p className="text-sm text-muted-foreground">
-                  {backups.length} Backup(s) verfügbar. Die letzten 5 Backups werden automatisch gespeichert.
-                </p>
-              </div>
-              <Button
-                onClick={handleCreateBackup}
-                disabled={isCreatingBackup}
-                className="w-full sm:w-auto"
-              >
-                {isCreatingBackup ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Wird erstellt...
-                  </>
-                ) : (
-                  <>
-                    <Save className="mr-2 h-4 w-4" />
-                    Neues Backup erstellen
-                  </>
-                )}
-              </Button>
-            </div>
-
-            <Card className="bg-muted/40">
-              <CardContent className="p-4">
-                {backups.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Database className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-muted-foreground">Keine Backups verfügbar</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Erstellen Sie ein neues Backup, um Ihre Daten zu sichern
-                    </p>
-                  </div>
-                ) : (
-                  <ScrollArea className="h-[300px]">
-                    <div className="space-y-2">
-                      {backups.map((backup) => (
-                        <div 
-                          key={backup.name} 
-                          className={`border rounded-md p-3 ${
-                            selectedBackup === backup.name ? 'border-primary' : ''
-                          }`}
-                        >
-                          <div className="flex flex-col sm:flex-row justify-between">
-                            <div className="mb-2 sm:mb-0">
-                              <div className="flex items-center gap-1.5">
-                                <HardDrive className="h-4 w-4 text-muted-foreground" />
-                                <span className="font-medium">{backup.name.replace('fitness-app-backup-', '')}</span>
-                              </div>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Erstellt am {formatDate(backup.timestamp)}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => handleRestoreBackup(backup.name)}
-                                disabled={isRestoring}
-                              >
-                                {isRestoring ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <RotateCcw className="h-4 w-4" />
-                                )}
-                                <span className="ml-1 hidden sm:inline">Wiederherstellen</span>
-                              </Button>
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => handleDeleteBackup(backup.name)}
-                              >
-                                <Trash className="h-4 w-4 text-red-500" />
-                                <span className="ml-1 hidden sm:inline">Löschen</span>
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
-                )}
-              </CardContent>
-            </Card>
-
-            <Alert>
-              <AlertDescription>
-                <div className="flex items-start gap-2">
-                  <Info className="h-4 w-4 mt-0.5 text-blue-500" />
-                  <div>
-                    <p className="font-semibold text-sm mb-1">Hinweis zur Backup-Strategie</p>
-                    <p className="text-sm text-muted-foreground">
-                      Es wird empfohlen, vor größeren Änderungen am System ein Backup zu erstellen. 
-                      Die Daten werden lokal im Browser gespeichert und beim Aktualisieren mit dem Server synchronisiert.
-                    </p>
-                  </div>
-                </div>
-              </AlertDescription>
-            </Alert>
-          </div>
-        </CardContent>
-      </Card>
-    </section>
-  );
-}
+// Die BackupManagement-Komponente wurde bereits oben im Code implementiert
 
 export default function Admin() {
   const { users, toggleVerification } = useUsers();
@@ -1585,6 +1576,9 @@ export default function Admin() {
           </CardContent>
         </Card>
       </section>
+
+      {/* Backup Management Section */}
+      <BackupManagement />
     </div>
   );
 }
