@@ -260,18 +260,42 @@ const getLocalBackups = (): BackupInfo[] => {
   return backups;
 };
 
-// Get list of all available backups (local und remote)
-export const getAvailableBackups = async (): Promise<BackupInfo[]> => {
-  // Lokale Backups holen
+// Funktion zum Entfernen von Mock-Backups oder nicht synchronisierten Backups
+const cleanupUnsyncedBackups = async (serverBackups: BackupInfo[]): Promise<void> => {
+  // Hole alle lokalen Backups
   const localBackups = getLocalBackups();
   
+  // Finde lokale Backups, die nicht auf dem Server existieren
+  const unsyncedBackups = localBackups.filter(localBackup => 
+    !serverBackups.some(serverBackup => serverBackup.name === localBackup.name)
+  );
+  
+  // Lösche nicht synchronisierte Backups
+  if (unsyncedBackups.length > 0) {
+    console.log(`🧹 Entferne ${unsyncedBackups.length} nicht synchronisierte lokale Backup(s)...`);
+    
+    for (const backup of unsyncedBackups) {
+      localStorage.removeItem(backup.name);
+      console.log(`🗑️ Nicht synchronisiertes lokales Backup entfernt: ${backup.name}`);
+    }
+  }
+};
+
+// Get list of all available backups (local und remote)
+export const getAvailableBackups = async (): Promise<BackupInfo[]> => {
   // Server-Backups holen (asynchron)
   let serverBackups: BackupInfo[] = [];
   try {
     serverBackups = await getServerBackups();
+    
+    // Bereinige nicht synchronisierte Backups
+    await cleanupUnsyncedBackups(serverBackups);
   } catch (error) {
     console.error('Fehler beim Abrufen der Server-Backups:', error);
   }
+  
+  // Lokale Backups holen (nach der Bereinigung)
+  const localBackups = getLocalBackups();
   
   // Beide Listen zusammenführen und Duplikate entfernen
   // Wenn ein Backup sowohl lokal als auch auf dem Server existiert, bevorzugen wir die lokale Version
