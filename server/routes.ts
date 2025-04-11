@@ -14,6 +14,7 @@ import {
   insertUserSchema,
   insertWorkoutTemplateSchema,
   insertNotificationSchema,
+  insertEventSchema,
   backups
 } from "../shared/schema";
 import { WebSocketServer } from "ws";
@@ -155,36 +156,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
           {
             title: "Summer Fitness Workshop",
             description: "Ein intensiver Workshop für alle, die ihre Sommerfigur optimieren wollen.",
-            date: now,
+            date: now.toISOString(),
             location: "Fitness Center Berlin",
             image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&auto=format",
             type: "event",
             creatorId: 1,
             isPublic: true,
+            requiresRegistration: true,
             isArchived: false,
             isActive: true
           },
           {
             title: "Yoga für Anfänger",
             description: "Einstiegskurs in die Welt des Yoga mit grundlegenden Asanas und Atemtechniken.",
-            date: new Date(now.getTime() + 86400000),
+            date: new Date(now.getTime() + 86400000).toISOString(),
             location: "Yoga Studio München",
             image: "https://images.unsplash.com/photo-1575052814086-f385e2e2ad1b?w=800&auto=format",
             type: "course",
             creatorId: 1,
             isPublic: true,
+            requiresRegistration: true,
             isArchived: false,
             isActive: true
           },
           {
             title: "Marathon-Vorbereitungskurs",
             description: "12-Wochen Trainingsprogramm zur optimalen Vorbereitung auf deinen ersten Marathon.",
-            date: new Date(now.getTime() + 86400000 * 2),
+            date: new Date(now.getTime() + 86400000 * 2).toISOString(),
             location: "Stadtpark Hamburg",
             image: "https://images.unsplash.com/photo-1534258936925-c58bed479fcb?w=800&auto=format",
             type: "course",
             creatorId: 1,
             isPublic: true,
+            requiresRegistration: true,
             isArchived: false,
             isActive: true
           }
