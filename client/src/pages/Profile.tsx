@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageSquare, Trophy, Users2, ArrowRight, Pencil } from "lucide-react";
+import { MessageSquare, Trophy, Users2, ArrowRight, Pencil, Shield, UserCog } from "lucide-react";
 import FeedPost from "@/components/FeedPost";
 import { mockUsers, mockChallenges } from "../data/mockData";
 import { Badge } from "@/components/ui/badge";
@@ -164,6 +164,18 @@ export default function Profile() {
             {currentUser?.id === userId ? (
               <>
                 <Button onClick={() => setIsEditDialogOpen(true)}>Profil bearbeiten</Button>
+                {/* Team-Mitglied-Button - nur für Team-Mitglieder anzeigen */}
+                {currentUser.isTeamMember && (
+                  <Button 
+                    variant="outline" 
+                    className="flex items-center gap-2"
+                    onClick={() => setLocation("/admin#team")}
+                  >
+                    <UserCog className="h-4 w-4" />
+                    Team-Bereich
+                  </Button>
+                )}
+
                 {/* Admin-Button - nur für Administratoren anzeigen */}
                 {currentUser.isAdmin && (
                   <Button 
@@ -171,13 +183,7 @@ export default function Profile() {
                     className="flex items-center gap-2"
                     onClick={() => setLocation("/admin")}
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M12 4.5a17.4 17.4 0 0 0-2 2.5"/>
-                      <path d="M8.5 11c.2.8.3 1.5.3 2.5"/>
-                      <path d="M9 18h6"/>
-                      <path d="M10 8v.9a4.1 4.1 0 0 0 -2 1.9"/>
-                      <path d="M11 2a2 2 0 0 0 -2 2v10a2 2 0 0 0 2 2h2a2 2 0 0 0 2 -2v-10a2 2 0 0 0 -2 -2h-2z"/>
-                    </svg>
+                    <Shield className="h-4 w-4" />
                     Admin
                   </Button>
                 )}

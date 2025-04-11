@@ -1245,6 +1245,17 @@ function EventSection() {
 export default function Admin() {
   const { users, toggleVerification } = useUsers();
   const [searchQuery, setSearchQuery] = useState("");
+  const [location] = useLocation();
+  
+  // Scrolle zum Team-Bereich, wenn die URL einen #team-Anker enthält
+  useEffect(() => {
+    if (location.includes("#team")) {
+      const teamSection = document.getElementById("team");
+      if (teamSection) {
+        teamSection.scrollIntoView({ behavior: "smooth" });
+      }
+    }
+  }, [location]);
   const [showVerifiedOnly, setShowVerifiedOnly] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [syncComplete, setSyncComplete] = useState(false);
@@ -1550,7 +1561,9 @@ export default function Admin() {
       <EventSection />
 
       {/* Team Management Section */}
-      <TeamManagement />
+      <section id="team">
+        <TeamManagement />
+      </section>
       
       {/* User Verification Section */}
       <section>
