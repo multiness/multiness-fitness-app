@@ -855,7 +855,7 @@ function ProductManagement() {
                             {product.description}
                           </p>
                           <p className="text-sm text-muted-foreground mb-4">
-                            Gültig bis: {new Date(product.validUntil).toLocaleDateString()}
+                            Gültig bis: {product.validUntil ? new Date(product.validUntil).toLocaleDateString() : 'Unbegrenzt'}
                           </p>
                           <div className="flex items-center justify-end gap-2">
                             <Button

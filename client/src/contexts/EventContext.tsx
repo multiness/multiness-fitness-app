@@ -188,13 +188,13 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
       
       const updated = await response.json();
       
-      setEvents(prev => prev.map(event => 
-        event.id === updated.id ? updated : event
-      ));
-      
-      saveEventsToLocalStorage(events.map(event => 
-        event.id === updated.id ? updated : event
-      ));
+      setEvents(prev => {
+        const updatedEvents = prev.map(event => 
+          event.id === updated.id ? updated : event
+        );
+        saveEventsToLocalStorage(updatedEvents);
+        return updatedEvents;
+      });
       
       toast({
         title: "Event aktualisiert",
@@ -224,13 +224,13 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
         throw new Error(`Fehler beim Archivieren des Events: ${response.statusText}`);
       }
       
-      setEvents(prev => prev.map(event =>
-        event.id === id ? { ...event, isArchived: true, isActive: false } : event
-      ));
-      
-      saveEventsToLocalStorage(events.map(event =>
-        event.id === id ? { ...event, isArchived: true, isActive: false } : event
-      ));
+      setEvents(prev => {
+        const updatedEvents = prev.map(event =>
+          event.id === id ? { ...event, isArchived: true, isActive: false } : event
+        );
+        saveEventsToLocalStorage(updatedEvents);
+        return updatedEvents;
+      });
       
       toast({
         title: "Event archiviert",
@@ -254,8 +254,11 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
         throw new Error(`Fehler beim Löschen des Events: ${response.statusText}`);
       }
       
-      setEvents(prev => prev.filter(event => event.id !== id));
-      saveEventsToLocalStorage(events.filter(event => event.id !== id));
+      setEvents(prev => {
+        const updatedEvents = prev.filter(event => event.id !== id);
+        saveEventsToLocalStorage(updatedEvents);
+        return updatedEvents;
+      });
       
       toast({
         title: "Event gelöscht",
