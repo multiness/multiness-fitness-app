@@ -1138,9 +1138,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Backup management routes
   app.get('/api/backups/list', async (req, res) => {
     try {
-      // Simuliere das Abrufen von Backups aus dem Server
-      // In einer echten Implementierung würden diese aus der Datenbank kommen
-      res.json([]);
+      // Lade Backups aus der Datenbank
+      const allBackups = await db.select().from(backups).orderBy(desc(backups.timestamp));
+      
+      const backupList = allBackups.map(backup => ({
+        name: backup.name,
+        timestamp: backup.timestamp,
+        isServerBackup: true,
+        deviceInfo: backup.deviceInfo,
+        isAutoBackup: backup.isAutoBackup,
+        size: backup.size
+      }));
+      
+      console.log(`${backupList.length} Backups vom Server geladen`);
+      res.json(backupList);
     } catch (error) {
       console.error('Error fetching backups:', error);
       res.status(500).json({ error: 'Failed to fetch backups' });
@@ -1149,19 +1160,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/backups/create', async (req, res) => {
     try {
-      const { name, data, timestamp } = req.body;
+      const { name, data, timestamp, deviceInfo } = req.body;
       
       if (!name || !data) {
         return res.status(400).json({ error: 'Name and data are required' });
       }
       
-      // In einer echten Implementierung würde das Backup in der Datenbank gespeichert werden
-      // Hier simulieren wir eine erfolgreiche Speicherung
-      console.log(`Backup '${name}' wurde auf dem Server gespeichert`);
+      // Prüfe, ob ein Backup mit diesem Namen bereits existiert
+      const existingBackup = await db.select().from(backups).where(eq(backups.name, name)).limit(1);
+      
+      if (existingBackup.length > 0) {
+        // Update das bestehende Backup
+        const updatedBackup = await db.update(backups)
+          .set({
+            data,
+            timestamp: timestamp ? new Date(timestamp) : new Date(),
+            deviceInfo: deviceInfo || null,
+            size: JSON.stringify(data).length
+          })
+          .where(eq(backups.name, name))
+          .returning();
+        
+        console.log(`Backup '${name}' wurde aktualisiert`);
+        return res.status(200).json({
+          name,
+          timestamp: updatedBackup[0].timestamp.toISOString(),
+          stored: true,
+          updated: true
+        });
+      }
+      
+      // Erstelle ein neues Backup
+      const newBackup = await db.insert(backups)
+        .values({
+          name,
+          data,
+          timestamp: timestamp ? new Date(timestamp) : new Date(),
+          deviceInfo: deviceInfo || null,
+          isAutoBackup: name.includes('auto'),
+          size: JSON.stringify(data).length
+        })
+        .returning();
+      
+      console.log(`Neues Backup '${name}' wurde erstellt`);
+      
+      // Entferne alte Backups, wenn wir mehr als 5 haben
+      const allBackups = await db.select().from(backups).orderBy(desc(backups.timestamp));
+      if (allBackups.length > 5) {
+        const oldBackups = allBackups.slice(5);
+        for (const oldBackup of oldBackups) {
+          await db.delete(backups).where(eq(backups.id, oldBackup.id));
+          console.log(`Altes Backup '${oldBackup.name}' wurde automatisch gelöscht`);
+        }
+      }
       
       res.status(201).json({
         name,
-        timestamp: timestamp || new Date().toISOString(),
+        timestamp: newBackup[0].timestamp.toISOString(),
         stored: true
       });
     } catch (error) {
@@ -1174,9 +1229,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { name } = req.params;
       
-      // In einer echten Implementierung würde das Backup aus der Datenbank abgerufen werden
-      // Hier geben wir eine Fehlermeldung zurück, da wir keine Backups speichern
-      return res.status(404).json({ error: 'Backup not found' });
+      const backup = await db.select().from(backups).where(eq(backups.name, name)).limit(1);
+      
+      if (backup.length === 0) {
+        return res.status(404).json({ error: 'Backup not found' });
+      }
+      
+      console.log(`Backup '${name}' wurde abgerufen`);
+      res.json({
+        name: backup[0].name,
+        data: backup[0].data,
+        timestamp: backup[0].timestamp.toISOString()
+      });
     } catch (error) {
       console.error('Error fetching backup:', error);
       res.status(500).json({ error: 'Failed to fetch backup' });
@@ -1187,10 +1251,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { name } = req.params;
       
-      // In einer echten Implementierung würde das Backup aus der Datenbank gelöscht werden
-      // Hier simulieren wir eine erfolgreiche Löschung
-      console.log(`Backup '${name}' wurde vom Server gelöscht`);
+      const deletedBackup = await db.delete(backups)
+        .where(eq(backups.name, name))
+        .returning();
       
+      if (deletedBackup.length === 0) {
+        return res.status(404).json({ error: 'Backup not found' });
+      }
+      
+      console.log(`Backup '${name}' wurde gelöscht`);
       res.status(204).send();
     } catch (error) {
       console.error('Error deleting backup:', error);

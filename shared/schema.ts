@@ -728,3 +728,25 @@ export type InsertUserWorkout = z.infer<typeof insertUserWorkoutSchema>;
 export type InsertEventComment = z.infer<typeof insertEventCommentSchema>;
 export type InsertEventExternalRegistration = z.infer<typeof insertEventExternalRegistrationSchema>;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+
+// Backups-Tabelle für Gerätesynchronisierung
+export const backups = pgTable("backups", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  userId: integer("user_id").references(() => users.id),
+  data: jsonb("data").notNull(),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  deviceInfo: text("device_info"),
+  isAutoBackup: boolean("is_auto_backup").default(false),
+  size: integer("size"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertBackupSchema = createInsertSchema(backups)
+  .omit({
+    id: true,
+    createdAt: true,
+  });
+
+export type Backup = typeof backups.$inferSelect;
+export type InsertBackup = z.infer<typeof insertBackupSchema>;
