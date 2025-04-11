@@ -119,44 +119,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Events abrufen
   app.get("/api/events", async (req, res) => {
     try {
-      // Demo-Events für die Darstellung zurückgeben
-      res.json([
-        {
-          id: 1,
-          title: "Summer Fitness Workshop",
-          description: "Ein intensiver Workshop für alle, die ihre Sommerfigur optimieren wollen.",
-          date: new Date().toISOString(),
-          location: "Fitness Center Berlin",
-          image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&auto=format",
-          type: "event",
-          trainer: 1,
-          isArchived: false
-        },
-        {
-          id: 2,
-          title: "Yoga für Anfänger",
-          description: "Einstiegskurs in die Welt des Yoga mit grundlegenden Asanas und Atemtechniken.",
-          date: new Date(Date.now() + 86400000).toISOString(),
-          location: "Yoga Studio München",
-          image: "https://images.unsplash.com/photo-1575052814086-f385e2e2ad1b?w=800&auto=format",
-          type: "course",
-          trainer: 2,
-          isArchived: false
-        },
-        {
-          id: 3,
-          title: "Marathon-Vorbereitungskurs",
-          description: "12-Wochen Trainingsprogramm zur optimalen Vorbereitung auf deinen ersten Marathon.",
-          date: new Date(Date.now() + 86400000 * 2).toISOString(),
-          location: "Stadtpark Hamburg",
-          image: "https://images.unsplash.com/photo-1534258936925-c58bed479fcb?w=800&auto=format",
-          type: "course",
-          trainer: 3,
-          isArchived: false
+      const options: {
+        groupId?: number;
+        upcoming?: boolean;
+        limit?: number;
+        offset?: number;
+      } = {};
+
+      // Abfrageparameter verarbeiten
+      if (req.query.groupId) {
+        options.groupId = Number(req.query.groupId);
+      }
+      
+      if (req.query.upcoming === 'true') {
+        options.upcoming = true;
+      }
+      
+      if (req.query.limit) {
+        options.limit = Number(req.query.limit);
+      }
+      
+      if (req.query.offset) {
+        options.offset = Number(req.query.offset);
+      }
+
+      const events = await storage.getEvents(options);
+      
+      // Wenn keine Events in der Datenbank, erstelle einige Beispiel-Events
+      if (!events || events.length === 0) {
+        console.log("Keine Events in der Datenbank gefunden, erstelle Beispiel-Events");
+        
+        // Füge einige Beispiel-Events hinzu
+        const now = new Date();
+        const sampleEvents = [
+          {
+            title: "Summer Fitness Workshop",
+            description: "Ein intensiver Workshop für alle, die ihre Sommerfigur optimieren wollen.",
+            date: now,
+            location: "Fitness Center Berlin",
+            image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&auto=format",
+            type: "event",
+            creatorId: 1,
+            isPublic: true,
+            isArchived: false,
+            isActive: true
+          },
+          {
+            title: "Yoga für Anfänger",
+            description: "Einstiegskurs in die Welt des Yoga mit grundlegenden Asanas und Atemtechniken.",
+            date: new Date(now.getTime() + 86400000),
+            location: "Yoga Studio München",
+            image: "https://images.unsplash.com/photo-1575052814086-f385e2e2ad1b?w=800&auto=format",
+            type: "course",
+            creatorId: 1,
+            isPublic: true,
+            isArchived: false,
+            isActive: true
+          },
+          {
+            title: "Marathon-Vorbereitungskurs",
+            description: "12-Wochen Trainingsprogramm zur optimalen Vorbereitung auf deinen ersten Marathon.",
+            date: new Date(now.getTime() + 86400000 * 2),
+            location: "Stadtpark Hamburg",
+            image: "https://images.unsplash.com/photo-1534258936925-c58bed479fcb?w=800&auto=format",
+            type: "course",
+            creatorId: 1,
+            isPublic: true,
+            isArchived: false,
+            isActive: true
+          }
+        ];
+        
+        for (const eventData of sampleEvents) {
+          try {
+            await storage.createEvent(eventData);
+          } catch (err) {
+            console.error("Fehler beim Erstellen eines Beispiel-Events:", err);
+          }
         }
-      ]);
+        
+        // Hole die erstellten Events aus der Datenbank
+        const initialEvents = await storage.getEvents(options);
+        return res.json(initialEvents);
+      }
+      
+      res.json(events);
     } catch (error) {
       console.error("Error fetching events:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+  
+  // Ein einzelnes Event abrufen
+  app.get("/api/events/:id", async (req, res) => {
+    try {
+      const eventId = Number(req.params.id);
+      const event = await storage.getEvent(eventId);
+      
+      if (!event) {
+        return res.status(404).json({ error: "Event nicht gefunden" });
+      }
+      
+      res.json(event);
+    } catch (error) {
+      console.error("Error fetching event:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
@@ -289,14 +355,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Update create event route to generate slug -  This section is removed as per the intention.
+  // Event erstellen
   app.post("/api/events", async (req, res) => {
     try {
-      const event = await storage.createEvent(req.body);
+      // Parse und validiere die Daten mit dem Zod-Schema
+      const eventData = insertEventSchema.parse(req.body);
+      
+      // Stelle sicher, dass die Daten im richtigen Format sind
+      if (typeof eventData.date === 'string') {
+        eventData.date = new Date(eventData.date);
+      }
+      
+      if (eventData.endDate && typeof eventData.endDate === 'string') {
+        eventData.endDate = new Date(eventData.endDate);
+      }
+      
+      // Generiere einen Slug aus dem Titel, wenn keiner vorhanden ist
+      if (!eventData.slug && eventData.title) {
+        const slug = eventData.title
+          .toLowerCase()
+          .replace(/[^\w\s-]/g, '') // Entferne nicht-alphanumerische Zeichen
+          .replace(/\s+/g, '-') // Ersetze Leerzeichen durch Bindestrich
+          .replace(/-+/g, '-'); // Entferne mehrfache Bindestriche
+          
+        eventData.slug = `${slug}-${Date.now()}`;
+      }
+
+      const event = await storage.createEvent(eventData);
       res.status(201).json(event);
     } catch (error) {
       console.error("Error creating event:", error);
-      res.status(400).json({ error: "Invalid event data" });
+      res.status(400).json({ error: "Ungültige Event-Daten" });
+    }
+  });
+  
+  // Event aktualisieren
+  app.patch("/api/events/:id", async (req, res) => {
+    try {
+      const eventId = Number(req.params.id);
+      const event = await storage.getEvent(eventId);
+      
+      if (!event) {
+        return res.status(404).json({ error: "Event nicht gefunden" });
+      }
+      
+      // Verarbeite Datums-Werte
+      const updateData = { ...req.body };
+      if (updateData.date && typeof updateData.date === 'string') {
+        updateData.date = new Date(updateData.date);
+      }
+      
+      if (updateData.endDate && typeof updateData.endDate === 'string') {
+        updateData.endDate = new Date(updateData.endDate);
+      }
+      
+      const updatedEvent = await storage.updateEvent(eventId, updateData);
+      res.json(updatedEvent);
+    } catch (error) {
+      console.error("Error updating event:", error);
+      res.status(500).json({ error: "Fehler beim Aktualisieren des Events" });
+    }
+  });
+  
+  // Event löschen oder archivieren
+  app.delete("/api/events/:id", async (req, res) => {
+    try {
+      const eventId = Number(req.params.id);
+      const event = await storage.getEvent(eventId);
+      
+      if (!event) {
+        return res.status(404).json({ error: "Event nicht gefunden" });
+      }
+      
+      if (req.query.archive === 'true') {
+        // Nur archivieren
+        await storage.updateEvent(eventId, { 
+          isArchived: true, 
+          isActive: false 
+        });
+        res.json({ message: "Event erfolgreich archiviert" });
+      } else {
+        // Permanent löschen
+        await storage.deleteEvent(eventId);
+        res.json({ message: "Event erfolgreich gelöscht" });
+      }
+    } catch (error) {
+      console.error("Error deleting/archiving event:", error);
+      res.status(500).json({ error: "Fehler beim Löschen/Archivieren des Events" });
     }
   });
 
