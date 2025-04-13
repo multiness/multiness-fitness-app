@@ -49,6 +49,17 @@ export default function CreateGroup() {
   const removeImage = () => {
     setImagePreview(null);
   };
+  
+  const handleAddInvite = () => {
+    if (currentInvite.trim() && !invites.includes(currentInvite.trim())) {
+      setInvites([...invites, currentInvite.trim()]);
+      setCurrentInvite("");
+    }
+  };
+
+  const removeInvite = (invite: string) => {
+    setInvites(invites.filter(i => i !== invite));
+  };
 
   const handleSubmit = () => {
     if (!currentUser) {
@@ -261,13 +272,3 @@ export default function CreateGroup() {
   );
 }
 
-const handleAddInvite = () => {
-  if (currentInvite.trim() && !invites.includes(currentInvite.trim())) {
-    setInvites([...invites, currentInvite.trim()]);
-    setCurrentInvite("");
-  }
-};
-
-const removeInvite = (invite: string) => {
-  setInvites(invites.filter(i => i !== invite));
-};
