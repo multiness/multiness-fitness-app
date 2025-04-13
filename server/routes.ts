@@ -1202,16 +1202,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const groupId = Number(req.params.id);
       
-      // Überprüfe, ob die Gruppe existiert
-      const group = await storage.getGroup(groupId);
-      if (!group) {
-        return res.status(404).json({ error: "Gruppe nicht gefunden" });
+      try {
+        // Überprüfe, ob die Gruppe existiert
+        const group = await storage.getGroup(groupId);
+        
+        if (!group) {
+          console.log(`Gruppe ${groupId} existiert nicht, leere Mitgliederliste zurückgegeben`);
+          return res.json([]); // Leere Mitgliederliste zurückgeben, statt 404
+        }
+        
+        // Hole alle Mitglieder dieser Gruppe
+        const members = await storage.getGroupMembers(groupId);
+        console.log(`Gruppenmitglieder für Gruppe ${groupId} abgefragt, Ergebnis:`, members.length);
+        res.json(members);
+      } catch (groupError) {
+        console.warn(`Fehler beim Abrufen der Gruppe ${groupId}:`, groupError);
+        res.json([]); // Leere Mitgliederliste zurückgeben im Fehlerfall
       }
-      
-      // Hole alle Mitglieder dieser Gruppe
-      const members = await storage.getGroupMembers(groupId);
-      console.log(`Gruppenmitglieder für Gruppe ${groupId} abgefragt, Ergebnis:`, members.length);
-      res.json(members);
     } catch (error) {
       console.error("Fehler beim Abrufen der Gruppenmitglieder:", error);
       res.status(500).json({ error: "Internal server error" });

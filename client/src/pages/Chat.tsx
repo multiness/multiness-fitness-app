@@ -43,15 +43,19 @@ export default function Chat() {
 
   // Get all chats including direct chats and groups
   const allChats = [
+    // Benutzer-Chats mit eindeutigen IDs
     ...users.map(user => ({
-      id: getChatId(user.id),
+      id: `user-${getChatId(user.id)}`, // Einzigartiger Schlüssel mit "user-" Präfix
+      chatId: getChatId(user.id), // Tatsächliche Chat-ID für Nachrichten
       name: user.username,
       avatar: user.avatar,
       isGroup: false,
       userId: user.id
     })),
+    // Gruppen-Chats mit eindeutigen IDs
     ...Object.values(groupStore.groups).map(group => ({
-      id: getChatId(group.id),
+      id: `group-${getChatId(group.id)}`, // Einzigartiger Schlüssel mit "group-" Präfix
+      chatId: getChatId(group.id), // Tatsächliche Chat-ID für Nachrichten
       name: group.name,
       avatar: group.image,
       isGroup: true,
@@ -62,7 +66,8 @@ export default function Chat() {
   // Get the current chat based on the URL parameters
   const [selectedChat, setSelectedChat] = useState(
     id ? (directUser ? {
-      id: getChatId(directUser.id),
+      id: `user-${getChatId(directUser.id)}`,
+      chatId: getChatId(directUser.id),
       name: directUser.username,
       avatar: directUser.avatar,
       isGroup: false,
@@ -70,7 +75,7 @@ export default function Chat() {
     } : allChats.find(c => c.id === id)) : null
   );
 
-  const currentGroupGoal = selectedChat?.isGroup ? chatStore.getGroupGoal(selectedChat.id) : undefined;
+  const currentGroupGoal = selectedChat?.isGroup ? chatStore.getGroupGoal(selectedChat.chatId) : undefined;
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,7 +90,7 @@ export default function Chat() {
       groupId: selectedChat.isGroup ? selectedChat.groupId : undefined
     };
 
-    chatStore.addMessage(selectedChat.id, message);
+    chatStore.addMessage(selectedChat.chatId, message);
     setMessageInput("");
     setSelectedImage(null);
   };
@@ -128,7 +133,7 @@ export default function Chat() {
       contributions: [],
     };
 
-    chatStore.setGroupGoal(selectedChat.id, goal);
+    chatStore.setGroupGoal(selectedChat.chatId, goal);
 
     const message = {
       id: Date.now(),
@@ -138,7 +143,7 @@ export default function Chat() {
       groupId: selectedChat.groupId,
     };
 
-    chatStore.addMessage(selectedChat.id, message);
+    chatStore.addMessage(selectedChat.chatId, message);
     setIsGroupGoalModalOpen(false);
   };
 
@@ -185,7 +190,7 @@ export default function Chat() {
             </div>
             <ScrollArea className="flex-1">
               {allChats.map(chat => {
-                const messages = chatStore.getMessages(chat.id);
+                const messages = chatStore.getMessages(chat.chatId);
                 const lastMessage = messages[messages.length - 1];
 
                 return (
