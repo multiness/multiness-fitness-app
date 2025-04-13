@@ -64,16 +64,41 @@ export default function Chat() {
   ];
 
   // Get the current chat based on the URL parameters
-  const [selectedChat, setSelectedChat] = useState(
-    id ? (directUser ? {
-      id: getChatId(directUser.id, 'user'),
-      chatId: getChatId(directUser.id, 'user'),
-      name: directUser.username,
-      avatar: directUser.avatar,
-      isGroup: false,
-      userId: directUser.id
-    } : allChats.find(c => c.id === id)) : null
-  );
+  const [selectedChat, setSelectedChat] = useState(() => {
+    if (!id) return null;
+    
+    if (directUser) {
+      return {
+        id: getChatId(directUser.id, 'user'),
+        chatId: getChatId(directUser.id, 'user'),
+        name: directUser.username,
+        avatar: directUser.avatar,
+        isGroup: false,
+        userId: directUser.id
+      };
+    }
+    
+    // Handle group chats - check if the ID starts with "group-"
+    if (id.startsWith('group-')) {
+      const groupIdStr = id.replace('group-', '');
+      const groupId = parseInt(groupIdStr, 10);
+      const group = groupStore.groups[groupId];
+      
+      if (group) {
+        return {
+          id: `group-${group.id}`,
+          chatId: `group-${group.id}`,
+          name: group.name,
+          avatar: group.image,
+          isGroup: true,
+          groupId: group.id
+        };
+      }
+    }
+    
+    // If not a recognized format, try finding by exact ID match
+    return allChats.find(c => c.id === id) || null;
+  });
 
   const currentGroupGoal = selectedChat?.isGroup ? chatStore.getGroupGoal(selectedChat.chatId) : undefined;
 
