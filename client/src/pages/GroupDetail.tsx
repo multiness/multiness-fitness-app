@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams } from "wouter";
+import { useParams, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -7,123 +7,114 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Send, Users, Image as ImageIcon, MessageCircle, Info } from "lucide-react";
-import { mockGroups, mockUsers } from "../data/mockData";
+import { useUsers } from "../contexts/UserContext";
+import { useGroupStore } from "../lib/groupStore";
+import { useChatStore } from "../lib/chatService";
+import { UserAvatar } from "@/components/UserAvatar";
 import { format } from "date-fns";
-
-// Mock messages für den Chat
-const mockGroupMessages = [
-  {
-    id: 1,
-    userId: 1,
-    content: "Willkommen in der Gruppe! 👋",
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
-    type: "group"
-  },
-  {
-    id: 2,
-    userId: 2,
-    content: "Danke! Freue mich auf den Austausch!",
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 12), // 12 hours ago
-    type: "group"
-  },
-  {
-    id: 3,
-    userId: 3,
-    content: "Hat jemand Tipps für das morgige Training?",
-    timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 minutes ago
-    type: "group"
-  },
-];
-
-// Mock Direktnachrichten
-const mockDirectMessages = [
-  {
-    id: 1,
-    userId: 2,
-    content: "Hey, wie läuft dein Training?",
-    timestamp: new Date(Date.now() - 1000 * 60 * 45),
-    type: "direct"
-  },
-  {
-    id: 2,
-    userId: 1,
-    content: "Gut, danke! Bereite mich auf den Marathon vor.",
-    timestamp: new Date(Date.now() - 1000 * 60 * 44),
-    type: "direct"
-  }
-];
 
 export default function GroupDetail() {
   const { id } = useParams();
-  const group = mockGroups.find(g => g.id === parseInt(id || ""));
-  const creator = group ? mockUsers.find(u => u.id === group.creatorId) : null;
+  const [, setLocation] = useLocation();
+  const { users, currentUser } = useUsers();
+  const groupStore = useGroupStore();
+  const chatStore = useChatStore();
   const [newMessage, setNewMessage] = useState("");
-  const [activeTab, setActiveTab] = useState("group"); // Added here
-  const [groupMessages, setGroupMessages] = useState(mockGroupMessages);
-  const [directMessages, setDirectMessages] = useState(mockDirectMessages);
   const [showInfo, setShowInfo] = useState(false);
-  const currentUser = mockUsers[0]; // Mock current user
+  const [activeTab, setActiveTab] = useState<"group" | "direct">("group");
 
+  // Verwende die ID, um die Gruppe aus dem Store zu finden
+  const groupId = parseInt(id || "0");
+  const group = groupStore.groups[groupId];
+  
+  // Der Chat mit der Gruppe
+  const chatId = `group-${groupId}`;
+  const groupMessages = chatStore.getMessages(chatId);
+  
+  // Direktnachrichten mit dem Ersteller
+  const creatorId = group?.creatorId;
+  const creatorChatId = creatorId ? `user-${creatorId}` : '';
+  const directMessages = creatorChatId ? chatStore.getMessages(creatorChatId) : [];
+  
   useEffect(() => {
-    setShowInfo(true);
-  }, []); // Added useEffect hook here
-
+    // Initialisiere den Gruppen-Chat, wenn er nicht existiert
+    if (group) {
+      chatStore.initializeGroupChat(group.id);
+    }
+  }, [group, chatStore]);
+  
+  // Der Ersteller der Gruppe
+  const creator = users.find(u => u.id === group?.creatorId);
+  
   if (!group || !creator) return <div>Gruppe nicht gefunden</div>;
-
-  const participants = mockUsers.slice(0, Math.floor(Math.random() * 5) + 3);
+  
+  // Teilnehmer der Gruppe
+  const participants = (group.participantIds || [])
+    .map(id => users.find(u => u.id === id))
+    .filter(Boolean);
+    
+  // Navigieren zum Gruppenchat
+  const navigateToGroupChat = () => {
+    setLocation(`/chat/${chatId}`);
+  };
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
 
     const newMsg = {
-      id: activeTab === "group" ? groupMessages.length + 1 : directMessages.length + 1,
-      userId: currentUser.id,
+      id: Date.now(),
+      userId: currentUser?.id || 0,
       content: newMessage,
-      timestamp: new Date(),
-      type: activeTab
+      timestamp: new Date().toISOString(),
+      groupId: activeTab === "group" ? group.id : undefined
     };
 
     if (activeTab === "group") {
-      setGroupMessages([...groupMessages, newMsg]);
-    } else {
-      setDirectMessages([...directMessages, newMsg]);
+      chatStore.addMessage(chatId, newMsg);
+    } else if (creatorId) {
+      chatStore.addMessage(creatorChatId, newMsg);
     }
+    
     setNewMessage("");
   };
 
-  const renderMessages = (messages: typeof mockGroupMessages) => (
-    <div className="space-y-4">
-      {messages.map(message => {
-        const user = mockUsers.find(u => u.id === message.userId);
-        const isCurrentUser = message.userId === currentUser.id;
-
-        return (
-          <div
-            key={message.id}
-            className={`flex gap-3 ${isCurrentUser ? 'flex-row-reverse' : ''}`}
-          >
-            <Avatar className="h-8 w-8">
-              <AvatarImage src={user?.avatar || undefined} />
-              <AvatarFallback>{user?.username[0]}</AvatarFallback>
-            </Avatar>
-            <div className={`flex flex-col ${isCurrentUser ? 'items-end' : ''} max-w-[70%]`}>
-              <div className={`rounded-lg p-3 break-words ${
-                isCurrentUser
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted'
-              }`}>
-                {message.content}
-              </div>
-              <div className="text-xs text-muted-foreground mt-1">
-                {user?.username} • {format(message.timestamp, 'HH:mm')}
+  // Rendere Chat-Nachrichten
+  const renderMessages = (messages: any[], isGroupChat: boolean) => {
+    return (
+      <div className="space-y-4 mb-4">
+        {messages.map((message) => {
+          const isCurrentUser = message.userId === currentUser?.id;
+          const user = users.find(u => u.id === message.userId);
+          
+          return (
+            <div key={message.id} className="flex items-start gap-3">
+              {!isCurrentUser && (
+                <UserAvatar 
+                  userId={message.userId}
+                  size="sm"
+                  clickable={true}
+                />
+              )}
+              
+              <div className={`flex flex-col ${isCurrentUser ? 'items-end' : ''} max-w-[70%]`}>
+                <div className={`rounded-lg p-3 break-words ${
+                  isCurrentUser
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted'
+                }`}>
+                  {message.content}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {user?.username} • {format(new Date(message.timestamp), 'HH:mm')}
+                </div>
               </div>
             </div>
-          </div>
-        );
-      })}
-    </div>
-  );
+          );
+        })}
+      </div>
+    );
+  };
 
   return (
     <div className="h-screen flex">
@@ -138,63 +129,81 @@ export default function GroupDetail() {
             </Avatar>
             <div>
               <h2 className="font-semibold">{group.name}</h2>
-              <p className="text-sm text-muted-foreground">{participants.length} Mitglieder</p>
+              <p className="text-sm text-muted-foreground">
+                {(group.participantIds?.length || 0)} Mitglieder
+              </p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={() => setShowInfo(!showInfo)}>
-            <Info className="h-5 w-5" />
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => setShowInfo(!showInfo)}
+              aria-label="Gruppeninformationen anzeigen/verbergen"
+            >
+              <Info className="h-5 w-5" />
+            </Button>
+            
+            <Button 
+              variant="ghost" 
+              onClick={navigateToGroupChat}
+              className="flex items-center gap-2"
+            >
+              <MessageCircle className="h-4 w-4" />
+              <span>Chat öffnen</span>
+            </Button>
+          </div>
         </div>
 
         {/* Chat Area */}
         <div className="flex-1 flex">
           <div className="flex-1 flex flex-col">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-              <TabsList className="justify-start rounded-none border-b p-0 h-12">
-                <TabsTrigger
-                  value="group"
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
-                >
-                  Gruppenchat
-                </TabsTrigger>
-                <TabsTrigger
-                  value="direct"
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
-                >
-                  Direktnachrichten
-                </TabsTrigger>
-              </TabsList>
-
-              <div className="flex-1 flex flex-col">
-                <ScrollArea className="flex-1 p-4">
-                  <TabsContent value="group" className="m-0 h-full">
-                    {renderMessages(groupMessages)}
-                  </TabsContent>
-                  <TabsContent value="direct" className="m-0 h-full">
-                    {renderMessages(directMessages)}
-                  </TabsContent>
-                </ScrollArea>
-
-                <form onSubmit={handleSendMessage} className="p-4 border-t bg-background">
-                  <div className="flex gap-2">
-                    <Input
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      placeholder={`Nachricht an ${activeTab === 'group' ? 'Gruppe' : 'User'} schreiben...`}
-                      className="flex-1"
-                    />
-                    <Button type="button" variant="outline" size="icon">
-                      <ImageIcon className="h-4 w-4" />
-                    </Button>
-                    <Button type="submit">
-                      <Send className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </form>
+            <Tabs defaultValue="group" className="flex-1 flex flex-col" onValueChange={(v) => setActiveTab(v as "group" | "direct")}>
+              <div className="border-b px-4">
+                <TabsList className="mt-2">
+                  <TabsTrigger value="group">Gruppenchat</TabsTrigger>
+                  <TabsTrigger value="direct">Chat mit Admin</TabsTrigger>
+                </TabsList>
               </div>
+              
+              <TabsContent value="group" className="flex-1 flex flex-col p-4">
+                <ScrollArea className="flex-1">
+                  {renderMessages(groupMessages, true)}
+                </ScrollArea>
+                
+                <form onSubmit={handleSendMessage} className="flex items-center gap-2 mt-4">
+                  <Input
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    placeholder="Schreibe eine Nachricht..."
+                    className="flex-1"
+                  />
+                  <Button type="submit" size="icon" disabled={!newMessage.trim()}>
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </form>
+              </TabsContent>
+              
+              <TabsContent value="direct" className="flex-1 flex flex-col p-4">
+                <ScrollArea className="flex-1">
+                  {renderMessages(directMessages, false)}
+                </ScrollArea>
+                
+                <form onSubmit={handleSendMessage} className="flex items-center gap-2 mt-4">
+                  <Input
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    placeholder={`Nachricht an ${creator.username}...`}
+                    className="flex-1"
+                  />
+                  <Button type="submit" size="icon" disabled={!newMessage.trim()}>
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </form>
+              </TabsContent>
             </Tabs>
           </div>
-
+          
           {/* Info Sidebar */}
           {showInfo && (
             <div className="w-[300px] border-l bg-background">
@@ -204,10 +213,11 @@ export default function GroupDetail() {
 
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
-                    <Avatar className="h-6 w-6">
-                      <AvatarImage src={creator.avatar || undefined} />
-                      <AvatarFallback>{creator.username[0]}</AvatarFallback>
-                    </Avatar>
+                    <UserAvatar 
+                      userId={creator.id}
+                      size="sm"
+                      clickable={true}
+                    />
                     <span className="text-sm">
                       Erstellt von <span className="font-medium">{creator.username}</span>
                     </span>
@@ -219,27 +229,35 @@ export default function GroupDetail() {
                 <div className="p-4">
                   <h3 className="font-semibold mb-4">Mitglieder</h3>
                   <div className="space-y-3">
-                    {participants.map((participant) => (
-                      <div key={participant.id} className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src={participant.avatar || undefined} />
-                            <AvatarFallback>{participant.username[0]}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="text-sm font-medium">{participant.username}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {participant.id === creator.id ? 'Admin' : 'Mitglied'}
-                            </p>
+                    {participants.map((participant) => {
+                      if (!participant) return null;
+                      return (
+                        <div key={participant.id} className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <UserAvatar 
+                              userId={participant.id}
+                              size="sm"
+                              clickable={true}
+                            />
+                            <div>
+                              <p className="text-sm font-medium">{participant.username}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {participant.id === creator.id ? 'Admin' : 'Mitglied'}
+                              </p>
+                            </div>
                           </div>
+                          {participant.id !== creator.id && participant.id !== currentUser?.id && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => setLocation(`/chat/user-${participant.id}`)}
+                            >
+                              <MessageCircle className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
-                        {participant.id !== creator.id && (
-                          <Button variant="ghost" size="sm">
-                            <MessageCircle className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </div>
