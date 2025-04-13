@@ -45,8 +45,8 @@ export default function Chat() {
   const allChats = [
     // Benutzer-Chats mit eindeutigen IDs
     ...users.map(user => ({
-      id: `user-${getChatId(user.id)}`, // Einzigartiger Schlüssel mit "user-" Präfix
-      chatId: getChatId(user.id), // Tatsächliche Chat-ID für Nachrichten
+      id: getChatId(user.id, 'user'), // Einzigartiger Schlüssel mit "user-" Präfix
+      chatId: getChatId(user.id, 'user'), // Tatsächliche Chat-ID für Nachrichten
       name: user.username,
       avatar: user.avatar,
       isGroup: false,
@@ -54,8 +54,8 @@ export default function Chat() {
     })),
     // Gruppen-Chats mit eindeutigen IDs
     ...Object.values(groupStore.groups).map(group => ({
-      id: `group-${getChatId(group.id)}`, // Einzigartiger Schlüssel mit "group-" Präfix
-      chatId: getChatId(group.id), // Tatsächliche Chat-ID für Nachrichten
+      id: getChatId(group.id, 'group'), // Einzigartiger Schlüssel mit "group-" Präfix
+      chatId: getChatId(group.id, 'group'), // Tatsächliche Chat-ID für Nachrichten
       name: group.name,
       avatar: group.image,
       isGroup: true,
@@ -66,8 +66,8 @@ export default function Chat() {
   // Get the current chat based on the URL parameters
   const [selectedChat, setSelectedChat] = useState(
     id ? (directUser ? {
-      id: `user-${getChatId(directUser.id)}`,
-      chatId: getChatId(directUser.id),
+      id: getChatId(directUser.id, 'user'),
+      chatId: getChatId(directUser.id, 'user'),
       name: directUser.username,
       avatar: directUser.avatar,
       isGroup: false,
@@ -87,7 +87,7 @@ export default function Chat() {
       content: messageInput,
       timestamp: new Date().toISOString(),
       imageUrl: selectedImage ? URL.createObjectURL(selectedImage) : undefined,
-      groupId: selectedChat.isGroup ? selectedChat.groupId : undefined
+      groupId: selectedChat.isGroup && 'groupId' in selectedChat ? selectedChat.groupId : undefined
     };
 
     chatStore.addMessage(selectedChat.chatId, message);
@@ -117,7 +117,7 @@ export default function Chat() {
     targetValue: number;
     unit: string;
   }) => {
-    if (!selectedChat?.isGroup) return;
+    if (!selectedChat?.isGroup || !('groupId' in selectedChat)) return;
 
     const goal = {
       id: Date.now(),
@@ -129,7 +129,7 @@ export default function Chat() {
       unit: data.unit,
       progress: 0,
       createdAt: new Date().toISOString(),
-      createdBy: currentUser?.id,
+      createdBy: currentUser?.id || 0, // Default to 0 if currentUser is undefined
       contributions: [],
     };
 
@@ -148,7 +148,7 @@ export default function Chat() {
   };
 
   const handleAddGroupProgress = (value: number) => {
-    if (!selectedChat?.isGroup || !currentGroupGoal) return;
+    if (!selectedChat?.isGroup || !currentGroupGoal || !('groupId' in selectedChat)) return;
 
     const progress = (value / currentGroupGoal.targetValue) * 100;
 
