@@ -29,6 +29,7 @@ const eventSchema = z.object({
   location: z.string().min(1, "Ort ist erforderlich"),
   isRecurring: z.boolean().default(false),
   recurringType: z.enum(["daily", "weekly", "monthly"]).optional(),
+  recurringDays: z.array(z.number()).optional(),
   image: z.string().optional(),
   isHighlight: z.boolean().default(false),
   type: z.enum(["event", "course"], {
@@ -99,11 +100,11 @@ export default function CreateEvent() {
     const newEvent = {
       ...data,
       date: combinedDate,
-      trainer: 1,
+      creatorId: 1, // Aktueller Benutzer (Admin)
       currentParticipants: 0,
       isActive: true,
       isArchived: false,
-      maxParticipants: data.unlimitedParticipants ? null : data.maxParticipants,
+      maxParticipants: data.unlimitedParticipants ? 0 : (data.maxParticipants || 10),
     };
 
     addEvent(newEvent);
