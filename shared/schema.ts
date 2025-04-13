@@ -317,6 +317,7 @@ export const events = pgTable("events", {
   currentParticipants: integer("current_participants").default(0).notNull(),
   isRecurring: boolean("is_recurring").default(false),
   recurringType: text("recurring_type"), // 'daily', 'weekly', 'monthly'
+  recurringDays: integer("recurring_days").array(),
   isHighlight: boolean("is_highlight").default(false),
   isArchived: boolean("is_archived").default(false),
   isActive: boolean("is_active").default(true),
@@ -643,6 +644,7 @@ export const insertEventSchema = createInsertSchema(events)
     maxParticipants: z.number().optional(),
     isPublic: z.boolean().default(false),
     requiresRegistration: z.boolean().default(true),
+    recurringDays: z.array(z.number()).optional(),
     slug: z.string().optional(),
   })
   .omit({

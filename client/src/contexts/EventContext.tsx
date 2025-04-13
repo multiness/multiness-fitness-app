@@ -108,29 +108,51 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
       setEvents(prevEvents =>
         prevEvents.map(event => {
           const eventDate = new Date(event.date);
+          
           // Wenn das Event abgelaufen ist und nicht wiederkehrend
           if (!event.isRecurring && eventDate < now && !event.isArchived) {
             return { ...event, isArchived: true, isActive: false };
           }
+          
           // Wenn das Event wiederkehrend ist, prüfen wir basierend auf dem Typ
           if (event.isRecurring && !event.isArchived) {
-            const daysPassed = Math.floor((now.getTime() - eventDate.getTime()) / (1000 * 60 * 60 * 24));
-            let shouldArchive = false;
+            
+            // Bei wöchentlichen Events mit bestimmten Wochentagen, prüfen wir, ob das Event an diesem Wochentag stattfindet
+            if (event.recurringType === "weekly" && event.recurringDays && event.recurringDays.length > 0) {
+              const today = now.getDay(); // 0 = Sonntag, 1 = Montag, ...
+              
+              // Wenn der heutige Tag in den ausgewählten Tagen enthalten ist, ist das Event aktiv
+              const isEventDay = event.recurringDays.includes(today);
+              
+              // Überprüfen, ob das Event heute stattfindet
+              if (isEventDay) {
+                // Event heute aktiv (keine Archivierung)
+                return event;
+              } else {
+                // Der ursprüngliche Event-Tag ist mehr als 7 Tage her? Dann archivieren.
+                const daysPassed = Math.floor((now.getTime() - eventDate.getTime()) / (1000 * 60 * 60 * 24));
+                return daysPassed > 7 ? { ...event, isArchived: true, isActive: false } : event;
+              }
+            } else {
+              // Standardlogik für andere wiederkehrende Events
+              const daysPassed = Math.floor((now.getTime() - eventDate.getTime()) / (1000 * 60 * 60 * 24));
+              let shouldArchive = false;
 
-            switch (event.recurringType) {
-              case "daily":
-                shouldArchive = daysPassed > 1;
-                break;
-              case "weekly":
-                shouldArchive = daysPassed > 7;
-                break;
-              case "monthly":
-                shouldArchive = daysPassed > 30;
-                break;
-            }
+              switch (event.recurringType) {
+                case "daily":
+                  shouldArchive = daysPassed > 1;
+                  break;
+                case "weekly":
+                  shouldArchive = daysPassed > 7;
+                  break;
+                case "monthly":
+                  shouldArchive = daysPassed > 30;
+                  break;
+              }
 
-            if (shouldArchive) {
-              return { ...event, isArchived: true, isActive: false };
+              if (shouldArchive) {
+                return { ...event, isArchived: true, isActive: false };
+              }
             }
           }
           return event;
