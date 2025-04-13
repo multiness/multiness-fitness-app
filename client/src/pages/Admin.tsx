@@ -41,6 +41,7 @@ import {
   HardDrive,
   Info,
   CalendarRange,
+  CalendarDays,
 } from "lucide-react";
 import { DEFAULT_BANNER_POSITIONS } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
@@ -1375,35 +1376,41 @@ function BannerManagement() {
 }
 
 function EventSection() {
-  const [, setLocation] = useLocation();
   return (
-    <section>
+    <section className="mb-10">
       <h2 className="text-2xl font-bold mb-6">Event Management</h2>
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
+            <CalendarDays className="h-5 w-5" />
             Events verwalten
           </CardTitle>
+          <CardDescription>
+            Verwalten Sie Events und Termine, prüfen Sie Anmeldungen und erstellen Sie neue Events.
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Button 
-              className="w-full" 
-              variant="outline"
-              onClick={() => setLocation("/create/event")}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Neues Event erstellen
-            </Button>
-            <Button 
-              className="w-full" 
-              variant="outline"
-              onClick={() => setLocation("/events/manager")}
-            >
-              <Settings className="h-4 w-4 mr-2" />
-              Event Manager öffnen
-            </Button>
+          <div className="flex flex-col sm:flex-row gap-4 justify-between">
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Im Event-Manager können Sie alle Events einsehen, bearbeiten und archivieren.
+                Überwachen Sie Anmeldungen und verwalten Sie die Events zentral.
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button variant="outline" asChild>
+                <Link href="/events/manager">
+                  <CalendarRange className="h-4 w-4 mr-2" />
+                  Event-Manager öffnen
+                </Link>
+              </Button>
+              <Button asChild>
+                <Link href="/create/event">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Neues Event erstellen
+                </Link>
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -1720,6 +1727,46 @@ export default function Admin() {
         </Card>
       </section>
 
+      {/* Event Management Section */}
+      <section className="mb-10">
+        <h2 className="text-2xl font-bold mb-6">Event Management</h2>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CalendarDays className="h-5 w-5" />
+              Events verwalten
+            </CardTitle>
+            <CardDescription>
+              Verwalten Sie Events und Termine, prüfen Sie Anmeldungen und erstellen Sie neue Events.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col sm:flex-row gap-4 justify-between">
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  Im Event-Manager können Sie alle Events einsehen, bearbeiten und archivieren.
+                  Überwachen Sie Anmeldungen und verwalten Sie die Events zentral.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button variant="outline" asChild>
+                  <Link href="/events/manager">
+                    <CalendarRange className="h-4 w-4 mr-2" />
+                    Event-Manager öffnen
+                  </Link>
+                </Button>
+                <Button asChild>
+                  <Link href="/create/event">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Neues Event erstellen
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
       {/* Marketing Banner Section */}
       <section>
         <h2 className="text-2xl font-bold mb-6">Marketing Banner Management</h2>
@@ -1728,9 +1775,6 @@ export default function Admin() {
 
       {/* Products Management Section */}
       <ProductManagement />
-
-      {/* Event Management Section */}
-      <EventSection />
 
       {/* Team Management Section */}
       <section id="team">
