@@ -1818,7 +1818,7 @@ export default function Admin() {
                     <div key={user.id} className="flex flex-col sm:flex-row sm:items-center justify-between border-b p-4 gap-4">
                       <div className="flex items-center gap-3">
                         <img
-                          src={user.avatar}
+                          src={user.avatar || "https://via.placeholder.com/40"}
                           alt={user.username}
                           className="w-10 h-10 rounded-full object-cover"
                         />
@@ -1835,7 +1835,7 @@ export default function Admin() {
                         <div className="flex items-center gap-2">
                           <span className="text-sm whitespacenowrap">Verified</span>
                           <Switch
-                            checked={user.isVerified}
+                            checked={!!user.isVerified}
                             onCheckedChange={() => toggleVerification(user.id)}
                           />
                         </div>
