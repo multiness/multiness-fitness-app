@@ -21,7 +21,7 @@ export default function GroupPage() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const chatStore = useChatStore();
-  const chatId = getChatId(parseInt(id || ""));
+  const chatId = getChatId(parseInt(id || ""), 'group');
   const messages = chatStore.getMessages(chatId);
 
   if (!group) return <div>Gruppe nicht gefunden</div>;
