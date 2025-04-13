@@ -208,7 +208,7 @@ export default function Chat() {
                         </div>
                       ) : (
                         <UserAvatar
-                          userId={chat.isGroup ? 0 : chat.userId}
+                          userId={'userId' in chat ? chat.userId : 0}
                           size="md"
                           clickable={false}
                         />

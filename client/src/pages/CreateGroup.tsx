@@ -81,13 +81,14 @@ export default function CreateGroup() {
     }
 
     // Erstelle die neue Gruppe mit dem groupStore
-    const groupId = groupStore.createGroup({
+    const groupId = groupStore.addGroup({
       name: name.trim(),
       description: description.trim(),
       image: imagePreview || undefined,
       creatorId: currentUser.id,
       participantIds: [currentUser.id],
       adminIds: [currentUser.id], // Der Ersteller ist automatisch Admin
+      createdAt: new Date()
     });
 
     // Initialisiere den Gruppen-Chat
