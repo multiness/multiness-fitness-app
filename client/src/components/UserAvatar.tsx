@@ -7,7 +7,7 @@ import { VerifiedBadge } from "./VerifiedBadge";
 import { useState, useEffect } from "react";
 import ImageModal from "./ImageModal";
 
-interface UserAvatarProps {
+export interface UserAvatarProps {
   userId: number;
   size?: "sm" | "md" | "lg";
   className?: string;
@@ -17,6 +17,7 @@ interface UserAvatarProps {
   hideVerifiedBadge?: boolean;
   enableImageModal?: boolean;
   disableLink?: boolean;
+  // Hier sollten wir den Avatar prop entfernen, da er intern aus dem Benutzer abgerufen wird
 }
 
 export function UserAvatar({

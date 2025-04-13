@@ -120,8 +120,6 @@ export default function Profile() {
           <div className="relative">
             <UserAvatar
               userId={userId}
-              avatar={user.avatar}
-              username={user.username}
               size="lg"
               showActiveGoal={true}
               enableImageModal={true}
@@ -294,8 +292,6 @@ export default function Profile() {
                                       <UserAvatar
                                         key={participant.id}
                                         userId={participant.id}
-                                        avatar={participant.avatar}
-                                        username={participant.username}
                                         size="sm"
                                       />
                                     ) : null;
