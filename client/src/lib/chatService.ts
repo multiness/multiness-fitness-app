@@ -59,7 +59,7 @@ export const useChatStore = create<ChatStore>()(
     (set, get) => ({
       messages: {},
       groupGoals: {},
-
+      
       initializeGroupChat: (groupId: number) => {
         const chatId = getChatId(groupId);
         set((state) => ({
@@ -69,6 +69,57 @@ export const useChatStore = create<ChatStore>()(
           }
         }));
         console.log('Initialized chat for group:', groupId);
+        
+        // Nachrichten mit dem Server synchronisieren
+        const syncChatMessages = async () => {
+          try {
+            // WebSocket für Echtzeit-Nachrichten
+            const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+            const wsUrl = `${protocol}//${window.location.host}/ws`;
+            const socket = new WebSocket(wsUrl);
+            
+            socket.onopen = () => {
+              console.log('WebSocket-Verbindung für Chat-Synchronisierung hergestellt');
+              // Abonniere Chat-Updates für diese Gruppe
+              socket.send(JSON.stringify({ 
+                type: 'subscribe', 
+                topic: 'chat',
+                groupId: groupId
+              }));
+            };
+            
+            socket.onmessage = (event) => {
+              try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'chat_message' && data.chatId === chatId) {
+                  console.log('Neue Chat-Nachricht über WebSocket empfangen:', data);
+                  // Füge die Nachricht hinzu, wenn sie nicht bereits existiert
+                  const messageExists = get().messages[chatId]?.some(m => m.id === data.message.id);
+                  if (!messageExists) {
+                    get().addMessage(chatId, data.message);
+                  }
+                }
+              } catch (parseError) {
+                console.error('Fehler beim Verarbeiten der Chat-WebSocket-Nachricht:', parseError);
+              }
+            };
+            
+            socket.onerror = (error) => {
+              console.error('WebSocket-Fehler bei Chat-Synchronisierung:', error);
+            };
+            
+            socket.onclose = () => {
+              console.log('WebSocket-Verbindung für Chat geschlossen');
+              // Versuche nach 5 Sekunden erneut zu verbinden
+              setTimeout(syncChatMessages, 5000);
+            };
+          } catch (error) {
+            console.error('Fehler bei der Chat-Synchronisierung:', error);
+          }
+        };
+        
+        // Starte Synchronisierung
+        syncChatMessages();
       },
 
       addMessage: (chatId, message) => {
@@ -78,6 +129,35 @@ export const useChatStore = create<ChatStore>()(
             [chatId]: [...(state.messages[chatId] || []), message],
           },
         }));
+        
+        // Sende die Nachricht an den Server
+        try {
+          if (message.groupId) {
+            // Für Gruppennachrichten
+            const sendMessageToServer = async () => {
+              const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+              const wsUrl = `${protocol}//${window.location.host}/ws`;
+              const socket = new WebSocket(wsUrl);
+              
+              socket.onopen = () => {
+                socket.send(JSON.stringify({
+                  type: 'chat_message',
+                  chatId: chatId,
+                  message: message
+                }));
+                socket.close();
+              };
+              
+              socket.onerror = (error) => {
+                console.error('Fehler beim Senden der Nachricht an den Server:', error);
+              };
+            };
+            
+            sendMessageToServer();
+          }
+        } catch (error) {
+          console.error('Fehler beim Senden der Nachricht:', error);
+        }
       },
 
       getMessages: (chatId) => {

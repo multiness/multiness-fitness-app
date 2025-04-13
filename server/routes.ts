@@ -1198,6 +1198,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/groups/:id/members", async (req, res) => {
+    try {
+      const groupId = Number(req.params.id);
+      
+      // Überprüfe, ob die Gruppe existiert
+      const group = await storage.getGroup(groupId);
+      if (!group) {
+        return res.status(404).json({ error: "Gruppe nicht gefunden" });
+      }
+      
+      // Hole alle Mitglieder dieser Gruppe
+      const members = await storage.getGroupMembers(groupId);
+      console.log(`Gruppenmitglieder für Gruppe ${groupId} abgefragt, Ergebnis:`, members.length);
+      res.json(members);
+    } catch (error) {
+      console.error("Fehler beim Abrufen der Gruppenmitglieder:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.post("/api/groups/:id/members", async (req, res) => {
     try {
       const groupId = Number(req.params.id);
@@ -1208,6 +1228,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const member = await storage.addGroupMember(groupId, Number(userId), role);
+      
+      // Benachrichtige alle verbundenen Clients über die Änderung
+      wss.clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({
+            type: 'group_update',
+            action: 'member_added',
+            groupId,
+            data: member
+          }));
+        }
+      });
+      
       res.status(201).json(member);
     } catch (error) {
       console.error("Error adding group member:", error);
@@ -1422,6 +1455,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
   const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
 
+  // Client-Abonnements für verschiedene Themen speichern
+  const subscriptions: Record<string, Set<any>> = {
+    groups: new Set(),
+    chat: new Set(),
+  };
+  
+  // Chat-Raum-Abonnements (groupId -> Set<WebSocket>)
+  const chatRooms: Record<number, Set<any>> = {};
+  
   wss.on('connection', (ws) => {
     console.log('Neue WebSocket-Verbindung');
 
@@ -1435,17 +1477,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     ws.on('message', (message) => {
       try {
         const data = JSON.parse(message.toString());
-        console.log('Nachricht erhalten:', data);
+        console.log('WebSocket-Nachricht erhalten:', data.type);
 
+        // Subscribe zu einem Thema
+        if (data.type === 'subscribe') {
+          if (data.topic === 'groups') {
+            subscriptions.groups.add(ws);
+            console.log('Client hat Gruppen-Updates abonniert');
+          } 
+          else if (data.topic === 'chat' && data.groupId) {
+            // Für Chat-Abonnements brauchen wir die Gruppen-ID
+            const groupId = data.groupId;
+            if (!chatRooms[groupId]) {
+              chatRooms[groupId] = new Set();
+            }
+            chatRooms[groupId].add(ws);
+            console.log(`Client hat Chat-Updates für Gruppe ${groupId} abonniert`);
+          }
+        }
+        
+        // Chat-Nachricht über WebSocket empfangen
+        else if (data.type === 'chat_message' && data.chatId) {
+          console.log('Chat-Nachricht empfangen:', data.message);
+          
+          // Extrahiere Gruppen-ID aus dem chat-ID-Format "group-X"
+          const chatIdMatch = data.chatId.match(/group-(\d+)/);
+          if (chatIdMatch && chatIdMatch[1]) {
+            const groupId = parseInt(chatIdMatch[1], 10);
+            
+            // Sende die Nachricht an alle Clients, die diesen Chat abonniert haben
+            if (chatRooms[groupId]) {
+              chatRooms[groupId].forEach(client => {
+                if (client !== ws && client.readyState === WebSocket.OPEN) {
+                  client.send(JSON.stringify({
+                    type: 'chat_message',
+                    chatId: data.chatId,
+                    message: data.message
+                  }));
+                }
+              });
+              console.log(`Chat-Nachricht an ${chatRooms[groupId].size - 1} andere Clients weitergeleitet`);
+            }
+          }
+        }
+        
         // Beispiel für eine einfache Echo-Antwort
-        if (data.type === 'echo') {
+        else if (data.type === 'echo') {
           ws.send(JSON.stringify({
             type: 'echo',
             message: data.message
           }));
         }
-
-        // Hier können weitere Nachrichtentypen verarbeitet werden
       } catch (error) {
         console.error('Fehler beim Verarbeiten der WebSocket-Nachricht:', error);
       }
@@ -1454,6 +1536,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Behandle Verbindungsabbrüche
     ws.on('close', () => {
       console.log('WebSocket-Verbindung geschlossen');
+      
+      // Entferne Client aus allen Abonnements
+      subscriptions.groups.delete(ws);
+      subscriptions.chat.delete(ws);
+      
+      // Entferne aus allen Chat-Räumen
+      Object.values(chatRooms).forEach(room => {
+        room.delete(ws);
+      });
     });
   });
 

@@ -62,9 +62,26 @@ const mapDbGroupToClientGroup = (dbGroup: DbGroup, members: GroupMember[] = []):
   const participantIds = members.map(m => m.userId);
   const adminIds = members.filter(m => m.role === 'admin').map(m => m.userId);
   
+  // Stelle sicher, dass der Ersteller auch ein Teilnehmer und Admin ist
+  if (dbGroup.creatorId && !participantIds.includes(dbGroup.creatorId)) {
+    participantIds.push(dbGroup.creatorId);
+  }
+  
+  if (dbGroup.creatorId && !adminIds.includes(dbGroup.creatorId)) {
+    adminIds.push(dbGroup.creatorId);
+  }
+  
+  // Stelle sicher, dass createdAt ein gültiges Datum ist
+  let createdAt = new Date();
+  try {
+    createdAt = dbGroup.createdAt ? new Date(dbGroup.createdAt) : new Date();
+  } catch (e) {
+    console.error("Fehler beim Parsen des Datums:", e);
+  }
+  
   return {
     ...dbGroup,
-    createdAt: new Date(dbGroup.createdAt),
+    createdAt,
     participantIds,
     adminIds,
     goals: [] // Gruppenziele werden später implementiert
@@ -402,20 +419,78 @@ export const useGroupStore = create<GroupStore>()(
           
           // Rufe alle Gruppen vom Server ab
           const groupsResponse = await fetch('/api/groups');
+          
+          if (!groupsResponse.ok) {
+            throw new Error(`Server antwortete mit ${groupsResponse.status}: ${groupsResponse.statusText}`);
+          }
+          
           const dbGroups = await groupsResponse.json();
           
           // Für jede Gruppe die Mitglieder abrufen
           const allMembers: GroupMember[] = [];
           
           for (const dbGroup of dbGroups) {
-            const membersResponse = await fetch(`/api/groups/${dbGroup.id}/members`);
-            const groupMembers = await membersResponse.json();
-            allMembers.push(...groupMembers);
+            try {
+              const membersResponse = await fetch(`/api/groups/${dbGroup.id}/members`);
+              
+              if (membersResponse.ok) {
+                const groupMembers = await membersResponse.json();
+                allMembers.push(...groupMembers);
+                console.log(`Gruppenmitglieder für Gruppe ${dbGroup.id} geladen:`, groupMembers.length);
+              } else {
+                console.warn(`Konnte Mitglieder für Gruppe ${dbGroup.id} nicht laden: ${membersResponse.status}`);
+              }
+            } catch (memberError) {
+              console.error(`Fehler beim Abrufen der Mitglieder für Gruppe ${dbGroup.id}:`, memberError);
+            }
           }
           
           // Aktualisiere den Store
           get().setGroups(dbGroups, allMembers);
-          set({ isLoading: false });
+          
+          // WebSocket einrichten für Echtzeit-Updates
+          const setupWebSocket = async () => {
+            try {
+              const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+              const wsUrl = `${protocol}//${window.location.host}/ws`;
+              const socket = new WebSocket(wsUrl);
+              
+              socket.onopen = () => {
+                console.log('WebSocket-Verbindung für Gruppen-Synchronisierung hergestellt');
+                socket.send(JSON.stringify({ type: 'subscribe', topic: 'groups' }));
+              };
+              
+              socket.onmessage = (event) => {
+                try {
+                  const data = JSON.parse(event.data);
+                  if (data.type === 'group_update') {
+                    console.log('Gruppen-Update über WebSocket empfangen:', data);
+                    get().syncWithServer(); // Aktualisiere Daten vom Server
+                  }
+                } catch (parseError) {
+                  console.error('Fehler beim Verarbeiten der WebSocket-Nachricht:', parseError);
+                }
+              };
+              
+              socket.onerror = (error) => {
+                console.error('WebSocket-Fehler bei Gruppen-Synchronisierung:', error);
+              };
+              
+              socket.onclose = () => {
+                console.log('WebSocket-Verbindung für Gruppen geschlossen');
+                // Versuche nach 5 Sekunden erneut zu verbinden
+                setTimeout(setupWebSocket, 5000);
+              };
+            } catch (wsError) {
+              console.error('Fehler beim Einrichten des WebSockets für Gruppen:', wsError);
+            }
+          };
+          
+          // WebSocket-Verbindung initialisieren
+          setupWebSocket();
+          
+          set({ isLoading: false, lastFetched: Date.now() });
+          console.log('Gruppen erfolgreich synchronisiert:', dbGroups.length);
           
         } catch (error) {
           console.error('Fehler bei der Synchronisation der Gruppen:', error);
