@@ -40,6 +40,7 @@ import {
   Loader2,
   HardDrive,
   Info,
+  CalendarRange,
 } from "lucide-react";
 import { DEFAULT_BANNER_POSITIONS } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
