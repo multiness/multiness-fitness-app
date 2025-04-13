@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MessageSquare, Trophy, Users2, ArrowRight, Pencil, Shield, UserCog } from "lucide-react";
 import FeedPost from "@/components/FeedPost";
-import { mockUsers, mockChallenges } from "../data/mockData";
 import { Badge } from "@/components/ui/badge";
 import EditProfileDialog from "@/components/EditProfileDialog";
 import { usePostStore } from "../lib/postStore";
@@ -15,6 +14,7 @@ import { UserAvatar } from "@/components/UserAvatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { getChatId } from "../lib/chatService";
 import { useGroupStore } from "../lib/groupStore";
+import { useChallengeStore } from "../lib/challengeStore";
 import EditGroupDialog from "@/components/EditGroupDialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import ChallengeCard from "@/components/ChallengeCard"; // Import ChallengeCard
@@ -46,7 +46,9 @@ export default function Profile() {
     .filter(p => p.userId === userId)
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-  const userChallenges = mockChallenges.filter(c => c.creatorId === userId || c.participantIds?.includes(userId));
+  const challengeStore = useChallengeStore();
+  const userChallenges = Object.values(challengeStore.challenges).filter(challenge => 
+    challenge.creatorId === userId || challenge.participantIds?.includes(userId));
 
   const userGroups = Object.values(groupStore.groups)
     .filter(g => g.creatorId === userId || g.participantIds?.includes(userId));
@@ -286,16 +288,13 @@ export default function Profile() {
                             <div className="mt-2 flex items-center justify-between">
                               <div className="flex items-center gap-2">
                                 <div className="flex -space-x-2">
-                                  {group.participantIds?.slice(0, 3).map((participantId) => {
-                                    const participant = mockUsers.find(u => u.id === participantId);
-                                    return participant ? (
-                                      <UserAvatar
-                                        key={participant.id}
-                                        userId={participant.id}
-                                        size="sm"
-                                      />
-                                    ) : null;
-                                  })}
+                                  {group.participantIds?.slice(0, 3).map((participantId) => (
+                                    <UserAvatar
+                                      key={participantId}
+                                      userId={participantId}
+                                      size="sm"
+                                    />
+                                  ))}
                                   {(group.participantIds?.length || 0) > 3 && (
                                     <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm">
                                       +{(group.participantIds?.length || 0) - 3}
