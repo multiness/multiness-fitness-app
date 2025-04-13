@@ -23,6 +23,7 @@ export default function GroupPreview({ group }: GroupPreviewProps) {
 
   const handleJoin = (e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
 
     if (isJoined) {
       groupStore.leaveGroup(group.id, userId);
@@ -36,15 +37,22 @@ export default function GroupPreview({ group }: GroupPreviewProps) {
         title: "Gruppe beigetreten",
         description: "Du bist der Gruppe erfolgreich beigetreten.",
       });
-      const chatId = getChatId(group.id);
-      setLocation(`/chat/${chatId}`);
+      goToGroupChat();
     }
   };
 
-  const chatUrl = `/chat/${getChatId(group.id)}`;
+  const goToGroupChat = () => {
+    setLocation(`/chat/group-${getChatId(group.id)}`);
+  };
+
+  const handleMessage = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    goToGroupChat();
+  };
 
   return (
-    <Link href={chatUrl}>
+    <Link href={`/groups/${group.id}`}>
       <Card className="overflow-hidden cursor-pointer transition-transform hover:scale-[1.02]">
         <CardHeader className="p-0">
           <img
@@ -97,14 +105,26 @@ export default function GroupPreview({ group }: GroupPreviewProps) {
                 {group.participantIds?.length || 0} Mitglieder
               </span>
             </div>
-            <Button
-              variant={isJoined ? "outline" : "default"}
-              size="sm"
-              onClick={handleJoin}
-              className="ml-2"
-            >
-              {isJoined ? "Beigetreten" : "Beitreten"}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline" 
+                size="sm"
+                onClick={handleMessage}
+                className="flex items-center gap-1"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+                Chat
+              </Button>
+              <Button
+                variant={isJoined ? "outline" : "default"}
+                size="sm"
+                onClick={handleJoin}
+              >
+                {isJoined ? "Beigetreten" : "Beitreten"}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

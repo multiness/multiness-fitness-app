@@ -223,6 +223,7 @@ export const useChatStore = create<ChatStore>()(
   )
 );
 
-export const getChatId = (groupId?: number) => {
-  return groupId ? `group-${groupId}` : 'direct';
+export const getChatId = (entityId?: number) => {
+  if (!entityId) return '';
+  return `${entityId}`;
 };
