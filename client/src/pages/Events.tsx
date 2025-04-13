@@ -8,58 +8,35 @@ import { Badge } from "@/components/ui/badge";
 import { CalendarDays, Clock, MapPin, Users } from "lucide-react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-
-// Beispiel-Events mit Highlight-Flag
-const mockEvents = [
-  {
-    id: 1,
-    title: "Yoga im Park",
-    description: "Starte deinen Tag mit einer energiegeladenen Yoga-Session im Stadtpark.",
-    date: new Date(2025, 2, 15, 8, 0),
-    location: "Stadtpark",
-    type: "Kurs",
-    isRecurring: true,
-    recurringType: "weekly",
-    maxParticipants: 20,
-    currentParticipants: 12,
-    image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800",
-    isHighlight: true, // Dies ist ein Highlight-Event
-  },
-  {
-    id: 2,
-    title: "HIIT Workout",
-    description: "Intensives Intervalltraining für maximale Fettverbrennung.",
-    date: new Date(2025, 2, 16, 18, 30),
-    location: "Fitness Studio",
-    type: "Kurs",
-    isRecurring: true,
-    recurringType: "weekly",
-    maxParticipants: 15,
-    currentParticipants: 8,
-    image: "https://images.unsplash.com/photo-1549576490-b0b4831ef60a?w=800",
-    isHighlight: false,
-  },
-  // Weitere Events hier...
-];
+import { useEvents } from "@/contexts/EventContext";
+import { Link } from "wouter";
+import { useUsers } from "@/contexts/UserContext";
 
 export default function Events() {
   const [date, setDate] = useState<Date | undefined>(new Date());
+  const { events } = useEvents();
+  const { currentUser } = useUsers();
 
   // Filter Events für verschiedene Ansichten
   const today = new Date();
-  const highlightEvents = mockEvents.filter(event => event.isHighlight);
-  const todayEvents = mockEvents.filter(event =>
-    format(event.date, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd')
-  );
+  const highlightEvents = events.filter(event => event.isHighlight);
+  const todayEvents = events.filter(event => {
+    const eventDate = new Date(event.date);
+    return format(eventDate, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd');
+  });
 
-  const upcomingEvents = mockEvents
-    .filter(event => event.date > today)
-    .sort((a, b) => a.date.getTime() - b.date.getTime());
+  const upcomingEvents = events
+    .filter(event => {
+      const eventDate = new Date(event.date);
+      return eventDate > today;
+    })
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   const selectedDayEvents = date
-    ? mockEvents.filter(event =>
-        format(event.date, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
-      )
+    ? events.filter(event => {
+        const eventDate = new Date(event.date);
+        return format(eventDate, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd');
+      })
     : [];
 
   return (
@@ -71,29 +48,38 @@ export default function Events() {
         <section className="mb-8">
           <h2 className="text-2xl font-semibold mb-4">Highlight Events</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {highlightEvents.map(event => (
-              <Card key={event.id} className="overflow-hidden">
-                <img
-                  src={event.image}
-                  alt={event.title}
-                  className="w-full h-48 object-cover"
-                />
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="font-semibold">{event.title}</h3>
-                    <Badge variant="secondary">{event.type}</Badge>
-                    <Badge variant="default" className="bg-primary">Highlight</Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-4">{event.description}</p>
-                  <div className="flex justify-between items-center">
-                    <div className="text-sm text-muted-foreground">
-                      {format(event.date, "dd. MMMM", { locale: de })}
+            {highlightEvents.map(event => {
+              const eventDate = new Date(event.date);
+              return (
+                <Card key={event.id} className="overflow-hidden">
+                  {event.image && (
+                    <img
+                      src={event.image}
+                      alt={event.title}
+                      className="w-full h-48 object-cover"
+                    />
+                  )}
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="font-semibold">{event.title}</h3>
+                      <Badge variant="secondary">{event.type}</Badge>
+                      <Badge variant="default" className="bg-primary">Highlight</Badge>
                     </div>
-                    <Button>Mehr erfahren</Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    <p className="text-sm text-muted-foreground mb-4">{event.description}</p>
+                    <div className="flex justify-between items-center">
+                      <div className="text-sm text-muted-foreground">
+                        {format(eventDate, "dd. MMMM", { locale: de })}
+                      </div>
+                      <Button asChild>
+                        <Link href={`/events/${event.id}`}>
+                          Mehr erfahren
+                        </Link>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </section>
       )}
@@ -194,7 +180,24 @@ export default function Events() {
   );
 }
 
-function EventCard({ event }: { event: typeof mockEvents[0] }) {
+interface Event {
+  id: number;
+  title: string;
+  description: string;
+  date: Date | string;
+  location: string;
+  type: string;
+  isRecurring?: boolean;
+  recurringType?: string;
+  maxParticipants?: number;
+  currentParticipants?: number;
+  image?: string;
+  isHighlight?: boolean;
+}
+
+function EventCard({ event }: { event: Event }) {
+  const eventDate = new Date(event.date);
+  
   return (
     <Card>
       <CardContent className="p-4">
@@ -204,7 +207,9 @@ function EventCard({ event }: { event: typeof mockEvents[0] }) {
               <h3 className="font-semibold">{event.title}</h3>
               {event.isRecurring && (
                 <Badge variant="outline" className="text-xs">
-                  Wöchentlich
+                  {event.recurringType === "weekly" ? "Wöchentlich" : 
+                   event.recurringType === "monthly" ? "Monatlich" :
+                   event.recurringType === "daily" ? "Täglich" : "Wiederkehrend"}
                 </Badge>
               )}
               <Badge variant="secondary" className="text-xs">
@@ -220,24 +225,28 @@ function EventCard({ event }: { event: typeof mockEvents[0] }) {
             <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
               <div className="flex items-center gap-1">
                 <CalendarDays className="h-4 w-4" />
-                {format(event.date, "dd. MMMM yyyy", { locale: de })}
+                {format(eventDate, "dd. MMMM yyyy", { locale: de })}
               </div>
               <div className="flex items-center gap-1">
                 <Clock className="h-4 w-4" />
-                {format(event.date, "HH:mm")} Uhr
+                {format(eventDate, "HH:mm")} Uhr
               </div>
               <div className="flex items-center gap-1">
                 <MapPin className="h-4 w-4" />
                 {event.location}
               </div>
-              <div className="flex items-center gap-1">
-                <Users className="h-4 w-4" />
-                {event.currentParticipants}/{event.maxParticipants} Teilnehmer
-              </div>
+              {event.maxParticipants && (
+                <div className="flex items-center gap-1">
+                  <Users className="h-4 w-4" />
+                  {event.currentParticipants || 0}/{event.maxParticipants} Teilnehmer
+                </div>
+              )}
             </div>
           </div>
-          <Button>
-            Teilnehmen
+          <Button asChild>
+            <Link href={`/events/${event.id}`}>
+              Mehr erfahren
+            </Link>
           </Button>
         </div>
       </CardContent>
