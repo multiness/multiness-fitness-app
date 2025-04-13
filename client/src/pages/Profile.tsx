@@ -85,7 +85,7 @@ export default function Profile() {
   };
 
   const navigateToGroupChat = (groupId: number) => {
-    const chatId = getChatId(groupId);
+    const chatId = getChatId(groupId, 'group');
     console.log('Navigating to group chat:', chatId);
     setLocation(`/chat/${chatId}`);
   };
@@ -193,8 +193,8 @@ export default function Profile() {
                 variant="default"
                 className="flex items-center gap-2"
                 onClick={() => {
-                  const chatId = getChatId(userId);
-                  setLocation(`/chat/${chatId}/direct`);
+                  const chatId = getChatId(userId, 'user');
+                  setLocation(`/chat/${chatId}`);
                 }}
               >
                 <MessageSquare className="h-4 w-4" />
