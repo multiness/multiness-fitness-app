@@ -159,7 +159,7 @@ export default function Chat() {
       timestamp: new Date().toISOString(),
     };
 
-    chatStore.updateGroupGoalProgress(selectedChat.id, contribution);
+    chatStore.updateGroupGoalProgress(selectedChat.chatId, contribution);
 
     const message = {
       id: Date.now(),
@@ -169,7 +169,7 @@ export default function Chat() {
       groupId: selectedChat.groupId,
     };
 
-    chatStore.addMessage(selectedChat.id, message);
+    chatStore.addMessage(selectedChat.chatId, message);
     setIsAddProgressModalOpen(false);
   };
 
@@ -302,7 +302,7 @@ export default function Chat() {
 
             <ScrollArea className="flex-1 p-4">
               <div className="space-y-4">
-                {chatStore.getMessages(selectedChat.id).map(message => {
+                {chatStore.getMessages(selectedChat.chatId).map(message => {
                   const isCurrentUser = message.userId === currentUser?.id;
                   const sender = users.find(u => u.id === message.userId);
 
