@@ -28,6 +28,8 @@ export interface Group {
   goals?: GroupGoal[];
 }
 
+type NewGroup = Omit<Group, 'id'>; // Ein neuer Typ, der 'id' aus Group auslässt
+
 interface GroupStore {
   groups: Record<number, Group>;
   invitations: Record<number, number[]>; // groupId -> userId[]
@@ -39,7 +41,7 @@ interface GroupStore {
   syncWithServer: () => Promise<void>;
   
   // Bestehende Funktionen
-  addGroup: (group: Group) => number;
+  addGroup: (group: NewGroup) => number; // Verwende NewGroup statt Group
   updateGroup: (id: number, updatedGroup: Partial<Group>) => void;
   removeGroup: (id: number) => void;
   joinGroup: (groupId: number, userId: number) => void;
@@ -152,7 +154,7 @@ export const useGroupStore = create<GroupStore>()(
       
       invitations: {},
       
-      addGroup: (group) => {
+      addGroup: (group: NewGroup) => {
         const id = Date.now();
         const newGroup = { ...group, id };
         
