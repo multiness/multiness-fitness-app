@@ -121,7 +121,7 @@ export default function Chat() {
 
     const goal = {
       id: Date.now(),
-      groupId: selectedChat.groupId,
+      groupId: String(selectedChat.groupId), // Konvertieren zu String
       title: data.title,
       description: data.description,
       targetDate: data.targetDate,
@@ -208,7 +208,7 @@ export default function Chat() {
                         </div>
                       ) : (
                         <UserAvatar
-                          userId={chat.userId}
+                          userId={chat.isGroup ? 0 : chat.userId}
                           size="md"
                           clickable={false}
                         />
@@ -250,7 +250,7 @@ export default function Chat() {
                   </div>
                 ) : (
                   <UserAvatar
-                    userId={selectedChat.userId}
+                    userId={!selectedChat.isGroup && 'userId' in selectedChat ? selectedChat.userId : 0}
                     size="sm"
                     clickable={true}
                   />
