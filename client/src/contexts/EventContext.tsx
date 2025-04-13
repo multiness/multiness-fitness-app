@@ -17,6 +17,7 @@ interface Event {
   maxParticipants?: number;
   isRecurring?: boolean;
   recurringType?: "daily" | "weekly" | "monthly";
+  recurringDays?: number[];
   isHighlight?: boolean;
   isArchived?: boolean;
   isActive?: boolean;

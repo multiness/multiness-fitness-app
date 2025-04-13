@@ -155,6 +155,14 @@ export default function EventDetail() {
                    event.recurringType === "weekly" ? "Wöchentlich" : "Monatlich"}
                 </Badge>
               )}
+              {event.isRecurring && event.recurringType === "weekly" && event.recurringDays && event.recurringDays.length > 0 && (
+                <Badge variant="outline" className="bg-secondary text-secondary-foreground">
+                  {event.recurringDays.map(day => {
+                    const days = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+                    return days[day];
+                  }).join(", ")}
+                </Badge>
+              )}
               {event.isPublic && (
                 <Badge variant="outline" className="bg-primary text-primary-foreground">
                   Öffentlich

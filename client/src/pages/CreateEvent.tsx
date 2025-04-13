@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { CalendarDays, Clock, Image as ImageIcon, X } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const eventSchema = z.object({
   title: z.string().min(1, "Titel ist erforderlich"),
@@ -54,6 +55,7 @@ export default function CreateEvent() {
     defaultValues: {
       isRecurring: false,
       recurringType: "weekly",
+      recurringDays: [],
       isHighlight: false,
       type: "event",
       maxParticipants: 10,
@@ -97,6 +99,7 @@ export default function CreateEvent() {
     const [hours, minutes] = data.time.split(':');
     combinedDate.setHours(parseInt(hours), parseInt(minutes));
 
+    // Bereite die Daten für die API vor
     const newEvent = {
       ...data,
       date: combinedDate,
@@ -105,6 +108,8 @@ export default function CreateEvent() {
       isActive: true,
       isArchived: false,
       maxParticipants: data.unlimitedParticipants ? 0 : (data.maxParticipants || 10),
+      // Garantiere, dass Image niemals undefined ist
+      image: data.image || "",
     };
 
     addEvent(newEvent);
@@ -181,6 +186,86 @@ export default function CreateEvent() {
               />
               {form.formState.errors.location && (
                 <p className="text-sm text-destructive">{form.formState.errors.location.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-4 pt-2">
+              <div className="flex items-center justify-between border-t pt-4">
+                <div className="space-y-0.5">
+                  <Label>Wiederkehrendes Event/Kurs</Label>
+                  <div className="text-sm text-muted-foreground">
+                    Aktiviere diese Option für regelmäßige Kurse oder Events
+                  </div>
+                </div>
+                <Switch
+                  checked={isRecurring}
+                  onCheckedChange={(checked) => form.setValue("isRecurring", checked)}
+                />
+              </div>
+
+              {isRecurring && (
+                <div className="space-y-4 pl-2 pt-2 border-l-2 border-l-muted">
+                  <div className="space-y-2">
+                    <Label>Art der Wiederholung</Label>
+                    <Select
+                      defaultValue={form.getValues("recurringType")}
+                      onValueChange={(value) => form.setValue("recurringType", value as "daily" | "weekly" | "monthly")}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Wähle die Art der Wiederholung" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="daily">Täglich</SelectItem>
+                        <SelectItem value="weekly">Wöchentlich</SelectItem>
+                        <SelectItem value="monthly">Monatlich</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {form.watch("recurringType") === "weekly" && (
+                    <div className="space-y-2">
+                      <Label>Wochentage</Label>
+                      <div className="grid grid-cols-4 gap-2">
+                        {[
+                          { value: 1, label: "Montag" },
+                          { value: 2, label: "Dienstag" },
+                          { value: 3, label: "Mittwoch" },
+                          { value: 4, label: "Donnerstag" },
+                          { value: 5, label: "Freitag" },
+                          { value: 6, label: "Samstag" },
+                          { value: 0, label: "Sonntag" },
+                        ].map((day) => {
+                          const recurringDays = form.watch("recurringDays") || [];
+                          return (
+                            <div key={day.value} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`day-${day.value}`}
+                                checked={recurringDays.includes(day.value)}
+                                onCheckedChange={(checked) => {
+                                  const currentDays = [...recurringDays];
+                                  if (checked) {
+                                    if (!currentDays.includes(day.value)) {
+                                      currentDays.push(day.value);
+                                    }
+                                  } else {
+                                    const index = currentDays.indexOf(day.value);
+                                    if (index > -1) {
+                                      currentDays.splice(index, 1);
+                                    }
+                                  }
+                                  form.setValue("recurringDays", currentDays);
+                                }}
+                              />
+                              <Label htmlFor={`day-${day.value}`} className="text-sm">
+                                {day.label}
+                              </Label>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
 
