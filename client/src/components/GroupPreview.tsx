@@ -42,7 +42,7 @@ export default function GroupPreview({ group }: GroupPreviewProps) {
   };
 
   const goToGroupChat = () => {
-    setLocation(`/chat/${getChatId(group.id, 'group')}`);
+    setLocation(`/chat/group-${group.id}`);
   };
 
   const handleMessage = (e: React.MouseEvent) => {

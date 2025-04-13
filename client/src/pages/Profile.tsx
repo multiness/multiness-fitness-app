@@ -87,7 +87,7 @@ export default function Profile() {
   };
 
   const navigateToGroupChat = (groupId: number) => {
-    const chatId = getChatId(groupId, 'group');
+    const chatId = `group-${groupId}`;
     console.log('Navigating to group chat:', chatId);
     setLocation(`/chat/${chatId}`);
   };
