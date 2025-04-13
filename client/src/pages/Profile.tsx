@@ -57,7 +57,7 @@ export default function Profile() {
   console.log('User groups:', userGroups);
   console.log('All groups in store:', groupStore.groups);
 
-  const activeUserChallenges = userChallenges.filter(c => new Date() <= new Date(c.endDate));
+  const activeUserChallenges = userChallenges.filter(challenge => new Date() <= new Date(challenge.endDate));
 
   if (!user) return <div>Benutzer nicht gefunden</div>;
 
