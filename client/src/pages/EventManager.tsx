@@ -137,6 +137,14 @@ export default function EventManager() {
                       {event.isRecurring && (
                         <Badge variant="outline" className="ml-2">
                           Wiederkehrend ({event.recurringType})
+                          {event.recurringType === "weekly" && event.recurringDays && event.recurringDays.length > 0 && (
+                            <span className="ml-1">
+                              ({event.recurringDays.map(day => {
+                                const days = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+                                return days[day];
+                              }).join(", ")})
+                            </span>
+                          )}
                         </Badge>
                       )}
                     </TableCell>
