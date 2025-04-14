@@ -1540,7 +1540,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Speichere die Nachricht in unserem persistenten Speicher
           try {
             // Speichere die Nachricht zuerst, dann verteile sie
-            await chatStorage.addMessage(data.chatId, data.message);
+            await addMessage(data.chatId, data.message);
             console.log('Chat-Nachricht in Datei gespeichert:', data.chatId);
             
             // Extrahiere Gruppen-ID aus dem chat-ID-Format "group-X"

@@ -70,7 +70,50 @@ export const useChatStore = create<ChatStore>()(
         }));
         console.log('Initialized chat for group:', groupId);
         
-        // Nachrichten mit dem Server synchronisieren
+        // Bestehende Nachrichten vom Server laden
+        const fetchMessages = async () => {
+          try {
+            console.log(`Lade Chat-Nachrichten für ${chatId} vom Server...`);
+            const response = await fetch(`/api/chat/${chatId}/messages`);
+            
+            if (response.ok) {
+              const serverMessages = await response.json();
+              console.log(`${serverMessages.length} Nachrichten vom Server geladen für ${chatId}`);
+              
+              // Nur neue Nachrichten hinzufügen
+              if (serverMessages.length > 0) {
+                set((state) => {
+                  const existingMessages = state.messages[chatId] || [];
+                  const existingIds = new Set(existingMessages.map(m => m.id));
+                  
+                  // Nur neue Nachrichten hinzufügen
+                  const newMessages = serverMessages.filter(m => !existingIds.has(m.id));
+                  
+                  if (newMessages.length > 0) {
+                    console.log(`${newMessages.length} neue Nachrichten hinzugefügt für ${chatId}`);
+                    return {
+                      messages: {
+                        ...state.messages,
+                        [chatId]: [...existingMessages, ...newMessages]
+                      }
+                    };
+                  }
+                  
+                  return state;
+                });
+              }
+            } else {
+              console.error('Fehler beim Laden der Chat-Nachrichten:', response.statusText);
+            }
+          } catch (error) {
+            console.error('Fehler beim Abrufen der Chat-Nachrichten:', error);
+          }
+        };
+        
+        // Vorhandene Nachrichten laden
+        fetchMessages();
+        
+        // Nachrichten mit dem Server synchronisieren (WebSocket)
         const syncChatMessages = async () => {
           try {
             // WebSocket für Echtzeit-Nachrichten
