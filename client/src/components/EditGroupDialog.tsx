@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { UserAvatar } from "./UserAvatar";
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { mockUsers } from "../data/mockData";
+import { useUsers } from "../contexts/UserContext";
 import { Badge } from "@/components/ui/badge";
 import { Shield, ImagePlus, X } from "lucide-react";
 
@@ -101,6 +101,7 @@ export default function EditGroupDialog({
   const [image, setImage] = useState(group.image);
   const [adminIds, setAdminIds] = useState<number[]>(group.adminIds || []);
   const { toast } = useToast();
+  const { users } = useUsers();
 
   useEffect(() => {
     setName(group.name);
@@ -245,7 +246,7 @@ export default function EditGroupDialog({
             <ScrollArea className="h-[200px] pr-4">
               <div className="space-y-4">
                 {group.participantIds.map(userId => {
-                  const user = mockUsers.find(u => u.id === userId);
+                  const user = users.find(u => u.id === userId);
                   if (!user) return null;
 
                   const isCreator = userId === group.creatorId;
