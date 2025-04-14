@@ -61,7 +61,7 @@ export const useChatStore = create<ChatStore>()(
       groupGoals: {},
       
       initializeGroupChat: (groupId: number) => {
-        const chatId = getChatId(groupId);
+        const chatId = getChatId(groupId, 'group');
         set((state) => ({
           messages: {
             ...state.messages,
