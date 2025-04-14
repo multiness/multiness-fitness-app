@@ -443,7 +443,7 @@ const initializeStore = persist<GroupStore>(
               const socket = new WebSocket(wsUrl);
               
               socket.onopen = () => {
-                console.log('WebSocket connection established for group synchronization');
+                console.debug('WebSocket connection established for group synchronization');
                 socket.send(JSON.stringify({ type: 'subscribe', topic: 'groups' }));
               };
               
@@ -465,7 +465,7 @@ const initializeStore = persist<GroupStore>(
               };
               
               socket.onclose = () => {
-                console.log('WebSocket connection closed for groups');
+                console.debug('WebSocket connection closed for groups');
                 // Try reconnecting after 5 seconds
                 setTimeout(setupWebSocket, 5000);
               };
@@ -479,7 +479,7 @@ const initializeStore = persist<GroupStore>(
           
           set({ isLoading: false, lastFetched: Date.now() });
           // Stille Synchronisierung ohne Benachrichtigung
-          console.log(`Groups synchronized: ${dbGroups.length} groups loaded`);
+          console.debug(`Groups synchronized: ${dbGroups.length} groups loaded`);
           
         } catch (error) {
           console.error('Error synchronizing groups:', error);

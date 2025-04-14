@@ -77,7 +77,8 @@ export function UserAvatar({
         loadAPIUsers();
         
         // Standard-Fallback
-        console.warn(`Benutzer mit ID ${userId} konnte nicht gefunden werden`);
+        // Stille Fehlermeldung, nur für Entwicklungszwecke
+        console.debug(`Benutzer mit ID ${userId} konnte nicht geladen werden`);
       } catch (error) {
         console.error(`Fehler beim Laden des Benutzers mit ID ${userId}:`, error);
       }
@@ -98,7 +99,8 @@ export function UserAvatar({
 
   // Fallback-Benutzer, wenn kein Benutzer gefunden wurde
   if (!user) {
-    console.warn(`Benutzer mit ID ${userId} nicht gefunden`);
+    // Stille Fehlermeldung, da dieser Fall häufig vorkommt wenn Daten noch laden
+    console.debug(`Benutzer mit ID ${userId} noch nicht geladen`);
     return null;
   }
 
