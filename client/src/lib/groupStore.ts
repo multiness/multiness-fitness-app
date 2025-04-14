@@ -28,7 +28,7 @@ export interface Group {
   goals?: GroupGoal[];
 }
 
-type NewGroup = Omit<Group, 'id'>; // Ein neuer Typ, der 'id' aus Group auslässt
+type NewGroup = Omit<Group, 'id'>;
 
 interface GroupStore {
   groups: Record<number, Group>;
@@ -36,12 +36,12 @@ interface GroupStore {
   isLoading: boolean;
   lastFetched: number | null;
   
-  // Neue Datenbankfunktionen
+  // Database functions
   setGroups: (groups: DbGroup[], members: GroupMember[]) => void;
   syncWithServer: () => Promise<void>;
   
-  // Bestehende Funktionen
-  addGroup: (group: NewGroup) => number; // Verwende NewGroup statt Group
+  // Group functions
+  addGroup: (group: NewGroup) => number;
   updateGroup: (id: number, updatedGroup: Partial<Group>) => void;
   removeGroup: (id: number) => void;
   joinGroup: (groupId: number, userId: number) => void;
@@ -58,13 +58,13 @@ interface GroupStore {
   isGroupMember: (groupId: number, userId?: number) => boolean;
 }
 
-// Hilfsfunktion zum Konvertieren einer DB-Gruppe in eine Client-Gruppe
+// Helper function to convert DB group to client group
 const mapDbGroupToClientGroup = (dbGroup: DbGroup, members: GroupMember[] = []): Group => {
-  // Extrahiere Admins und Mitglieder
+  // Extract members and admins
   const participantIds = members.map(m => m.userId);
   const adminIds = members.filter(m => m.role === 'admin').map(m => m.userId);
   
-  // Stelle sicher, dass der Ersteller auch ein Teilnehmer und Admin ist
+  // Make sure creator is a participant and admin
   if (dbGroup.creatorId && !participantIds.includes(dbGroup.creatorId)) {
     participantIds.push(dbGroup.creatorId);
   }
@@ -73,12 +73,12 @@ const mapDbGroupToClientGroup = (dbGroup: DbGroup, members: GroupMember[] = []):
     adminIds.push(dbGroup.creatorId);
   }
   
-  // Stelle sicher, dass createdAt ein gültiges Datum ist
+  // Ensure createdAt is a valid date
   let createdAt = new Date();
   try {
     createdAt = dbGroup.createdAt ? new Date(dbGroup.createdAt) : new Date();
   } catch (e) {
-    console.error("Fehler beim Parsen des Datums:", e);
+    console.error("Error parsing date:", e);
   }
   
   return {
@@ -86,72 +86,26 @@ const mapDbGroupToClientGroup = (dbGroup: DbGroup, members: GroupMember[] = []):
     createdAt,
     participantIds,
     adminIds,
-    goals: [] // Gruppenziele werden später implementiert
+    goals: [] // Group goals will be implemented later
   } as Group;
 };
 
-export const useGroupStore = create<GroupStore>()(
-  persist(
-    (set, get) => ({
+// Initialize store with auto-loading from server
+const initializeStore = persist<GroupStore>(
+  (set, get) => {
+    // Load from server immediately after initialization
+    setTimeout(() => {
+      const store = get();
+      if (Object.keys(store.groups).length === 0) {
+        console.log("Initializing group store and loading from server...");
+        store.syncWithServer();
+      }
+    }, 100);
+
+    return {
       isLoading: false,
       lastFetched: null,
-      groups: {
-        1: {
-          id: 1,
-          name: "Laufgruppe Berlin",
-          description: "Gemeinsames Training für den Berlin Marathon",
-          image: "https://images.unsplash.com/photo-1501139083538-0139583c060f?w=800&auto=format",
-          participantIds: [1, 2, 3, 4, 5],
-          adminIds: [1],
-          creatorId: 1,
-          createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30),
-          goals: [
-            {
-              id: 1,
-              title: "Gemeinsame Laufdistanz",
-              description: "Unser Ziel bis zum Marathon",
-              target: 1000,
-              unit: "km",
-              currentValue: 568,
-              endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 60),
-              createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 29),
-            }
-          ]
-        },
-        2: {
-          id: 2,
-          name: "Fitness Freunde",
-          description: "Motivation und Tipps für tägliches Training",
-          image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&auto=format",
-          participantIds: [1, 3, 6, 8],
-          adminIds: [3],
-          creatorId: 3,
-          createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 45),
-          goals: [
-            {
-              id: 1,
-              title: "Gemeinsame Workout-Sessions",
-              target: 100,
-              unit: "Sessions",
-              currentValue: 78,
-              endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
-              createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 44),
-            }
-          ]
-        },
-        3: {
-          id: 3,
-          name: "Yoga & Meditation",
-          description: "Innere Ruhe und Flexibilität für Sportler",
-          image: "https://images.unsplash.com/photo-1588286840104-8957b019727f?w=800&auto=format",
-          participantIds: [2, 4, 7, 9],
-          adminIds: [4],
-          creatorId: 4,
-          createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 20),
-          isPrivate: true
-        }
-      },
-      
+      groups: {},
       invitations: {},
       
       addGroup: (group: NewGroup) => {
@@ -217,13 +171,13 @@ export const useGroupStore = create<GroupStore>()(
         set((state) => {
           const currentInvitations = state.invitations[groupId] || [];
           
-          // Nur einladen, wenn nicht bereits eingeladen
+          // Only invite if not already invited
           if (currentInvitations.includes(userId)) {
             return state;
           }
           
           const group = state.groups[groupId];
-          // Nicht einladen, wenn der User bereits in der Gruppe ist
+          // Don't invite if user is already in the group
           if (group && group.participantIds.includes(userId)) {
             return state;
           }
@@ -236,7 +190,7 @@ export const useGroupStore = create<GroupStore>()(
           return { invitations: newInvitations };
         });
         
-        // Verzögerte Benachrichtigung, um zirkuläre Abhängigkeiten zu vermeiden
+        // Delayed notification to avoid circular dependencies
         setTimeout(() => {
           import('../contexts/UserContext').then(module => {
             const users = module.useUsers().getAllUsers();
@@ -247,12 +201,12 @@ export const useGroupStore = create<GroupStore>()(
               const invitedUser = users.find((u: {id: number}) => u.id === userId);
               
               if (inviter && invitedUser) {
-                // Später hier Benachrichtigung implementieren
-                console.log('Gruppeneinladung:', {
+                // Implement notification here later
+                console.log('Group invitation:', {
                   userId: invitedUser.id,
                   groupId: group.id,
                   groupName: group.name,
-                  inviterName: inviter.username || inviter.name || "Ein Mitglied"
+                  inviterName: inviter.username || inviter.name || "A member"
                 });
               }
             }
@@ -263,12 +217,12 @@ export const useGroupStore = create<GroupStore>()(
       acceptInvitation: (groupId, userId) => set((state) => {
         const invitations = state.invitations[groupId] || [];
         
-        // Wenn der User nicht eingeladen wurde, nichts tun
+        // If user wasn't invited, do nothing
         if (!invitations.includes(userId)) {
           return state;
         }
         
-        // Entferne die Einladung und füge den User zur Gruppe hinzu
+        // Remove invitation and add user to group
         const group = state.groups[groupId];
         if (!group) return state;
         
@@ -290,7 +244,7 @@ export const useGroupStore = create<GroupStore>()(
       declineInvitation: (groupId, userId) => set((state) => {
         const invitations = state.invitations[groupId] || [];
         
-        // Wenn der User nicht eingeladen wurde, nichts tun
+        // If user wasn't invited, do nothing
         if (!invitations.includes(userId)) {
           return state;
         }
@@ -347,7 +301,7 @@ export const useGroupStore = create<GroupStore>()(
         const group = state.groups[groupId];
         if (!group) return state;
         
-        // Nur hinzufügen, wenn der User nicht bereits Admin ist
+        // Only add if user is not already an admin
         if (group.adminIds.includes(userId)) {
           return state;
         }
@@ -367,7 +321,7 @@ export const useGroupStore = create<GroupStore>()(
         const group = state.groups[groupId];
         if (!group) return state;
         
-        // Den Ersteller nicht als Admin entfernen
+        // Don't remove the creator as admin
         if (userId === group.creatorId) {
           return state;
         }
@@ -397,13 +351,12 @@ export const useGroupStore = create<GroupStore>()(
           .map(([groupId]) => parseInt(groupId, 10));
       },
       
-      // Prüft, ob ein Benutzer Mitglied einer Gruppe ist
       setGroups: (dbGroups, members) => {
         const groupsRecord: Record<number, Group> = {};
         
-        // Konvertiere die Daten in das Client-Format
+        // Convert data to client format
         dbGroups.forEach(dbGroup => {
-          // Finde alle Mitglieder für diese Gruppe
+          // Find all members for this group
           const groupMembers = members.filter(m => m.groupId === dbGroup.id);
           const clientGroup = mapDbGroupToClientGroup(dbGroup, groupMembers);
           groupsRecord[dbGroup.id] = clientGroup;
@@ -419,16 +372,16 @@ export const useGroupStore = create<GroupStore>()(
         try {
           set({ isLoading: true });
           
-          // Rufe alle Gruppen vom Server ab
+          // Fetch all groups from server
           const groupsResponse = await fetch('/api/groups');
           
           if (!groupsResponse.ok) {
-            throw new Error(`Server antwortete mit ${groupsResponse.status}: ${groupsResponse.statusText}`);
+            throw new Error(`Server responded with ${groupsResponse.status}: ${groupsResponse.statusText}`);
           }
           
           const dbGroups = await groupsResponse.json();
           
-          // Für jede Gruppe die Mitglieder abrufen
+          // Fetch members for each group
           const allMembers: GroupMember[] = [];
           
           for (const dbGroup of dbGroups) {
@@ -438,19 +391,19 @@ export const useGroupStore = create<GroupStore>()(
               if (membersResponse.ok) {
                 const groupMembers = await membersResponse.json();
                 allMembers.push(...groupMembers);
-                console.log(`Gruppenmitglieder für Gruppe ${dbGroup.id} geladen:`, groupMembers.length);
+                console.log(`Group members loaded for group ${dbGroup.id}:`, groupMembers.length);
               } else {
-                console.warn(`Konnte Mitglieder für Gruppe ${dbGroup.id} nicht laden: ${membersResponse.status}`);
+                console.warn(`Could not load members for group ${dbGroup.id}: ${membersResponse.status}`);
               }
             } catch (memberError) {
-              console.error(`Fehler beim Abrufen der Mitglieder für Gruppe ${dbGroup.id}:`, memberError);
+              console.error(`Error fetching members for group ${dbGroup.id}:`, memberError);
             }
           }
           
-          // Aktualisiere den Store
+          // Update the store
           get().setGroups(dbGroups, allMembers);
           
-          // WebSocket einrichten für Echtzeit-Updates
+          // Set up WebSocket for real-time updates
           const setupWebSocket = async () => {
             try {
               const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -458,7 +411,7 @@ export const useGroupStore = create<GroupStore>()(
               const socket = new WebSocket(wsUrl);
               
               socket.onopen = () => {
-                console.log('WebSocket-Verbindung für Gruppen-Synchronisierung hergestellt');
+                console.log('WebSocket connection established for group synchronization');
                 socket.send(JSON.stringify({ type: 'subscribe', topic: 'groups' }));
               };
               
@@ -466,36 +419,36 @@ export const useGroupStore = create<GroupStore>()(
                 try {
                   const data = JSON.parse(event.data);
                   if (data.type === 'group_update') {
-                    console.log('Gruppen-Update über WebSocket empfangen:', data);
-                    get().syncWithServer(); // Aktualisiere Daten vom Server
+                    console.log('Group update received via WebSocket:', data);
+                    get().syncWithServer(); // Update data from server
                   }
                 } catch (parseError) {
-                  console.error('Fehler beim Verarbeiten der WebSocket-Nachricht:', parseError);
+                  console.error('Error processing WebSocket message:', parseError);
                 }
               };
               
               socket.onerror = (error) => {
-                console.error('WebSocket-Fehler bei Gruppen-Synchronisierung:', error);
+                console.error('WebSocket error in group synchronization:', error);
               };
               
               socket.onclose = () => {
-                console.log('WebSocket-Verbindung für Gruppen geschlossen');
-                // Versuche nach 5 Sekunden erneut zu verbinden
+                console.log('WebSocket connection closed for groups');
+                // Try reconnecting after 5 seconds
                 setTimeout(setupWebSocket, 5000);
               };
             } catch (wsError) {
-              console.error('Fehler beim Einrichten des WebSockets für Gruppen:', wsError);
+              console.error('Error setting up WebSocket for groups:', wsError);
             }
           };
           
-          // WebSocket-Verbindung initialisieren
+          // Initialize WebSocket connection
           setupWebSocket();
           
           set({ isLoading: false, lastFetched: Date.now() });
-          console.log('Gruppen erfolgreich synchronisiert:', dbGroups.length);
+          console.log('Groups successfully synchronized:', dbGroups.length);
           
         } catch (error) {
-          console.error('Fehler bei der Synchronisation der Gruppen:', error);
+          console.error('Error synchronizing groups:', error);
           set({ isLoading: false });
         }
       },
@@ -505,10 +458,12 @@ export const useGroupStore = create<GroupStore>()(
         if (!group) return false;
         return group.participantIds.includes(userId) || group.creatorId === userId;
       }
-    }),
-    {
-      name: 'group-store',
-      version: 1
-    }
-  )
+    };
+  },
+  {
+    name: 'group-store',
+    version: 1
+  }
 );
+
+export const useGroupStore = create(initializeStore);

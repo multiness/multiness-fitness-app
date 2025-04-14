@@ -84,7 +84,7 @@ export default function Chat() {
       const groupId = parseInt(groupIdStr, 10);
       const group = groupStore.groups[groupId];
       
-      console.log("Looking for group with ID:", groupId, "in groupStore:", groupStore.groups);
+      console.log("Looking for group with ID:", groupId, "in groupStore (count):", Object.keys(groupStore.groups).length);
       
       if (group) {
         return {
