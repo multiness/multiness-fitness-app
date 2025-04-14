@@ -520,10 +520,9 @@ export const getChatId = (entityId?: number, type: 'user' | 'group' = 'user') =>
       globalGroupIds[entityId] = storedId;
       return storedId;
     } else {
-      // Erstelle eine neue eindeutige ID mit Zeitstempel, um sicherzustellen,
-      // dass die ID über mehrere Geräte hinweg eindeutig ist
-      const timestamp = Date.now();
-      const uniqueId = `group-${entityId}-${timestamp}`;
+      // Vereinfachte ID-Generierung - Verwende einfach die Gruppen-ID selbst statt komplexer IDs
+      // Dies löst das Problem, dass die gleiche Gruppe verschiedene Chat-IDs haben kann
+      const uniqueId = `group-${entityId}`;
       
       // Speichere sowohl im localStorage als auch im globalen Speicher
       localStorage.setItem(`group_chat_id_${entityId}`, uniqueId);
@@ -535,6 +534,12 @@ export const getChatId = (entityId?: number, type: 'user' | 'group' = 'user') =>
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ groupId: entityId, chatId: uniqueId })
+        }).then(response => {
+          if (response.ok) {
+            console.log(`Gruppen-ID ${uniqueId} erfolgreich auf dem Server gespeichert`);
+          } else {
+            console.warn('Konnte Gruppen-ID nicht auf Server speichern:', response.statusText);
+          }
         }).catch(e => console.warn('Konnte Gruppen-ID nicht auf Server speichern:', e));
       } catch (e) {
         console.warn('Fehler beim Senden der Gruppen-ID an den Server:', e);
