@@ -146,6 +146,14 @@ export function UserAvatar({
           <AvatarFallback className="rounded-full">{user.username?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
         </Avatar>
       </div>
+      {/* Team-Position anzeigen, wenn verfügbar */}
+      {user.isTeamMember && user.teamRole && size === "lg" && (
+        <div className="absolute -bottom-6 left-0 right-0 text-center">
+          <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+            {user.teamRole.replace('_', ' ')}
+          </span>
+        </div>
+      )}
       {!hideVerifiedBadge && user.isVerified && (
         <div className="absolute -bottom-1 -right-1">
           <VerifiedBadge size={size === "lg" ? "default" : "sm" as "sm" | "default"} />
