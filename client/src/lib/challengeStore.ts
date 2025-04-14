@@ -303,7 +303,8 @@ export const useChallengeStore = create<ChallengeStore>()(
             ...participantsRecord
           };
           
-          console.log("Challenge-Synchronisierung: Kombinierte Challenges:", mergedChallenges);
+          // Reduzierte Logging-Ausgabe ohne vollständige Challenge-Daten
+          console.log("Challenge-Synchronisierung: Challenges erfolgreich aktualisiert");
           
           set({ 
             challenges: mergedChallenges,

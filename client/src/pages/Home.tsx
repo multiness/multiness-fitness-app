@@ -47,7 +47,7 @@ export default function Home() {
   const productStore = useProductStore();
   
   // Synchronisieren der Challenges mit der Datenbank
-  const syncWithServer = async () => {
+  const syncWithServer = async (showNotification = false) => {
     setSyncing(true);
     setSyncComplete(false);
     
@@ -55,13 +55,19 @@ export default function Home() {
       await challengeStore.syncWithServer();
       
       setSyncComplete(true);
-      toast({
-        title: "Synchronisierung erfolgreich",
-        description: "Alle Challenges wurden erfolgreich aktualisiert.",
-        variant: "default"
-      });
+      
+      // Zeige nur eine Benachrichtigung, wenn explizit gewünscht (z.B. bei manuellem Refresh)
+      if (showNotification) {
+        toast({
+          title: "Synchronisierung erfolgreich",
+          description: "Alle Challenges wurden erfolgreich aktualisiert.",
+          variant: "default"
+        });
+      }
     } catch (error) {
       console.error("Fehler bei der Synchronisierung:", error);
+      
+      // Fehler immer anzeigen
       toast({
         title: "Synchronisierungsfehler",
         description: "Die Daten konnten nicht mit dem Server synchronisiert werden.",
