@@ -41,7 +41,13 @@ export default function GroupCarousel({ groups }: GroupCarouselProps) {
     }
   };
 
-  const groupChunks = groups.reduce((acc, curr, i) => {
+  // Log groups for debugging
+  console.log("GroupCarousel received groups:", groups.map(g => `${g.id} - ${g.name}`));
+
+  // Ensure groups is an array before chunking
+  const validGroups = Array.isArray(groups) ? groups : [];
+  
+  const groupChunks = validGroups.reduce((acc, curr, i) => {
     if (i % 2 === 0) acc.push([]);
     acc[acc.length - 1].push(curr);
     return acc;
