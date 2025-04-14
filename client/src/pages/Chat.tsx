@@ -228,7 +228,9 @@ export default function Chat() {
                     }`}
                     onClick={() => {
                       if (chat.isGroup) {
-                        setLocation(`/chat/${chat.id}`);
+                        // Wichtig: Hier die korrekte Gruppen-ID für die Navigation verwenden
+                        const groupId = chat.id.replace('group-', '');
+                        setLocation(`/chat/group-${groupId}`);
                       } else {
                         setSelectedChat(chat);
                       }
