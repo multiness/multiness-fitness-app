@@ -10,7 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { getChatId } from "../lib/chatService";
 import { UserAvatar } from "@/components/UserAvatar";
 import { Badge } from "@/components/ui/badge";
-import { mockUsers } from "../data/mockData";
+
 import EditGroupDialog from "@/components/EditGroupDialog"; // Korrigierter Import-Pfad
 
 
@@ -21,6 +21,7 @@ export default function Groups() {
   const [, setLocation] = useLocation();
   const [selectedGroup, setSelectedGroup] = useState<null | any>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const { users } = useUsers();
   const groups = Object.values(groupStore.groups);
 
   console.log("Available groups:", groups);
@@ -31,7 +32,7 @@ export default function Groups() {
   );
 
   const navigateToGroupChat = (groupId: number) => {
-    const chatId = getChatId(groupId);
+    const chatId = getChatId(groupId, 'group');
     console.log('Navigating to group chat:', chatId);
     setLocation(`/chat/${chatId}`);
   };
@@ -127,16 +128,13 @@ export default function Groups() {
                         <div className="flex items-center gap-2">
                           <div className="flex -space-x-2">
                             {group.participantIds?.slice(0, 3).map((participantId) => {
-                              const participant = mockUsers.find(u => u.id === participantId);
-                              return participant ? (
+                              return (
                                 <UserAvatar
-                                  key={participant.id}
-                                  userId={participant.id}
-                                  avatar={participant.avatar}
-                                  username={participant.username}
+                                  key={participantId}
+                                  userId={participantId}
                                   size="sm"
                                 />
-                              ) : null;
+                              );
                             })}
                             {(group.participantIds?.length || 0) > 3 && (
                               <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm">
