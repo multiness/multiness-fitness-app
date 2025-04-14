@@ -213,27 +213,69 @@ export const useChatStore = create<ChatStore>()(
             const sendMessageToServer = async () => {
               const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
               const wsUrl = `${protocol}//${window.location.host}/ws`;
-              const socket = new WebSocket(wsUrl);
               
-              socket.onopen = () => {
-                console.log('Sende Chat-Nachricht über eigene WebSocket-Verbindung');
-                // Sende die Nachricht an alle Clients, die diesen Chat abonniert haben
-                socket.send(JSON.stringify({
-                  type: 'chat_message',
-                  chatId: chatId,
-                  message: message
-                }));
+              try {
+                // Erstelle eine neue Verbindung für das Senden von Nachrichten
+                const socket = new WebSocket(wsUrl);
                 
-                // Warte kurz, bevor die Verbindung geschlossen wird
-                setTimeout(() => {
-                  socket.close();
-                  console.log('Chat-Nachricht wurde gesendet, WebSocket geschlossen');
-                }, 500);
-              };
-              
-              socket.onerror = (error) => {
-                console.error('Fehler beim Senden der Nachricht an den Server:', error);
-              };
+                // Füge eine timeout-Funktion hinzu, die nach 5 Sekunden ausgelöst wird, 
+                // wenn die Verbindung nicht hergestellt werden kann
+                const connectionTimeout = setTimeout(() => {
+                  console.error('WebSocket-Verbindung konnte nicht hergestellt werden (Timeout)');
+                  try {
+                    socket.close();
+                  } catch (e) {
+                    // Ignoriere Fehler beim Schließen
+                  }
+                }, 5000);
+                
+                socket.onopen = () => {
+                  // Timeout abbrechen
+                  clearTimeout(connectionTimeout);
+                  
+                  console.log('Sende Chat-Nachricht über eigene WebSocket-Verbindung');
+                  
+                  // Zuerst Gruppen abonnieren (wichtig für korrekte Nachrichtenverteilung)
+                  socket.send(JSON.stringify({ 
+                    type: 'subscribe', 
+                    topic: 'groups'
+                  }));
+                  
+                  // Dann die Nachricht an alle Clients senden
+                  socket.send(JSON.stringify({
+                    type: 'chat_message',
+                    chatId: chatId,
+                    message: message
+                  }));
+                  
+                  // Warte kurz, bevor die Verbindung geschlossen wird
+                  setTimeout(() => {
+                    try {
+                      socket.close();
+                      console.log('Chat-Nachricht wurde gesendet, WebSocket geschlossen');
+                    } catch (e) {
+                      console.error('Fehler beim Schließen der WebSocket-Verbindung:', e);
+                    }
+                  }, 1000);
+                };
+                
+                socket.onerror = (error) => {
+                  // Timeout abbrechen
+                  clearTimeout(connectionTimeout);
+                  console.error('Fehler beim Senden der Nachricht an den Server:', error);
+                };
+                
+                socket.onmessage = (event) => {
+                  try {
+                    const response = JSON.parse(event.data);
+                    console.log('Antwort vom Server nach Nachrichtensendung:', response);
+                  } catch (e) {
+                    console.error('Fehler beim Parsen der WebSocket-Antwort:', e);
+                  }
+                };
+              } catch (e) {
+                console.error('Fehler beim Erstellen der WebSocket-Verbindung:', e);
+              }
             };
             
             // Sende die Nachricht

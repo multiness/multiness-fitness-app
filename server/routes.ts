@@ -1501,14 +1501,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Chat-Raum-Abonnements (groupId -> Set<WebSocket>)
   const chatRooms: Record<number, Set<any>> = {};
   
+  // Funktion zum Senden von Nachrichten mit Fehlerbehandlung
+  const safeMessageSend = (client: any, data: any) => {
+    try {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify(data));
+        return true;
+      }
+    } catch (error) {
+      console.error('Fehler beim Senden einer WebSocket-Nachricht:', error);
+    }
+    return false;
+  };
+  
   wss.on('connection', (ws) => {
     console.log('Neue WebSocket-Verbindung');
 
     // Sende eine Willkommensnachricht
-    ws.send(JSON.stringify({
+    safeMessageSend(ws, {
       type: 'connection',
       message: 'Verbindung hergestellt'
-    }));
+    });
 
     // Behandle eingehende Nachrichten
     ws.on('message', async (message) => {
@@ -1548,25 +1561,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (chatIdMatch && chatIdMatch[1]) {
               const groupId = parseInt(chatIdMatch[1], 10);
               
-              // Sende die Nachricht an alle Clients, die diesen Chat abonniert haben
+              // VERBESSERT: Sende die Nachricht an alle verbundenen Clients
+              // Dadurch wird sichergestellt, dass die Nachricht an alle Clients gesendet wird,
+              // auch wenn sie den Chat nicht explizit abonniert haben
+              console.log('Sende Nachricht an alle Clients für Gruppe:', groupId);
+              
+              // Nachricht an gruppenbezogene Chat-Abonnenten senden
               if (chatRooms[groupId]) {
-                let clientsReached = 0;
-                
+                let groupClientsReached = 0;
                 chatRooms[groupId].forEach(client => {
-                  if (client.readyState === WebSocket.OPEN) {
-                    client.send(JSON.stringify({
-                      type: 'chat_message',
-                      chatId: data.chatId,
-                      message: data.message
-                    }));
-                    clientsReached++;
+                  if (safeMessageSend(client, {
+                    type: 'chat_message',
+                    chatId: data.chatId,
+                    message: data.message
+                  })) {
+                    groupClientsReached++;
                   }
                 });
-                
-                console.log(`Chat-Nachricht an ${clientsReached} Clients weitergeleitet`);
-              } else {
+                console.log(`Chat-Nachricht an ${groupClientsReached} Gruppen-Abonnenten weitergeleitet`);
+              }
+              
+              // Nachricht auch an alle allgemeinen Gruppen-Abonnenten senden
+              let generalClientsReached = 0;
+              subscriptions.groups.forEach(client => {
+                if (safeMessageSend(client, {
+                  type: 'chat_message',
+                  chatId: data.chatId,
+                  message: data.message
+                })) {
+                  generalClientsReached++;
+                }
+              });
+              console.log(`Chat-Nachricht zusätzlich an ${generalClientsReached} allgemeine Gruppen-Abonnenten weitergeleitet`);
+              
+              // Falls keine Clients gefunden wurden
+              if (!chatRooms[groupId] && subscriptions.groups.size === 0) {
                 console.log(`Kein Client hat Chat für Gruppe ${groupId} abonniert`);
               }
+            } else {
+              console.log('Kein Gruppenchat oder ungültiges Format:', data.chatId);
             }
           } catch (saveError) {
             console.error('Fehler beim Speichern/Verteilen der Chat-Nachricht:', saveError);
@@ -1575,10 +1608,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Beispiel für eine einfache Echo-Antwort
         else if (data.type === 'echo') {
-          ws.send(JSON.stringify({
+          safeMessageSend(ws, {
             type: 'echo',
             message: data.message
-          }));
+          });
         }
       } catch (error) {
         console.error('Fehler beim Verarbeiten der WebSocket-Nachricht:', error);
