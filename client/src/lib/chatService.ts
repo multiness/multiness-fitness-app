@@ -353,5 +353,24 @@ export const useChatStore = create<ChatStore>()(
 
 export const getChatId = (entityId?: number, type: 'user' | 'group' = 'user') => {
   if (!entityId) return '';
+  
+  // Für Gruppen - Verwende eindeutige ID-Generierung
+  if (type === 'group') {
+    // Benutze Gruppenname und ID als dauerhafte Kennung
+    // Statt einer rein numerischen ID, die wiederverwendet werden könnte
+    const storedId = localStorage.getItem(`group_chat_id_${entityId}`);
+    
+    if (storedId) {
+      return storedId;
+    } else {
+      // Erstelle eine neue eindeutige ID mit Timestamp, um Kollisionen zu vermeiden
+      const uniqueId = `group-${entityId}-${Date.now()}`;
+      // Speichere diese zur späteren Verwendung
+      localStorage.setItem(`group_chat_id_${entityId}`, uniqueId);
+      return uniqueId;
+    }
+  }
+  
+  // Für Benutzer bleibt das Format gleich
   return `${type}-${entityId}`;
 };

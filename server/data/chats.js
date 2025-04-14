@@ -58,12 +58,12 @@ function getMessages(chatId) {
     return chatMessages[chatId];
   }
   
-  // Überprüfe, ob es ein neuer Gruppen-Chat ist (Format: "group-X")
-  const chatIdMatch = chatId.match(/group-(\d+)/);
+  // Überprüfe, ob es ein neuer Gruppen-Chat ist (Format: "group-X" oder das erweiterte Format "group-X-TIMESTAMP")
+  const chatIdMatch = chatId.match(/group-(\d+)(?:-\d+)?/);
   if (chatIdMatch && chatIdMatch[1]) {
     // Es ist ein neuer Gruppen-Chat, erstelle einen leeren Array für diese Gruppe
     chatMessages[chatId] = [];
-    console.debug(`Neuer Chat für Gruppe ${chatIdMatch[1]} initialisiert`);
+    console.debug(`Neuer Chat für Gruppe ${chatIdMatch[1]} mit ID ${chatId} initialisiert`);
     // Speichere die Änderung in der Datei
     saveMessages().catch(err => console.error('Fehler beim Initialisieren des neuen Chats:', err));
   }
