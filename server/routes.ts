@@ -1174,6 +1174,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const groupData = insertGroupSchema.parse(req.body);
       const group = await storage.createGroup(groupData);
+      
+      // Benachrichtige alle Clients über die neue Gruppe via WebSocket
+      const wsMessage = JSON.stringify({
+        type: 'group_update',
+        action: 'create',
+        data: group
+      });
+      
+      subscriptions.groups.forEach(client => {
+        if (client.readyState === 1) { // Prüfe, ob der WebSocket offen ist
+          client.send(wsMessage);
+        }
+      });
+      
+      console.log('Neue Gruppe erstellt und über WebSocket verteilt:', group.name);
       res.status(201).json(group);
     } catch (error) {
       console.error("Error creating group:", error);

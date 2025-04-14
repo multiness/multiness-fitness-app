@@ -123,6 +123,7 @@ export const useChatStore = create<ChatStore>()(
       },
 
       addMessage: (chatId, message) => {
+        // Füge die Nachricht lokal hinzu
         set((state) => ({
           messages: {
             ...state.messages,
@@ -130,22 +131,32 @@ export const useChatStore = create<ChatStore>()(
           },
         }));
         
-        // Sende die Nachricht an den Server
+        // Sende die Nachricht an den Server und andere Clients per WebSocket
         try {
           if (message.groupId) {
-            // Für Gruppennachrichten
+            console.log('Sende Gruppennachricht über WebSocket:', message);
+            
+            // Für Gruppennachrichten - es ist wichtig, eine neue WebSocket-Verbindung zu erstellen,
+            // anstatt die bestehende zu verwenden, da Zustand im Client konsistent bleiben muss
             const sendMessageToServer = async () => {
               const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
               const wsUrl = `${protocol}//${window.location.host}/ws`;
               const socket = new WebSocket(wsUrl);
               
               socket.onopen = () => {
+                console.log('Sende Chat-Nachricht über eigene WebSocket-Verbindung');
+                // Sende die Nachricht an alle Clients, die diesen Chat abonniert haben
                 socket.send(JSON.stringify({
                   type: 'chat_message',
                   chatId: chatId,
                   message: message
                 }));
-                socket.close();
+                
+                // Warte kurz, bevor die Verbindung geschlossen wird, damit die Nachricht übertragen werden kann
+                setTimeout(() => {
+                  socket.close();
+                  console.log('Chat-Nachricht wurde gesendet, WebSocket geschlossen');
+                }, 500);
               };
               
               socket.onerror = (error) => {
@@ -153,6 +164,7 @@ export const useChatStore = create<ChatStore>()(
               };
             };
             
+            // Sende die Nachricht
             sendMessageToServer();
           }
         } catch (error) {

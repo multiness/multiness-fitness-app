@@ -109,17 +109,48 @@ const initializeStore = persist<GroupStore>(
       invitations: {},
       
       addGroup: (group: NewGroup) => {
-        const id = Date.now();
-        const newGroup = { ...group, id };
+        // Temporäre ID für sofortige Anzeige
+        const tempId = Date.now();
+        const newGroup = { ...group, id: tempId };
         
+        // Lokale Gruppe aktualisieren für sofortige Anzeige
         set((state) => ({
           groups: {
             ...state.groups,
-            [id]: newGroup
+            [tempId]: newGroup
           }
         }));
         
-        return id;
+        // Gruppe auf dem Server erstellen
+        (async () => {
+          try {
+            const response = await apiRequest('POST', '/api/groups', group);
+            
+            if (response.ok) {
+              const savedGroup = await response.json();
+              console.log('Gruppe erfolgreich auf Server gespeichert:', savedGroup);
+              
+              // Gruppe mit Server-ID aktualisieren und temporäre Gruppe entfernen
+              set((state) => {
+                const { [tempId]: _, ...restGroups } = state.groups;
+                return {
+                  groups: {
+                    ...restGroups,
+                    [savedGroup.id]: mapDbGroupToClientGroup(savedGroup)
+                  }
+                };
+              });
+              
+              // WebSocket-Aktualisierung erfolgt über den Endpunkt
+            } else {
+              console.error('Fehler beim Speichern der Gruppe auf dem Server:', await response.text());
+            }
+          } catch (error) {
+            console.error('Netzwerkfehler beim Speichern der Gruppe:', error);
+          }
+        })();
+        
+        return tempId;
       },
       
       updateGroup: (id, updatedGroup) => set((state) => ({
