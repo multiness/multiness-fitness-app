@@ -43,15 +43,17 @@ export default function Chat() {
 
   // Get all chats including direct chats and groups
   const allChats = [
-    // Benutzer-Chats mit eindeutigen IDs
-    ...users.map(user => ({
-      id: getChatId(user.id, 'user'), // Einzigartiger Schlüssel mit "user-" Präfix
-      chatId: getChatId(user.id, 'user'), // Tatsächliche Chat-ID für Nachrichten
-      name: user.username,
-      avatar: user.avatar,
-      isGroup: false,
-      userId: user.id
-    })),
+    // Benutzer-Chats mit eindeutigen IDs, eigenen Benutzer ausschließen
+    ...users
+      .filter(user => user.id !== currentUser?.id) // WICHTIG: Eigenen Benutzer ausfiltern
+      .map(user => ({
+        id: getChatId(user.id, 'user'), // Einzigartiger Schlüssel mit "user-" Präfix
+        chatId: getChatId(user.id, 'user'), // Tatsächliche Chat-ID für Nachrichten
+        name: user.username,
+        avatar: user.avatar,
+        isGroup: false,
+        userId: user.id
+      })),
     // Gruppen-Chats mit eindeutigen IDs
     ...Object.values(groupStore.groups).map(group => ({
       id: getChatId(group.id, 'group'), // Einzigartiger Schlüssel mit "group-" Präfix
@@ -228,9 +230,15 @@ export default function Chat() {
                     }`}
                     onClick={() => {
                       if (chat.isGroup) {
-                        // Wichtig: Hier die korrekte Gruppen-ID für die Navigation verwenden
-                        const groupId = chat.id.replace('group-', '');
+                        // Debug-Ausgabe für Gruppennavigation
+                        console.log("Navigiere zu Gruppenchat:", chat.id);
+                        // Extrahiere die Gruppen-ID aus dem Chat-ID
+                        const groupId = chat.id.split('-')[1];
                         setLocation(`/chat/group-${groupId}`);
+                        // Alternativ können wir auch direkt den Chat auswählen
+                        // und den Chat initialisieren
+                        setSelectedChat(chat);
+                        chatStore.initializeGroupChat(parseInt(groupId));
                       } else {
                         setSelectedChat(chat);
                       }
