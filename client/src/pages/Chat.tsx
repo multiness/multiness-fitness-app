@@ -267,7 +267,7 @@ export default function Chat() {
                   variant="ghost"
                   size="icon"
                   className="md:hidden"
-                  onClick={() => isDirect ? setLocation('/chat') : setSelectedChat(null)}
+                  onClick={() => isDirect ? setLocation('/chat') : setLocation('/')}
                 >
                   <ArrowLeft className="h-4 w-4" />
                 </Button>

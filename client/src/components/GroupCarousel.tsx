@@ -36,7 +36,7 @@ export default function GroupCarousel({ groups }: GroupCarouselProps) {
         title: "Gruppe beigetreten",
         description: "Du bist der Gruppe erfolgreich beigetreten.",
       });
-      const chatId = getChatId(group.id);
+      const chatId = getChatId(group.id, 'group');
       setLocation(`/chat/${chatId}`);
     }
   };
@@ -58,7 +58,7 @@ export default function GroupCarousel({ groups }: GroupCarouselProps) {
             {chunk.map(group => {
               const creator = users.find(u => u.id === group.creatorId);
               const isJoined = groupStore.isGroupMember(group.id, userId);
-              const chatId = getChatId(group.id);
+              const chatId = getChatId(group.id, 'group');
 
               return (
                 <Card 
