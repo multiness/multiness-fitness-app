@@ -34,6 +34,7 @@ export default function Groups() {
   const navigateToGroupChat = (groupId: number) => {
     const chatId = getChatId(groupId, 'group');
     console.log('Navigating to group chat:', chatId);
+    console.log('Looking for group with ID:', groupId, 'in groups:', groupStore.groups);
     setLocation(`/chat/${chatId}`);
   };
 
