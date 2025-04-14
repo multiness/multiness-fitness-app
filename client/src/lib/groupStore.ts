@@ -422,7 +422,8 @@ const initializeStore = persist<GroupStore>(
               if (membersResponse.ok) {
                 const groupMembers = await membersResponse.json();
                 allMembers.push(...groupMembers);
-                console.log(`Group members loaded for group ${dbGroup.id}:`, groupMembers.length);
+                // Stille Mitgliederladung ohne große Logs
+                console.debug(`Group members loaded for group ${dbGroup.id}: ${groupMembers.length}`);
               } else {
                 console.warn(`Could not load members for group ${dbGroup.id}: ${membersResponse.status}`);
               }
@@ -450,7 +451,8 @@ const initializeStore = persist<GroupStore>(
                 try {
                   const data = JSON.parse(event.data);
                   if (data.type === 'group_update') {
-                    console.log('Group update received via WebSocket:', data);
+                    // Stille Verarbeitung von WebSocket-Updates
+                console.debug('Group update received via WebSocket');
                     get().syncWithServer(); // Update data from server
                   }
                 } catch (parseError) {

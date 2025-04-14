@@ -102,7 +102,8 @@ export const usePostStore = create<PostStore>()(
           }
           
           const posts = await response.json();
-          console.log("loadStoredPosts: Posts von API geladen:", posts);
+          // Stille Verarbeitung, logge nur die Anzahl der Posts
+          console.log(`loadStoredPosts: ${posts.length} Posts von API geladen`);
           
           // Keine Posts im Server-Response
           if (!Array.isArray(posts)) {
@@ -139,7 +140,8 @@ export const usePostStore = create<PostStore>()(
             }
           });
           
-          console.log("loadStoredPosts: Posts verarbeitet:", postsRecord);
+          // Stille Verarbeitung ohne Ausgabe aller Post-Daten
+          console.debug("loadStoredPosts: Posts verarbeitet");
           
           // Merge mit bestehenden Posts, damit lokale Daten nicht verloren gehen
           const existingPosts = get().posts;
@@ -150,7 +152,8 @@ export const usePostStore = create<PostStore>()(
             ...postsRecord
           };
           
-          console.log("loadStoredPosts: Posts kombiniert:", mergedPosts);
+          // Stille Verarbeitung der kombinierten Posts
+          console.debug("loadStoredPosts: Posts kombiniert, Anzahl:", Object.keys(mergedPosts).length);
           
           set({ posts: mergedPosts, isLoading: false });
           
