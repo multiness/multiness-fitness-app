@@ -251,6 +251,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Interner Serverfehler" });
     }
   });
+  
+  // Alle Gruppen-IDs abrufen (für die Gruppen-Chat-Synchronisierung)
+  app.get("/api/group-ids", (req, res) => {
+    try {
+      const groupIds = getGroupIds();
+      console.log("Gruppen-IDs abgerufen:", groupIds);
+      res.json(groupIds);
+    } catch (error) {
+      console.error("Fehler beim Abrufen der Gruppen-IDs:", error);
+      res.status(500).json({ error: "Interner Serverfehler" });
+    }
+  });
+  
+  // Gruppen-ID speichern (für die Gruppen-Chat-Synchronisierung)
+  app.post("/api/group-ids", async (req, res) => {
+    try {
+      const { groupId, chatId } = req.body;
+      
+      if (!groupId || !chatId) {
+        return res.status(400).json({ error: "groupId und chatId werden benötigt" });
+      }
+      
+      const result = await setGroupId(Number(groupId), chatId);
+      console.log(`Gruppen-ID gespeichert: Gruppe ${groupId} -> Chat ${chatId}`);
+      
+      // Informiere alle Clients, die Gruppen-IDs abonniert haben, über die Änderung
+      const updatedGroupIds = getGroupIds();
+      if (subscriptions.groupIds.size > 0) {
+        let notifiedClients = 0;
+        subscriptions.groupIds.forEach(client => {
+          if (safeMessageSend(client, {
+            type: 'groupIds',
+            groupIds: updatedGroupIds,
+            updatedGroupId: groupId
+          })) {
+            notifiedClients++;
+          }
+        });
+        console.log(`Gruppen-ID-Update an ${notifiedClients} Clients gesendet`);
+      }
+      
+      res.status(201).json(result);
+    } catch (error) {
+      console.error("Fehler beim Speichern der Gruppen-ID:", error);
+      res.status(500).json({ error: "Interner Serverfehler" });
+    }
+  });
 
   // Produkte abrufen
   app.get("/api/products", async (req, res) => {
@@ -1512,6 +1559,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const subscriptions: Record<string, Set<any>> = {
     groups: new Set(),
     chat: new Set(),
+    groupIds: new Set(), // Neues Thema für Gruppen-ID-Synchronisierung
   };
   
   // Chat-Raum-Abonnements (groupId -> Set<WebSocket>)
@@ -1559,6 +1607,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
             chatRooms[groupId].add(ws);
             console.log(`Client hat Chat-Updates für Gruppe ${groupId} abonniert`);
+          }
+          else if (data.topic === 'groupIds') {
+            subscriptions.groupIds.add(ws);
+            console.log('Client hat Gruppen-IDs-Updates abonniert');
+            
+            // Sende alle aktuellen Gruppen-IDs an den Client
+            const groupIds = getGroupIds();
+            safeMessageSend(ws, {
+              type: 'groupIds',
+              groupIds
+            });
           }
         }
         
@@ -1641,6 +1700,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Entferne Client aus allen Abonnements
       subscriptions.groups.delete(ws);
       subscriptions.chat.delete(ws);
+      subscriptions.groupIds.delete(ws);
       
       // Entferne aus allen Chat-Räumen
       Object.values(chatRooms).forEach(room => {
