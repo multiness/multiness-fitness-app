@@ -151,7 +151,8 @@ export default function Home() {
   );
 
   const navigateToGroupChat = (groupId: number) => {
-    const chatId = getChatId(groupId);
+    const chatId = getChatId(groupId, 'group');
+    console.log("Navigating to group chat with ID:", chatId);
     setLocation(`/chat/${chatId}`);
   };
 
@@ -231,14 +232,11 @@ export default function Home() {
         </div>
         {/* Desktop: Grid-Layout */}
         <div className="hidden md:grid grid-cols-2 gap-4">
-          {groups.slice(0, 4).map(group => {
-            const chatId = getChatId(group.id);
-            return (
-              <div key={group.id} className="cursor-pointer" onClick={() => navigateToGroupChat(group.id)}>
-                <GroupPreview group={group} />
-              </div>
-            );
-          })}
+          {groups.slice(0, 4).map(group => (
+            <div key={group.id} className="cursor-pointer" onClick={() => navigateToGroupChat(group.id)}>
+              <GroupPreview group={group} />
+            </div>
+          ))}
         </div>
       </section>
 
