@@ -476,7 +476,8 @@ const initializeStore = persist<GroupStore>(
           setupWebSocket();
           
           set({ isLoading: false, lastFetched: Date.now() });
-          console.log('Groups successfully synchronized:', dbGroups.length);
+          // Stille Synchronisierung ohne Benachrichtigung
+          console.log(`Groups synchronized: ${dbGroups.length} groups loaded`);
           
         } catch (error) {
           console.error('Error synchronizing groups:', error);

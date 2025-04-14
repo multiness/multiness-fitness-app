@@ -237,7 +237,8 @@ export const useChallengeStore = create<ChallengeStore>()(
           }
           
           const challenges = await response.json();
-          console.log("Challenge-Synchronisierung: Challenges vom Server geladen:", challenges);
+          // Nur die Anzahl der Challenges loggen, nicht die kompletten Daten
+          console.log(`Challenge-Synchronisierung: ${challenges.length} Challenges vom Server geladen`);
           
           // Keine Challenges im Server-Response
           if (!Array.isArray(challenges)) {
@@ -259,7 +260,8 @@ export const useChallengeStore = create<ChallengeStore>()(
               }
               
               const participants = await participantsResponse.json();
-              console.log(`Challenge-Synchronisierung: Teilnehmer für Challenge ${dbChallenge.id} geladen:`, participants);
+              // Nur die Anzahl der Teilnehmer loggen, nicht die kompletten Daten
+              console.log(`Challenge-Synchronisierung: ${participants.length} Teilnehmer für Challenge ${dbChallenge.id} geladen`);
               
               // Wenn participantIds nicht vorhanden ist, füge leeres Array hinzu
               if (!dbChallenge.participantIds) {
