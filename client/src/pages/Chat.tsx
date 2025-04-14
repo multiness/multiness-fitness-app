@@ -226,7 +226,13 @@ export default function Chat() {
                     className={`w-full text-left p-4 hover:bg-muted/50 transition-colors ${
                       selectedChat?.id === chat.id ? 'bg-muted' : ''
                     }`}
-                    onClick={() => setSelectedChat(chat)}
+                    onClick={() => {
+                      if (chat.isGroup) {
+                        setLocation(`/chat/${chat.id}`);
+                      } else {
+                        setSelectedChat(chat);
+                      }
+                    }}
                   >
                     <div className="flex items-center gap-3">
                       {chat.isGroup ? (
@@ -267,7 +273,15 @@ export default function Chat() {
                   variant="ghost"
                   size="icon"
                   className="md:hidden"
-                  onClick={() => isDirect ? setLocation('/chat') : setLocation('/')}
+                  onClick={() => {
+                    if (isDirect) {
+                      setLocation('/chat');
+                    } else if (selectedChat?.isGroup) {
+                      setLocation('/');
+                    } else {
+                      setSelectedChat(null);
+                    }
+                  }}
                 >
                   <ArrowLeft className="h-4 w-4" />
                 </Button>
