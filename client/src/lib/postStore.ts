@@ -90,7 +90,7 @@ export const usePostStore = create<PostStore>()(
       // Methode zum Laden der Posts von der API
       loadStoredPosts: async () => {
         try {
-          console.log("loadStoredPosts: Lade Posts von der API...");
+          console.debug("loadStoredPosts: Lade Posts von der API...");
           set({ isLoading: true });
           
           // Cache-Problem umgehen mit einem Parameter
@@ -103,7 +103,7 @@ export const usePostStore = create<PostStore>()(
           
           const posts = await response.json();
           // Stille Verarbeitung, logge nur die Anzahl der Posts
-          console.log(`loadStoredPosts: ${posts.length} Posts von API geladen`);
+          console.debug(`loadStoredPosts: ${posts.length} Posts von API geladen`);
           
           // Keine Posts im Server-Response
           if (!Array.isArray(posts)) {

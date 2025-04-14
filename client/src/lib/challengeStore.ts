@@ -288,7 +288,7 @@ export const useChallengeStore = create<ChallengeStore>()(
             }
           }));
           
-          console.log("Challenge-Synchronisierung: Verarbeitet", Object.keys(challengesRecord).length, "Challenges");
+          console.debug("Challenge-Synchronisierung: Verarbeitet", Object.keys(challengesRecord).length, "Challenges");
           
           // Merge mit bestehenden Challenges, damit lokale Daten nicht verloren gehen
           const existingChallenges = get().challenges;
@@ -306,7 +306,7 @@ export const useChallengeStore = create<ChallengeStore>()(
           };
           
           // Reduzierte Logging-Ausgabe ohne vollständige Challenge-Daten
-          console.log("Challenge-Synchronisierung: Challenges erfolgreich aktualisiert");
+          console.debug("Challenge-Synchronisierung: Challenges erfolgreich aktualisiert");
           
           set({ 
             challenges: mergedChallenges,
@@ -319,7 +319,7 @@ export const useChallengeStore = create<ChallengeStore>()(
           try {
             localStorage.setItem(CHALLENGE_STORAGE_KEY, JSON.stringify(mergedChallenges));
             localStorage.setItem('fitness-app-participants', JSON.stringify(mergedParticipants));
-            console.log("Challenges und Teilnehmer erfolgreich im localStorage nach Sync gespeichert");
+            console.debug("Challenges und Teilnehmer erfolgreich im localStorage nach Sync gespeichert");
           } catch (storageError) {
             console.error("Fehler beim Speichern im localStorage nach Sync:", storageError);
           }
