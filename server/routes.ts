@@ -19,26 +19,11 @@ import {
 } from "../shared/schema";
 import { WebSocketServer, WebSocket } from "ws";
 
-// Definiere Typen für das Chat-Modul
-interface ChatMessage {
-  id: number;
-  userId: number;
-  content: string;
-  timestamp: string;
-  groupId?: number;
-}
-
-// Typisiere die Funktionen aus dem Chat-Modul
 import { 
-  addMessage as addMessageImport, 
-  getMessages as getMessagesImport, 
-  getAllChatIds as getAllChatIdsImport 
+  addMessage, 
+  getMessages, 
+  getAllChatIds 
 } from "./data/chats.js";
-
-// Erstelle typisierte Versionen der Chat-Funktionen
-const addMessage = addMessageImport as (chatId: string, message: ChatMessage) => Promise<ChatMessage>;
-const getMessages = getMessagesImport as (chatId: string) => ChatMessage[];
-const getAllChatIds = getAllChatIdsImport as () => string[];
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Benutzer-Speicher mit Persistenz über Storage-API
