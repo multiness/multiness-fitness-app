@@ -22,7 +22,9 @@ import { WebSocketServer, WebSocket } from "ws";
 import { 
   addMessage, 
   getMessages, 
-  getAllChatIds 
+  getAllChatIds,
+  setGroupId,
+  getGroupIds
 } from "./data/chats.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {

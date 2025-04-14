@@ -401,22 +401,95 @@ export const useChatStore = create<ChatStore>()(
   )
 );
 
+// Globaler Speicher für Gruppen-IDs, der über alle Clients hinweg konsistent sein sollte
+let globalGroupIds: Record<number, string> = {};
+
+// Diese Funktion ruft alle Gruppen-IDs vom Server ab
+export const syncGroupIds = async () => {
+  try {
+    // Versuche, Gruppen-IDs vom Server zu laden
+    const response = await fetch('/api/group-ids');
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data && typeof data === 'object') {
+        globalGroupIds = data;
+        console.log('Gruppen-IDs vom Server synchronisiert:', globalGroupIds);
+        
+        // Aktualisiere auch den localStorage mit den Server-Daten
+        Object.entries(globalGroupIds).forEach(([key, value]) => {
+          localStorage.setItem(`group_chat_id_${key}`, value as string);
+        });
+      }
+    } else {
+      console.warn('Konnte Gruppen-IDs nicht vom Server laden, verwende lokale Daten');
+      // Wenn der Server nicht verfügbar ist, lade aus dem localStorage
+      loadGroupIdsFromLocalStorage();
+    }
+  } catch (error) {
+    console.error('Fehler beim Synchronisieren der Gruppen-IDs:', error);
+    // Fallback zu localStorage
+    loadGroupIdsFromLocalStorage();
+  }
+};
+
+// Lade Gruppen-IDs aus dem localStorage
+const loadGroupIdsFromLocalStorage = () => {
+  // Durchsuche localStorage nach allen Gruppen-ID-Einträgen
+  Object.keys(localStorage).forEach(key => {
+    if (key.startsWith('group_chat_id_')) {
+      const groupId = parseInt(key.replace('group_chat_id_', ''), 10);
+      if (!isNaN(groupId)) {
+        globalGroupIds[groupId] = localStorage.getItem(key) || '';
+      }
+    }
+  });
+  console.log('Gruppen-IDs aus localStorage geladen:', globalGroupIds);
+};
+
+// Initialisiere die Gruppen-IDs beim Laden der Anwendung
+// Erst aus dem localStorage, dann vom Server synchronisieren
+loadGroupIdsFromLocalStorage();
+syncGroupIds().catch(e => console.error('Fehler bei der initialen Gruppen-ID-Synchronisierung:', e));
+
 export const getChatId = (entityId?: number, type: 'user' | 'group' = 'user') => {
   if (!entityId) return '';
   
-  // Für Gruppen - Verwende eindeutige ID-Generierung
+  // Für Gruppen - Verwende einheitliche ID-Generierung
   if (type === 'group') {
-    // Benutze Gruppenname und ID als dauerhafte Kennung
-    // Statt einer rein numerischen ID, die wiederverwendet werden könnte
+    // Prüfe zuerst im globalen Speicher
+    if (globalGroupIds[entityId]) {
+      return globalGroupIds[entityId];
+    }
+    
+    // Wenn nicht im globalen Speicher, prüfe localStorage
     const storedId = localStorage.getItem(`group_chat_id_${entityId}`);
     
     if (storedId) {
+      // Speichere auch im globalen Speicher
+      globalGroupIds[entityId] = storedId;
       return storedId;
     } else {
-      // Erstelle eine neue eindeutige ID mit Timestamp, um Kollisionen zu vermeiden
-      const uniqueId = `group-${entityId}-${Date.now()}`;
-      // Speichere diese zur späteren Verwendung
+      // Erstelle eine neue eindeutige ID mit fester Struktur
+      // Anstatt einen Zeitstempel zu verwenden, nutzen wir eine feste Struktur,
+      // die auf der Gruppen-ID basiert
+      const uniqueId = `group-${entityId}-official`;
+      
+      // Speichere sowohl im localStorage als auch im globalen Speicher
       localStorage.setItem(`group_chat_id_${entityId}`, uniqueId);
+      globalGroupIds[entityId] = uniqueId;
+      
+      // Speichere die ID auf dem Server (wenn möglich)
+      try {
+        fetch('/api/group-ids', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ groupId: entityId, chatId: uniqueId })
+        }).catch(e => console.warn('Konnte Gruppen-ID nicht auf Server speichern:', e));
+      } catch (e) {
+        console.warn('Fehler beim Senden der Gruppen-ID an den Server:', e);
+      }
+      
       return uniqueId;
     }
   }

@@ -9,9 +9,13 @@ const __dirname = path.dirname(__filename);
 
 // Pfad zur Datei, in der wir die Chat-Nachrichten speichern
 const CHATS_FILE = path.join(__dirname, 'chats.json');
+// Pfad zur Datei, in der wir die Gruppen-IDs speichern
+const GROUP_IDS_FILE = path.join(__dirname, 'group-ids.json');
 
 // In-Memory-Cache für Chat-Nachrichten
 let chatMessages = {};
+// In-Memory-Cache für Gruppen-IDs
+let groupIds = {};
 
 // Hilfsfunktion zum Laden der Nachrichten aus der Datei
 async function loadMessages() {
@@ -77,12 +81,54 @@ function getAllChatIds() {
   return Object.keys(chatMessages);
 }
 
-// Lade die Nachrichten beim Start
+// Hilfsfunktion zum Laden der Gruppen-IDs aus der Datei
+async function loadGroupIds() {
+  try {
+    const data = await fs.readFile(GROUP_IDS_FILE, 'utf-8');
+    groupIds = JSON.parse(data);
+    console.debug('Gruppen-IDs aus Datei geladen');
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      // Datei existiert noch nicht, keine Aktion nötig
+      console.debug('Noch keine Gruppen-IDs-Datei vorhanden, erstelle neue');
+      await saveGroupIds(); // Erstelle leere Datei
+    } else {
+      console.error('Fehler beim Laden der Gruppen-IDs:', error);
+    }
+  }
+}
+
+// Hilfsfunktion zum Speichern der Gruppen-IDs in der Datei
+async function saveGroupIds() {
+  try {
+    await fs.writeFile(GROUP_IDS_FILE, JSON.stringify(groupIds, null, 2), 'utf-8');
+    console.debug('Gruppen-IDs in Datei gespeichert');
+  } catch (error) {
+    console.error('Fehler beim Speichern der Gruppen-IDs:', error);
+  }
+}
+
+// Funktion zum Setzen einer Gruppen-ID
+async function setGroupId(groupId, chatId) {
+  groupIds[groupId] = chatId;
+  await saveGroupIds();
+  return { groupId, chatId };
+}
+
+// Funktion zum Abrufen aller Gruppen-IDs
+function getGroupIds() {
+  return { ...groupIds };
+}
+
+// Lade die Nachrichten und Gruppen-IDs beim Start
 loadMessages();
+loadGroupIds();
 
 // Export als ES Module
 export {
   addMessage,
   getMessages,
-  getAllChatIds
+  getAllChatIds,
+  setGroupId,
+  getGroupIds
 };
