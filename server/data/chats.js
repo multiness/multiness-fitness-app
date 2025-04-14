@@ -18,11 +18,11 @@ async function loadMessages() {
   try {
     const data = await fs.readFile(CHATS_FILE, 'utf-8');
     chatMessages = JSON.parse(data);
-    console.log('Chat-Nachrichten aus Datei geladen');
+    console.debug('Chat-Nachrichten aus Datei geladen');
   } catch (error) {
     if (error.code === 'ENOENT') {
       // Datei existiert noch nicht, keine Aktion nötig
-      console.log('Noch keine Chat-Nachrichten-Datei vorhanden, erstelle neue');
+      console.debug('Noch keine Chat-Nachrichten-Datei vorhanden, erstelle neue');
       await saveMessages(); // Erstelle leere Datei
     } else {
       console.error('Fehler beim Laden der Chat-Nachrichten:', error);
@@ -34,7 +34,7 @@ async function loadMessages() {
 async function saveMessages() {
   try {
     await fs.writeFile(CHATS_FILE, JSON.stringify(chatMessages, null, 2), 'utf-8');
-    console.log('Chat-Nachrichten in Datei gespeichert');
+    console.debug('Chat-Nachrichten in Datei gespeichert');
   } catch (error) {
     console.error('Fehler beim Speichern der Chat-Nachrichten:', error);
   }
