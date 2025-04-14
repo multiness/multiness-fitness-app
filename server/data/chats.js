@@ -53,6 +53,22 @@ async function addMessage(chatId, message) {
 
 // Alle Nachrichten für einen Chat abrufen
 function getMessages(chatId) {
+  // Wenn dieser Chat existiert, gib seine Nachrichten zurück
+  if (chatMessages[chatId]) {
+    return chatMessages[chatId];
+  }
+  
+  // Überprüfe, ob es ein neuer Gruppen-Chat ist (Format: "group-X")
+  const chatIdMatch = chatId.match(/group-(\d+)/);
+  if (chatIdMatch && chatIdMatch[1]) {
+    // Es ist ein neuer Gruppen-Chat, erstelle einen leeren Array für diese Gruppe
+    chatMessages[chatId] = [];
+    console.debug(`Neuer Chat für Gruppe ${chatIdMatch[1]} initialisiert`);
+    // Speichere die Änderung in der Datei
+    saveMessages().catch(err => console.error('Fehler beim Initialisieren des neuen Chats:', err));
+  }
+  
+  // Gib leeren Array zurück, wenn noch keine Nachrichten existieren
   return chatMessages[chatId] || [];
 }
 

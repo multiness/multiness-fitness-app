@@ -18,7 +18,27 @@ import {
   backups
 } from "../shared/schema";
 import { WebSocketServer, WebSocket } from "ws";
-import { addMessage, getMessages, getAllChatIds } from "./data/chats.js";
+
+// Definiere Typen für das Chat-Modul
+interface ChatMessage {
+  id: number;
+  userId: number;
+  content: string;
+  timestamp: string;
+  groupId?: number;
+}
+
+// Typisiere die Funktionen aus dem Chat-Modul
+import { 
+  addMessage as addMessageImport, 
+  getMessages as getMessagesImport, 
+  getAllChatIds as getAllChatIdsImport 
+} from "./data/chats.js";
+
+// Erstelle typisierte Versionen der Chat-Funktionen
+const addMessage = addMessageImport as (chatId: string, message: ChatMessage) => Promise<ChatMessage>;
+const getMessages = getMessagesImport as (chatId: string) => ChatMessage[];
+const getAllChatIds = getAllChatIdsImport as () => string[];
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Benutzer-Speicher mit Persistenz über Storage-API
@@ -1197,13 +1217,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         data: group
       });
       
+      // Anzahl der erfolgreich benachrichtigten Clients zählen
+      let notifiedClients = 0;
+      
+      // An alle WebSocket-Clients senden, die Gruppen-Updates abonniert haben
       subscriptions.groups.forEach(client => {
-        if (client.readyState === 1) { // Prüfe, ob der WebSocket offen ist
-          client.send(wsMessage);
+        if (client.readyState === WebSocket.OPEN) { // Nutze WebSocket.OPEN Konstante
+          try {
+            client.send(wsMessage);
+            notifiedClients++;
+          } catch (err) {
+            console.error("Fehler beim Senden der Gruppen-Update-Nachricht:", err);
+          }
         }
       });
       
-      console.log('Neue Gruppe erstellt und über WebSocket verteilt:', group.name);
+      console.log(`Neue Gruppe ${group.id} "${group.name}" erstellt und an ${notifiedClients} Clients verteilt`);
       res.status(201).json(group);
     } catch (error) {
       console.error("Error creating group:", error);
