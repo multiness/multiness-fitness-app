@@ -17,7 +17,8 @@ import {
   insertEventSchema,
   backups
 } from "../shared/schema";
-import { WebSocketServer } from "ws";
+import { WebSocketServer, WebSocket } from "ws";
+import { addMessage, getMessages, getAllChatIds } from "./data/chats.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Benutzer-Speicher mit Persistenz über Storage-API
@@ -231,6 +232,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   // Alle Produkte abrufen
+  // Chat-Nachrichten abrufen
+  app.get("/api/chat/:chatId/messages", (req, res) => {
+    try {
+      const { chatId } = req.params;
+      const messages = getMessages(chatId);
+      console.log(`Chat-Nachrichten für ${chatId} abgerufen: ${messages.length} Nachrichten gefunden`);
+      res.json(messages);
+    } catch (error) {
+      console.error("Fehler beim Abrufen der Chat-Nachrichten:", error);
+      res.status(500).json({ error: "Interner Serverfehler" });
+    }
+  });
+
+  // Produkte abrufen
   app.get("/api/products", async (req, res) => {
     try {
       const products = await storage.getProducts();
@@ -1496,7 +1511,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }));
 
     // Behandle eingehende Nachrichten
-    ws.on('message', (message) => {
+    ws.on('message', async (message) => {
       try {
         const data = JSON.parse(message.toString());
         console.log('WebSocket-Nachricht erhalten:', data.type);
@@ -1522,24 +1537,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         else if (data.type === 'chat_message' && data.chatId) {
           console.log('Chat-Nachricht empfangen:', data.message);
           
-          // Extrahiere Gruppen-ID aus dem chat-ID-Format "group-X"
-          const chatIdMatch = data.chatId.match(/group-(\d+)/);
-          if (chatIdMatch && chatIdMatch[1]) {
-            const groupId = parseInt(chatIdMatch[1], 10);
+          // Speichere die Nachricht in unserem persistenten Speicher
+          try {
+            // Speichere die Nachricht zuerst, dann verteile sie
+            await chatStorage.addMessage(data.chatId, data.message);
+            console.log('Chat-Nachricht in Datei gespeichert:', data.chatId);
             
-            // Sende die Nachricht an alle Clients, die diesen Chat abonniert haben
-            if (chatRooms[groupId]) {
-              chatRooms[groupId].forEach(client => {
-                if (client !== ws && client.readyState === WebSocket.OPEN) {
-                  client.send(JSON.stringify({
-                    type: 'chat_message',
-                    chatId: data.chatId,
-                    message: data.message
-                  }));
-                }
-              });
-              console.log(`Chat-Nachricht an ${chatRooms[groupId].size - 1} andere Clients weitergeleitet`);
+            // Extrahiere Gruppen-ID aus dem chat-ID-Format "group-X"
+            const chatIdMatch = data.chatId.match(/group-(\d+)/);
+            if (chatIdMatch && chatIdMatch[1]) {
+              const groupId = parseInt(chatIdMatch[1], 10);
+              
+              // Sende die Nachricht an alle Clients, die diesen Chat abonniert haben
+              if (chatRooms[groupId]) {
+                let clientsReached = 0;
+                
+                chatRooms[groupId].forEach(client => {
+                  if (client.readyState === WebSocket.OPEN) {
+                    client.send(JSON.stringify({
+                      type: 'chat_message',
+                      chatId: data.chatId,
+                      message: data.message
+                    }));
+                    clientsReached++;
+                  }
+                });
+                
+                console.log(`Chat-Nachricht an ${clientsReached} Clients weitergeleitet`);
+              } else {
+                console.log(`Kein Client hat Chat für Gruppe ${groupId} abonniert`);
+              }
             }
+          } catch (saveError) {
+            console.error('Fehler beim Speichern/Verteilen der Chat-Nachricht:', saveError);
           }
         }
         
