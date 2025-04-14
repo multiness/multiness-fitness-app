@@ -93,5 +93,14 @@
       "timestamp": "2025-04-14T16:39:36.413Z",
       "groupId": 1
     }
+  ],
+  "group-2": [
+    {
+      "id": 1744650276941,
+      "userId": 1,
+      "content": "Wie ",
+      "timestamp": "2025-04-14T17:04:36.941Z",
+      "groupId": 2
+    }
   ]
 }
