@@ -6,6 +6,13 @@
       "content": "Hey du ",
       "timestamp": "2025-04-14T16:09:48.209Z",
       "groupId": 3
+    },
+    {
+      "id": 1744647031693,
+      "userId": 1,
+      "content": "neuer",
+      "timestamp": "2025-04-14T16:10:31.693Z",
+      "groupId": 3
     }
   ]
 }

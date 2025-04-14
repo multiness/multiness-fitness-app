@@ -136,11 +136,26 @@ export const useChatStore = create<ChatStore>()(
                 const data = JSON.parse(event.data);
                 if (data.type === 'chat_message' && data.chatId === chatId) {
                   console.log('Neue Chat-Nachricht über WebSocket empfangen:', data);
-                  // Füge die Nachricht hinzu, wenn sie nicht bereits existiert
-                  const messageExists = get().messages[chatId]?.some(m => m.id === data.message.id);
-                  if (!messageExists) {
-                    get().addMessage(chatId, data.message);
-                  }
+                  
+                  // Füge die Nachricht DIREKT ins State ein, anstatt addMessage aufzurufen
+                  // Dies verhindert Rekursion und doppelte Verarbeitung
+                  set((state) => {
+                    // Prüfe, ob die Nachricht bereits existiert
+                    const existingMessages = state.messages[chatId] || [];
+                    const messageExists = existingMessages.some(m => m.id === data.message.id);
+                    
+                    if (!messageExists) {
+                      console.log('Füge neue Nachricht aus WebSocket hinzu:', data.message);
+                      return {
+                        messages: {
+                          ...state.messages,
+                          [chatId]: [...existingMessages, data.message]
+                        }
+                      };
+                    }
+                    
+                    return state; // Keine Änderung, wenn Nachricht bereits existiert
+                  });
                 }
               } catch (parseError) {
                 console.error('Fehler beim Verarbeiten der Chat-WebSocket-Nachricht:', parseError);
@@ -176,11 +191,25 @@ export const useChatStore = create<ChatStore>()(
         
         // Sende die Nachricht an den Server und andere Clients per WebSocket
         try {
-          if (message.groupId) {
-            console.log('Sende Gruppennachricht über WebSocket:', message);
+          // Prüfe, ob es sich um eine Gruppennachricht handelt - entweder durch groupId oder chatId Format
+          const isGroupChat = message.groupId || chatId.startsWith('group-');
+          
+          if (isGroupChat) {
+            console.log('Sende Gruppennachricht über WebSocket:', message, 'an Chat:', chatId);
             
-            // Für Gruppennachrichten - es ist wichtig, eine neue WebSocket-Verbindung zu erstellen,
-            // anstatt die bestehende zu verwenden, da Zustand im Client konsistent bleiben muss
+            // Stelle sicher, dass die Nachricht eine gültige groupId hat
+            if (!message.groupId && chatId.startsWith('group-')) {
+              // Extrahiere die Gruppen-ID aus dem chatId Format "group-X"
+              const groupIdMatch = chatId.match(/group-(\d+)/);
+              if (groupIdMatch && groupIdMatch[1]) {
+                const groupId = parseInt(groupIdMatch[1], 10);
+                // Füge groupId zur Nachricht hinzu, wenn sie fehlt
+                message.groupId = groupId;
+                console.log('GroupId aus der chatId extrahiert:', groupId);
+              }
+            }
+            
+            // Für Gruppennachrichten - neue WebSocket-Verbindung erstellen
             const sendMessageToServer = async () => {
               const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
               const wsUrl = `${protocol}//${window.location.host}/ws`;
@@ -195,7 +224,7 @@ export const useChatStore = create<ChatStore>()(
                   message: message
                 }));
                 
-                // Warte kurz, bevor die Verbindung geschlossen wird, damit die Nachricht übertragen werden kann
+                // Warte kurz, bevor die Verbindung geschlossen wird
                 setTimeout(() => {
                   socket.close();
                   console.log('Chat-Nachricht wurde gesendet, WebSocket geschlossen');
@@ -209,6 +238,8 @@ export const useChatStore = create<ChatStore>()(
             
             // Sende die Nachricht
             sendMessageToServer();
+          } else {
+            console.log('Keine Gruppennachricht, nicht über WebSocket gesendet:', chatId);
           }
         } catch (error) {
           console.error('Fehler beim Senden der Nachricht:', error);
