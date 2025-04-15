@@ -513,10 +513,11 @@ const initializeStore = persist<GroupStore>(
         });
       },
       
-      syncWithServer: async () => {
+      syncWithServer: async (forceRefresh = false) => {
         try {
           // Prüfe, ob wir bereits Daten laden - vermeide doppelte Ladungen
-          if (get().isLoading) {
+          // Wenn forceRefresh=true, dann laden wir trotzdem neu
+          if (get().isLoading && !forceRefresh) {
             console.debug('Gruppen werden bereits geladen, überspringe diese Anfrage');
             return;
           }
@@ -524,10 +525,10 @@ const initializeStore = persist<GroupStore>(
           // Setze Loading-State
           set({ isLoading: true });
           
-          // Cache-Header für schnelleres Laden
-          const cacheOptions = { 
-            headers: { 'Cache-Control': 'max-age=60' } 
-          };
+          // Cache-Header für schnelleres Laden (deaktivieren bei erzwungener Aktualisierung)
+          const cacheOptions = forceRefresh ? 
+            { headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' } } :
+            { headers: { 'Cache-Control': 'max-age=60' } };
           
           // Optimierte Parallelisierung der Anfragen
           const [groupsResponse, lastFetchTimestamp] = await Promise.all([
@@ -538,15 +539,12 @@ const initializeStore = persist<GroupStore>(
           // Wenn kürzlich erst abgefragt, verzögere nächste Anfrage (außer bei erzwungener Aktualisierung)
           const now = Date.now();
           const timeSinceLastFetch = lastFetchTimestamp ? now - lastFetchTimestamp : Infinity;
-          const MIN_FETCH_INTERVAL = 5000; // 5 Sekunden
+          // Zeit zwischen Anfragen reduzieren, um schnellere Aktualisierungen zu ermöglichen
+          const MIN_FETCH_INTERVAL = 2000; // 2 Sekunden
           
-          if (timeSinceLastFetch < MIN_FETCH_INTERVAL) {
-            console.debug(`Letzte Gruppenabfrage vor ${timeSinceLastFetch}ms, warte noch...`);
-            // Nicht komplett abbrechen bei Erstinstallation
-            if (Object.keys(get().groups).length > 0) {
-              set({ isLoading: false });
-              return;
-            }
+          if (timeSinceLastFetch < MIN_FETCH_INTERVAL && !forceRefresh) {
+            console.debug(`Letzte Gruppenabfrage vor ${timeSinceLastFetch}ms, aber wir fahren fort...`);
+            // Trotzdem mit dem Laden weitermachen, anstatt komplett abzubrechen
           }
           
           if (!groupsResponse.ok) {
@@ -559,10 +557,21 @@ const initializeStore = persist<GroupStore>(
           const existingGroups = get().groups;
           const allMembers: GroupMember[] = [];
           
-          // Alle Mitglieder parallel laden mit Promise.all
-          const memberPromises = dbGroups.map(async (dbGroup) => {
+          // Alle Mitglieder parallel laden mit Promise.all - mit Typisierung
+          const memberPromises = dbGroups.map(async (dbGroup: any) => {
             try {
-              const membersResponse = await fetch(`/api/groups/${dbGroup.id}/members`, cacheOptions);
+              // Timeout für jede Anfrage hinzufügen
+              const controller = new AbortController();
+              const signal = controller.signal;
+              const timeout = setTimeout(() => controller.abort(), 5000); // 5 Sekunden Timeout
+              
+              const membersOptions = {
+                ...cacheOptions,
+                signal,
+              };
+              
+              const membersResponse = await fetch(`/api/groups/${dbGroup.id}/members`, membersOptions);
+              clearTimeout(timeout); // Timeout aufheben, wenn Anfrage erfolgt
               
               if (membersResponse.ok) {
                 const groupMembers = await membersResponse.json();
@@ -572,6 +581,7 @@ const initializeStore = persist<GroupStore>(
                 return { groupId: dbGroup.id, members: [] };
               }
             } catch (memberError) {
+              // Bei Timeout oder anderem Fehler
               console.error(`Error fetching members for group ${dbGroup.id}:`, memberError);
               return { groupId: dbGroup.id, members: [] };
             }

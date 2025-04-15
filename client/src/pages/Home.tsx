@@ -120,12 +120,12 @@ export default function Home() {
         // Challenges aktualisieren
         await syncWithServer();
         
-        // Gruppen aktualisieren
-        await groupStore.syncWithServer();
+        // Gruppen aktualisieren mit Erzwingung der Aktualisierung
+        await groupStore.syncWithServer(true); // true = forceRefresh
       } catch (error) {
         console.error("Fehler bei der automatischen Aktualisierung:", error);
       }
-    }, 20000);
+    }, 15000); // Kürzeres Intervall für häufigere Aktualisierungen
     
     // Bereinige das Intervall beim Unmount der Komponente
     return () => clearInterval(intervalId);
