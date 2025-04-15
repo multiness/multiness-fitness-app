@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -42,37 +42,73 @@ export default function Chat() {
   const directUser = directUserId ? users.find(u => u.id === directUserId) : null;
 
   // Get all chats including direct chats and groups
-  const allChats = [
+  const getChatPromises = [
     // Benutzer-Chats mit eindeutigen IDs, eigenen Benutzer ausschließen
     ...users
       .filter(user => user.id !== currentUser?.id) // WICHTIG: Eigenen Benutzer ausfiltern
-      .map(user => ({
-        id: getChatId(user.id, 'user'), // Einzigartiger Schlüssel mit "user-" Präfix
-        chatId: getChatId(user.id, 'user'), // Tatsächliche Chat-ID für Nachrichten
-        name: user.username,
-        avatar: user.avatar,
-        isGroup: false,
-        userId: user.id
-      })),
+      .map(async user => {
+        const chatId = await getChatId(user.id, 'user'); // Asynchrone Funktion
+        return {
+          id: chatId, // Einzigartiger Schlüssel mit "user-" Präfix
+          chatId: chatId, // Tatsächliche Chat-ID für Nachrichten
+          name: user.username,
+          avatar: user.avatar,
+          isGroup: false,
+          userId: user.id
+        };
+      }),
     // Gruppen-Chats mit eindeutigen IDs
-    ...Object.values(groupStore.groups).map(group => ({
-      id: getChatId(group.id, 'group'), // Einzigartiger Schlüssel mit "group-" Präfix
-      chatId: getChatId(group.id, 'group'), // Tatsächliche Chat-ID für Nachrichten
-      name: group.name,
-      avatar: group.image,
-      isGroup: true,
-      groupId: group.id
-    }))
+    ...Object.values(groupStore.groups).map(async group => {
+      const chatId = await getChatId(group.id, 'group'); // Asynchrone Funktion
+      return {
+        id: chatId, // Einzigartiger Schlüssel mit "group-" Präfix
+        chatId: chatId, // Tatsächliche Chat-ID für Nachrichten
+        name: group.name,
+        avatar: group.image,
+        isGroup: true,
+        groupId: group.id
+      };
+    })
   ];
+  
+  // Resolve all promises to get the actual chats
+  const [allChats, setAllChats] = useState<any[]>([]);
+  
+  // Effekt für das Laden der Chat-IDs
+  useEffect(() => {
+    Promise.all(getChatPromises)
+      .then(resolvedChats => {
+        console.log("Alle Chat-IDs wurden geladen:", resolvedChats.length);
+        setAllChats(resolvedChats);
+      })
+      .catch(error => {
+        console.error("Fehler beim Laden der Chat-IDs:", error);
+      });
+  }, []);
 
   // Get the current chat based on the URL parameters
   const [selectedChat, setSelectedChat] = useState(() => {
     if (!id) return null;
     
     if (directUser) {
+      // Verwende asynce Funktion mit then/catch für Promises
+      const chatIdPromise = getChatId(directUser.id, 'user');
+      chatIdPromise.then(chatId => {
+        const directChat = {
+          id: chatId,
+          chatId: chatId,
+          name: directUser.username,
+          avatar: directUser.avatar,
+          isGroup: false,
+          userId: directUser.id
+        };
+        setSelectedChat(directChat);
+      });
+      
+      // Temporärer Platzhalter während das Promise aufgelöst wird
       return {
-        id: getChatId(directUser.id, 'user'),
-        chatId: getChatId(directUser.id, 'user'),
+        id: `temp-user-${directUser.id}`,
+        chatId: `temp-user-${directUser.id}`,
         name: directUser.username,
         avatar: directUser.avatar,
         isGroup: false,
@@ -89,6 +125,27 @@ export default function Chat() {
       console.log("Looking for group with ID:", groupId, "in groupStore (count):", Object.keys(groupStore.groups).length);
       
       if (group) {
+        // Verwende asynce Funktion mit then/catch für Promises
+        const chatIdPromise = getChatId(group.id, 'group');
+        chatIdPromise.then(chatId => {
+          const groupChat = {
+            id: chatId,
+            chatId: chatId,
+            name: group.name,
+            avatar: group.image,
+            isGroup: true,
+            groupId: group.id
+          };
+          setSelectedChat(groupChat);
+          
+          // Wichtig: Initialisiere den Gruppen-Chat und abonniere Updates
+          console.log("Initialisiere Gruppen-Chat:", chatId, "für Gruppe:", group.id);
+          chatStore.initializeGroupChat(group.id);
+        }).catch(error => {
+          console.error("Fehler beim Laden der Gruppen-Chat-ID:", error);
+        });
+        
+        // Temporärer Platzhalter während das Promise aufgelöst wird
         return {
           id: `group-${group.id}`,
           chatId: `group-${group.id}`,
