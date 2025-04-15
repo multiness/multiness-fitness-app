@@ -189,17 +189,71 @@ const initializeStore = persist<GroupStore>(
         }
       },
       
-      updateGroup: (id, updatedGroup) => set((state) => ({
-        groups: {
-          ...state.groups,
-          [id]: { ...state.groups[id], ...updatedGroup }
+      updateGroup: async (id, updatedGroup) => {
+        try {
+          // Optimistisches Update lokal anwenden
+          set((state) => ({
+            groups: {
+              ...state.groups,
+              [id]: { ...state.groups[id], ...updatedGroup }
+            }
+          }));
+          
+          // An Server senden
+          const response = await apiRequest('PATCH', `/api/groups/${id}`, updatedGroup);
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`Fehler beim Aktualisieren der Gruppe: ${errorText}`);
+            throw new Error(`Server-Fehler: ${response.status} ${errorText}`);
+          }
+
+          const updatedGroupFromServer = await response.json();
+          
+          // Server-Antwort in den Store aktualisieren
+          set((state) => ({
+            groups: {
+              ...state.groups,
+              [id]: mapDbGroupToClientGroup(updatedGroupFromServer)
+            }
+          }));
+          
+          // WebSocket-Broadcast wird vom Server ausgelöst
+          return updatedGroupFromServer;
+        } catch (error) {
+          console.error('Fehler beim Aktualisieren der Gruppe:', error);
+          throw error;
         }
-      })),
+      },
       
-      removeGroup: (id) => set((state) => {
-        const { [id]: _, ...restGroups } = state.groups;
-        return { groups: restGroups };
-      }),
+      removeGroup: async (id) => {
+        try {
+          // Optimistisches Update lokal anwenden
+          set((state) => {
+            const { [id]: _, ...restGroups } = state.groups;
+            return { groups: restGroups };
+          });
+          
+          // An Server senden
+          const response = await apiRequest('DELETE', `/api/groups/${id}`);
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`Fehler beim Löschen der Gruppe: ${errorText}`);
+            
+            // Versuche, die Gruppendaten wiederherzustellen, indem wir sie vom Server neu laden
+            get().syncWithServer();
+            
+            throw new Error(`Server-Fehler: ${response.status} ${errorText}`);
+          }
+          
+          // Server-Antwort ist erfolgreich, WebSocket-Broadcast wird vom Server ausgelöst
+          console.debug(`Gruppe ${id} erfolgreich gelöscht`);
+        } catch (error) {
+          console.error('Fehler beim Löschen der Gruppe:', error);
+          throw error;
+        }
+      },
       
       joinGroup: (groupId, userId) => set((state) => {
         const group = state.groups[groupId];
