@@ -567,20 +567,15 @@ const initializeStore = persist<GroupStore>(
           // Nur Gruppen laden, die geändert wurden oder neu sind
           const existingGroups = get().groups;
           
-          // Optimierte Strategie für das Laden von Mitgliedern
-          // Zuerst priorisierte Gruppen laden (mit ID 1-5), dann die restlichen
-          const priorityGroups = dbGroups.filter((g: any) => typeof g.id === 'number' && g.id <= 5);
-          const otherGroups = dbGroups.filter((g: any) => !(typeof g.id === 'number' && g.id <= 5));
+          // Vereinfachte Strategie für das Laden von Mitgliedern - alle Gruppen gleichberechtigt laden
+          console.log("Lade alle Gruppen gleichzeitig, insgesamt:", dbGroups.length);
           
-          console.log("Lade Gruppen in zwei Phasen: Priorität", priorityGroups.length, "Andere", otherGroups.length);
-          
-          // Lade zuerst die priorisierten Gruppen
-          const priorityPromises = priorityGroups.map(async (dbGroup: any) => {
+          // Laden aller Gruppen-Mitglieder parallel
+          const memberPromises = dbGroups.map(async (dbGroup: any) => {
             try {
-              // Kürzerer Timeout für prioritäre Gruppen
               const controller = new AbortController();
               const signal = controller.signal;
-              const timeout = setTimeout(() => controller.abort(), 3000); // 3 Sekunden Timeout
+              const timeout = setTimeout(() => controller.abort(), 5000); // 5 Sekunden Timeout
               
               const membersOptions = {
                 ...cacheOptions,
@@ -592,77 +587,30 @@ const initializeStore = persist<GroupStore>(
               
               if (membersResponse.ok) {
                 const groupMembers = await membersResponse.json();
-                console.log(`Prioritäre Gruppe ${dbGroup.id} geladen mit ${groupMembers.length} Mitgliedern`);
+                console.log(`Gruppe ${dbGroup.id} geladen mit ${groupMembers.length} Mitgliedern`);
                 return { groupId: dbGroup.id, members: groupMembers };
               } else {
-                console.warn(`Could not load members for priority group ${dbGroup.id}: ${membersResponse.status}`);
+                console.warn(`Konnte Mitglieder für Gruppe ${dbGroup.id} nicht laden: ${membersResponse.status}`);
                 return { groupId: dbGroup.id, members: [] };
               }
             } catch (memberError) {
-              console.error(`Error fetching members for priority group ${dbGroup.id}:`, memberError);
+              console.error(`Fehler beim Laden der Mitglieder für Gruppe ${dbGroup.id}:`, memberError);
               return { groupId: dbGroup.id, members: [] };
             }
           });
           
-          // Lade zuerst die priorisierten Gruppen und aktualisiere den Store
-          const priorityResults = await Promise.all(priorityPromises);
+          // Alle Gruppen-Mitglieder laden
+          const memberResults = await Promise.all(memberPromises);
           
-          // Sammle die priorisierten Mitglieder
-          const priorityMembers: GroupMember[] = [];
-          priorityResults.forEach(result => {
-            console.debug(`Priority group members loaded for group ${result.groupId}: ${result.members.length}`);
-            priorityMembers.push(...result.members);
+          // Alle Mitglieder sammeln
+          const allMembers: GroupMember[] = [];
+          memberResults.forEach(result => {
+            console.debug(`Mitglieder geladen für Gruppe ${result.groupId}: ${result.members.length}`);
+            allMembers.push(...result.members);
           });
-          
-          // Update the store mit den priorisierten Gruppen zuerst
-          get().setGroups(priorityGroups, priorityMembers);
-          
-          // Dann die anderen Gruppen laden
-          const otherPromises = otherGroups.map(async (dbGroup: any) => {
-            try {
-              const controller = new AbortController();
-              const signal = controller.signal;
-              const timeout = setTimeout(() => controller.abort(), 5000);
-              
-              const membersOptions = {
-                ...cacheOptions,
-                signal,
-              };
-              
-              const membersResponse = await fetch(`/api/groups/${dbGroup.id}/members`, membersOptions);
-              clearTimeout(timeout);
-              
-              if (membersResponse.ok) {
-                const groupMembers = await membersResponse.json();
-                return { groupId: dbGroup.id, members: groupMembers };
-              } else {
-                console.warn(`Could not load members for other group ${dbGroup.id}: ${membersResponse.status}`);
-                return { groupId: dbGroup.id, members: [] };
-              }
-            } catch (memberError) {
-              console.error(`Error fetching members for other group ${dbGroup.id}:`, memberError);
-              return { groupId: dbGroup.id, members: [] };
-            }
-          });
-          
-          // Lade die anderen Gruppen
-          const otherResults = await Promise.all(otherPromises);
-          
-          // Sammle die anderen Mitglieder
-          const otherMembers: GroupMember[] = [];
-          otherResults.forEach(result => {
-            console.debug(`Other group members loaded for group ${result.groupId}: ${result.members.length}`);
-            otherMembers.push(...result.members);
-          });
-          
-          // Kombiniere alle Gruppen und Mitglieder
-          const allMembers = [...priorityMembers, ...otherMembers];
-          
-          // Alle Gruppen kombinieren 
-          const allGroups = [...priorityGroups, ...otherGroups];
           
           // Update the store mit allen Gruppen
-          get().setGroups(allGroups, allMembers);
+          get().setGroups(dbGroups, allMembers);
           
           // WebSocket-Verbindung nur einmal aufbauen und wiederverwenden
           const setupWebSocket = async () => {
