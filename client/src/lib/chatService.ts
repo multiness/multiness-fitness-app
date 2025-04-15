@@ -54,7 +54,7 @@ type ChatStore = {
   }) => void;
 };
 
-// WebSocket-Verbindungsmanager
+// WebSocket Manager für konsistente Verbindungen
 class WebSocketManager {
   private socket: WebSocket | null = null;
   private url: string;
@@ -82,34 +82,36 @@ class WebSocketManager {
   }
 
   private createConnection() {
-    if (this.socket && this.socket.readyState !== WebSocket.CLOSED) {
+    // Bereits bestehende Verbindung schließen
+    if (this.socket) {
       this.socket.close();
     }
 
+    // Neue Verbindung herstellen
     this.socket = new WebSocket(this.url);
 
     this.socket.onopen = () => {
-      console.log('WebSocket-Verbindung hergestellt');
+      console.log('WebSocket verbunden:', this.url);
+      if (this.callbacks.onOpen) {
+        this.callbacks.onOpen();
+      }
+
+      // Zurücksetzen des Reconnect-Intervalls bei erfolgreicher Verbindung
       this.reconnectInterval = 2000;
-      
       if (this.reconnectTimer) {
         clearTimeout(this.reconnectTimer);
         this.reconnectTimer = null;
       }
-      
-      if (this.callbacks.onOpen) {
-        this.callbacks.onOpen();
-      }
     };
 
     this.socket.onmessage = (event) => {
-      if (this.callbacks.onMessage) {
-        try {
-          const data = JSON.parse(event.data);
+      try {
+        const data = JSON.parse(event.data);
+        if (this.callbacks.onMessage) {
           this.callbacks.onMessage(data);
-        } catch (error) {
-          console.error('Fehler beim Parsen der WebSocket-Nachricht:', error);
         }
+      } catch (e) {
+        console.error('Fehler beim Parsen der WebSocket-Nachricht:', e);
       }
     };
 
@@ -122,27 +124,29 @@ class WebSocketManager {
 
     this.socket.onclose = () => {
       console.log('WebSocket-Verbindung geschlossen, versuche erneut zu verbinden...');
-      
       if (this.callbacks.onClose) {
         this.callbacks.onClose();
       }
-      
-      this.reconnectTimer = setTimeout(() => {
-        this.createConnection();
-        this.reconnectInterval = Math.min(30000, this.reconnectInterval * 1.5);
-      }, this.reconnectInterval);
+
+      // Exponentielles Backoff für Reconnect
+      this.reconnectInterval = Math.min(30000, this.reconnectInterval * 1.5);
+      this.reconnectTimer = setTimeout(() => this.createConnection(), this.reconnectInterval);
     };
   }
 
   send(data: any) {
     if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-      this.socket.send(JSON.stringify(data));
+      this.socket.send(typeof data === 'string' ? data : JSON.stringify(data));
       return true;
+    } else {
+      console.warn('WebSocket nicht verbunden, Nachricht konnte nicht gesendet werden');
+      return false;
     }
-    return false;
   }
 
   close() {
+    console.log('Schließe WebSocket-Verbindung');
+    
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
@@ -162,97 +166,103 @@ export const useChatStore = create<ChatStore>()(
       groupGoals: {},
       
       initializeGroupChat: (groupId: number) => {
-        const chatId = getChatId(groupId, 'group');
+        // Vorhandene synchrone Implementierung, die keine async/await verwendet
+        const chatIdPromise = getChatId(groupId, 'group');
         
-        // Vorhandene Nachrichten laden
-        const fetchMessages = async () => {
-          try {
-            const response = await fetch(`/api/chat/${chatId}`);
-            
-            if (response.ok) {
-              const messages = await response.json();
+        // Mit Promise-Syntax statt async/await arbeiten
+        chatIdPromise.then(chatId => {
+          // Vorhandene Nachrichten laden
+          const fetchMessages = async () => {
+            try {
+              const response = await fetch(`/api/chat/${chatId}/messages`);
               
-              if (messages && messages.length > 0) {
-                set((state) => {
-                  // Wenn bereits Nachrichten vorhanden sind, überspringe
-                  if (state.messages[chatId] && state.messages[chatId].length > 0) {
-                    console.log(`Chat ${chatId} bereits initialisiert mit ${state.messages[chatId].length} Nachrichten`);
-                    return state;
-                  }
-                  
-                  return {
-                    messages: {
-                      ...state.messages,
-                      [chatId]: messages
-                    }
-                  };
-                });
-              }
-            } else {
-              console.error('Fehler beim Laden der Chat-Nachrichten:', response.statusText);
-            }
-          } catch (error) {
-            console.error('Fehler beim Abrufen der Chat-Nachrichten:', error);
-          }
-        };
-        
-        // Vorhandene Nachrichten laden
-        fetchMessages();
-        
-        // Nachrichten mit dem Server synchronisieren (WebSocket)
-        const syncChatMessages = () => {
-          // WebSocket für Echtzeit-Nachrichten
-          const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-          const wsUrl = `${protocol}//${window.location.host}/ws`;
-          
-          const wsManager = new WebSocketManager(wsUrl);
-          
-          wsManager.connect({
-            onOpen: () => {
-              console.log('WebSocket-Verbindung für Chat-Synchronisierung hergestellt');
-              
-              // Abonniere Chat-Updates für diese Gruppe
-              wsManager.send({ 
-                type: 'subscribe', 
-                topic: 'chat',
-                groupId: groupId
-              });
-            },
-            onMessage: (data) => {
-              if (data.type === 'chat_message' && data.chatId === chatId) {
-                console.log('Neue Chat-Nachricht über WebSocket empfangen:', data);
+              if (response.ok) {
+                const messages = await response.json();
                 
-                // Füge die Nachricht ins State ein
-                set((state) => {
-                  // Prüfe, ob die Nachricht bereits existiert
-                  const existingMessages = state.messages[chatId] || [];
-                  const messageExists = existingMessages.some((m: any) => m.id === data.message.id);
-                  
-                  if (!messageExists) {
-                    console.log('Füge neue Nachricht aus WebSocket hinzu:', data.message);
+                if (messages && messages.length > 0) {
+                  set((state) => {
+                    // Wenn bereits Nachrichten vorhanden sind, überspringe
+                    if (state.messages[chatId] && state.messages[chatId].length > 0) {
+                      console.log(`Chat ${chatId} bereits initialisiert mit ${state.messages[chatId].length} Nachrichten`);
+                      return state;
+                    }
+                    
                     return {
                       messages: {
                         ...state.messages,
-                        [chatId]: [...existingMessages, data.message]
+                        [chatId]: messages
                       }
                     };
-                  }
-                  
-                  return state; // Keine Änderung, wenn Nachricht bereits existiert
-                });
+                  });
+                }
+              } else {
+                console.error('Fehler beim Laden der Chat-Nachrichten:', response.statusText);
               }
-            },
-            onError: (error) => {
-              console.error('WebSocket-Fehler bei Chat-Synchronisierung:', error);
+            } catch (error) {
+              console.error('Fehler beim Abrufen der Chat-Nachrichten:', error);
             }
-          });
-        };
-        
-        // Starte Synchronisierung
-        syncChatMessages();
+          };
+          
+          // Vorhandene Nachrichten laden
+          fetchMessages();
+          
+          // Nachrichten mit dem Server synchronisieren (WebSocket)
+          const syncChatMessages = () => {
+            // WebSocket für Echtzeit-Nachrichten
+            const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+            const wsUrl = `${protocol}//${window.location.host}/ws`;
+            
+            const wsManager = new WebSocketManager(wsUrl);
+            
+            wsManager.connect({
+              onOpen: () => {
+                console.log('WebSocket-Verbindung für Chat-Synchronisierung hergestellt');
+                
+                // Abonniere Chat-Updates für diese Gruppe
+                wsManager.send({ 
+                  type: 'subscribe', 
+                  topic: 'chat',
+                  groupId: groupId
+                });
+              },
+              onMessage: (data) => {
+                if (data.type === 'chat_message' && data.chatId === chatId) {
+                  console.log('Neue Chat-Nachricht über WebSocket empfangen:', data);
+                  
+                  // Füge die Nachricht ins State ein
+                  set((state) => {
+                    // Prüfe, ob die Nachricht bereits existiert
+                    const existingMessages = state.messages[chatId] || [];
+                    const messageExists = existingMessages.some((m: any) => m.id === data.message.id);
+                    
+                    if (!messageExists) {
+                      console.log('Füge neue Nachricht aus WebSocket hinzu:', data.message);
+                      return {
+                        messages: {
+                          ...state.messages,
+                          [chatId]: [...existingMessages, data.message]
+                        }
+                      };
+                    }
+                    
+                    return state; // Keine Änderung, wenn Nachricht bereits existiert
+                  });
+                }
+              },
+              onError: (error) => {
+                console.error('WebSocket-Fehler bei Chat-Synchronisierung:', error);
+              }
+            });
+          };
+          
+          // Starte Synchronisierung
+          syncChatMessages();
+        }).catch(error => {
+          console.error('Fehler beim Abrufen der Chat-ID:', error);
+        });
       },
 
-      addMessage: (chatId, message) => {
+      addMessage: (chatId: string, message: Message) => {
         // Füge die Nachricht lokal hinzu
         set((state) => ({
           messages: {
@@ -338,7 +348,7 @@ export const useChatStore = create<ChatStore>()(
         }
       },
 
-      getMessages: (chatId) => {
+      getMessages: (chatId: string) => {
         return get().messages[chatId] || [];
       },
 
@@ -355,7 +365,7 @@ export const useChatStore = create<ChatStore>()(
         }));
       },
 
-      getGroupGoal: (chatId) => {
+      getGroupGoal: (chatId: string) => {
         return get().groupGoals[chatId];
       },
 
@@ -502,7 +512,7 @@ const loadGroupIdsFromLocalStorage = () => {
 loadGroupIdsFromLocalStorage();
 syncGroupIds().catch(e => console.error('Fehler bei der initialen Gruppen-ID-Synchronisierung:', e));
 
-export const getChatId = (entityId?: number, type: 'user' | 'group' = 'user') => {
+export const getChatId = async (entityId?: number, type: 'user' | 'group' = 'user'): Promise<string> => {
   if (!entityId) return '';
   
   // Für Gruppen - Verwende einheitliche ID-Generierung
@@ -520,32 +530,48 @@ export const getChatId = (entityId?: number, type: 'user' | 'group' = 'user') =>
       globalGroupIds[entityId] = storedId;
       return storedId;
     } else {
-      // Vereinfachte ID-Generierung - Verwende einfach die Gruppen-ID selbst statt komplexer IDs
-      // Dies löst das Problem, dass die gleiche Gruppe verschiedene Chat-IDs haben kann
-      const uniqueId = `group-${entityId}`;
-      
-      // Speichere sowohl im localStorage als auch im globalen Speicher
-      localStorage.setItem(`group_chat_id_${entityId}`, uniqueId);
-      globalGroupIds[entityId] = uniqueId;
-      
-      // Speichere die ID auf dem Server (wenn möglich)
+      // Abrufen einer permanent eindeutigen ID vom Server
+      // Der Server generiert ein UUID-basiertes Format
       try {
-        fetch('/api/group-ids', {
+        // Asynchroner Aufruf, um eine neue einzigartige ID vom Server zu erhalten
+        const response = await fetch('/api/group-ids/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ groupId: entityId, chatId: uniqueId })
-        }).then(response => {
-          if (response.ok) {
-            console.log(`Gruppen-ID ${uniqueId} erfolgreich auf dem Server gespeichert`);
-          } else {
-            console.warn('Konnte Gruppen-ID nicht auf Server speichern:', response.statusText);
-          }
-        }).catch(e => console.warn('Konnte Gruppen-ID nicht auf Server speichern:', e));
+          body: JSON.stringify({ groupId: entityId })
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          const uniqueId = data.chatId; // Format: "group-uuid-[einzigartige ID]"
+          
+          // Speichere im localStorage und globalem Speicher
+          localStorage.setItem(`group_chat_id_${entityId}`, uniqueId);
+          globalGroupIds[entityId] = uniqueId;
+          
+          console.log(`Neue permanent eindeutige ID für Gruppe ${entityId} vom Server erhalten: ${uniqueId}`);
+          return uniqueId;
+        } else {
+          console.warn('Fehler beim Abrufen einer eindeutigen ID vom Server:', response.statusText);
+          
+          // Fallback: Generiere lokal eine eindeutige ID als temporäre Lösung
+          const fallbackId = `group-temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          localStorage.setItem(`group_chat_id_${entityId}`, fallbackId);
+          globalGroupIds[entityId] = fallbackId;
+          
+          console.warn(`Fallback-ID generiert: ${fallbackId}`);
+          return fallbackId;
+        }
       } catch (e) {
-        console.warn('Fehler beim Senden der Gruppen-ID an den Server:', e);
+        console.error('Fehler beim Generieren einer eindeutigen ID:', e);
+        
+        // Fallback: Bei Netzwerkproblemen lokalen Identifier verwenden
+        const emergencyId = `group-emergency-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        localStorage.setItem(`group_chat_id_${entityId}`, emergencyId);
+        globalGroupIds[entityId] = emergencyId;
+        
+        console.warn(`Notfall-ID generiert: ${emergencyId}`);
+        return emergencyId;
       }
-      
-      return uniqueId;
     }
   }
   

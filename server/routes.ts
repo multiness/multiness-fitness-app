@@ -24,7 +24,10 @@ import {
   getMessages, 
   getAllChatIds,
   setGroupId,
-  getGroupIds
+  getGroupIds,
+  markGroupIdAsDeleted,
+  isDeletedChatId,
+  generateUniqueId
 } from "./data/chats.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -295,6 +298,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(result);
     } catch (error) {
       console.error("Fehler beim Speichern der Gruppen-ID:", error);
+      res.status(500).json({ error: "Interner Serverfehler" });
+    }
+  });
+  
+  // Endpoint zur Generierung einer neuen UUID für eine Gruppe
+  app.post("/api/group-ids/generate", async (req, res) => {
+    try {
+      const { groupId } = req.body;
+      
+      if (!groupId) {
+        return res.status(400).json({ error: "groupId wird benötigt" });
+      }
+      
+      // Generiere eine neue eindeutige ID für diese Gruppe
+      const uniqueId = `group-uuid-${generateUniqueId()}`;
+      console.log(`Neue UUID für Gruppe ${groupId} generiert: ${uniqueId}`);
+      
+      // Speichere die Zuordnung
+      const result = await setGroupId(Number(groupId), uniqueId);
+      
+      // Informiere alle Clients über die neue ID
+      const updatedGroupIds = getGroupIds();
+      if (subscriptions.groupIds.size > 0) {
+        let notifiedClients = 0;
+        subscriptions.groupIds.forEach(client => {
+          if (safeMessageSend(client, {
+            type: 'groupIds',
+            groupIds: updatedGroupIds,
+            updatedGroupId: groupId,
+            generated: true
+          })) {
+            notifiedClients++;
+          }
+        });
+        console.log(`Neue Gruppen-UUID an ${notifiedClients} Clients gesendet`);
+      }
+      
+      res.status(201).json(result);
+    } catch (error) {
+      console.error("Fehler bei der Generierung einer Gruppen-UUID:", error);
+      res.status(500).json({ error: "Interner Serverfehler" });
+    }
+  });
+  
+  // Endpoint zum Markieren einer gelöschten Gruppe
+  app.delete("/api/group-ids/:groupId", async (req, res) => {
+    try {
+      const groupId = Number(req.params.groupId);
+      
+      if (isNaN(groupId)) {
+        return res.status(400).json({ error: "Ungültige Gruppen-ID" });
+      }
+      
+      const result = await markGroupIdAsDeleted(groupId);
+      
+      if (result) {
+        console.log(`Gruppen-ID ${groupId} als gelöscht markiert`);
+        
+        // Informiere alle Clients über die Löschung
+        const updatedGroupIds = getGroupIds();
+        if (subscriptions.groupIds.size > 0) {
+          let notifiedClients = 0;
+          subscriptions.groupIds.forEach(client => {
+            if (safeMessageSend(client, {
+              type: 'groupIds',
+              groupIds: updatedGroupIds,
+              deletedGroupId: groupId
+            })) {
+              notifiedClients++;
+            }
+          });
+          console.log(`Gruppen-ID-Löschung an ${notifiedClients} Clients gesendet`);
+        }
+        
+        res.status(200).json({ success: true, message: "Gruppen-ID als gelöscht markiert" });
+      } else {
+        res.status(404).json({ error: "Gruppen-ID nicht gefunden" });
+      }
+    } catch (error) {
+      console.error("Fehler beim Markieren der gelöschten Gruppen-ID:", error);
       res.status(500).json({ error: "Interner Serverfehler" });
     }
   });
