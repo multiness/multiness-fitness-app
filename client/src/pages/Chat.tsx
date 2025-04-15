@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, Send, Image as ImageIcon, ArrowLeft, Users2, Plus, FileText, Video, Target } from "lucide-react";
+import { Search, Send, Image as ImageIcon, ArrowLeft, Users2, Plus, FileText, Video, Target, Pencil } from "lucide-react";
 import { useUsers } from "../contexts/UserContext";
 import { format } from "date-fns";
 import { useChatStore, getChatId } from "../lib/chatService";
@@ -22,6 +22,7 @@ import AddGroupGoalModal from "@/components/AddGroupGoalModal";
 import AddGroupProgress from "@/components/AddGroupProgress";
 import PerformanceBoard from "@/components/PerformanceBoard";
 import SharedContent from "@/components/SharedContent";
+import EditGroupDialog from "@/components/EditGroupDialog";
 
 export default function Chat() {
   const { id } = useParams();
@@ -35,6 +36,7 @@ export default function Chat() {
   const [isGroupGoalModalOpen, setIsGroupGoalModalOpen] = useState(false);
   const [isAddProgressModalOpen, setIsAddProgressModalOpen] = useState(false);
   const [isPerformanceBoardOpen, setIsPerformanceBoardOpen] = useState(false);
+  const [isEditGroupDialogOpen, setIsEditGroupDialogOpen] = useState(false);
 
   // Check if we're in direct chat mode
   const isDirect = window.location.pathname.endsWith('/direct');
@@ -395,12 +397,24 @@ export default function Chat() {
                     clickable={true}
                   />
                 )}
-                <div>
+                <div className="flex-1">
                   <h2 className="font-semibold">{selectedChat.name}</h2>
                   <p className="text-sm text-muted-foreground">
                     {selectedChat.isGroup ? 'Gruppen-Chat' : 'Online'}
                   </p>
                 </div>
+                
+                {/* Bearbeiten-Button für Gruppenadmins */}
+                {selectedChat.isGroup && 'groupId' in selectedChat && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => setIsEditGroupDialogOpen(true)}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
 
               {/* Group Goals Section */}
@@ -581,6 +595,43 @@ export default function Chat() {
                 goal={currentGroupGoal}
               />
             </>
+          )}
+
+          {/* Gruppeneditierung für Admins */}
+          {selectedChat.isGroup && 'groupId' in selectedChat && (
+            <EditGroupDialog
+              open={isEditGroupDialogOpen}
+              onOpenChange={setIsEditGroupDialogOpen}
+              group={groupStore.groups[selectedChat.groupId]}
+              onSave={async (groupId, updatedData) => {
+                try {
+                  await groupStore.updateGroup(groupId, updatedData);
+                  
+                  // Benachrichtigung über erfolgreiche Aktualisierung
+                  toast({
+                    title: "Gruppe aktualisiert",
+                    description: "Die Gruppendetails wurden erfolgreich aktualisiert.",
+                  });
+                  
+                  const message = {
+                    id: Date.now(),
+                    userId: currentUser?.id || 0,
+                    content: "🔄 Die Gruppendetails wurden aktualisiert.",
+                    timestamp: new Date().toISOString(),
+                    groupId: selectedChat.groupId,
+                  };
+                  
+                  chatStore.addMessage(selectedChat.chatId, message);
+                } catch (error) {
+                  console.error('Fehler beim Aktualisieren der Gruppe:', error);
+                  toast({
+                    title: "Fehler",
+                    description: "Die Gruppe konnte nicht aktualisiert werden. Bitte versuche es erneut.",
+                    variant: "destructive",
+                  });
+                }
+              }}
+            />
           )}
         </>
       )}
