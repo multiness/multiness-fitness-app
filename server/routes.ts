@@ -1324,8 +1324,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/groups", async (req, res) => {
     try {
-      const groupData = insertGroupSchema.parse(req.body);
+      const groupRequest = req.body;
+      let uuidTag = null;
+      
+      // Prüfen, ob eine UUID mitgesendet wurde (von der Client-App)
+      if (groupRequest.uuidTag && typeof groupRequest.uuidTag === 'string' && groupRequest.uuidTag.startsWith('group-uuid-')) {
+        uuidTag = groupRequest.uuidTag;
+        console.log(`Gruppe wird mit eigener UUID erstellt: ${uuidTag}`);
+        
+        // Entferne das UUID-Tag aus den eigentlichen Gruppendaten
+        delete groupRequest.uuidTag;
+      }
+      
+      // Validiere und erstelle die Gruppe
+      const groupData = insertGroupSchema.parse(groupRequest);
       const group = await storage.createGroup(groupData);
+      
+      // Wenn eine UUID vorhanden war, speichere die Zuordnung
+      if (uuidTag) {
+        await setGroupId(group.id, uuidTag);
+        console.log(`Gruppe ${group.id} mit UUID ${uuidTag} zugeordnet`);
+        
+        // Informiere Clients über die neue UUID-Zuordnung
+        const updatedGroupIds = getGroupIds();
+        subscriptions.groupIds.forEach(client => {
+          if (client.readyState === WebSocket.OPEN) {
+            try {
+              client.send(JSON.stringify({
+                type: 'groupIds',
+                groupIds: updatedGroupIds,
+                updatedGroupId: group.id
+              }));
+            } catch (err) {
+              console.error("Fehler beim Versenden der UUID-Update-Nachricht:", err);
+            }
+          }
+        });
+      }
       
       // Benachrichtige alle Clients über die neue Gruppe via WebSocket
       const wsMessage = JSON.stringify({
