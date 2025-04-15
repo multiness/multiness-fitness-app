@@ -122,12 +122,19 @@ export default function Chat() {
       const groupId = parseInt(groupIdStr, 10);
       const group = groupStore.groups[groupId];
       
-      console.log("Looking for group with ID:", groupId, "in groupStore (count):", Object.keys(groupStore.groups).length);
+      console.log("Suche nach Gruppe mit ID:", groupId, "in groupStore (Anzahl):", Object.keys(groupStore.groups).length);
       
       if (group) {
+        // Wichtig: Initialisiere den Gruppen-Chat und abonniere Updates sofort
+        // Diese Funktion wird immer zuerst aufgerufen, um sicherzustellen, dass
+        // die Nachrichten geladen werden, selbst wenn die Chat-ID noch nicht bekannt ist
+        console.log("Initialisiere Gruppen-Chat für Gruppe:", group.id);
+        chatStore.initializeGroupChat(group.id);
+        
         // Verwende asynce Funktion mit then/catch für Promises
         const chatIdPromise = getChatId(group.id, 'group');
         chatIdPromise.then(chatId => {
+          console.log("Chat-ID für Gruppe erhalten:", chatId, "für Gruppe:", group.id);
           const groupChat = {
             id: chatId,
             chatId: chatId,
@@ -137,10 +144,6 @@ export default function Chat() {
             groupId: group.id
           };
           setSelectedChat(groupChat);
-          
-          // Wichtig: Initialisiere den Gruppen-Chat und abonniere Updates
-          console.log("Initialisiere Gruppen-Chat:", chatId, "für Gruppe:", group.id);
-          chatStore.initializeGroupChat(group.id);
         }).catch(error => {
           console.error("Fehler beim Laden der Gruppen-Chat-ID:", error);
         });
@@ -289,14 +292,43 @@ export default function Chat() {
                       if (chat.isGroup) {
                         // Debug-Ausgabe für Gruppennavigation
                         console.log("Navigiere zu Gruppenchat:", chat.id);
+                        
                         // Extrahiere die Gruppen-ID aus dem Chat-ID
-                        const groupId = chat.id.split('-')[1];
-                        setLocation(`/chat/group-${groupId}`);
-                        // Alternativ können wir auch direkt den Chat auswählen
-                        // und den Chat initialisieren
-                        setSelectedChat(chat);
-                        chatStore.initializeGroupChat(parseInt(groupId));
+                        // Verbesserte Gruppennavigation - unterstützt verschiedene ID-Formate
+                        let groupId;
+                        
+                        // Standardformat 'group-123'
+                        const standardMatch = chat.id.match(/group-(\d+)/);
+                        if (standardMatch && standardMatch[1]) {
+                          groupId = standardMatch[1];
+                        } 
+                        // Fallback für das UUID-Format
+                        else if ('groupId' in chat) {
+                          groupId = chat.groupId;
+                        }
+                        
+                        if (groupId) {
+                          console.log("Extrahierte Gruppen-ID:", groupId);
+                          // Initialisiere den Chat sofort, bevor wir navigieren
+                          // Dies stellt sicher, dass die Daten geladen werden, selbst wenn
+                          // die Navigation fehlschlägt
+                          chatStore.initializeGroupChat(parseInt(String(groupId)));
+                          
+                          // Setze den Chat sofort, damit die UI reagiert, auch wenn die Navigation
+                          // verzögert ist oder fehlschlägt
+                          setSelectedChat(chat);
+                          
+                          // Navigiere dann zur Gruppe
+                          setTimeout(() => {
+                            setLocation(`/chat/group-${groupId}`);
+                          }, 100);
+                        } else {
+                          console.error("Konnte keine gültige Gruppen-ID extrahieren:", chat);
+                          // Fallback: Setze direkt den Chat ohne Navigation
+                          setSelectedChat(chat);
+                        }
                       } else {
+                        // Direkte Benutzer-Chats
                         setSelectedChat(chat);
                       }
                     }}
