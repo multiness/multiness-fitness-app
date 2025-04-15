@@ -1207,12 +1207,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userId: req.query.userId ? Number(req.query.userId) : undefined,
           limit: req.query.limit ? Number(req.query.limit) : undefined,
           offset: req.query.offset ? Number(req.query.offset) : undefined,
+          includeAll: true // Sorgt dafür, dass auch UUID-basierte Gruppen zurückgegeben werden
         };
         
+        // Hole die GroupIds, um später fehlende Gruppen zu ergänzen
+        const allGroupIds = getGroupIds();
+        
+        // Hole Gruppen aus der Datenbank
         const groups = await storage.getGroups(options);
         
+        // Füge fehlende Gruppen hinzu, die in der UUID-Zuordnung vorhanden sind,
+        // aber nicht in den Datenbankgruppen enthalten sind
+        const groupsWithHigherIds = [...groups];
+        const databaseGroupIds = new Set(groups.map(g => g.id.toString()));
+        
+        // Suche nach fehlenden Gruppen mit höheren IDs (UUID-basierte Gruppen)
+        for (const [id, chatId] of Object.entries(allGroupIds)) {
+          // Ignoriere Gruppen, die bereits in der Datenbankabfrage enthalten sind
+          if (databaseGroupIds.has(id)) continue;
+          
+          // Überprüfe, ob es sich um eine UUID-Gruppe handelt (höhere ID)
+          if (!isNaN(Number(id)) && Number(id) > 5) {
+            try {
+              const group = await storage.getGroup(Number(id));
+              if (group) {
+                groupsWithHigherIds.push(group);
+              }
+            } catch (err) {
+              console.warn(`Konnte Gruppe mit ID ${id} nicht abrufen:`, err);
+            }
+          }
+        }
+        
         // Wenn keine Gruppen gefunden wurden, gib Demo-Gruppen zurück
-        if (groups.length === 0) {
+        if (groupsWithHigherIds.length === 0) {
+          console.log("Keine Gruppen gefunden, gebe Demo-Gruppen zurück");
           res.json([
             {
               id: 1,
@@ -1255,7 +1284,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           ]);
         } else {
-          res.json(groups);
+          console.log(`Gebe ${groupsWithHigherIds.length} Gruppen zurück (${groups.length} aus Datenbankabfrage, ${groupsWithHigherIds.length - groups.length} ergänzt)`);
+          res.json(groupsWithHigherIds);
         }
       } catch (dbError) {
         console.error("Error fetching groups from database:", dbError);
