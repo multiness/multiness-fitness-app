@@ -139,8 +139,9 @@ const initializeStore = persist<GroupStore>(
             uuidTag: uuidTag
           });
           
+          let savedGroup;
+          
           if (!response.ok) {
-            // Im Fehlerfall werfen wir einen Error
             const errorText = await response.text();
             console.error('Fehler beim Speichern der Gruppe auf dem Server:', errorText);
             
@@ -153,22 +154,29 @@ const initializeStore = persist<GroupStore>(
             });
             
             throw new Error(`Server-Fehler: ${response.status} ${errorText}`);
+          } else {
+            // Erfolgsfall
+            savedGroup = await response.json();
+            console.log('Gruppe erfolgreich auf Server gespeichert:', savedGroup);
+            
+            // Gruppe mit Server-ID aktualisieren und temporäre Gruppe entfernen
+            set((state) => {
+              const { [tempId]: _, ...restGroups } = state.groups;
+              return {
+                groups: {
+                  ...restGroups,
+                  [savedGroup.id]: mapDbGroupToClientGroup(savedGroup)
+                }
+              };
+            });
+            
+            // Manuelles Update der Gruppen-IDs
+            try {
+              await get().syncWithServer();
+            } catch (syncError) {
+              console.error('Fehler bei der Synchronisierung nach Gruppenerstellung:', syncError);
+            }
           }
-          
-          // Erfolgsfall
-          const savedGroup = await response.json();
-          console.log('Gruppe erfolgreich auf Server gespeichert:', savedGroup);
-          
-          // Gruppe mit Server-ID aktualisieren und temporäre Gruppe entfernen
-          set((state) => {
-            const { [tempId]: _, ...restGroups } = state.groups;
-            return {
-              groups: {
-                ...restGroups,
-                [savedGroup.id]: mapDbGroupToClientGroup(savedGroup)
-              }
-            };
-          });
           
           // Gib die neue, permanente ID zurück
           return savedGroup.id;
@@ -228,11 +236,25 @@ const initializeStore = persist<GroupStore>(
       
       removeGroup: async (id) => {
         try {
+          // Prüfen, ob die Gruppe existiert, bevor wir versuchen, sie zu löschen
+          const group = get().groups[id];
+          if (!group) {
+            throw new Error(`Gruppe mit ID ${id} existiert nicht und kann nicht gelöscht werden.`);
+          }
+
           // Optimistisches Update lokal anwenden
           set((state) => {
             const { [id]: _, ...restGroups } = state.groups;
             return { groups: restGroups };
           });
+          
+          // Zusätzlich auch Gruppen-ID aus dem Speicher markieren
+          try {
+            await apiRequest('DELETE', `/api/group-ids/${id}`);
+          } catch (groupIdError) {
+            console.error(`Fehler beim Markieren der Gruppen-ID als gelöscht: ${groupIdError}`);
+            // Kein Abbruch, wir versuchen trotzdem, die Gruppe zu löschen
+          }
           
           // An Server senden
           const response = await apiRequest('DELETE', `/api/groups/${id}`);
@@ -242,13 +264,17 @@ const initializeStore = persist<GroupStore>(
             console.error(`Fehler beim Löschen der Gruppe: ${errorText}`);
             
             // Versuche, die Gruppendaten wiederherzustellen, indem wir sie vom Server neu laden
-            get().syncWithServer();
+            await get().syncWithServer();
             
             throw new Error(`Server-Fehler: ${response.status} ${errorText}`);
           }
           
-          // Server-Antwort ist erfolgreich, WebSocket-Broadcast wird vom Server ausgelöst
+          // Erfolgreich gelöscht - Daten aktualisieren
           console.debug(`Gruppe ${id} erfolgreich gelöscht`);
+          
+          // Manuelles Update der Gruppen-IDs und andere Server-Daten
+          await get().syncWithServer();
+          
         } catch (error) {
           console.error('Fehler beim Löschen der Gruppe:', error);
           throw error;
