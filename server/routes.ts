@@ -1745,7 +1745,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }
               }
             }
-            if (extractedGroupId) {
+            if (extractedGroupId !== null) {
               const groupId = extractedGroupId;
               
               // VERBESSERT: Sende die Nachricht an alle verbundenen Clients
