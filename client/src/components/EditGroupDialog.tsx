@@ -141,7 +141,7 @@ export default function EditGroupDialog({
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!name.trim()) {
       toast({
         title: "Fehler",
@@ -151,19 +151,28 @@ export default function EditGroupDialog({
       return;
     }
 
-    onSave(group.id, {
-      name: name.trim(),
-      description: description.trim(),
-      image,
-      adminIds,
-    });
+    try {
+      await onSave(group.id, {
+        name: name.trim(),
+        description: description.trim(),
+        image,
+        adminIds,
+      });
 
-    toast({
-      title: "Gruppe aktualisiert",
-      description: "Die Änderungen wurden erfolgreich gespeichert.",
-    });
+      toast({
+        title: "Gruppe aktualisiert",
+        description: "Die Änderungen wurden erfolgreich gespeichert.",
+      });
 
-    onOpenChange(false);
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Fehler beim Speichern der Gruppenänderungen:', error);
+      toast({
+        title: "Fehler beim Speichern",
+        description: "Die Änderungen konnten nicht gespeichert werden. Bitte versuche es erneut.",
+        variant: "destructive",
+      });
+    }
   };
 
   const toggleAdmin = (userId: number) => {
@@ -183,160 +192,175 @@ export default function EditGroupDialog({
     );
   };
 
-  const handleDeleteGroup = () => {
-    removeGroup(group.id);
-    
-    // Benachrichtigung über erfolgreiche Löschung
-    toast({
-      title: "Gruppe gelöscht",
-      description: "Die Gruppe wurde erfolgreich gelöscht.",
-    });
-    
-    // Dialog schließen und zur Gruppenübersicht zurückkehren
-    onOpenChange(false);
-    setLocation('/groups');
+  const handleDeleteGroup = async () => {
+    try {
+      await removeGroup(group.id);
+      
+      // Benachrichtigung über erfolgreiche Löschung
+      toast({
+        title: "Gruppe gelöscht",
+        description: "Die Gruppe wurde erfolgreich gelöscht.",
+      });
+      
+      // Dialog schließen und zur Gruppenübersicht zurückkehren
+      onOpenChange(false);
+      setLocation('/groups');
+    } catch (error) {
+      console.error('Fehler beim Löschen der Gruppe:', error);
+      toast({
+        title: "Fehler beim Löschen",
+        description: "Die Gruppe konnte nicht gelöscht werden. Bitte versuche es erneut.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>Gruppe bearbeiten</DialogTitle>
             <DialogDescription>
               Bearbeite die Details deiner Gruppe. Admins können die Gruppe verwalten und Mitglieder moderieren.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            {/* Group Image Section */}
-            <div className="space-y-2">
-              <Label>Gruppenbild</Label>
-              <div className="relative">
-                {image ? (
-                  <div className="relative">
-                    <img
-                      src={image}
-                      alt="Gruppenbild"
-                      className="w-full h-[200px] object-cover rounded-lg"
-                    />
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-2 right-2"
-                      onClick={() => setImage(undefined)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ) : (
-                  <div>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      id="group-image"
-                      onChange={handleImageChange}
-                    />
-                    <label htmlFor="group-image">
-                      <Button variant="outline" className="w-full cursor-pointer" asChild>
-                        <div className="flex items-center justify-center gap-2">
-                          <ImagePlus className="h-4 w-4" />
-                          Gruppenbild hochladen
-                        </div>
+          
+          <div className="flex-1 overflow-y-auto pr-6 py-2">
+            <div className="grid gap-4 py-2">
+              {/* Group Image Section */}
+              <div className="space-y-2">
+                <Label>Gruppenbild</Label>
+                <div className="relative">
+                  {image ? (
+                    <div className="relative">
+                      <img
+                        src={image}
+                        alt="Gruppenbild"
+                        className="w-full h-[200px] object-cover rounded-lg"
+                      />
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-2 right-2"
+                        onClick={() => setImage(undefined)}
+                      >
+                        <X className="h-4 w-4" />
                       </Button>
-                    </label>
-                  </div>
-                )}
+                    </div>
+                  ) : (
+                    <div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        id="group-image"
+                        onChange={handleImageChange}
+                      />
+                      <label htmlFor="group-image">
+                        <Button variant="outline" className="w-full cursor-pointer" asChild>
+                          <div className="flex items-center justify-center gap-2">
+                            <ImagePlus className="h-4 w-4" />
+                            Gruppenbild hochladen
+                          </div>
+                        </Button>
+                      </label>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="name">Gruppenname</Label>
-              <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Gruppenname"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="description">Beschreibung</Label>
-              <Textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Beschreibe deine Gruppe..."
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <Shield className="h-4 w-4" />
-                Mitglieder & Admins
-              </Label>
-              <ScrollArea className="h-[200px] pr-4">
-                <div className="space-y-4">
-                  {group.participantIds.map(userId => {
-                    const user = users.find(u => u.id === userId);
-                    if (!user) return null;
+              <div className="space-y-2">
+                <Label htmlFor="name">Gruppenname</Label>
+                <Input
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Gruppenname"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="description">Beschreibung</Label>
+                <Textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Beschreibe deine Gruppe..."
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Shield className="h-4 w-4" />
+                  Mitglieder & Admins
+                </Label>
+                <div className="border rounded-md p-3 max-h-[200px] overflow-y-auto">
+                  <div className="space-y-4">
+                    {group.participantIds.map(userId => {
+                      const user = users.find(u => u.id === userId);
+                      if (!user) return null;
 
-                    const isCreator = userId === group.creatorId;
-                    const isAdmin = adminIds.includes(userId);
+                      const isCreator = userId === group.creatorId;
+                      const isAdmin = adminIds.includes(userId);
 
-                    return (
-                      <div key={userId} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <UserAvatar
-                            userId={user.id}
-                            size="sm"
-                          />
-                          <div className="flex flex-col">
-                            <span className="text-sm font-medium">
-                              {user.username}
-                              {isCreator && (
-                                <Badge variant="default" className="ml-2">
-                                  Ersteller
-                                </Badge>
-                              )}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {user.name}
-                            </span>
+                      return (
+                        <div key={userId} className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <UserAvatar
+                              userId={user.id}
+                              size="sm"
+                            />
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium">
+                                {user.username}
+                                {isCreator && (
+                                  <Badge variant="default" className="ml-2">
+                                    Ersteller
+                                  </Badge>
+                                )}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {user.name}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Label htmlFor={`admin-${userId}`} className="text-sm">
+                              Admin
+                            </Label>
+                            <Switch
+                              id={`admin-${userId}`}
+                              checked={isCreator || isAdmin}
+                              onCheckedChange={() => toggleAdmin(userId)}
+                              disabled={isCreator}
+                            />
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Label htmlFor={`admin-${userId}`} className="text-sm">
-                            Admin
-                          </Label>
-                          <Switch
-                            id={`admin-${userId}`}
-                            checked={isCreator || isAdmin}
-                            onCheckedChange={() => toggleAdmin(userId)}
-                            disabled={isCreator}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
-              </ScrollArea>
-            </div>
-
-            {/* Gefährliche Aktionen */}
-            {group.creatorId === (users[0]?.id || 1) && (
-              <div className="border-t pt-4 mt-4">
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="w-full"
-                  onClick={() => setDeleteDialogOpen(true)}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Gruppe löschen
-                </Button>
               </div>
-            )}
+
+              {/* Gefährliche Aktionen */}
+              {group.creatorId === (users[0]?.id || 1) && (
+                <div className="border-t pt-4 mt-4">
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => setDeleteDialogOpen(true)}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Gruppe löschen
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
-          <DialogFooter>
+          
+          <DialogFooter className="mt-4 pt-2 border-t">
             <Button variant="ghost" onClick={() => onOpenChange(false)}>
               Abbrechen
             </Button>

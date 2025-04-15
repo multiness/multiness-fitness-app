@@ -106,31 +106,66 @@ export default function CreateGroup() {
 
       // Initialisiere den Gruppen-Chat
       if (groupId) {
-        chatStore.initializeGroupChat(groupId);
-        
-        console.log('Created group with ID:', groupId);
-        console.log('Initialized group chat');
+        try {
+          // Chat initialisieren
+          await chatStore.initializeGroupChat(groupId);
+          
+          console.log('Created group with ID:', groupId);
+          console.log('Initialized group chat');
 
-        toast({
-          title: "Gruppe erstellt!",
-          description: "Deine Gruppe wurde erfolgreich erstellt.",
-        });
+          // Erfolgsmeldung und Weiterleitung
+          toast({
+            title: "Gruppe erstellt!",
+            description: "Deine Gruppe wurde erfolgreich erstellt.",
+          });
 
-        // Kurze Verzögerung für bessere UX und um sicherzustellen, dass alle Daten synchronisiert sind
-        setTimeout(() => {
+          // Synchronisiere die Gruppen, um sicherzustellen, dass die neue Gruppe persistent ist
+          await groupStore.syncWithServer();
+
           // Navigiere zur Gruppen-Übersicht
           setLocation("/groups");
-        }, 500);
+        } catch (chatError) {
+          console.error('Fehler beim Initialisieren des Gruppenchats:', chatError);
+          // Trotzdem zur Gruppenübersicht navigieren, da die Gruppe erstellt wurde
+          toast({
+            title: "Gruppe erstellt, aber...",
+            description: "Es gab ein Problem beim Einrichten des Chats. Du kannst die Gruppe trotzdem nutzen.",
+          });
+          
+          // Synchronisiere die Gruppen, um sicherzustellen, dass die neue Gruppe persistent ist
+          await groupStore.syncWithServer();
+          
+          // Navigiere zur Gruppen-Übersicht
+          setLocation("/groups");
+        }
       } else {
         throw new Error("Keine Gruppen-ID zurückgegeben");
       }
     } catch (error) {
       console.error('Fehler beim Erstellen der Gruppe:', error);
-      toast({
-        title: "Fehler",
-        description: "Beim Erstellen der Gruppe ist ein Fehler aufgetreten. Bitte versuche es erneut.",
-        variant: "destructive",
-      });
+      
+      // Prüfe, ob die Gruppe trotz Fehler erstellt wurde
+      if (error instanceof Error && error.message.includes('Server-Fehler: 409')) {
+        // Wenn es ein Konflikt war (z.B. Gruppe existiert bereits), trotzdem zur Übersicht navigieren
+        toast({
+          title: "Gruppe möglicherweise erstellt",
+          description: "Es gab ein Problem, aber die Gruppe könnte trotzdem erstellt worden sein.",
+        });
+        
+        // Synchronisiere die Gruppen, um sicherzustellen, dass wir die neuesten Daten haben
+        await groupStore.syncWithServer();
+        
+        // Navigiere zur Gruppen-Übersicht
+        setLocation("/groups");
+      } else {
+        // Bei anderen Fehlern Fehlermeldung anzeigen und auf der Seite bleiben
+        toast({
+          title: "Fehler",
+          description: "Beim Erstellen der Gruppe ist ein Fehler aufgetreten. Bitte versuche es erneut.",
+          variant: "destructive",
+        });
+      }
+      
       setIsSubmitting(false);
     }
   };
