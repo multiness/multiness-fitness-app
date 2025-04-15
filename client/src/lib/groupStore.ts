@@ -496,10 +496,17 @@ const initializeStore = persist<GroupStore>(
           .map(([groupId]) => parseInt(groupId, 10));
       },
       
-      setGroups: (dbGroups, members) => {
-        const groupsRecord: Record<number, Group> = {};
+      setGroups: (dbGroups, members, mergeWithExisting = true) => {
+        // Bei mergeWithExisting=true behalten wir vorhandene Gruppen bei und aktualisieren nur
+        // Bei mergeWithExisting=false ersetzen wir alle Gruppen (wie bisher)
         
-        // Convert data to client format
+        // Vorhandene Gruppen als Basis nehmen, wenn gewünscht
+        const existingGroups = mergeWithExisting ? get().groups : {};
+        const groupsRecord: Record<number, Group> = { ...existingGroups };
+        
+        console.log(`Aktualisiere ${dbGroups.length} Gruppen, Merge-Modus: ${mergeWithExisting}`);
+        
+        // Convert data to client format und in den Store integrieren
         dbGroups.forEach(dbGroup => {
           // Find all members for this group
           const groupMembers = members.filter(m => m.groupId === dbGroup.id);
@@ -509,8 +516,12 @@ const initializeStore = persist<GroupStore>(
         
         set({ 
           groups: groupsRecord,
-          lastFetched: Date.now()
+          lastFetched: Date.now(),
+          isLoading: false // Immer isLoading zurücksetzen
         });
+        
+        // Logs für Debugging
+        console.debug(`Groups synchronized: ${Object.keys(groupsRecord).length} groups loaded`);
       },
       
       syncWithServer: async (forceRefresh = false) => {
@@ -657,7 +668,12 @@ const initializeStore = persist<GroupStore>(
           const setupWebSocket = async () => {
             try {
               // Globalen WebSocket-Store verwenden, wenn verfügbar
-              const wsManager = window['groupWebSocketManager'];
+              interface WebSocketManager {
+                socket: WebSocket;
+                isConnected: () => boolean;
+              }
+              
+              const wsManager = (window as any)['groupWebSocketManager'] as WebSocketManager | undefined;
               
               if (wsManager && wsManager.isConnected()) {
                 console.debug('Bestehende WebSocket-Verbindung wiederverwendet');
@@ -669,7 +685,7 @@ const initializeStore = persist<GroupStore>(
               const socket = new WebSocket(wsUrl);
               
               // Globalen Manager speichern
-              window['groupWebSocketManager'] = {
+              (window as any)['groupWebSocketManager'] = {
                 socket,
                 isConnected: () => socket && socket.readyState === WebSocket.OPEN
               };
@@ -700,8 +716,8 @@ const initializeStore = persist<GroupStore>(
               socket.onclose = () => {
                 console.debug('WebSocket connection closed for groups');
                 // Cleanup
-                if (window['groupWebSocketManager']?.socket === socket) {
-                  window['groupWebSocketManager'] = null;
+                if ((window as any)['groupWebSocketManager']?.socket === socket) {
+                  (window as any)['groupWebSocketManager'] = null;
                 }
                 // Try reconnecting after 5 seconds
                 setTimeout(setupWebSocket, 5000);
