@@ -237,11 +237,11 @@ export default function Home() {
         </div>
         {/* Mobile: Karussell-Layout */}
         <div className="block md:hidden">
-          <GroupCarousel groups={groups.slice(0, 6)} />
+          <GroupCarousel groups={groups} />
         </div>
-        {/* Desktop-Ansicht: Vereinfachtes Layout, das bekanntermaßen funktioniert */}
+        {/* Desktop-Ansicht: Vereinfachtes Layout */}
         <div className="hidden md:block">
-          <GroupCarousel groups={groups.slice(0, 6)} />
+          <GroupCarousel groups={groups} />
         </div>
       </section>
 
