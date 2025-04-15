@@ -133,6 +133,9 @@ export default function Home() {
   
   // Lade Daten aus den stores statt aus den mock-Daten
   const groups = Object.values(groupStore.groups);
+  // Debug-Ausgabe für Gruppen
+  console.log("Available groups:", groups);
+  
   // Hole aktive und bevorstehende Challenges, sortiere nach Startdatum (neueste zuerst)
   const challenges = challengeStore.getActiveChallenges()
     .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
@@ -236,33 +239,9 @@ export default function Home() {
         <div className="block md:hidden">
           <GroupCarousel groups={groups.slice(0, 6)} />
         </div>
-        {/* Desktop: Grid-Layout mit optimiertem Laden */}
-        <div className="hidden md:grid grid-cols-2 gap-4">
-          {groups.length === 0 ? (
-            // Zeige Skeleton-UI während des Ladens
-            <>
-              {[...Array(4)].map((_, index) => (
-                <Card key={index} className="overflow-hidden bg-card">
-                  <div className="aspect-[3/2] relative overflow-hidden bg-muted animate-pulse"></div>
-                  <div className="p-4 space-y-3">
-                    <div className="h-4 bg-muted animate-pulse rounded"></div>
-                    <div className="h-3 w-2/3 bg-muted animate-pulse rounded"></div>
-                    <div className="flex justify-between items-center pt-2">
-                      <div className="h-3 w-10 bg-muted animate-pulse rounded"></div>
-                      <div className="h-8 w-20 bg-muted animate-pulse rounded"></div>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </>
-          ) : (
-            // Zeige tatsächliche Gruppen, wenn geladen
-            groups.slice(0, 4).map(group => (
-              <div key={group.id} className="cursor-pointer" onClick={() => navigateToGroupChat(group.id)}>
-                <GroupPreview group={group} />
-              </div>
-            ))
-          )}
+        {/* Desktop-Ansicht: Vereinfachtes Layout, das bekanntermaßen funktioniert */}
+        <div className="hidden md:block">
+          <GroupCarousel groups={groups.slice(0, 6)} />
         </div>
       </section>
 
