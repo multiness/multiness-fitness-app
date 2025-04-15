@@ -37,8 +37,8 @@ interface GroupStore {
   lastFetched: number | null;
   
   // Database functions
-  setGroups: (groups: DbGroup[], members: GroupMember[]) => void;
-  syncWithServer: () => Promise<void>;
+  setGroups: (groups: DbGroup[], members: GroupMember[], mergeWithExisting?: boolean) => void;
+  syncWithServer: (forceRefresh?: boolean) => Promise<void>;
   
   // Group functions
   addGroup: (group: NewGroup) => Promise<number>;
