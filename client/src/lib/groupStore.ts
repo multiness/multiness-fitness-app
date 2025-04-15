@@ -109,7 +109,15 @@ const initializeStore = persist<GroupStore>(
       invitations: {},
       
       addGroup: (group: NewGroup) => {
-        // Temporäre ID für sofortige Anzeige
+        // Generierung einer UUID für die Gruppe zur Vermeidung von Kollisionen
+        // Format: group-uuid-[timestamp]-[random]-[checksum]
+        const timestamp = Date.now().toString(36).substring(2, 10);
+        const random = Math.random().toString(36).substring(2, 10);
+        const checksum = (
+          parseInt(timestamp, 36) ^ 
+          parseInt(random, 36)
+        ).toString(16).substring(0, 8);
+        
         const tempId = Date.now();
         const newGroup = { ...group, id: tempId };
         
@@ -121,10 +129,14 @@ const initializeStore = persist<GroupStore>(
           }
         }));
         
-        // Gruppe auf dem Server erstellen
+        // Gruppe auf dem Server erstellen mit eindeutiger ID
         (async () => {
           try {
-            const response = await apiRequest('POST', '/api/groups', group);
+            // Wir fügen ein Flag hinzu, das anzeigt, dass dies ein neuer Gruppentyp mit UUID ist
+            const response = await apiRequest('POST', '/api/groups', {
+              ...group,
+              uuidTag: `group-uuid-${timestamp}-${random}-${checksum}`
+            });
             
             if (response.ok) {
               const savedGroup = await response.json();

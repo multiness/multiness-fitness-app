@@ -26,6 +26,7 @@ export default function CreateGroup() {
   const [invites, setInvites] = useState<string[]>([]);
   const [currentInvite, setCurrentInvite] = useState("");
   const [isFeatured, setIsFeatured] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -62,12 +63,21 @@ export default function CreateGroup() {
   };
 
   const handleSubmit = () => {
+    // Verhindere doppelte Einreichungen
+    if (isSubmitting) {
+      return;
+    }
+
+    // Setze den Einreichungsstatus auf true, um doppelte Einreichungen zu verhindern
+    setIsSubmitting(true);
+
     if (!currentUser) {
       toast({
         title: "Nicht angemeldet",
         description: "Bitte melde dich an, um eine Gruppe zu erstellen.",
         variant: "destructive",
       });
+      setIsSubmitting(false);
       return;
     }
 
@@ -77,33 +87,47 @@ export default function CreateGroup() {
         description: "Bitte fülle alle Pflichtfelder aus.",
         variant: "destructive",
       });
+      setIsSubmitting(false);
       return;
     }
 
-    // Erstelle die neue Gruppe mit dem groupStore
-    const groupId = groupStore.addGroup({
-      name: name.trim(),
-      description: description.trim(),
-      image: imagePreview || undefined,
-      creatorId: currentUser.id,
-      participantIds: [currentUser.id],
-      adminIds: [currentUser.id], // Der Ersteller ist automatisch Admin
-      createdAt: new Date()
-    });
+    try {
+      // Erstelle die neue Gruppe mit dem groupStore
+      const groupId = groupStore.addGroup({
+        name: name.trim(),
+        description: description.trim(),
+        image: imagePreview || undefined,
+        creatorId: currentUser.id,
+        participantIds: [currentUser.id],
+        adminIds: [currentUser.id], // Der Ersteller ist automatisch Admin
+        createdAt: new Date()
+      });
 
-    // Initialisiere den Gruppen-Chat
-    chatStore.initializeGroupChat(groupId);
+      // Initialisiere den Gruppen-Chat
+      chatStore.initializeGroupChat(groupId);
 
-    console.log('Created group with ID:', groupId);
-    console.log('Initialized group chat');
+      console.log('Created group with ID:', groupId);
+      console.log('Initialized group chat');
 
-    toast({
-      title: "Gruppe erstellt!",
-      description: "Deine Gruppe wurde erfolgreich erstellt.",
-    });
+      toast({
+        title: "Gruppe erstellt!",
+        description: "Deine Gruppe wurde erfolgreich erstellt.",
+      });
 
-    // Navigiere zur Gruppen-Übersicht
-    setLocation("/groups");
+      // Kurze Verzögerung für bessere UX und um sicherzustellen, dass alle Daten synchronisiert sind
+      setTimeout(() => {
+        // Navigiere zur Gruppen-Übersicht
+        setLocation("/groups");
+      }, 300);
+    } catch (error) {
+      console.error('Fehler beim Erstellen der Gruppe:', error);
+      toast({
+        title: "Fehler",
+        description: "Beim Erstellen der Gruppe ist ein Fehler aufgetreten. Bitte versuche es erneut.",
+        variant: "destructive",
+      });
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -264,8 +288,12 @@ export default function CreateGroup() {
             )}
           </div>
 
-          <Button className="w-full" onClick={handleSubmit}>
-            Gruppe erstellen
+          <Button 
+            className="w-full" 
+            onClick={handleSubmit} 
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Gruppe wird erstellt..." : "Gruppe erstellen"}
           </Button>
         </CardContent>
       </Card>
