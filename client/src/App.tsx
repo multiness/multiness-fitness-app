@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Switch, Route } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
@@ -31,6 +32,7 @@ import Chat from "./pages/Chat";
 import Admin from "./pages/Admin";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/not-found";
+import { initializeGroupSync } from "./lib/groupSynchronizer";
 
 function Router() {
   return (
@@ -67,6 +69,15 @@ function Router() {
 }
 
 function App() {
+  // Initialisiere die Gruppensynchronisierung beim App-Start
+  useEffect(() => {
+    // Starte die Gruppen-Synchronisierung für bessere Cross-Device Kommunikation
+    initializeGroupSync();
+    
+    // Log zur Bestätigung
+    console.log('Gruppensynchronisierung initialisiert für Cross-Device-Kompatibilität');
+  }, []);
+  
   return (
     <ThemeProvider defaultTheme="light">
       <QueryClientProvider client={queryClient}>
