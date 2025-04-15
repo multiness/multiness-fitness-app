@@ -515,10 +515,39 @@ const initializeStore = persist<GroupStore>(
       
       syncWithServer: async () => {
         try {
+          // Prüfe, ob wir bereits Daten laden - vermeide doppelte Ladungen
+          if (get().isLoading) {
+            console.debug('Gruppen werden bereits geladen, überspringe diese Anfrage');
+            return;
+          }
+          
+          // Setze Loading-State
           set({ isLoading: true });
           
-          // Fetch all groups from server
-          const groupsResponse = await fetch('/api/groups');
+          // Cache-Header für schnelleres Laden
+          const cacheOptions = { 
+            headers: { 'Cache-Control': 'max-age=60' } 
+          };
+          
+          // Optimierte Parallelisierung der Anfragen
+          const [groupsResponse, lastFetchTimestamp] = await Promise.all([
+            fetch('/api/groups', cacheOptions),
+            Promise.resolve(get().lastFetched)
+          ]);
+          
+          // Wenn kürzlich erst abgefragt, verzögere nächste Anfrage (außer bei erzwungener Aktualisierung)
+          const now = Date.now();
+          const timeSinceLastFetch = lastFetchTimestamp ? now - lastFetchTimestamp : Infinity;
+          const MIN_FETCH_INTERVAL = 5000; // 5 Sekunden
+          
+          if (timeSinceLastFetch < MIN_FETCH_INTERVAL) {
+            console.debug(`Letzte Gruppenabfrage vor ${timeSinceLastFetch}ms, warte noch...`);
+            // Nicht komplett abbrechen bei Erstinstallation
+            if (Object.keys(get().groups).length > 0) {
+              set({ isLoading: false });
+              return;
+            }
+          }
           
           if (!groupsResponse.ok) {
             throw new Error(`Server responded with ${groupsResponse.status}: ${groupsResponse.statusText}`);
@@ -526,35 +555,60 @@ const initializeStore = persist<GroupStore>(
           
           const dbGroups = await groupsResponse.json();
           
-          // Fetch members for each group
+          // Nur Gruppen laden, die geändert wurden oder neu sind
+          const existingGroups = get().groups;
           const allMembers: GroupMember[] = [];
           
-          for (const dbGroup of dbGroups) {
+          // Alle Mitglieder parallel laden mit Promise.all
+          const memberPromises = dbGroups.map(async (dbGroup) => {
             try {
-              const membersResponse = await fetch(`/api/groups/${dbGroup.id}/members`);
+              const membersResponse = await fetch(`/api/groups/${dbGroup.id}/members`, cacheOptions);
               
               if (membersResponse.ok) {
                 const groupMembers = await membersResponse.json();
-                allMembers.push(...groupMembers);
-                // Stille Mitgliederladung ohne große Logs
-                console.debug(`Group members loaded for group ${dbGroup.id}: ${groupMembers.length}`);
+                return { groupId: dbGroup.id, members: groupMembers };
               } else {
                 console.warn(`Could not load members for group ${dbGroup.id}: ${membersResponse.status}`);
+                return { groupId: dbGroup.id, members: [] };
               }
             } catch (memberError) {
               console.error(`Error fetching members for group ${dbGroup.id}:`, memberError);
+              return { groupId: dbGroup.id, members: [] };
             }
-          }
+          });
+          
+          // Warten auf alle Mitgliederanfragen
+          const memberResults = await Promise.all(memberPromises);
+          
+          // Sammle Ergebnisse
+          memberResults.forEach(result => {
+            console.debug(`Group members loaded for group ${result.groupId}: ${result.members.length}`);
+            allMembers.push(...result.members);
+          });
           
           // Update the store
           get().setGroups(dbGroups, allMembers);
           
-          // Set up WebSocket for real-time updates
+          // WebSocket-Verbindung nur einmal aufbauen und wiederverwenden
           const setupWebSocket = async () => {
             try {
+              // Globalen WebSocket-Store verwenden, wenn verfügbar
+              const wsManager = window['groupWebSocketManager'];
+              
+              if (wsManager && wsManager.isConnected()) {
+                console.debug('Bestehende WebSocket-Verbindung wiederverwendet');
+                return;
+              }
+              
               const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
               const wsUrl = `${protocol}//${window.location.host}/ws`;
               const socket = new WebSocket(wsUrl);
+              
+              // Globalen Manager speichern
+              window['groupWebSocketManager'] = {
+                socket,
+                isConnected: () => socket && socket.readyState === WebSocket.OPEN
+              };
               
               socket.onopen = () => {
                 console.debug('WebSocket connection established for group synchronization');
@@ -566,8 +620,9 @@ const initializeStore = persist<GroupStore>(
                   const data = JSON.parse(event.data);
                   if (data.type === 'group_update') {
                     // Stille Verarbeitung von WebSocket-Updates
-                console.debug('Group update received via WebSocket');
-                    get().syncWithServer(); // Update data from server
+                    console.debug('Group update received via WebSocket');
+                    // Sanfte Aktualisierung mit Verzögerung
+                    setTimeout(() => get().syncWithServer(), 500);
                   }
                 } catch (parseError) {
                   console.error('Error processing WebSocket message:', parseError);
@@ -580,6 +635,10 @@ const initializeStore = persist<GroupStore>(
               
               socket.onclose = () => {
                 console.debug('WebSocket connection closed for groups');
+                // Cleanup
+                if (window['groupWebSocketManager']?.socket === socket) {
+                  window['groupWebSocketManager'] = null;
+                }
                 // Try reconnecting after 5 seconds
                 setTimeout(setupWebSocket, 5000);
               };
