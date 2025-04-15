@@ -206,57 +206,114 @@ export const useChatStore = create<ChatStore>()(
           // Vorhandene Nachrichten laden
           fetchMessages();
           
-          // Nachrichten mit dem Server synchronisieren (WebSocket)
-          const syncChatMessages = () => {
-            // WebSocket für Echtzeit-Nachrichten
-            const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-            const wsUrl = `${protocol}//${window.location.host}/ws`;
-            
-            const wsManager = new WebSocketManager(wsUrl);
-            
-            wsManager.connect({
-              onOpen: () => {
-                console.log('WebSocket-Verbindung für Chat-Synchronisierung hergestellt');
-                
-                // Abonniere Chat-Updates für diese Gruppe
-                wsManager.send({ 
-                  type: 'subscribe', 
-                  topic: 'chat',
-                  groupId: groupId
-                });
-              },
-              onMessage: (data) => {
-                if (data.type === 'chat_message' && data.chatId === chatId) {
-                  console.log('Neue Chat-Nachricht über WebSocket empfangen:', data);
-                  
-                  // Füge die Nachricht ins State ein
-                  set((state) => {
-                    // Prüfe, ob die Nachricht bereits existiert
-                    const existingMessages = state.messages[chatId] || [];
-                    const messageExists = existingMessages.some((m: any) => m.id === data.message.id);
-                    
-                    if (!messageExists) {
-                      console.log('Füge neue Nachricht aus WebSocket hinzu:', data.message);
-                      return {
-                        messages: {
-                          ...state.messages,
-                          [chatId]: [...existingMessages, data.message]
-                        }
-                      };
-                    }
-                    
-                    return state; // Keine Änderung, wenn Nachricht bereits existiert
-                  });
-                }
-              },
-              onError: (error) => {
-                console.error('WebSocket-Fehler bei Chat-Synchronisierung:', error);
-              }
-            });
+          // Nachrichten synchronisieren basierend auf Gerätetyp
+          const isMobileDevice = () => {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
           };
           
-          // Starte Synchronisierung
-          syncChatMessages();
+          if (isMobileDevice()) {
+            // Mobile Geräte: Verwende periodisches Polling für Chat-Nachrichten
+            console.log('Mobiles Gerät erkannt, verwende Polling für Chat-Nachrichten');
+            
+            const pollMessages = async () => {
+              try {
+                const response = await fetch(`/api/chat/${chatId}/messages`);
+                if (response.ok) {
+                  const messages = await response.json();
+                  if (messages && messages.length > 0) {
+                    set((state) => {
+                      const currentMessages = state.messages[chatId] || [];
+                      
+                      // Prüfe auf neue Nachrichten
+                      const newMessages = messages.filter((newMsg: Message) => 
+                        !currentMessages.some(existingMsg => existingMsg.id === newMsg.id)
+                      );
+                      
+                      if (newMessages.length > 0) {
+                        console.log(`${newMessages.length} neue Nachrichten durch Polling gefunden`);
+                        return {
+                          messages: {
+                            ...state.messages,
+                            [chatId]: [...currentMessages, ...newMessages]
+                          }
+                        };
+                      }
+                      
+                      return state;
+                    });
+                  }
+                }
+              } catch (error) {
+                console.error('Fehler beim Polling der Chat-Nachrichten:', error);
+              }
+              
+              // Polling alle 10 Sekunden
+              setTimeout(pollMessages, 10000);
+            };
+            
+            // Starte Polling
+            setTimeout(pollMessages, 5000);
+          } else {
+            // Desktop-Geräte: Verwende WebSockets für Echtzeit-Updates
+            const syncChatMessages = () => {
+              try {
+                // WebSocket für Echtzeit-Nachrichten
+                const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+                const wsUrl = `${protocol}//${window.location.host}/ws`;
+                
+                const wsManager = new WebSocketManager(wsUrl);
+                
+                wsManager.connect({
+                  onOpen: () => {
+                    console.log('WebSocket-Verbindung für Chat-Synchronisierung hergestellt');
+                    
+                    try {
+                      // Abonniere Chat-Updates für diese Gruppe
+                      wsManager.send({ 
+                        type: 'subscribe', 
+                        topic: 'chat',
+                        groupId: groupId
+                      });
+                    } catch (err) {
+                      console.error('Fehler beim Senden der Chat-Subscription:', err);
+                    }
+                  },
+                  onMessage: (data) => {
+                    if (data.type === 'chat_message' && data.chatId === chatId) {
+                      console.log('Neue Chat-Nachricht über WebSocket empfangen:', data);
+                      
+                      // Füge die Nachricht ins State ein
+                      set((state) => {
+                        // Prüfe, ob die Nachricht bereits existiert
+                        const existingMessages = state.messages[chatId] || [];
+                        const messageExists = existingMessages.some((m: any) => m.id === data.message.id);
+                        
+                        if (!messageExists) {
+                          console.log('Füge neue Nachricht aus WebSocket hinzu:', data.message);
+                          return {
+                            messages: {
+                              ...state.messages,
+                              [chatId]: [...existingMessages, data.message]
+                            }
+                          };
+                        }
+                        
+                        return state; // Keine Änderung, wenn Nachricht bereits existiert
+                      });
+                    }
+                  },
+                  onError: (error) => {
+                    console.error('WebSocket-Fehler bei Chat-Synchronisierung:', error);
+                  }
+                });
+              } catch (err) {
+                console.error('Fehler beim Einrichten des Chat-WebSockets:', err);
+              }
+            };
+            
+            // Starte WebSocket-Synchronisierung nach kurzer Verzögerung
+            setTimeout(syncChatMessages, 2000);
+          }
         }).catch(error => {
           console.error('Fehler beim Abrufen der Chat-ID:', error);
         });
@@ -281,13 +338,36 @@ export const useChatStore = create<ChatStore>()(
             
             // Stelle sicher, dass die Nachricht eine gültige groupId hat
             if (!message.groupId && chatId.startsWith('group-')) {
-              // Extrahiere die Gruppen-ID aus dem chatId Format "group-X"
-              const groupIdMatch = chatId.match(/group-(\d+)/);
-              if (groupIdMatch && groupIdMatch[1]) {
-                const groupId = parseInt(groupIdMatch[1], 10);
-                // Füge groupId zur Nachricht hinzu, wenn sie fehlt
-                message.groupId = groupId;
-                console.log('GroupId aus der chatId extrahiert:', groupId);
+              try {
+                // Wir unterstützen verschiedene Chat-ID-Formate:
+                let extractedGroupId: number | null = null;
+                
+                // Format 1: Standard-Format 'group-123'
+                const standardMatch = chatId.match(/group-(\d+)/);
+                if (standardMatch && standardMatch[1]) {
+                  extractedGroupId = parseInt(standardMatch[1], 10);
+                }
+                
+                // Format 2: UUID-Format 'group-uuid-xyz'
+                if (!extractedGroupId) {
+                  // Bei UUID-Format müssen wir den groupId aus dem globalGroupIds in umgekehrter Richtung suchen
+                  for (const [key, value] of Object.entries(globalGroupIds)) {
+                    if (value === chatId) {
+                      extractedGroupId = parseInt(key, 10);
+                      break;
+                    }
+                  }
+                }
+                
+                // Verwende die extrahierte groupId, wenn verfügbar
+                if (extractedGroupId && !isNaN(extractedGroupId)) {
+                  message.groupId = extractedGroupId;
+                  console.log('GroupId extrahiert:', extractedGroupId);
+                } else {
+                  console.warn('Konnte groupId nicht aus chatId extrahieren:', chatId);
+                }
+              } catch (err) {
+                console.error('Fehler beim Extrahieren der groupId:', err);
               }
             }
             
@@ -431,55 +511,108 @@ export const syncGroupIds = async () => {
           localStorage.setItem(`group_chat_id_${key}`, value as string);
         });
         
-        // Zusätzlich WebSocket-Verbindung für Echtzeit-Updates einrichten
-        const setupWebSocketSync = () => {
-          const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-          const wsUrl = `${protocol}//${window.location.host}/ws`;
+        // WebSocket-Synchronisierung wird nur auf nicht-mobilen Geräten aktiviert, 
+        // da mobile Geräte oft Probleme mit langlebigen WebSocket-Verbindungen haben
+        // Stattdessen nutzen wir Polling für mobile Geräte
+        
+        // Prüfe, ob es sich um ein mobiles Gerät handelt
+        const isMobileDevice = () => {
+          return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        };
+        
+        if (isMobileDevice()) {
+          // Für mobile Geräte: Verwende periodisches Polling statt WebSockets
+          console.log('Mobiles Gerät erkannt, verwende Polling für Gruppen-IDs-Synchronisierung');
           
-          const socket = new WebSocket(wsUrl);
-          
-          socket.onopen = () => {
-            console.log('WebSocket-Verbindung für Gruppen-IDs-Synchronisierung hergestellt');
+          // Polling-Funktion für periodische Aktualisierung
+          const pollGroupIds = async () => {
+            try {
+              const response = await fetch('/api/group-ids');
+              if (response.ok) {
+                const data = await response.json();
+                if (data && typeof data === 'object') {
+                  globalGroupIds = data;
+                  
+                  // Aktualisiere auch den localStorage
+                  Object.entries(globalGroupIds).forEach(([key, value]) => {
+                    localStorage.setItem(`group_chat_id_${key}`, value as string);
+                  });
+                }
+              }
+            } catch (err) {
+              console.error('Fehler beim Polling der Gruppen-IDs:', err);
+            }
             
-            // Abonniere Gruppen-IDs-Updates
-            socket.send(JSON.stringify({
-              type: 'subscribe',
-              topic: 'groupIds'
-            }));
+            // Setze das Polling mit einem größeren Intervall fort (15 Sekunden)
+            setTimeout(pollGroupIds, 15000);
           };
           
-          socket.onmessage = (event) => {
+          // Starte Polling nach einer kurzen Verzögerung
+          setTimeout(pollGroupIds, 5000);
+        } else {
+          // Für Desktop: Verwende WebSockets für Echtzeit-Updates
+          const setupWebSocketSync = () => {
             try {
-              const data = JSON.parse(event.data);
+              const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+              const wsUrl = `${protocol}//${window.location.host}/ws`;
               
-              if (data.type === 'groupIds' && data.groupIds) {
-                console.log('Gruppen-IDs per WebSocket aktualisiert:', data.groupIds);
+              const socket = new WebSocket(wsUrl);
+              
+              socket.onopen = () => {
+                console.log('WebSocket-Verbindung für Gruppen-IDs-Synchronisierung hergestellt');
                 
-                // Aktualisiere den globalen Cache
-                globalGroupIds = data.groupIds;
-                
-                // Aktualisiere den localStorage
-                Object.entries(globalGroupIds).forEach(([key, value]) => {
-                  localStorage.setItem(`group_chat_id_${key}`, value as string);
-                });
-              }
-            } catch (error) {
-              console.error('Fehler beim Verarbeiten der WebSocket-Gruppen-IDs-Nachricht:', error);
+                try {
+                  // Abonniere Gruppen-IDs-Updates
+                  socket.send(JSON.stringify({
+                    type: 'subscribe',
+                    topic: 'groupIds'
+                  }));
+                } catch (err) {
+                  console.error('Fehler beim Senden der Subscription-Nachricht:', err);
+                }
+              };
+              
+              socket.onmessage = (event) => {
+                try {
+                  const data = JSON.parse(event.data);
+                  
+                  if (data.type === 'groupIds' && data.groupIds) {
+                    console.log('Gruppen-IDs per WebSocket aktualisiert:', data.groupIds);
+                    
+                    // Aktualisiere den globalen Cache
+                    globalGroupIds = data.groupIds;
+                    
+                    // Aktualisiere den localStorage
+                    Object.entries(globalGroupIds).forEach(([key, value]) => {
+                      localStorage.setItem(`group_chat_id_${key}`, value as string);
+                    });
+                  }
+                } catch (error) {
+                  console.error('Fehler beim Verarbeiten der WebSocket-Gruppen-IDs-Nachricht:', error);
+                }
+              };
+              
+              socket.onerror = (error) => {
+                console.error('WebSocket-Fehler für Gruppen-IDs-Synchronisierung:', error);
+              };
+              
+              socket.onclose = () => {
+                console.log('WebSocket-Verbindung für Gruppen-IDs-Synchronisierung geschlossen, versuche erneut zu verbinden...');
+                // Weniger aggressive Reconnect-Strategie
+                setTimeout(setupWebSocketSync, 10000);
+              };
+            } catch (err) {
+              console.error('Kritischer Fehler beim Einrichten des WebSockets:', err);
+              // Bei kritischen Fehlern längere Wartezeit vor neuem Versuch
+              setTimeout(setupWebSocketSync, 30000);
             }
           };
           
-          socket.onerror = (error) => {
-            console.error('WebSocket-Fehler für Gruppen-IDs-Synchronisierung:', error);
-          };
-          
-          socket.onclose = () => {
-            console.log('WebSocket-Verbindung für Gruppen-IDs-Synchronisierung geschlossen, versuche erneut zu verbinden...');
-            setTimeout(setupWebSocketSync, 5000);
-          };
-        };
-        
-        // Starte WebSocket-Synchronisierung
-        setupWebSocketSync();
+          // Starte WebSocket-Synchronisierung nach kurzer Verzögerung
+          setTimeout(() => {
+            setupWebSocketSync();
+          }, 2000);
+        }
       }
     } else {
       console.warn('Konnte Gruppen-IDs nicht vom Server laden, verwende lokale Daten');
