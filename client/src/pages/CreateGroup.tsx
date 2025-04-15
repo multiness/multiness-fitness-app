@@ -62,7 +62,7 @@ export default function CreateGroup() {
     setInvites(invites.filter(i => i !== invite));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     // Verhindere doppelte Einreichungen
     if (isSubmitting) {
       return;
@@ -92,33 +92,38 @@ export default function CreateGroup() {
     }
 
     try {
-      // Erstelle die neue Gruppe mit dem groupStore
-      const groupId = groupStore.addGroup({
+      // Erstelle die neue Gruppe mit dem groupStore und warte auf die Rückgabe
+      const groupId = await groupStore.addGroup({
         name: name.trim(),
         description: description.trim(),
         image: imagePreview || undefined,
         creatorId: currentUser.id,
         participantIds: [currentUser.id],
         adminIds: [currentUser.id], // Der Ersteller ist automatisch Admin
-        createdAt: new Date()
+        createdAt: new Date(),
+        isPrivate: privacy === "private"
       });
 
       // Initialisiere den Gruppen-Chat
-      chatStore.initializeGroupChat(groupId);
+      if (groupId) {
+        chatStore.initializeGroupChat(groupId);
+        
+        console.log('Created group with ID:', groupId);
+        console.log('Initialized group chat');
 
-      console.log('Created group with ID:', groupId);
-      console.log('Initialized group chat');
+        toast({
+          title: "Gruppe erstellt!",
+          description: "Deine Gruppe wurde erfolgreich erstellt.",
+        });
 
-      toast({
-        title: "Gruppe erstellt!",
-        description: "Deine Gruppe wurde erfolgreich erstellt.",
-      });
-
-      // Kurze Verzögerung für bessere UX und um sicherzustellen, dass alle Daten synchronisiert sind
-      setTimeout(() => {
-        // Navigiere zur Gruppen-Übersicht
-        setLocation("/groups");
-      }, 300);
+        // Kurze Verzögerung für bessere UX und um sicherzustellen, dass alle Daten synchronisiert sind
+        setTimeout(() => {
+          // Navigiere zur Gruppen-Übersicht
+          setLocation("/groups");
+        }, 500);
+      } else {
+        throw new Error("Keine Gruppen-ID zurückgegeben");
+      }
     } catch (error) {
       console.error('Fehler beim Erstellen der Gruppe:', error);
       toast({

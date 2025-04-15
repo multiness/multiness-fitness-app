@@ -41,7 +41,7 @@ interface GroupStore {
   syncWithServer: () => Promise<void>;
   
   // Group functions
-  addGroup: (group: NewGroup) => number;
+  addGroup: (group: NewGroup) => Promise<number>;
   updateGroup: (id: number, updatedGroup: Partial<Group>) => void;
   removeGroup: (id: number) => void;
   joinGroup: (groupId: number, userId: number) => void;
@@ -108,7 +108,7 @@ const initializeStore = persist<GroupStore>(
       groups: {},
       invitations: {},
       
-      addGroup: (group: NewGroup) => {
+      addGroup: async (group: NewGroup) => {
         // Generierung einer UUID für die Gruppe zur Vermeidung von Kollisionen
         // Format: group-uuid-[timestamp]-[random]-[checksum]
         const timestamp = Date.now().toString(36).substring(2, 10);
@@ -117,6 +117,9 @@ const initializeStore = persist<GroupStore>(
           parseInt(timestamp, 36) ^ 
           parseInt(random, 36)
         ).toString(16).substring(0, 8);
+        
+        const uuidTag = `group-uuid-${timestamp}-${random}-${checksum}`;
+        console.log('Neue UUID für Gruppe generiert:', uuidTag);
         
         const tempId = Date.now();
         const newGroup = { ...group, id: tempId };
@@ -129,40 +132,61 @@ const initializeStore = persist<GroupStore>(
           }
         }));
         
-        // Gruppe auf dem Server erstellen mit eindeutiger ID
-        (async () => {
-          try {
-            // Wir fügen ein Flag hinzu, das anzeigt, dass dies ein neuer Gruppentyp mit UUID ist
-            const response = await apiRequest('POST', '/api/groups', {
-              ...group,
-              uuidTag: `group-uuid-${timestamp}-${random}-${checksum}`
+        try {
+          // Wir fügen ein Flag hinzu, das anzeigt, dass dies ein neuer Gruppentyp mit UUID ist
+          const response = await apiRequest('POST', '/api/groups', {
+            ...group,
+            uuidTag: uuidTag
+          });
+          
+          if (!response.ok) {
+            // Im Fehlerfall werfen wir einen Error
+            const errorText = await response.text();
+            console.error('Fehler beim Speichern der Gruppe auf dem Server:', errorText);
+            
+            // Entferne die temporäre Gruppe wieder
+            set((state) => {
+              const { [tempId]: _, ...restGroups } = state.groups;
+              return {
+                groups: restGroups
+              };
             });
             
-            if (response.ok) {
-              const savedGroup = await response.json();
-              console.log('Gruppe erfolgreich auf Server gespeichert:', savedGroup);
-              
-              // Gruppe mit Server-ID aktualisieren und temporäre Gruppe entfernen
-              set((state) => {
-                const { [tempId]: _, ...restGroups } = state.groups;
-                return {
-                  groups: {
-                    ...restGroups,
-                    [savedGroup.id]: mapDbGroupToClientGroup(savedGroup)
-                  }
-                };
-              });
-              
-              // WebSocket-Aktualisierung erfolgt über den Endpunkt
-            } else {
-              console.error('Fehler beim Speichern der Gruppe auf dem Server:', await response.text());
-            }
-          } catch (error) {
-            console.error('Netzwerkfehler beim Speichern der Gruppe:', error);
+            throw new Error(`Server-Fehler: ${response.status} ${errorText}`);
           }
-        })();
-        
-        return tempId;
+          
+          // Erfolgsfall
+          const savedGroup = await response.json();
+          console.log('Gruppe erfolgreich auf Server gespeichert:', savedGroup);
+          
+          // Gruppe mit Server-ID aktualisieren und temporäre Gruppe entfernen
+          set((state) => {
+            const { [tempId]: _, ...restGroups } = state.groups;
+            return {
+              groups: {
+                ...restGroups,
+                [savedGroup.id]: mapDbGroupToClientGroup(savedGroup)
+              }
+            };
+          });
+          
+          // Gib die neue, permanente ID zurück
+          return savedGroup.id;
+          
+        } catch (error) {
+          console.error('Fehler beim Erstellen der Gruppe:', error);
+          
+          // Entferne die temporäre Gruppe im Fehlerfall
+          set((state) => {
+            const { [tempId]: _, ...restGroups } = state.groups;
+            return {
+              groups: restGroups
+            };
+          });
+          
+          // Fehler weitergeben, damit die Komponente darauf reagieren kann
+          throw error;
+        }
       },
       
       updateGroup: (id, updatedGroup) => set((state) => ({
