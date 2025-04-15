@@ -1,1 +1,25 @@
-{}
+{
+  "group-3": [
+    {
+      "id": 1744711548653,
+      "userId": 1,
+      "content": "B",
+      "timestamp": "2025-04-15T10:05:48.653Z",
+      "groupId": 3
+    },
+    {
+      "id": 1744711561905,
+      "userId": 1,
+      "content": "kök",
+      "timestamp": "2025-04-15T10:06:01.905Z",
+      "groupId": 3
+    },
+    {
+      "id": 1744711577424,
+      "userId": 1,
+      "content": "Bsbks",
+      "timestamp": "2025-04-15T10:06:17.424Z",
+      "groupId": 3
+    }
+  ]
+}
