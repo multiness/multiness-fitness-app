@@ -139,8 +139,6 @@ const initializeStore = persist<GroupStore>(
             uuidTag: uuidTag
           });
           
-          let savedGroup;
-          
           if (!response.ok) {
             const errorText = await response.text();
             console.error('Fehler beim Speichern der Gruppe auf dem Server:', errorText);
@@ -154,28 +152,28 @@ const initializeStore = persist<GroupStore>(
             });
             
             throw new Error(`Server-Fehler: ${response.status} ${errorText}`);
-          } else {
-            // Erfolgsfall
-            savedGroup = await response.json();
-            console.log('Gruppe erfolgreich auf Server gespeichert:', savedGroup);
-            
-            // Gruppe mit Server-ID aktualisieren und temporäre Gruppe entfernen
-            set((state) => {
-              const { [tempId]: _, ...restGroups } = state.groups;
-              return {
-                groups: {
-                  ...restGroups,
-                  [savedGroup.id]: mapDbGroupToClientGroup(savedGroup)
-                }
-              };
-            });
-            
-            // Manuelles Update der Gruppen-IDs
-            try {
-              await get().syncWithServer();
-            } catch (syncError) {
-              console.error('Fehler bei der Synchronisierung nach Gruppenerstellung:', syncError);
-            }
+          }
+          
+          // Erfolgsfall
+          const savedGroup: DbGroup = await response.json();
+          console.log('Gruppe erfolgreich auf Server gespeichert:', savedGroup);
+          
+          // Gruppe mit Server-ID aktualisieren und temporäre Gruppe entfernen
+          set((state) => {
+            const { [tempId]: _, ...restGroups } = state.groups;
+            return {
+              groups: {
+                ...restGroups,
+                [savedGroup.id]: mapDbGroupToClientGroup(savedGroup)
+              }
+            };
+          });
+          
+          // Manuelles Update der Gruppen-IDs
+          try {
+            await get().syncWithServer();
+          } catch (syncError) {
+            console.error('Fehler bei der Synchronisierung nach Gruppenerstellung:', syncError);
           }
           
           // Gib die neue, permanente ID zurück
@@ -216,7 +214,7 @@ const initializeStore = persist<GroupStore>(
             throw new Error(`Server-Fehler: ${response.status} ${errorText}`);
           }
 
-          const updatedGroupFromServer = await response.json();
+          const updatedGroupFromServer: DbGroup = await response.json();
           
           // Server-Antwort in den Store aktualisieren
           set((state) => ({
