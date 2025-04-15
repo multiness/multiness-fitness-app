@@ -241,6 +241,14 @@ export default function Home() {
         </div>
         {/* Desktop-Ansicht: Vereinfachtes Layout */}
         <div className="hidden md:block">
+          {/* Debug-Info für Desktop-Ansicht */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="mb-4 text-xs bg-muted p-2 rounded">
+              <p>Desktop-Ansicht Gruppen ({groups.length}): 
+                {groups.map(g => ` ${g.id}`).join(', ')}
+              </p>
+            </div>
+          )}
           <GroupCarousel groups={groups} />
         </div>
       </section>
