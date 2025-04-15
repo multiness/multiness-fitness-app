@@ -1714,10 +1714,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
             await addMessage(data.chatId, data.message);
             console.log('Chat-Nachricht in Datei gespeichert:', data.chatId);
             
-            // Extrahiere Gruppen-ID aus dem chat-ID-Format "group-X"
-            const chatIdMatch = data.chatId.match(/group-(\d+)/);
-            if (chatIdMatch && chatIdMatch[1]) {
-              const groupId = parseInt(chatIdMatch[1], 10);
+            // Extrahiere Gruppen-ID aus verschiedenen chat-ID-Formaten
+            // Format 1: Traditionelles Format "group-123"
+            // Format 2: UUID-Format "group-uuid-xyz"
+            const traditionalMatch = data.chatId.match(/group-(\d+)/);
+            
+            // Prüfen, ob es sich um eine UUID-basierte Chat-ID handelt
+            let isUuid = false;
+            let extractedGroupId = null;
+            
+            if (traditionalMatch) {
+              // Standardformat - direkt extrahieren
+              extractedGroupId = parseInt(traditionalMatch[1], 10);
+            } else {
+              // Prüfen, ob es eine UUID-basierte ID im Format "group-uuid-xyz" ist
+              isUuid = data.chatId.startsWith('group-uuid-');
+              
+              // Bei UUID-Format: Wir müssen die Gruppen-ID aus der Zuordnungstabelle abrufen
+              if (isUuid) {
+                console.log('UUID-basierte Chat-ID erkannt:', data.chatId);
+                
+                // Durchsuche die interne Zuordnung von Gruppen-IDs zu Chat-IDs
+                const groupIds = await getGroupIds();
+                for (const [groupId, chatId] of Object.entries(groupIds)) {
+                  if (chatId === data.chatId) {
+                    extractedGroupId = parseInt(groupId, 10);
+                    console.log('Zugehörige Gruppen-ID gefunden:', extractedGroupId);
+                    break;
+                  }
+                }
+              }
+            }
+            if (extractedGroupId) {
+              const groupId = extractedGroupId;
               
               // VERBESSERT: Sende die Nachricht an alle verbundenen Clients
               // Dadurch wird sichergestellt, dass die Nachricht an alle Clients gesendet wird,
