@@ -136,6 +136,9 @@ export default function Home() {
   // Debug-Ausgabe für Gruppen
   console.log("Available groups:", groups);
   
+  // Tiefere Debugging-Information hinzufügen
+  console.debug("Gruppen nach ID:", groups.map(g => g.id).join(", "));
+  
   // Hole aktive und bevorstehende Challenges, sortiere nach Startdatum (neueste zuerst)
   const challenges = challengeStore.getActiveChallenges()
     .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());

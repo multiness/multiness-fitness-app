@@ -570,6 +570,9 @@ const initializeStore = persist<GroupStore>(
           // Vereinfachte Strategie für das Laden von Mitgliedern - alle Gruppen gleichberechtigt laden
           console.log("Lade alle Gruppen gleichzeitig, insgesamt:", dbGroups.length);
           
+          // Debug: Zeige alle geladenen Gruppen-IDs an
+          console.debug("Geladene Gruppen-IDs:", dbGroups.map((g: any) => g.id));
+          
           // Laden aller Gruppen-Mitglieder parallel
           const memberPromises = dbGroups.map(async (dbGroup: any) => {
             try {
