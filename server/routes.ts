@@ -1217,14 +1217,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const allGroupIds = getGroupIds();
         const additionalGroups = [];
         
+        console.log("Verfügbare Gruppen-IDs:", Object.keys(allGroupIds));
+        
         for (const [id, chatId] of Object.entries(allGroupIds)) {
-          // Nur Gruppen mit ID > 5 berücksichtigen (UUID-basierte Gruppen)
-          if (!isNaN(Number(id)) && Number(id) > 5) {
+          // Prüfe alle numerischen IDs, die noch nicht geladen wurden
+          if (!isNaN(Number(id))) {
             try {
               // Prüfen, ob diese Gruppe bereits in den geladenen Gruppen enthalten ist
               if (!groups.some(g => g.id === Number(id))) {
+                console.log(`Lade zusätzliche Gruppe mit ID ${id}...`);
                 const group = await storage.getGroup(Number(id));
                 if (group) {
+                  console.log(`Gruppe ${id} gefunden und wird zur Ergebnisliste hinzugefügt`);
                   additionalGroups.push(group);
                 }
               }
