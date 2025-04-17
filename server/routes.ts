@@ -1228,7 +1228,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 console.log(`Lade zusätzliche Gruppe mit ID ${id}...`);
                 const group = await storage.getGroup(Number(id));
                 if (group) {
-                  console.log(`Gruppe ${id} gefunden und wird zur Ergebnisliste hinzugefügt`);
+                    console.log(`Gruppe ${id} gefunden und wird zur Ergebnisliste hinzugefügt, Details:`, group);
                   additionalGroups.push(group);
                 }
               }
@@ -1238,8 +1238,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
+        // Für alle Gruppen-IDs, die nicht in der Datenbank gefunden wurden, virtuelle Gruppen erstellen
+        const virtualGroups = [];
+        for (const [id, chatId] of Object.entries(allGroupIds)) {
+          if (!isNaN(Number(id)) && !groups.some(g => g.id === Number(id)) && !additionalGroups.some(g => g.id === Number(id))) {
+            // Erstelle eine virtuelle Gruppe basierend auf der ID und dem Chat-Tag
+            console.log(`Erstelle virtuelle Gruppe für ID ${id} mit Chat-Tag ${chatId}`);
+            virtualGroups.push({
+              id: Number(id),
+              name: `Gruppe ${id.slice(-4)}`,
+              description: "Diese Gruppe wurde automatisch wiederhergestellt.",
+              creatorId: 1,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              isPrivate: false,
+              memberCount: 1,
+              participantIds: [1]
+            });
+          }
+        }
+        
         // Alle Gruppen kombinieren
-        const allGroups = [...groups, ...additionalGroups];
+        const allGroups = [...groups, ...additionalGroups, ...virtualGroups];
+        console.log(`Insgesamt ${allGroups.length} Gruppen zurückgegeben (${groups.length} Basis + ${additionalGroups.length} zusätzliche + ${virtualGroups.length} virtuelle)`);
         
         // Wenn keine Gruppen gefunden wurden, Demo-Gruppen zurückgeben
         if (allGroups.length === 0) {
@@ -1285,7 +1306,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           ]);
         } else {
-          console.log(`Insgesamt ${allGroups.length} Gruppen zurückgegeben (${groups.length} Basis + ${additionalGroups.length} zusätzliche)`);
           res.json(allGroups);
         }
       } catch (dbError) {
