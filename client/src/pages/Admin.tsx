@@ -392,7 +392,7 @@ function GroupSyncManagement() {
         toast({
           title: "Gruppen-IDs zurückgesetzt",
           description: "Alle Gruppen-IDs wurden erfolgreich zurückgesetzt und neu synchronisiert.",
-          variant: "success"
+          variant: "default"
         });
         
         console.log("Reset-Ergebnis:", result);
@@ -2098,6 +2098,9 @@ export default function Admin() {
           </CardContent>
         </Card>
       </section>
+
+      {/* Group Sync Management Section */}
+      <GroupSyncManagement />
 
       {/* Backup Management Section */}
       <BackupManagement />
