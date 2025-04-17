@@ -563,6 +563,19 @@ const initializeStore = persist<GroupStore>(
             { headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' } } :
             { headers: { 'Cache-Control': 'max-age=60' } };
           
+          // WICHTIGE ÄNDERUNG: Erst Gruppen-IDs laden!
+          // Dies sorgt dafür, dass die virtuellen Gruppen bekannt sind, bevor die regulären Gruppen geladen werden
+          let groupIds: Record<string, string> = {};
+          try {
+            const groupIdsResponse = await fetch('/api/group-ids', cacheOptions);
+            if (groupIdsResponse.ok) {
+              groupIds = await groupIdsResponse.json();
+              console.log("Verfügbare Gruppen-IDs:", Object.keys(groupIds));
+            }
+          } catch (idsError) {
+            console.error("Fehler beim Laden der Gruppen-IDs:", idsError);
+          }
+          
           // Optimierte Parallelisierung der Anfragen
           const [groupsResponse, lastFetchTimestamp] = await Promise.all([
             fetch('/api/groups', cacheOptions),
@@ -586,17 +599,38 @@ const initializeStore = persist<GroupStore>(
           
           const dbGroups = await groupsResponse.json();
           
-          // Nur Gruppen laden, die geändert wurden oder neu sind
-          const existingGroups = get().groups;
+          // WICHTIGE ÄNDERUNG: Virtuelle Gruppen zu dbGroups hinzufügen
+          // Führe eine Liste aller Gruppen-IDs, die geladen werden müssen
+          const allGroupIds = Object.keys(groupIds);
+          const dbGroupIds = dbGroups.map((g: any) => g.id.toString());
+          const virtualGroupIds = allGroupIds.filter(id => !dbGroupIds.includes(id));
           
-          // Vereinfachte Strategie für das Laden von Mitgliedern - alle Gruppen gleichberechtigt laden
-          console.log("Lade alle Gruppen gleichzeitig, insgesamt:", dbGroups.length);
+          console.log(`${dbGroups.length} Gruppen aus der Datenbank geladen`);
+          console.log(`Verfügbare Gruppen-IDs:`, allGroupIds);
+          
+          // Für jede virtuelle Gruppe ein temporäres Objekt erstellen
+          const virtualGroups: any[] = [];
+          for (const vgId of virtualGroupIds) {
+            console.log(`Lade zusätzliche Gruppe mit ID ${vgId}...`);
+            // Ein einfaches Gruppenobjekt erstellen 
+            virtualGroups.push({
+              id: parseInt(vgId),
+              name: `Gruppe ${vgId.slice(-4)}`, // Letzte 4 Ziffern als Name verwenden
+              description: "Virtuell wiederhergestellte Gruppe",
+              creatorId: 1,
+              createdAt: new Date(),
+              isVirtual: true // Markiere als virtuell
+            });
+          }
+          
+          // Alle Gruppen kombinieren
+          const allGroups = [...dbGroups, ...virtualGroups];
           
           // Debug: Zeige alle geladenen Gruppen-IDs an
-          console.debug("Geladene Gruppen-IDs:", dbGroups.map((g: any) => g.id));
+          console.debug("Geladene Gruppen-IDs:", allGroups.map((g: any) => g.id));
           
           // Laden aller Gruppen-Mitglieder parallel
-          const memberPromises = dbGroups.map(async (dbGroup: any) => {
+          const memberPromises = allGroups.map(async (dbGroup: any) => {
             try {
               const controller = new AbortController();
               const signal = controller.signal;
@@ -612,7 +646,6 @@ const initializeStore = persist<GroupStore>(
               
               if (membersResponse.ok) {
                 const groupMembers = await membersResponse.json();
-                console.log(`Gruppe ${dbGroup.id} geladen mit ${groupMembers.length} Mitgliedern`);
                 return { groupId: dbGroup.id, members: groupMembers };
               } else {
                 console.warn(`Konnte Mitglieder für Gruppe ${dbGroup.id} nicht laden: ${membersResponse.status}`);
@@ -634,8 +667,8 @@ const initializeStore = persist<GroupStore>(
             allMembers.push(...result.members);
           });
           
-          // Update the store mit allen Gruppen
-          get().setGroups(dbGroups, allMembers);
+          // Update the store mit allen Gruppen (inklusive virtuellen Gruppen)
+          get().setGroups(allGroups, allMembers);
           
           // WebSocket-Verbindung nur einmal aufbauen und wiederverwenden
           const setupWebSocket = async () => {
