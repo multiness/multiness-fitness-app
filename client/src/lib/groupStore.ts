@@ -109,33 +109,48 @@ const initializeStore = persist<GroupStore>(
       invitations: {},
       
       addGroup: async (group: NewGroup) => {
-        // Generierung einer UUID für die Gruppe zur Vermeidung von Kollisionen
-        // Format: group-uuid-[timestamp]-[random]-[checksum]
-        const timestamp = Date.now().toString(36).substring(2, 10);
-        const random = Math.random().toString(36).substring(2, 10);
-        const checksum = (
-          parseInt(timestamp, 36) ^ 
-          parseInt(random, 36)
-        ).toString(16).substring(0, 8);
-        
-        const uuidTag = `group-uuid-${timestamp}-${random}-${checksum}`;
-        console.log('Neue UUID für Gruppe generiert:', uuidTag);
-        
-        const tempId = Date.now();
-        const newGroup = { ...group, id: tempId };
-        
-        // Lokale Gruppe aktualisieren für sofortige Anzeige
-        set((state) => ({
-          groups: {
-            ...state.groups,
-            [tempId]: newGroup
-          }
-        }));
-        
         try {
+          // Generierung einer UUID für die Gruppe zur Vermeidung von Kollisionen
+          // Format: group-uuid-[timestamp]-[random]-[checksum]
+          const timestamp = Date.now().toString(36);
+          const random = Math.random().toString(36).substring(2, 10);
+          const checksum = (
+            parseInt(timestamp, 36) ^ 
+            parseInt(random, 36)
+          ).toString(16).substring(0, 8);
+          
+          const uuidTag = `group-uuid-${timestamp.substring(2, 10)}-${random}-${checksum}`;
+          console.log('Neue UUID für Gruppe generiert:', uuidTag);
+          
+          // Konvertiere die Daten für das Optimistic UI Update
+          const tempId = Date.now();
+          const participantIds = group.participantIds || [1]; // Standard: aktueller Benutzer (1)
+          const newGroup = { 
+            ...group, 
+            id: tempId, 
+            participantIds,
+            createdAt: new Date(),
+            creatorId: 1
+          };
+          
+          // Lokale Gruppe sofort aktualisieren für Optimistic UI
+          set((state) => ({
+            groups: {
+              ...state.groups,
+              [tempId]: newGroup
+            }
+          }));
+          
+          console.log('Sende Gruppenanfrage an den Server:', {
+            ...group,
+            uuidTag: uuidTag
+          });
+          
           // Wir fügen ein Flag hinzu, das anzeigt, dass dies ein neuer Gruppentyp mit UUID ist
           const response = await apiRequest('POST', '/api/groups', {
             ...group,
+            participantIds,
+            creatorId: 1,
             uuidTag: uuidTag
           });
           
@@ -158,26 +173,33 @@ const initializeStore = persist<GroupStore>(
           const savedGroup: DbGroup = await response.json();
           console.log('Gruppe erfolgreich auf Server gespeichert:', savedGroup);
           
+          // Überprüfen und konvertieren der ID wenn nötig
+          const savedGroupId = typeof savedGroup.id === 'string' 
+            ? parseInt(savedGroup.id, 10) 
+            : savedGroup.id;
+          
+          console.log(`Ersetze temporäre Gruppe ${tempId} mit Server-Gruppe ${savedGroupId}`);
+          
           // Gruppe mit Server-ID aktualisieren und temporäre Gruppe entfernen
           set((state) => {
             const { [tempId]: _, ...restGroups } = state.groups;
             return {
               groups: {
                 ...restGroups,
-                [savedGroup.id]: mapDbGroupToClientGroup(savedGroup)
+                [savedGroupId]: mapDbGroupToClientGroup(savedGroup)
               }
             };
           });
           
-          // Manuelles Update der Gruppen-IDs
+          // Manuelles Update der Gruppen-IDs und erzwinge einen kompletten Refresh
           try {
-            await get().syncWithServer();
+            await get().syncWithServer(true);
           } catch (syncError) {
             console.error('Fehler bei der Synchronisierung nach Gruppenerstellung:', syncError);
           }
           
           // Gib die neue, permanente ID zurück
-          return savedGroup.id;
+          return savedGroupId;
           
         } catch (error) {
           console.error('Fehler beim Erstellen der Gruppe:', error);
