@@ -134,7 +134,6 @@ const GroupCarousel = ({ groups }: GroupCarouselProps) => {
             className="flex gap-4 shrink-0 snap-start w-[calc(100vw-2rem)]"
           >
             {chunk.map(group => {
-              const creator = users.find(u => u.id === group.creatorId);
               const isJoined = groupStore.isGroupMember(group.id, userId);
               const chatId = getChatId(group.id, 'group');
 
@@ -158,17 +157,15 @@ const GroupCarousel = ({ groups }: GroupCarouselProps) => {
                       <h3 className="font-semibold text-sm leading-tight">
                         {group.name}
                       </h3>
-                      {creator && (
-                        <div className="flex items-center gap-1.5">
-                          <UserAvatar
-                            userId={creator.id}
-                            size="sm"
-                          />
-                          <p className="text-xs text-muted-foreground truncate">
-                            {creator.username}
-                          </p>
-                        </div>
-                      )}
+                      <div className="flex items-center gap-1.5">
+                        <UserAvatar
+                          userId={group.creatorId || 1}
+                          size="sm"
+                        />
+                        <p className="text-xs text-muted-foreground truncate">
+                          {group.creatorId === 1 ? "Max Mustermann" : "Gruppenersteller"}
+                        </p>
+                      </div>
                     </div>
 
                     <div className="flex items-center justify-between pt-1">
