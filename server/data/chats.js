@@ -105,6 +105,37 @@ async function loadGroupIds() {
   }
 }
 
+// Funktion zum Zurücksetzen aller Gruppen-IDs
+async function resetAllGroupIds() {
+  console.log('ACHTUNG: Alle Gruppen-IDs werden zurückgesetzt!');
+  
+  // Speichere die alten IDs zur Sicherheit
+  const oldGroupIds = { ...groupIds };
+  
+  // Setze zu Standard-Gruppen zurück
+  const standardGroups = {
+    '1': 'group-1',
+    '2': 'group-2',
+    '3': 'group-3',
+    '4': 'group-4',
+    '5': 'group-5'
+  };
+  
+  // Zurücksetzen des In-Memory-Caches
+  groupIds = { ...standardGroups };
+  
+  // Speichern der neuen Gruppen-IDs
+  await saveGroupIds();
+  
+  // Setze auch gelöschte Gruppen zurück
+  deletedGroupIds = new Set();
+  await saveDeletedGroupIds();
+  
+  console.log('Gruppen-IDs wurden zurückgesetzt. Alte IDs:', oldGroupIds, 'Neue IDs:', groupIds);
+  
+  return { oldGroupIds, newGroupIds: { ...groupIds } };
+}
+
 // Hilfsfunktion zum Speichern der Gruppen-IDs in der Datei
 async function saveGroupIds() {
   try {
@@ -224,5 +255,6 @@ export {
   getGroupIds,
   markGroupIdAsDeleted,
   isDeletedChatId,
-  generateUniqueId
+  generateUniqueId,
+  resetAllGroupIds
 };

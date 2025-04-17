@@ -27,7 +27,8 @@ import {
   getGroupIds,
   markGroupIdAsDeleted,
   isDeletedChatId,
-  generateUniqueId
+  generateUniqueId,
+  resetAllGroupIds
 } from "./data/chats.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
