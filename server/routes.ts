@@ -1206,42 +1206,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const options = {
           userId: req.query.userId ? Number(req.query.userId) : undefined,
           limit: req.query.limit ? Number(req.query.limit) : undefined,
-          offset: req.query.offset ? Number(req.query.offset) : undefined,
-          includeAll: true // Sorgt dafür, dass auch UUID-basierte Gruppen zurückgegeben werden
+          offset: req.query.offset ? Number(req.query.offset) : undefined
         };
         
-        // Hole die GroupIds, um später fehlende Gruppen zu ergänzen
-        const allGroupIds = getGroupIds();
-        
-        // Hole Gruppen aus der Datenbank
+        // Einfacherer Ansatz, um sowohl Standard- als auch UUID-Gruppen zu bekommen
         const groups = await storage.getGroups(options);
+        console.log(`${groups.length} Gruppen aus der Datenbank geladen`);
         
-        // Füge fehlende Gruppen hinzu, die in der UUID-Zuordnung vorhanden sind,
-        // aber nicht in den Datenbankgruppen enthalten sind
-        const groupsWithHigherIds = [...groups];
-        const databaseGroupIds = new Set(groups.map(g => g.id.toString()));
+        // Zusätzlich manuell Gruppen mit höherer ID laden
+        const allGroupIds = getGroupIds();
+        const additionalGroups = [];
         
-        // Suche nach fehlenden Gruppen mit höheren IDs (UUID-basierte Gruppen)
         for (const [id, chatId] of Object.entries(allGroupIds)) {
-          // Ignoriere Gruppen, die bereits in der Datenbankabfrage enthalten sind
-          if (databaseGroupIds.has(id)) continue;
-          
-          // Überprüfe, ob es sich um eine UUID-Gruppe handelt (höhere ID)
+          // Nur Gruppen mit ID > 5 berücksichtigen (UUID-basierte Gruppen)
           if (!isNaN(Number(id)) && Number(id) > 5) {
             try {
-              const group = await storage.getGroup(Number(id));
-              if (group) {
-                groupsWithHigherIds.push(group);
+              // Prüfen, ob diese Gruppe bereits in den geladenen Gruppen enthalten ist
+              if (!groups.some(g => g.id === Number(id))) {
+                const group = await storage.getGroup(Number(id));
+                if (group) {
+                  additionalGroups.push(group);
+                }
               }
             } catch (err) {
-              console.warn(`Konnte Gruppe mit ID ${id} nicht abrufen:`, err);
+              // Fehler beim Laden einzelner Gruppen ignorieren
             }
           }
         }
         
-        // Wenn keine Gruppen gefunden wurden, gib Demo-Gruppen zurück
-        if (groupsWithHigherIds.length === 0) {
-          console.log("Keine Gruppen gefunden, gebe Demo-Gruppen zurück");
+        // Alle Gruppen kombinieren
+        const allGroups = [...groups, ...additionalGroups];
+        
+        // Wenn keine Gruppen gefunden wurden, Demo-Gruppen zurückgeben
+        if (allGroups.length === 0) {
           res.json([
             {
               id: 1,
@@ -1284,8 +1281,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           ]);
         } else {
-          console.log(`Gebe ${groupsWithHigherIds.length} Gruppen zurück (${groups.length} aus Datenbankabfrage, ${groupsWithHigherIds.length - groups.length} ergänzt)`);
-          res.json(groupsWithHigherIds);
+          console.log(`Insgesamt ${allGroups.length} Gruppen zurückgegeben (${groups.length} Basis + ${additionalGroups.length} zusätzliche)`);
+          res.json(allGroups);
         }
       } catch (dbError) {
         console.error("Error fetching groups from database:", dbError);
