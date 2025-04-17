@@ -424,7 +424,7 @@ function GroupSyncManagement() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Alert variant="warning" className="mb-6">
+          <Alert className="mb-6 bg-amber-50 border-amber-200">
             <AlertDescription>
               <div className="flex items-start gap-2">
                 <Info className="h-4 w-4 mt-0.5 text-amber-500" />

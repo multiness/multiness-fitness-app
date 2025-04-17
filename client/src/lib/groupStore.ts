@@ -205,13 +205,15 @@ const initializeStore = persist<GroupStore>(
         } catch (error) {
           console.error('Fehler beim Erstellen der Gruppe:', error);
           
-          // Entferne die temporäre Gruppe im Fehlerfall
-          set((state) => {
-            const { [tempId]: _, ...restGroups } = state.groups;
-            return {
-              groups: restGroups
-            };
-          });
+          // Entferne die temporäre Gruppe im Fehlerfall, falls tempId definiert ist
+          if (typeof tempId !== 'undefined') {
+            set((state) => {
+              const { [tempId]: _, ...restGroups } = state.groups;
+              return {
+                groups: restGroups
+              };
+            });
+          }
           
           // Fehler weitergeben, damit die Komponente darauf reagieren kann
           throw error;
