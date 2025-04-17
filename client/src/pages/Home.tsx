@@ -132,12 +132,15 @@ export default function Home() {
   }, []);
   
   // Lade Daten aus den stores statt aus den mock-Daten
-  const groups = Object.values(groupStore.groups);
-  // Debug-Ausgabe für Gruppen
-  console.log("Available groups:", groups);
+  // WICHTIG: Hole ALLE Gruppen aus dem Store, OHNE FILTER
+  const allGroups = Object.values(groupStore.groups);
   
-  // Tiefere Debugging-Information hinzufügen
-  console.debug("Gruppen nach ID:", groups.map(g => g.id).join(", "));
+  // Debug-Ausgabe für alle Gruppen
+  console.log("Available groups:", allGroups);
+  console.debug("Gruppen nach ID:", allGroups.map(g => g.id).join(", "));
+  
+  // Für beide Ansichten (Mobile & Desktop) die gleichen Gruppen verwenden
+  const groups = allGroups;
   
   // Hole aktive und bevorstehende Challenges, sortiere nach Startdatum (neueste zuerst)
   const challenges = challengeStore.getActiveChallenges()
