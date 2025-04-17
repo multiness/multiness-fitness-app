@@ -268,6 +268,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Alle Gruppen-IDs zurücksetzen (für komplette Neusynchronisierung)
+  app.post("/api/group-ids/reset", async (req, res) => {
+    try {
+      console.log("ACHTUNG: Gruppen-IDs-Reset wurde angefordert");
+      
+      // Führe den Reset durch
+      const { oldGroupIds, newGroupIds } = await resetAllGroupIds();
+      
+      // Informiere alle verbundenen WebSocket-Clients über den Reset
+      if (subscriptions.groupIds.size > 0) {
+        let notifiedClients = 0;
+        subscriptions.groupIds.forEach(client => {
+          if (safeMessageSend(client, {
+            type: 'groupIdsReset',
+            oldGroupIds,
+            newGroupIds
+          })) {
+            notifiedClients++;
+          }
+        });
+        console.log(`Gruppen-IDs-Reset an ${notifiedClients} Clients gesendet`);
+      }
+      
+      res.status(200).json({ 
+        success: true, 
+        message: "Alle Gruppen-IDs wurden zurückgesetzt",
+        oldGroupIds,
+        newGroupIds
+      });
+    } catch (error) {
+      console.error("Fehler beim Zurücksetzen der Gruppen-IDs:", error);
+      res.status(500).json({ error: "Interner Serverfehler" });
+    }
+  });
+  
   // Gruppen-ID speichern (für die Gruppen-Chat-Synchronisierung)
   app.post("/api/group-ids", async (req, res) => {
     try {

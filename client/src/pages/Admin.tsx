@@ -377,6 +377,92 @@ function TeamManagement() {
 }
 
 // Backup Management Component
+// Komponente zur Verwaltung der Gruppensynchronisation
+function GroupSyncManagement() {
+  const [isResetting, setIsResetting] = useState(false);
+  const groupStore = useGroupStore();
+  const { toast } = useToast();
+
+  const handleResetGroupIds = async () => {
+    if (window.confirm('ACHTUNG: Alle Gruppen-IDs werden zurückgesetzt. Dies kann bestehende Chat-Zuordnungen beeinflussen. Fortfahren?')) {
+      try {
+        setIsResetting(true);
+        const result = await groupStore.resetGroupIds();
+        
+        toast({
+          title: "Gruppen-IDs zurückgesetzt",
+          description: "Alle Gruppen-IDs wurden erfolgreich zurückgesetzt und neu synchronisiert.",
+          variant: "success"
+        });
+        
+        console.log("Reset-Ergebnis:", result);
+      } catch (error) {
+        console.error("Fehler beim Zurücksetzen der Gruppen-IDs:", error);
+        toast({
+          title: "Fehler beim Zurücksetzen",
+          description: "Es ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsResetting(false);
+      }
+    }
+  };
+
+  return (
+    <section>
+      <h2 className="text-2xl font-bold mb-6">Gruppen-Synchronisation</h2>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <RefreshCw className="h-5 w-5" />
+            Gruppen-IDs zurücksetzen
+          </CardTitle>
+          <CardDescription>
+            Diese Funktion setzt alle Gruppen-IDs zurück und generiert neue IDs für die Gruppen-Chat-Zuordnung.
+            Verwenden Sie diese Option nur, wenn es Probleme mit der Gruppensynchronisierung gibt.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Alert variant="warning" className="mb-6">
+            <AlertDescription>
+              <div className="flex items-start gap-2">
+                <Info className="h-4 w-4 mt-0.5 text-amber-500" />
+                <div>
+                  <p className="font-semibold text-sm mb-1">Wichtiger Hinweis</p>
+                  <p className="text-sm text-muted-foreground">
+                    Das Zurücksetzen der Gruppen-IDs führt dazu, dass alle virtuellen Gruppen neu erstellt werden.
+                    Bestehende Chat-Verläufe bleiben erhalten, aber die Zuordnung zwischen Gruppen und Chats wird neu hergestellt.
+                  </p>
+                </div>
+              </div>
+            </AlertDescription>
+          </Alert>
+
+          <Button 
+            variant="destructive" 
+            onClick={handleResetGroupIds}
+            disabled={isResetting}
+            className="w-full"
+          >
+            {isResetting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Gruppen-IDs werden zurückgesetzt...
+              </>
+            ) : (
+              <>
+                <RotateCcw className="mr-2 h-4 w-4" />
+                Gruppen-IDs zurücksetzen
+              </>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
+    </section>
+  );
+}
+
 function BackupManagement() {
   const [backups, setBackups] = useState<{name: string, timestamp: string, isLocalBackup?: boolean, isServerBackup?: boolean}[]>([]);
   const [isCreatingBackup, setIsCreatingBackup] = useState(false);

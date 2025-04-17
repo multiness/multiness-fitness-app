@@ -39,6 +39,7 @@ interface GroupStore {
   // Database functions
   setGroups: (groups: DbGroup[], members: GroupMember[], mergeWithExisting?: boolean) => void;
   syncWithServer: (forceRefresh?: boolean) => Promise<void>;
+  resetGroupIds: () => Promise<any>; // Neue Funktion zum Zurücksetzen der Gruppen-IDs
   
   // Group functions
   addGroup: (group: NewGroup) => Promise<number>;
@@ -546,6 +547,35 @@ const initializeStore = persist<GroupStore>(
         console.debug(`Groups synchronized: ${Object.keys(groupsRecord).length} groups loaded`);
       },
       
+      // Methode zum Zurücksetzen aller Gruppen-IDs
+      resetGroupIds: async () => {
+        try {
+          console.warn("ACHTUNG: Alle Gruppen-IDs werden zurückgesetzt!");
+          
+          // Setze Loading-State
+          set({ isLoading: true });
+          
+          // API-Aufruf zum Zurücksetzen aller Gruppen-IDs
+          const response = await apiRequest('POST', '/api/group-ids/reset');
+          
+          if (!response.ok) {
+            throw new Error(`Fehler beim Zurücksetzen der Gruppen-IDs: ${response.status} ${response.statusText}`);
+          }
+          
+          const result = await response.json();
+          console.log("Gruppen-IDs erfolgreich zurückgesetzt:", result);
+          
+          // Aktualisiere den Speicher mit den neuen IDs
+          await get().syncWithServer(true);
+          
+          return result;
+        } catch (error) {
+          console.error("Fehler beim Zurücksetzen der Gruppen-IDs:", error);
+          set({ isLoading: false });
+          throw error;
+        }
+      },
+      
       syncWithServer: async (forceRefresh = false) => {
         try {
           // Prüfe, ob wir bereits Daten laden - vermeide doppelte Ladungen
@@ -570,7 +600,7 @@ const initializeStore = persist<GroupStore>(
             const groupIdsResponse = await fetch('/api/group-ids', cacheOptions);
             if (groupIdsResponse.ok) {
               groupIds = await groupIdsResponse.json();
-              console.log("Verfügbare Gruppen-IDs:", Object.keys(groupIds));
+              console.log("Gruppen-IDs vom Server synchronisiert:", groupIds);
             }
           } catch (idsError) {
             console.error("Fehler beim Laden der Gruppen-IDs:", idsError);
