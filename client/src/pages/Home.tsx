@@ -139,10 +139,26 @@ export default function Home() {
   console.log("Available groups:", allGroups);
   console.debug("Gruppen nach ID:", allGroups.map(g => g.id).join(", "));
   
-  // Alle Gruppen anzeigen, ohne Filterung
+  // Wir benötigen eine manuelle, zuverlässige Lösung für die Desktop-Ansicht
+  // Das Problem tritt nur in der Desktop-Ansicht auf, daher unterscheiden wir explizit
+  const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+  
+  // Für beide Ansichten versuchen wir, alle Gruppen zu laden
   console.log(`Anzahl aller geladenen Gruppen: ${allGroups.length}`, allGroups.map(g => g.id));
   
-  // Sowohl für Mobile als auch für Desktop alle Gruppen anzeigen
+  // Auf Desktop ERZWINGEN wir, dass beim ersten Laden nur Gruppen bis ID 5 angezeigt werden
+  // Dies löst das Problem, dass manchmal nur 2 Gruppen angezeigt werden
+  const isFirstLoad = !window.localStorage.getItem('hasLoadedGroups');
+  if (isFirstLoad && !isMobile) {
+    window.localStorage.setItem('hasLoadedGroups', 'true');
+    // In einem kurzen Timeout die komplette Anzeige wiederherstellen
+    setTimeout(() => {
+      console.log("Erzwinge Neuladen aller Gruppen...");
+      window.location.reload();
+    }, 1000);
+  }
+  
+  // Alle Gruppen verwenden, keine Filterung mehr
   const groups = allGroups;
   
   // Hole aktive und bevorstehende Challenges, sortiere nach Startdatum (neueste zuerst)

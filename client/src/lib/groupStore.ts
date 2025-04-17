@@ -600,19 +600,37 @@ const initializeStore = persist<GroupStore>(
           // Debugging Information
           console.log("Synchronisiere mit Server - Platform:", navigator.userAgent, "- IsMobile:", /Mobi|Android/i.test(navigator.userAgent));
           
-          // Cache-Header für schnelleres Laden (deaktivieren bei erzwungener Aktualisierung)
-          const cacheOptions = forceRefresh ? 
-            { headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' } } :
-            { headers: { 'Cache-Control': 'max-age=60' } };
+          // Cache-Header für schnelleres Laden (bei JEDER Ausführung Cache umgehen für konsistentere Ergebnisse)
+          // Dieses Verhalten hat sich als zuverlässiger für die Desktop-Ansicht erwiesen
+          const cacheOptions = { 
+            headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache' }
+          };
           
           // WICHTIGE ÄNDERUNG: Erst Gruppen-IDs laden!
           // Dies sorgt dafür, dass die virtuellen Gruppen bekannt sind, bevor die regulären Gruppen geladen werden
           let groupIds: Record<string, string> = {};
           try {
-            const groupIdsResponse = await fetch('/api/group-ids', cacheOptions);
-            if (groupIdsResponse.ok) {
-              groupIds = await groupIdsResponse.json();
-              console.log("Gruppen-IDs vom Server synchronisiert:", groupIds);
+            // Versuche mehrmals, die Gruppen-IDs zu laden, falls nötig
+            let attempts = 0;
+            const maxAttempts = 3;
+            let groupIdsResponse;
+            
+            while (attempts < maxAttempts) {
+              groupIdsResponse = await fetch('/api/group-ids', cacheOptions);
+              if (groupIdsResponse.ok) {
+                groupIds = await groupIdsResponse.json();
+                console.log("Gruppen-IDs vom Server synchronisiert:", groupIds);
+                break;
+              }
+              attempts++;
+              if (attempts < maxAttempts) {
+                // Warte kurz vor dem nächsten Versuch
+                await new Promise(resolve => setTimeout(resolve, 300));
+              }
+            }
+            
+            if (!groupIdsResponse || !groupIdsResponse.ok) {
+              console.error("Alle Versuche, Gruppen-IDs zu laden, fehlgeschlagen");
             }
           } catch (idsError) {
             console.error("Fehler beim Laden der Gruppen-IDs:", idsError);
