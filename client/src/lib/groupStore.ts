@@ -205,15 +205,22 @@ const initializeStore = persist<GroupStore>(
         } catch (error) {
           console.error('Fehler beim Erstellen der Gruppe:', error);
           
-          // Entferne die temporäre Gruppe im Fehlerfall, falls tempId definiert ist
-          if (typeof tempId !== 'undefined') {
-            set((state) => {
-              const { [tempId]: _, ...restGroups } = state.groups;
-              return {
-                groups: restGroups
-              };
-            });
-          }
+          // Entferne die temporäre Gruppe im Fehlerfall, wenn verfügbar
+          set((state) => {
+            // Finde die neueste temporäre Gruppe (falls vorhanden)
+            const newGroupIds = Object.keys(state.groups)
+              .filter(id => parseInt(id) > Date.now() - 60000) // Temporäre IDs der letzten Minute
+              .sort();
+            
+            if (newGroupIds.length > 0) {
+              const latestTempId = newGroupIds[newGroupIds.length - 1];
+              const { [latestTempId]: _, ...restGroups } = state.groups;
+              return { groups: restGroups };
+            }
+            
+            // Wenn keine temporäre Gruppe gefunden wurde, zurück zum unveränderten Zustand
+            return state;
+          });
           
           // Fehler weitergeben, damit die Komponente darauf reagieren kann
           throw error;
@@ -589,6 +596,9 @@ const initializeStore = persist<GroupStore>(
           
           // Setze Loading-State
           set({ isLoading: true });
+          
+          // Debugging Information
+          console.log("Synchronisiere mit Server - Platform:", navigator.userAgent, "- IsMobile:", /Mobi|Android/i.test(navigator.userAgent));
           
           // Cache-Header für schnelleres Laden (deaktivieren bei erzwungener Aktualisierung)
           const cacheOptions = forceRefresh ? 
