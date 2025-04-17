@@ -82,6 +82,9 @@ const mapDbGroupToClientGroup = (dbGroup: DbGroup, members: GroupMember[] = []):
     console.error("Error parsing date:", e);
   }
   
+  // Spezielles Debug-Log für Desktop-Mobil-Problem
+  console.debug(`Gruppe ${dbGroup.id} (${dbGroup.name}) wird zum Store hinzugefügt`);
+  
   return {
     ...dbGroup,
     createdAt,
