@@ -140,7 +140,12 @@ export default function Home() {
   console.debug("Gruppen nach ID:", allGroups.map(g => g.id).join(", "));
   
   // Für beide Ansichten (Mobile & Desktop) die gleichen Gruppen verwenden
-  const groups = allGroups;
+  // Forciere Anzeige nur der Basis-Gruppen (IDs 1-5) für die Desktopansicht
+  const baseGroups = allGroups.filter(g => g.id <= 5);
+  console.log(`Basis-Gruppen für Desktop: ${baseGroups.length}`, baseGroups.map(g => g.id));
+  
+  // Temporäre Lösung: Nur Basis-Gruppen anzeigen
+  const groups = baseGroups;
   
   // Hole aktive und bevorstehende Challenges, sortiere nach Startdatum (neueste zuerst)
   const challenges = challengeStore.getActiveChallenges()
