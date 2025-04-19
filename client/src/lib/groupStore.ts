@@ -549,22 +549,58 @@ const initializeStore = persist<GroupStore>(
         
         console.log(`Aktualisiere ${dbGroups.length} Gruppen, Merge-Modus: ${mergeWithExisting}`);
         
+        // Debug: Konvertierung überwachen
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[GroupStore] Gruppen vor Konvertierung: ${Object.keys(groupsRecord).length}`,
+            Object.keys(groupsRecord).join(', '));
+        }
+        
         // Convert data to client format und in den Store integrieren
         dbGroups.forEach(dbGroup => {
           // Find all members for this group
           const groupMembers = members.filter(m => m.groupId === dbGroup.id);
           const clientGroup = mapDbGroupToClientGroup(dbGroup, groupMembers);
-          groupsRecord[dbGroup.id] = clientGroup;
+          
+          // Sicherstellen, dass die ID als Nummer konvertiert wird für konsistenten Zugriff
+          const numericId = typeof dbGroup.id === 'string' ? parseInt(dbGroup.id) : dbGroup.id;
+          
+          // WICHTIG: Sicherstellen, dass alle Gruppen auch im Desktop-Modus angezeigt werden
+          if (!isNaN(numericId)) {
+            groupsRecord[numericId] = clientGroup;
+            
+            // Debug: einzelne Gruppe nachverfolgen
+            if (process.env.NODE_ENV === 'development') {
+              console.log(`[GroupStore] Gruppe ${numericId} zum Store hinzugefügt/aktualisiert`);
+            }
+          } else {
+            console.warn(`[GroupStore] Ungültige Gruppen-ID ignoriert: ${dbGroup.id}`);
+          }
         });
         
+        // Nach der Konvertierung prüfen, ob alle Gruppen noch vorhanden sind
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[GroupStore] Gruppen nach Konvertierung: ${Object.keys(groupsRecord).length}`, 
+            Object.keys(groupsRecord).join(', '));
+        }
+        
+        // Gruppen nach ID sortieren (für konsistente Ansicht)
+        const sortedGroups: Record<number, Group> = {};
+        // Erst numerische IDs sortieren
+        Object.keys(groupsRecord)
+          .map(id => parseInt(id))
+          .sort((a, b) => a - b)
+          .forEach(id => {
+            sortedGroups[id] = groupsRecord[id];
+          });
+        
         set({ 
-          groups: groupsRecord,
+          groups: sortedGroups,
           lastFetched: Date.now(),
           isLoading: false // Immer isLoading zurücksetzen
         });
         
         // Logs für Debugging
-        console.debug(`Groups synchronized: ${Object.keys(groupsRecord).length} groups loaded`);
+        console.debug(`Groups synchronized: ${Object.keys(sortedGroups).length} groups loaded`);
       },
       
       // Methode zum Zurücksetzen aller Gruppen-IDs

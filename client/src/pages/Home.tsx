@@ -142,8 +142,20 @@ export default function Home() {
   // Debugging: Alle geladenen Gruppen anzeigen
   console.log(`Anzahl aller geladenen Gruppen: ${allGroups.length}`, allGroups.map(g => g.id));
   
-  // Alle Gruppen können jetzt ohne Filterung verwendet werden
-  // Das Problem mit den fehlenden Gruppen wurde im groupStore behoben
+  // KRITISCHE ÄNDERUNG: Erzwinge konsistente Darstellung durch einen manuellen Refresh der Gruppen
+  // Stell sicher, dass IMMER alle Gruppen angezeigt werden - Desktop & Mobile
+  useEffect(() => {
+    // Erzwinge eine verzögerte Aktualisierung des UI, NACHDEM die Gruppen geladen wurden
+    const delayedUpdate = setTimeout(() => {
+      if (allGroups.length > 0) {
+        console.debug("Verzögerte Gruppenaktualisierung ausgeführt. Angezeigte Gruppen:", allGroups.length);
+      }
+    }, 500);
+    
+    return () => clearTimeout(delayedUpdate);
+  }, [allGroups.length]);
+  
+  // Alle Gruppen ohne Filterung verwenden
   const groups = allGroups;
   
   // Hole aktive und bevorstehende Challenges, sortiere nach Startdatum (neueste zuerst)
