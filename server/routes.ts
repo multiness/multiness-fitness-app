@@ -259,9 +259,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Alle Gruppen-IDs abrufen (für die Gruppen-Chat-Synchronisierung)
   app.get("/api/group-ids", (req, res) => {
     try {
-      const groupIds = getGroupIds();
-      console.log("Gruppen-IDs abgerufen:", groupIds);
-      res.json(groupIds);
+      const allGroupIds = getGroupIds();
+      const filteredGroupIds: Record<string, string> = {};
+      
+      // Filtere gelöschte Chat-IDs aus den Gruppen-IDs heraus
+      for (const [groupId, chatId] of Object.entries(allGroupIds)) {
+        if (!isDeletedChatId(chatId)) {
+          filteredGroupIds[groupId] = chatId;
+        } else {
+          console.log(`Gruppe ${groupId} mit Chat-ID ${chatId} wurde bei der ID-Abfrage herausgefiltert (als gelöscht markiert)`);
+        }
+      }
+      
+      console.log("Gruppen-IDs abgerufen:", filteredGroupIds);
+      res.json(filteredGroupIds);
     } catch (error) {
       console.error("Fehler beim Abrufen der Gruppen-IDs:", error);
       res.status(500).json({ error: "Interner Serverfehler" });
@@ -319,10 +330,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedGroupIds = getGroupIds();
       if (subscriptions.groupIds.size > 0) {
         let notifiedClients = 0;
+        // Filtere gelöschte Gruppen vor dem Senden
+        const filteredGroupIds: Record<string, string> = {};
+        for (const [id, chatId] of Object.entries(updatedGroupIds)) {
+          if (!isDeletedChatId(chatId)) {
+            filteredGroupIds[id] = chatId;
+          }
+        }
+        
         subscriptions.groupIds.forEach(client => {
           if (safeMessageSend(client, {
             type: 'groupIds',
-            groupIds: updatedGroupIds,
+            groupIds: filteredGroupIds,
             updatedGroupId: groupId
           })) {
             notifiedClients++;
@@ -358,10 +377,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedGroupIds = getGroupIds();
       if (subscriptions.groupIds.size > 0) {
         let notifiedClients = 0;
+        // Filtere gelöschte Gruppen vor dem Senden
+        const filteredGroupIds: Record<string, string> = {};
+        for (const [id, chatId] of Object.entries(updatedGroupIds)) {
+          if (!isDeletedChatId(chatId)) {
+            filteredGroupIds[id] = chatId;
+          }
+        }
+        
         subscriptions.groupIds.forEach(client => {
           if (safeMessageSend(client, {
             type: 'groupIds',
-            groupIds: updatedGroupIds,
+            groupIds: filteredGroupIds,
             updatedGroupId: groupId,
             generated: true
           })) {
@@ -396,10 +423,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const updatedGroupIds = getGroupIds();
         if (subscriptions.groupIds.size > 0) {
           let notifiedClients = 0;
+          
+          // Filtere gelöschte Gruppen vor dem Senden
+          const filteredGroupIds: Record<string, string> = {};
+          for (const [id, chatId] of Object.entries(updatedGroupIds)) {
+            if (!isDeletedChatId(chatId)) {
+              filteredGroupIds[id] = chatId;
+            }
+          }
+          
           subscriptions.groupIds.forEach(client => {
             if (safeMessageSend(client, {
               type: 'groupIds',
-              groupIds: updatedGroupIds,
+              groupIds: filteredGroupIds,
               deletedGroupId: groupId
             })) {
               notifiedClients++;
