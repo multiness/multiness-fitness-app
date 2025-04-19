@@ -217,7 +217,13 @@ const initializeStore = persist<GroupStore>(
             
             if (newGroupIds.length > 0) {
               const latestTempId = newGroupIds[newGroupIds.length - 1];
-              const { [latestTempId]: _, ...restGroups } = state.groups;
+              // TypeScript-Fix: Stellen Sie sicher, dass der latestTempId als Zahl verwendet wird
+              const numericLatestTempId = parseInt(latestTempId);
+              // Erstellen Sie ein neues Objekt ohne die temporäre Gruppe
+              const restGroups: Record<number, Group> = {...state.groups};
+              if (numericLatestTempId in restGroups) {
+                delete restGroups[numericLatestTempId];
+              }
               return { groups: restGroups };
             }
             
@@ -277,7 +283,9 @@ const initializeStore = persist<GroupStore>(
 
           // Optimistisches Update lokal anwenden
           set((state) => {
-            const { [id]: _, ...restGroups } = state.groups;
+            // TypeScript-Fix: Verwende eine sichere Methode, um eine Gruppe zu entfernen
+            const restGroups: Record<number, Group> = {...state.groups};
+            delete restGroups[id];
             return { groups: restGroups };
           });
           
@@ -688,6 +696,9 @@ const initializeStore = persist<GroupStore>(
           
           // Alle Gruppen kombinieren
           const allGroups = [...dbGroups, ...virtualGroups];
+          
+          // WICHTIG: Debug-Ausgabe für die Gruppen-Anzahl und IDs
+          console.log(`Alle Gruppen (${allGroups.length})`, allGroups.map(g => g.id));
           
           // Debug: Zeige alle geladenen Gruppen-IDs an
           console.debug("Geladene Gruppen-IDs:", allGroups.map((g: any) => g.id));

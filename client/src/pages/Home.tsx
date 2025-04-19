@@ -249,7 +249,7 @@ export default function Home() {
         <div className="block md:hidden">
           <GroupCarousel groups={groups} />
         </div>
-        {/* Desktop-Ansicht: Grid-Layout mit Fallback */}
+        {/* Desktop-Ansicht: Grid-Layout statt Karussell */}
         <div className="hidden md:block">
           {/* Debug-Info für Desktop-Ansicht */}
           {process.env.NODE_ENV === 'development' && (
@@ -260,86 +260,30 @@ export default function Home() {
             </div>
           )}
           
-          {/* Wenn keine Gruppen geladen sind, zeigen wir eine alternative Komponente */}
+          {/* Wenn keine Gruppen geladen sind, zeigen wir eine Lade-Animation */}
           {groups.length === 0 ? (
             <div className="mb-6">
               <Alert className="mb-4 bg-amber-50 border-amber-200">
                 <div className="flex items-start gap-2">
-                  <RefreshCw className="h-4 w-4 mt-0.5 text-amber-500" />
+                  <RefreshCw className="h-4 w-4 mt-0.5 text-amber-500 animate-spin" />
                   <div>
                     <p className="font-semibold text-sm mb-1">Gruppen werden geladen</p>
                     <p className="text-sm text-muted-foreground">
-                      Wenn keine Gruppen erscheinen, bitte aktualisieren Sie die Seite oder
-                      verwenden Sie die mobile Ansicht, wo Gruppen korrekt angezeigt werden.
+                      Bitte einen Moment Geduld, während alle Gruppen geladen werden.
                     </p>
                   </div>
                 </div>
               </Alert>
-              
-              {/* Statische Fallback-Gruppen für die Desktop-Ansicht */}
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                {[
-                  { id: 1, name: "ProLethik", description: "Multiness Gruppen Kurs" },
-                  { id: 2, name: "Testen!", description: "Testing" }
-                ].map(group => {
-                  const chatId = getChatId(group.id, 'group');
-                  const isJoined = true; // Nehmen wir an, wir sind in den Standard-Gruppen
-                  
-                  return (
-                    <Card 
-                      key={group.id}
-                      className="overflow-hidden cursor-pointer bg-card hover:bg-accent/5 transition-colors"
-                      onClick={() => setLocation(`/chat/${chatId}`)}
-                    >
-                      <div className="aspect-[3/2] relative overflow-hidden bg-muted">
-                        <img
-                          src={"https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=800&auto=format"}
-                          alt={group.name}
-                          className="w-full h-full object-cover"
-                          loading="lazy" 
-                        />
-                      </div>
-                      
-                      <div className="p-3 space-y-2">
-                        <div className="space-y-1">
-                          <h3 className="font-semibold text-sm leading-tight">
-                            {group.name}
-                          </h3>
-                          <div className="flex items-center gap-1.5">
-                            <UserAvatar
-                              userId={1}
-                              size="sm"
-                            />
-                            <p className="text-xs text-muted-foreground truncate">
-                              Max Mustermann
-                            </p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center justify-between pt-1">
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <Users className="h-3 w-3" />
-                            <span>1</span>
-                          </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-7 px-2 text-xs"
-                          >
-                            Beigetreten
-                          </Button>
-                        </div>
-                      </div>
-                    </Card>
-                  );
-                })}
-              </div>
             </div>
           ) : (
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* Hier wichtig: Stellen Sie sicher, dass ALLE Gruppen angezeigt werden */}
               {groups.map(group => {
                 const chatId = getChatId(group.id, 'group');
                 const isJoined = groupStore.isGroupMember(group.id, 1);
+                
+                // Hier wird jede einzelne Gruppe angezeigt
+                console.debug(`Rendering desktop group card: ${group.id} - ${group.name}`); 
                 
                 return (
                   <Card 
