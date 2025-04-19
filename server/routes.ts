@@ -262,12 +262,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allGroupIds = getGroupIds();
       const filteredGroupIds: Record<string, string> = {};
       
+      // Manuell gelöschte Gruppen-IDs definieren
+      const manuallyDeletedIds = [1744717732655, 1744717733777, 1744717733958, 1744717734117, 1744717734282, 1744717738776, 1744718751615];
+      const manuallyDeletedIdSet = new Set(manuallyDeletedIds);
+      
       // Filtere gelöschte Chat-IDs aus den Gruppen-IDs heraus
       for (const [groupId, chatId] of Object.entries(allGroupIds)) {
-        if (!isDeletedChatId(chatId)) {
+        const numGroupId = Number(groupId);
+        
+        // Prüfe auf sowohl manuell gelöschte IDs als auch gelöschte Chat-IDs
+        if (!isDeletedChatId(chatId) && !manuallyDeletedIdSet.has(numGroupId)) {
           filteredGroupIds[groupId] = chatId;
         } else {
-          console.log(`Gruppe ${groupId} mit Chat-ID ${chatId} wurde bei der ID-Abfrage herausgefiltert (als gelöscht markiert)`);
+          if (isDeletedChatId(chatId)) {
+            console.log(`Gruppe ${groupId} mit Chat-ID ${chatId} wurde bei der ID-Abfrage herausgefiltert (als gelöscht markiert)`);
+          } else if (manuallyDeletedIdSet.has(numGroupId)) {
+            console.log(`Gruppe ${groupId} wurde bei der ID-Abfrage herausgefiltert (manueller Filter)`);
+          }
         }
       }
       
@@ -1288,23 +1299,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Zusätzlich manuell Gruppen mit höherer ID laden
         const allGroupIds = getGroupIds();
         const deletedGroupIds = new Set(); // Set für gelöschte Gruppen-IDs
+        const deletedChatIds = new Set();  // Set für gelöschte Chat-IDs
         
         // Überprüfen, welche Chat-IDs als gelöscht markiert sind
         for (const [id, chatId] of Object.entries(allGroupIds)) {
           if (isDeletedChatId(chatId)) {
             deletedGroupIds.add(Number(id));
+            deletedChatIds.add(chatId);
             console.log(`Gruppe ${id} mit Chat-ID ${chatId} ist als gelöscht markiert`);
           }
         }
+        
+        // Manuell die zusätzlichen Gruppen-IDs entfernen (die spezifisch im Problem aufgeführt wurden)
+        const manuallyDeletedIds = [1744717732655, 1744717733777, 1744717733958, 1744717734117, 1744717734282, 1744717738776, 1744718751615];
+        manuallyDeletedIds.forEach(id => {
+          deletedGroupIds.add(id);
+          console.log(`Gruppe ${id} wurde manuell als gelöscht markiert`);
+        });
         
         // Filtere gelöschte Gruppen aus den Datenbankgruppen
         const filteredGroups = groups.filter(group => !deletedGroupIds.has(group.id));
         
         // Die verfügbaren Gruppen-IDs, die nicht gelöscht wurden
         const availableGroupIds = Object.keys(allGroupIds)
-            .filter(id => !isNaN(Number(id)) && !deletedGroupIds.has(Number(id)));
+            .filter(id => {
+              const numId = Number(id);
+              return !isNaN(numId) && !deletedGroupIds.has(numId) && !manuallyDeletedIds.includes(numId);
+            });
         
-        console.log("Verfügbare Gruppen-IDs:", availableGroupIds);
+        console.log("Verfügbare Gruppen-IDs nach Filterung:", availableGroupIds);
         
         const additionalGroups = [];
         
@@ -1324,16 +1347,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
+        // Erneut überprüfen, dass die manuell gelöschten IDs nicht in den virtuellen Gruppen erscheinen
+        const manuallyDeletedIdSet = new Set(manuallyDeletedIds);
+        
         // Für alle Gruppen-IDs, die nicht in der Datenbank gefunden wurden, virtuelle Gruppen erstellen
         const virtualGroups = [];
         for (const id of availableGroupIds) {
-          if (!filteredGroups.some(g => g.id === Number(id)) && 
-              !additionalGroups.some(g => g.id === Number(id))) {
+          const numId = Number(id);
+          
+          // Überspringe manuell gelöschte Gruppen
+          if (manuallyDeletedIdSet.has(numId)) {
+            continue;
+          }
+          
+          if (!filteredGroups.some(g => g.id === numId) && 
+              !additionalGroups.some(g => g.id === numId)) {
             // Erstelle eine virtuelle Gruppe basierend auf der ID und dem Chat-Tag
             const chatId = allGroupIds[id];
+            
+            // Überprüfe, ob diese Chat-ID als gelöscht markiert ist
+            if (isDeletedChatId(chatId)) {
+              console.log(`Überspringe gelöschte Gruppe ${id} mit Chat-Tag ${chatId}`);
+              continue;
+            }
+            
             console.log(`Erstelle virtuelle Gruppe für ID ${id} mit Chat-Tag ${chatId}`);
             virtualGroups.push({
-              id: Number(id),
+              id: numId,
               name: `Gruppe ${id.slice(-4)}`,
               description: "Diese Gruppe wurde automatisch wiederhergestellt.",
               creatorId: 1,
@@ -1452,6 +1492,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const groupId = Number(req.params.id);
       
+      // Manuell gelöschte Gruppen-IDs überprüfen
+      const manuallyDeletedIds = [1744717732655, 1744717733777, 1744717733958, 1744717734117, 1744717734282, 1744717738776, 1744718751615];
+      if (manuallyDeletedIds.includes(groupId)) {
+        console.log(`Gruppe ${groupId} ist in der manuellen Löschliste`);
+        return res.status(404).json({ error: "Gruppe wurde gelöscht" });
+      }
+      
       // Überprüfen, ob die Gruppe existiert, ohne potenziell zu große Zahlen an die Datenbank zu senden
       let group = null;
       
@@ -1481,7 +1528,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Wenn die Gruppe nicht in der Datenbank existiert, aber eine zugeordnete UUID hat
-      if (chatId) {
+      // und nicht in der manuellen Löschliste ist
+      if (chatId && !manuallyDeletedIds.includes(groupId)) {
         // Erstelle eine virtuelle Gruppe
         console.log(`Erstelle virtuelle Gruppe für Einzelabfrage mit ID ${groupId} und Chat-Tag ${chatId}`);
         
@@ -1597,6 +1645,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/groups/:id/members", async (req, res) => {
     try {
       const groupId = Number(req.params.id);
+      
+      // Manuell gelöschte Gruppen-IDs überprüfen
+      const manuallyDeletedIds = [1744717732655, 1744717733777, 1744717733958, 1744717734117, 1744717734282, 1744717738776, 1744718751615];
+      if (manuallyDeletedIds.includes(groupId)) {
+        console.log(`Gruppe ${groupId} ist in der manuellen Löschliste, leere Mitgliederliste zurückgegeben`);
+        return res.json([]); // Leere Mitgliederliste für manuell gelöschte Gruppen zurückgeben
+      }
       
       try {
         // Überprüfen, ob die Gruppe existiert, ohne potenziell zu große Zahlen an die Datenbank zu senden
