@@ -683,22 +683,17 @@ const initializeStore = persist<GroupStore>(
             console.error("Fehler beim Laden der Gruppen-IDs:", idsError);
           }
           
-          // Optimierte Parallelisierung der Anfragen
-          const [groupsResponse, lastFetchTimestamp] = await Promise.all([
-            fetch('/api/groups', cacheOptions),
-            Promise.resolve(get().lastFetched)
-          ]);
+          // KRITISCH: Immer direkt laden, ohne Verzögerung zwischen Anfragen
+          // Erzwinge das sofortige Laden der Gruppen ohne Verzögerungen
           
-          // Wenn kürzlich erst abgefragt, verzögere nächste Anfrage (außer bei erzwungener Aktualisierung)
-          const now = Date.now();
-          const timeSinceLastFetch = lastFetchTimestamp ? now - lastFetchTimestamp : Infinity;
-          // Zeit zwischen Anfragen reduzieren, um schnellere Aktualisierungen zu ermöglichen
-          const MIN_FETCH_INTERVAL = 2000; // 2 Sekunden
+          // Optimierte Parallelisierung der Anfragen mit höherer Priorität 
+          const groupsResponse = await fetch('/api/groups', {
+            ...cacheOptions,
+            priority: 'high', // Höhere Priorität für diese wichtige Anfrage
+            cache: 'no-store' // Erzwinge immer frische Daten
+          });
           
-          if (timeSinceLastFetch < MIN_FETCH_INTERVAL && !forceRefresh) {
-            console.debug(`Letzte Gruppenabfrage vor ${timeSinceLastFetch}ms, aber wir fahren fort...`);
-            // Trotzdem mit dem Laden weitermachen, anstatt komplett abzubrechen
-          }
+          // Keine Zeitverzögerungen oder Drosselungen mehr
           
           if (!groupsResponse.ok) {
             throw new Error(`Server responded with ${groupsResponse.status}: ${groupsResponse.statusText}`);

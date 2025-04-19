@@ -142,18 +142,40 @@ export default function Home() {
   // Debugging: Alle geladenen Gruppen anzeigen
   console.log(`Anzahl aller geladenen Gruppen: ${allGroups.length}`, allGroups.map(g => g.id));
   
-  // KRITISCHE ÄNDERUNG: Erzwinge konsistente Darstellung durch einen manuellen Refresh der Gruppen
-  // Stell sicher, dass IMMER alle Gruppen angezeigt werden - Desktop & Mobile
+  // KRITISCHE ÄNDERUNG: Erzwinge konsistente Darstellung ohne Verzögerung
+  // Zustand für trigger force rendering
+  const [forceRender, setForceRender] = useState(0);
+  
+  // Direkte Aktualisierung ohne Verzögerung
   useEffect(() => {
-    // Erzwinge eine verzögerte Aktualisierung des UI, NACHDEM die Gruppen geladen wurden
-    const delayedUpdate = setTimeout(() => {
-      if (allGroups.length > 0) {
-        console.debug("Verzögerte Gruppenaktualisierung ausgeführt. Angezeigte Gruppen:", allGroups.length);
-      }
-    }, 500);
-    
-    return () => clearTimeout(delayedUpdate);
+    // Bei jedem Laden der Gruppen sofort neu rendern
+    if (allGroups.length > 0) {
+      console.debug("SOFORTIGE Gruppenaktualisierung ausgeführt. Anzeigegruppen:", allGroups.length);
+      // Erzwinge ein erneutes Rendern durch State-Änderung
+      setForceRender(prev => prev + 1);
+    }
   }, [allGroups.length]);
+  
+  // Als zusätzliche Sicherheit ein Timer für wiederholte Überprüfungen
+  useEffect(() => {
+    // Starte sofort einen Timer, der alle Gruppen lädt
+    const immediateLoad = setTimeout(() => {
+      groupStore.syncWithServer(true); // Mit Force-Refresh
+    }, 200); // Nur 200ms warten
+    
+    // Nach dem ersten Laden, nochmal einen zweiten Timer für zusätzliche Sicherheit
+    const secondLoad = setTimeout(() => {
+      if (allGroups.length < 5) { // Wenn weniger als 5 Gruppen angezeigt werden
+        console.debug("Zweiter Ladeversuch für Gruppen gestartet!");
+        groupStore.syncWithServer(true);
+      }
+    }, 2000);
+    
+    return () => {
+      clearTimeout(immediateLoad);
+      clearTimeout(secondLoad);
+    };
+  }, []);
   
   // Alle Gruppen ohne Filterung verwenden
   const groups = allGroups;
@@ -269,6 +291,7 @@ export default function Home() {
               <p>Desktop-Ansicht Gruppen ({groups.length}): 
                 {groups.map(g => ` ${g.id}`).join(', ')}
               </p>
+              {forceRender > 0 && <p>Force Render: {forceRender} (garantiert alle Gruppen anzeigen)</p>}
             </div>
           )}
           
@@ -290,6 +313,7 @@ export default function Home() {
           ) : (
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
               {/* Hier wichtig: Stellen Sie sicher, dass ALLE Gruppen angezeigt werden */}
+              {/* Erzwinge Anzeige aller Gruppen auf dem Desktop mit key={forceRender} */}
               {groups.map(group => {
                 const chatId = getChatId(group.id, 'group');
                 const isJoined = groupStore.isGroupMember(group.id, 1);
@@ -299,7 +323,7 @@ export default function Home() {
                 
                 return (
                   <Card 
-                    key={group.id}
+                    key={`group-${group.id}-render-${forceRender}`}
                     className="overflow-hidden cursor-pointer bg-card hover:bg-accent/5 transition-colors"
                     onClick={() => setLocation(`/chat/${chatId}`)}
                   >
