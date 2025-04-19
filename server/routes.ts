@@ -1251,22 +1251,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Zusätzlich manuell Gruppen mit höherer ID laden
         const allGroupIds = getGroupIds();
+        const deletedGroupIds = new Set(); // Set für gelöschte Gruppen-IDs
+        
+        // Überprüfen, welche Chat-IDs als gelöscht markiert sind
+        for (const [id, chatId] of Object.entries(allGroupIds)) {
+          if (isDeletedChatId(chatId)) {
+            deletedGroupIds.add(Number(id));
+            console.log(`Gruppe ${id} mit Chat-ID ${chatId} ist als gelöscht markiert`);
+          }
+        }
+        
+        // Filtere gelöschte Gruppen aus den Datenbankgruppen
+        const filteredGroups = groups.filter(group => !deletedGroupIds.has(group.id));
+        
+        // Die verfügbaren Gruppen-IDs, die nicht gelöscht wurden
+        const availableGroupIds = Object.keys(allGroupIds)
+            .filter(id => !isNaN(Number(id)) && !deletedGroupIds.has(Number(id)));
+        
+        console.log("Verfügbare Gruppen-IDs:", availableGroupIds);
+        
         const additionalGroups = [];
         
-        console.log("Verfügbare Gruppen-IDs:", Object.keys(allGroupIds));
-        
-        for (const [id, chatId] of Object.entries(allGroupIds)) {
+        for (const id of availableGroupIds) {
           // Prüfe alle numerischen IDs, die noch nicht geladen wurden
-          if (!isNaN(Number(id))) {
+          if (!filteredGroups.some(g => g.id === Number(id))) {
             try {
-              // Prüfen, ob diese Gruppe bereits in den geladenen Gruppen enthalten ist
-              if (!groups.some(g => g.id === Number(id))) {
-                console.log(`Lade zusätzliche Gruppe mit ID ${id}...`);
-                const group = await storage.getGroup(Number(id));
-                if (group) {
-                    console.log(`Gruppe ${id} gefunden und wird zur Ergebnisliste hinzugefügt, Details:`, group);
-                  additionalGroups.push(group);
-                }
+              console.log(`Lade zusätzliche Gruppe mit ID ${id}...`);
+              const group = await storage.getGroup(Number(id));
+              if (group) {
+                console.log(`Gruppe ${id} gefunden und wird zur Ergebnisliste hinzugefügt, Details:`, group);
+                additionalGroups.push(group);
               }
             } catch (err) {
               // Fehler beim Laden einzelner Gruppen ignorieren
@@ -1276,9 +1290,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Für alle Gruppen-IDs, die nicht in der Datenbank gefunden wurden, virtuelle Gruppen erstellen
         const virtualGroups = [];
-        for (const [id, chatId] of Object.entries(allGroupIds)) {
-          if (!isNaN(Number(id)) && !groups.some(g => g.id === Number(id)) && !additionalGroups.some(g => g.id === Number(id))) {
+        for (const id of availableGroupIds) {
+          if (!filteredGroups.some(g => g.id === Number(id)) && 
+              !additionalGroups.some(g => g.id === Number(id))) {
             // Erstelle eine virtuelle Gruppe basierend auf der ID und dem Chat-Tag
+            const chatId = allGroupIds[id];
             console.log(`Erstelle virtuelle Gruppe für ID ${id} mit Chat-Tag ${chatId}`);
             virtualGroups.push({
               id: Number(id),
@@ -1294,9 +1310,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
-        // Alle Gruppen kombinieren
-        const allGroups = [...groups, ...additionalGroups, ...virtualGroups];
-        console.log(`Insgesamt ${allGroups.length} Gruppen zurückgegeben (${groups.length} Basis + ${additionalGroups.length} zusätzliche + ${virtualGroups.length} virtuelle)`);
+        // Alle Gruppen kombinieren (filteredGroups statt groups, da diese bereits die gelöschten Gruppen ausschließt)
+        const allGroups = [...filteredGroups, ...additionalGroups, ...virtualGroups];
+        console.log(`Insgesamt ${allGroups.length} Gruppen zurückgegeben (${filteredGroups.length} Basis + ${additionalGroups.length} zusätzliche + ${virtualGroups.length} virtuelle)`);
         
         // Wenn keine Gruppen gefunden wurden, Demo-Gruppen zurückgeben
         if (allGroups.length === 0) {
@@ -1403,12 +1419,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Überprüfen, ob die Gruppe existiert, ohne potenziell zu große Zahlen an die Datenbank zu senden
       let group = null;
       
+      // Hole alle Gruppen-IDs und prüfe, ob die Gruppe eine gelöschte ID hat
+      const allGroupIds = getGroupIds();
+      const chatId = allGroupIds[groupId];
+      
+      // Wenn die Chat-ID existiert, prüfe, ob sie als gelöscht markiert ist
+      if (chatId && isDeletedChatId(chatId)) {
+        console.log(`Gruppe ${groupId} mit Chat-ID ${chatId} wurde als gelöscht markiert`);
+        return res.status(404).json({ error: "Gruppe wurde gelöscht" });
+      }
+      
       // Versuche nur Datenbankabfrage für kleine IDs, die in den INTEGER-Bereich passen
       if (groupId < 2147483647) { // Maximaler PostgreSQL INTEGER-Wert
         try {
           group = await storage.getGroup(groupId);
         } catch (dbError) {
-          console.warn(`Datenbank-Fehler bei Gruppe ${groupId}, erstelle virtuelles Objekt:`, dbError.message);
+          console.warn(`Datenbank-Fehler bei Gruppe ${groupId}, erstelle virtuelles Objekt:`, 
+            dbError instanceof Error ? dbError.message : 'Unknown error');
           // Wir fangen den Fehler ab und behandeln es als nicht existierende Gruppe
         }
       }
@@ -1418,10 +1445,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Wenn die Gruppe nicht in der Datenbank existiert, aber eine zugeordnete UUID hat
-      const allGroupIds = getGroupIds();
-      if (allGroupIds[groupId]) {
+      if (chatId) {
         // Erstelle eine virtuelle Gruppe
-        console.log(`Erstelle virtuelle Gruppe für Einzelabfrage mit ID ${groupId} und Chat-Tag ${allGroupIds[groupId]}`);
+        console.log(`Erstelle virtuelle Gruppe für Einzelabfrage mit ID ${groupId} und Chat-Tag ${chatId}`);
         
         const virtualGroup = {
           id: groupId,
@@ -1540,9 +1566,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Überprüfen, ob die Gruppe existiert, ohne potenziell zu große Zahlen an die Datenbank zu senden
         let group = null;
         const allGroupIds = getGroupIds();
+        const chatId = allGroupIds[groupId];
+        
+        // Wenn die Chat-ID existiert, prüfe, ob sie als gelöscht markiert ist
+        if (chatId && isDeletedChatId(chatId)) {
+          console.log(`Gruppe ${groupId} mit Chat-ID ${chatId} wurde als gelöscht markiert, leere Mitgliederliste zurückgegeben`);
+          return res.json([]); // Leere Mitgliederliste für gelöschte Gruppen zurückgeben
+        }
         
         // Überprüfe, ob die ID in unserem Gruppen-ID-Verzeichnis existiert
-        if (allGroupIds[groupId]) {
+        if (chatId) {
           // Dies ist eine gültige Gruppen-ID mit einer UUID-Zuordnung
           
           // Versuche nur Datenbankabfrage für kleine IDs, die in den INTEGER-Bereich passen
