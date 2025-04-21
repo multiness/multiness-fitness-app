@@ -288,10 +288,8 @@ export default function Chat() {
                 return (
                   <button
                     key={chat.id}
-                    className={`w-full text-left p-4 hover:bg-muted/50 transition-colors border-l-4 ${
+                    className={`w-full text-left p-4 hover:bg-muted/50 transition-colors ${
                       selectedChat?.id === chat.id ? 'bg-muted' : ''
-                    } ${
-                      chat.isGroup ? 'border-green-500' : 'border-transparent'
                     }`}
                     onClick={() => {
                       if (chat.isGroup) {
@@ -340,7 +338,7 @@ export default function Chat() {
                   >
                     <div className="flex items-center gap-3">
                       {chat.isGroup ? (
-                        <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center border-2 border-green-500">
                           <Users2 className="h-5 w-5 text-muted-foreground" />
                         </div>
                       ) : (
@@ -395,7 +393,7 @@ export default function Chat() {
                   <ArrowLeft className="h-4 w-4" />
                 </Button>
                 {selectedChat.isGroup ? (
-                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center border-2 border-green-500">
                     <Users2 className="h-4 w-4 text-muted-foreground" />
                   </div>
                 ) : (
