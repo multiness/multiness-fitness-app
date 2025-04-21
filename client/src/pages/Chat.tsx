@@ -56,50 +56,44 @@ export default function Chat() {
   const directUserId = isDirect ? parseInt(id?.replace('chat-', '') || '0') : null;
   const directUser = directUserId ? users.find(u => u.id === directUserId) : null;
 
-  // Get all chats including direct chats and groups
-  const getChatPromises = [
-    // Benutzer-Chats mit eindeutigen IDs, eigenen Benutzer ausschließen
-    ...users
-      .filter(user => user.id !== currentUser?.id) // WICHTIG: Eigenen Benutzer ausfiltern
-      .map(async user => {
-        const chatId = await getChatId(user.id, 'user'); // Asynchrone Funktion
-        return {
-          id: chatId, // Einzigartiger Schlüssel mit "user-" Präfix
-          chatId: chatId, // Tatsächliche Chat-ID für Nachrichten
-          name: user.username,
-          avatar: user.avatar,
-          isGroup: false,
-          userId: user.id
-        };
-      }),
-    // Gruppen-Chats mit eindeutigen IDs
-    ...Object.values(groupStore.groups).map(async group => {
-      const chatId = await getChatId(group.id, 'group'); // Asynchrone Funktion
-      return {
-        id: chatId, // Einzigartiger Schlüssel mit "group-" Präfix
-        chatId: chatId, // Tatsächliche Chat-ID für Nachrichten
-        name: group.name,
-        avatar: group.image,
-        isGroup: true,
-        groupId: group.id
-      };
-    })
-  ];
-  
-  // Resolve all promises to get the actual chats
+  // Get all chats including direct chats and groups using the synchronous function
   const [allChats, setAllChats] = useState<any[]>([]);
   
-  // Effekt für das Laden der Chat-IDs
+  // Effekt für das synchrone Laden der Chat-IDs
   useEffect(() => {
-    Promise.all(getChatPromises)
-      .then(resolvedChats => {
-        console.log("Alle Chat-IDs wurden geladen:", resolvedChats.length);
-        setAllChats(resolvedChats);
+    // Direktes Erstellen der Chats mit synchroner Funktion
+    const generatedChats = [
+      // Benutzer-Chats mit eindeutigen IDs, eigenen Benutzer ausschließen
+      ...users
+        .filter(user => user.id !== currentUser?.id) // WICHTIG: Eigenen Benutzer ausfiltern
+        .map(user => {
+          const chatId = getChatIdSync(user.id, 'user'); // Synchrone Funktion
+          return {
+            id: chatId, // Einzigartiger Schlüssel
+            chatId: chatId, // Tatsächliche Chat-ID für Nachrichten
+            name: user.username,
+            avatar: user.avatar,
+            isGroup: false,
+            userId: user.id
+          };
+        }),
+      // Gruppen-Chats mit eindeutigen IDs
+      ...Object.values(groupStore.groups).map(group => {
+        const chatId = getChatIdSync(group.id, 'group'); // Synchrone Funktion
+        return {
+          id: chatId, // Einzigartiger Schlüssel
+          chatId: chatId, // Tatsächliche Chat-ID für Nachrichten
+          name: group.name,
+          avatar: group.image,
+          isGroup: true,
+          groupId: group.id
+        };
       })
-      .catch(error => {
-        console.error("Fehler beim Laden der Chat-IDs:", error);
-      });
-  }, []);
+    ];
+    
+    console.log("Alle Chat-IDs wurden synchron geladen:", generatedChats.length);
+    setAllChats(generatedChats);
+  }, [users, groupStore.groups, currentUser?.id]);
 
   // Get the current chat based on the URL parameters
   const [selectedChat, setSelectedChat] = useState(() => {
