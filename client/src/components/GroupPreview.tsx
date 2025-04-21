@@ -6,6 +6,7 @@ import { useLocation } from "wouter";
 import { useGroupStore, type Group } from "../lib/groupStore";
 import { useToast } from "@/hooks/use-toast";
 import { UserAvatar } from "./UserAvatar";
+import { getChatIdSync } from "../lib/chatService";
 
 interface GroupPreviewProps {
   group: Group;
@@ -41,7 +42,8 @@ export default function GroupPreview({ group }: GroupPreviewProps) {
   };
 
   const goToGroupChat = () => {
-    setLocation(`/chat/group-${group.id}`);
+    const chatId = getChatIdSync(group.id, 'group');
+    setLocation(`/chat/${chatId}`);
   };
 
   const handleMessage = (e: React.MouseEvent) => {

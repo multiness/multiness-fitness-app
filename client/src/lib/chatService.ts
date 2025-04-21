@@ -754,6 +754,37 @@ const loadGroupIdsFromLocalStorage = () => {
 loadGroupIdsFromLocalStorage();
 syncGroupIds().catch(e => console.error('Fehler bei der initialen Gruppen-ID-Synchronisierung:', e));
 
+// Synchrone Version der getChatId-Funktion für direkte Verwendung in JSX und onClick Handlern
+export const getChatIdSync = (entityId?: number, type: 'user' | 'group' = 'user'): string => {
+  if (!entityId) return '';
+  
+  // Für Gruppen - Verwende einheitliche ID-Generierung
+  if (type === 'group') {
+    // Prüfe zuerst im globalen Speicher
+    if (globalGroupIds[entityId]) {
+      return globalGroupIds[entityId];
+    }
+    
+    // Wenn nicht im globalen Speicher, prüfe localStorage
+    const storedId = localStorage.getItem(`group_chat_id_${entityId}`);
+    
+    if (storedId) {
+      // Speichere auch im globalen Speicher
+      globalGroupIds[entityId] = storedId;
+      return storedId;
+    } else {
+      // Fallback auf einfaches Format, wenn keine ID gefunden wurde
+      const fallbackId = `group-${entityId}`;
+      globalGroupIds[entityId] = fallbackId;
+      localStorage.setItem(`group_chat_id_${entityId}`, fallbackId);
+      return fallbackId;
+    }
+  }
+  
+  // Für Benutzer - Einfache ID-Generierung
+  return `chat-${entityId}`;
+};
+
 export const getChatId = async (entityId?: number, type: 'user' | 'group' = 'user'): Promise<string> => {
   if (!entityId) return '';
   

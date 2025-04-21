@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Users } from "lucide-react";
 import { useUsers } from "../contexts/UserContext";
 import { useLocation } from "wouter";
-import { getChatId } from "../lib/chatService";
+import { getChatIdSync } from "../lib/chatService";
 import { UserAvatar } from "./UserAvatar";
 import { useGroupStore, type Group } from "../lib/groupStore";
 import { useToast } from "@/hooks/use-toast";
@@ -50,7 +50,7 @@ const GroupCarousel = ({ groups }: GroupCarouselProps) => {
         title: "Gruppe beigetreten",
         description: "Du bist der Gruppe erfolgreich beigetreten.",
       });
-      const chatId = getChatId(group.id, 'group');
+      const chatId = getChatIdSync(group.id, 'group');
       setLocation(`/chat/${chatId}`);
     }
   };
