@@ -157,30 +157,12 @@ const GroupCarousel = ({ groups }: GroupCarouselProps) => {
                   key={`group-card-${group.id}`}
                   className="flex-1 overflow-hidden cursor-pointer bg-card hover:bg-accent/5 transition-colors min-w-[150px] transform-gpu shadow-sm" // Hinzugefügter Schatten
                   onClick={() => {
-                    // Initialisiere den Gruppen-Chat bevor die Navigation stattfindet
-                    console.log(`Initialisiere Chat für Gruppe ${group.id} vor der Navigation`);
-                    const isChatId = chatId && typeof chatId === 'string';
+                    // Vereinfachte Navigation zu Gruppenchats
+                    console.log(`Navigiere zu Chat für Gruppe ${group.id}`);
                     
-                    if (isChatId && chatId.startsWith('group-')) {
-                      const groupIdStr = chatId.replace('group-', '');
-                      const groupIdNum = parseInt(groupIdStr, 10);
-                      
-                      // Initialisiere den Chat für diese Gruppe
-                      if (!isNaN(groupIdNum)) {
-                        // Lokale Daten sofort initialisieren
-                        const chatService = require('../lib/chatService');
-                        chatService.useChatStore.getState().initializeGroupChat(groupIdNum);
-                        
-                        // Dann zur Chat-Seite navigieren
-                        setTimeout(() => setLocation(`/chat/${chatId}`), 100);
-                      } else {
-                        // Fallback: direkt navigieren
-                        setLocation(`/chat/${chatId}`);
-                      }
-                    } else {
-                      // Fallback: direkt navigieren
-                      setLocation(`/chat/${chatId}`);
-                    }
+                    // Zur Chat-Seite navigieren mit 'group-' Präfix + ID
+                    // Diese einfache Navigationsform ist robuster
+                    setLocation(`/chat/group-${group.id}`);
                   }}
                   style={{ 
                     scrollMarginBottom: isMobile ? '6rem' : '4rem', // Erhöhte Scroll-Margin für mobile Geräte

@@ -6,7 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Search, Send, Image as ImageIcon, ArrowLeft, Users2, Plus, FileText, Video, Target, Pencil } from "lucide-react";
 import { useUsers } from "../contexts/UserContext";
 import { format } from "date-fns";
-import { useChatStore, getChatId, getChatIdSync } from "../lib/chatService";
+import { useChatStore, getChatIdSync } from "../lib/chatService"; // Nur synchrone Funktion importieren
 import { useGroupStore } from "../lib/groupStore";
 import { UserAvatar } from "@/components/UserAvatar";
 import { Progress } from "@/components/ui/progress";
@@ -39,6 +39,15 @@ export default function Chat() {
   const [isPerformanceBoardOpen, setIsPerformanceBoardOpen] = useState(false);
   const [isEditGroupDialogOpen, setIsEditGroupDialogOpen] = useState(false);
   
+  // Einfachere Initialisierung für die Chat-Komponente
+  const [selectedChat, setSelectedChat] = useState<any>(null);
+  const [allChats, setAllChats] = useState<any[]>([]);
+  
+  // Ist dies ein direkter Benutzerchat?
+  const isDirect = window.location.pathname.endsWith('/direct');
+  const directUserId = isDirect ? parseInt(id?.replace('chat-', '') || '0') : null;
+  const directUser = directUserId ? users.find(u => u.id === directUserId) : null;
+  
   // Markiere den aktuellen Chat als gelesen, wenn er geöffnet wird
   useEffect(() => {
     if (id) {
@@ -50,76 +59,32 @@ export default function Chat() {
       chatStore.setCurrentOpenChat(null);
     };
   }, [id, chatStore]);
-
-  // Check if we're in direct chat mode
-  const isDirect = window.location.pathname.endsWith('/direct');
-  const directUserId = isDirect ? parseInt(id?.replace('chat-', '') || '0') : null;
-  const directUser = directUserId ? users.find(u => u.id === directUserId) : null;
-
-  // Get all chats including direct chats and groups using the synchronous function
-  // Wir generieren die Liste der Chats direkt und vermeiden ein separates useEffect
-  const allChats = useMemo(() => {
-    // Direktes Erstellen der Chats mit synchroner Funktion ohne setState in einem Effekt
-    if (!users.length || !currentUser) return [];
+  
+  // Laden der Chat-Liste - einmalig und bei Änderungen
+  useEffect(() => {
+    if (!users.length || !currentUser) return;
     
-    const userChats = users
-      .filter(user => user.id !== currentUser?.id) // WICHTIG: Eigenen Benutzer ausfiltern
-      .map(user => {
-        const chatId = getChatIdSync(user.id, 'user'); // Synchrone Funktion
-        return {
-          id: chatId, // Einzigartiger Schlüssel
-          chatId: chatId, // Tatsächliche Chat-ID für Nachrichten
-          name: user.username,
-          avatar: user.avatar,
-          isGroup: false,
-          userId: user.id
-        };
-      });
-    
-    const groupChats = Object.values(groupStore.groups || {}).map(group => {
-      const chatId = getChatIdSync(group.id, 'group'); // Synchrone Funktion
-      return {
-        id: chatId, // Einzigartiger Schlüssel
-        chatId: chatId, // Tatsächliche Chat-ID für Nachrichten
-        name: group.name,
-        avatar: group.image,
-        isGroup: true,
-        groupId: group.id
-      };
-    });
-    
-    console.log("Chat-Liste neu generiert. Benutzer:", userChats.length, "Gruppen:", groupChats.length);
-    return [...userChats, ...groupChats];
-  }, [users, groupStore.groups, currentUser]);
-
-  // Get the current chat based on the URL parameters
-  // Hier verwenden wir useMemo, um eine Endlosschleife zu vermeiden
-  const initialSelectedChat = useMemo(() => {
-    if (!id) return null;
-    
-    // Für direkte Benutzer-Chats
-    if (directUser) {
-      const chatId = getChatIdSync(directUser.id, 'user');
-      return {
-        id: chatId,
-        chatId: chatId,
-        name: directUser.username,
-        avatar: directUser.avatar,
-        isGroup: false,
-        userId: directUser.id
-      };
-    }
-    
-    // Für Gruppen-Chats - mit ID, die mit "group-" beginnt
-    if (id.startsWith('group-')) {
-      const groupIdStr = id.replace('group-', '');
-      const groupId = parseInt(groupIdStr, 10);
-      const group = groupStore.groups[groupId];
+    // Chat-Liste generieren
+    try {
+      console.log("Generiere Chat-Liste...");
       
-      if (group) {
-        console.log("Initialisiere Gruppen-Chat für Gruppe:", group.id);
-        chatStore.initializeGroupChat(group.id);
-        
+      // Benutzer-Chats
+      const userChats = users
+        .filter(user => user.id !== currentUser?.id)
+        .map(user => {
+          const chatId = getChatIdSync(user.id, 'user');
+          return {
+            id: chatId,
+            chatId: chatId,
+            name: user.username,
+            avatar: user.avatar,
+            isGroup: false,
+            userId: user.id
+          };
+        });
+      
+      // Gruppen-Chats
+      const groupChats = Object.values(groupStore.groups || {}).map(group => {
         const chatId = getChatIdSync(group.id, 'group');
         return {
           id: chatId,
@@ -129,23 +94,83 @@ export default function Chat() {
           isGroup: true,
           groupId: group.id
         };
-      }
+      });
+      
+      // Kombinierte Liste
+      const combinedChats = [...userChats, ...groupChats];
+      console.log("Chat-Liste generiert:", combinedChats.length, "Chats");
+      setAllChats(combinedChats);
+      
+    } catch (error) {
+      console.error("Fehler beim Generieren der Chat-Liste:", error);
     }
-    
-    // Fallback für andere ID-Formate: Suche in der generierten Chat-Liste
-    const matchingChat = allChats.find((c: any) => c.id === id);
-    return matchingChat || null;
-  }, [id, directUser, groupStore.groups, allChats, chatStore]);
+  }, [users, groupStore.groups, currentUser]);
   
-  // Verwende einen separaten State für den ausgewählten Chat
-  const [selectedChat, setSelectedChat] = useState<any>(initialSelectedChat);
-  
-  // Aktualisiere den ausgewählten Chat, wenn sich die Daten ändern
+  // Chat-Initialisierung basierend auf URL-Parameter
   useEffect(() => {
-    if (initialSelectedChat) {
-      setSelectedChat(initialSelectedChat);
+    if (!id || !allChats.length) return;
+    
+    try {
+      console.log("Initialisiere ausgewählten Chat für ID:", id);
+      
+      // Für direkten Benutzerchat
+      if (directUser) {
+        const chatId = getChatIdSync(directUser.id, 'user');
+        setSelectedChat({
+          id: chatId,
+          chatId: chatId,
+          name: directUser.username,
+          avatar: directUser.avatar,
+          isGroup: false,
+          userId: directUser.id
+        });
+        return;
+      }
+      
+      // Für Gruppen-Chat
+      if (id.startsWith('group-')) {
+        const groupIdStr = id.replace('group-', '');
+        const groupId = parseInt(groupIdStr, 10);
+        
+        if (isNaN(groupId)) {
+          console.error("Ungültige Gruppen-ID:", groupIdStr);
+          return;
+        }
+        
+        const group = groupStore.groups[groupId];
+        if (!group) {
+          console.error("Gruppe nicht gefunden:", groupId);
+          return;
+        }
+        
+        // Initialisiere die Gruppe
+        chatStore.initializeGroupChat(groupId);
+        
+        const chatId = getChatIdSync(groupId, 'group');
+        setSelectedChat({
+          id: chatId,
+          chatId: chatId,
+          name: group.name,
+          avatar: group.image,
+          isGroup: true,
+          groupId: groupId
+        });
+        return;
+      }
+      
+      // Suche nach übereinstimmendem Chat in der Liste
+      const matchingChat = allChats.find((c) => c.id === id);
+      if (matchingChat) {
+        setSelectedChat(matchingChat);
+        return;
+      }
+      
+      console.warn("Kein passender Chat für ID gefunden:", id);
+      
+    } catch (error) {
+      console.error("Fehler bei der Chat-Initialisierung:", error);
     }
-  }, [initialSelectedChat]);
+  }, [id, allChats, directUser, groupStore.groups, chatStore]);
 
   const currentGroupGoal = selectedChat?.isGroup ? chatStore.getGroupGoal(selectedChat.chatId) : undefined;
 
