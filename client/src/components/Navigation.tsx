@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { useChatStore } from "../lib/chatService";
 
 interface NavigationProps {
   onCreateClick: () => void;
@@ -11,6 +12,10 @@ interface NavigationProps {
 export default function Navigation({ onCreateClick }: NavigationProps) {
   const [location] = useLocation();
   const [isMobile, setIsMobile] = useState(true);
+  const chatStore = useChatStore();
+  
+  // Holen der Gesamtanzahl ungelesener Nachrichten
+  const totalUnreadCount = chatStore.getTotalUnreadCount();
   
   // Prüfe Bildschirmgröße für responsives Layout
   useEffect(() => {
@@ -39,7 +44,14 @@ export default function Navigation({ onCreateClick }: NavigationProps) {
               <Link href="/">Startseite</Link>
               <Link href="/challenges">Challenges</Link>
               <Link href="/groups">Gruppen</Link>
-              <Link href="/chat">Chat</Link>
+              <div className="relative inline-block">
+                <Link href="/chat">Chat</Link>
+                {totalUnreadCount > 0 && (
+                  <div className="absolute -top-2 -right-2 flex items-center justify-center bg-primary text-primary-foreground rounded-full min-w-4 h-4 px-1 text-xs font-medium">
+                    {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
+                  </div>
+                )}
+              </div>
               <button 
                 className="inline underline cursor-pointer"
                 onClick={onCreateClick}
@@ -111,9 +123,14 @@ export default function Navigation({ onCreateClick }: NavigationProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="w-full h-full rounded-none"
+                className="w-full h-full rounded-none relative"
               >
                 <MessageSquare className={`h-6 w-6 ${isActive("/chat") ? "text-primary" : "text-muted-foreground"}`} />
+                {totalUnreadCount > 0 && (
+                  <div className="absolute top-3 right-3 flex items-center justify-center bg-primary text-primary-foreground rounded-full min-w-5 h-5 px-1 text-xs font-medium">
+                    {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
+                  </div>
+                )}
               </Button>
             </Link>
           </div>

@@ -38,6 +38,18 @@ export default function Chat() {
   const [isAddProgressModalOpen, setIsAddProgressModalOpen] = useState(false);
   const [isPerformanceBoardOpen, setIsPerformanceBoardOpen] = useState(false);
   const [isEditGroupDialogOpen, setIsEditGroupDialogOpen] = useState(false);
+  
+  // Markiere den aktuellen Chat als gelesen, wenn er geöffnet wird
+  useEffect(() => {
+    if (id) {
+      chatStore.setCurrentOpenChat(id);
+    }
+    
+    return () => {
+      // Beim Verlassen der Chat-Ansicht den aktuellen Chat zurücksetzen
+      chatStore.setCurrentOpenChat(null);
+    };
+  }, [id, chatStore]);
 
   // Check if we're in direct chat mode
   const isDirect = window.location.pathname.endsWith('/direct');
@@ -284,13 +296,14 @@ export default function Chat() {
               {allChats.map(chat => {
                 const messages = chatStore.getMessages(chat.chatId);
                 const lastMessage = messages[messages.length - 1];
+                const unreadCount = chatStore.getUnreadCount(chat.id);
 
                 return (
                   <button
                     key={chat.id}
                     className={`w-full text-left p-4 hover:bg-muted/50 transition-colors ${
                       selectedChat?.id === chat.id ? 'bg-muted' : ''
-                    }`}
+                    } ${unreadCount > 0 ? 'font-semibold' : ''}`}
                     onClick={() => {
                       if (chat.isGroup) {
                         // Debug-Ausgabe für Gruppennavigation
@@ -354,6 +367,11 @@ export default function Chat() {
                             <Users2 className="h-3 w-3 text-green-500" />
                           )}
                           <p className="font-medium truncate">{chat.name}</p>
+                          {unreadCount > 0 && (
+                            <div className="ml-auto flex items-center justify-center bg-primary text-primary-foreground rounded-full min-w-5 h-5 px-1 text-xs">
+                              {unreadCount}
+                            </div>
+                          )}
                         </div>
                         {lastMessage && (
                           <p className="text-sm truncate text-muted-foreground">
