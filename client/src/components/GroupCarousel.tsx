@@ -156,7 +156,32 @@ const GroupCarousel = ({ groups }: GroupCarouselProps) => {
                 <Card 
                   key={`group-card-${group.id}`}
                   className="flex-1 overflow-hidden cursor-pointer bg-card hover:bg-accent/5 transition-colors min-w-[150px] transform-gpu shadow-sm" // Hinzugefügter Schatten
-                  onClick={() => setLocation(`/chat/${chatId}`)}
+                  onClick={() => {
+                    // Initialisiere den Gruppen-Chat bevor die Navigation stattfindet
+                    console.log(`Initialisiere Chat für Gruppe ${group.id} vor der Navigation`);
+                    const isChatId = chatId && typeof chatId === 'string';
+                    
+                    if (isChatId && chatId.startsWith('group-')) {
+                      const groupIdStr = chatId.replace('group-', '');
+                      const groupIdNum = parseInt(groupIdStr, 10);
+                      
+                      // Initialisiere den Chat für diese Gruppe
+                      if (!isNaN(groupIdNum)) {
+                        // Lokale Daten sofort initialisieren
+                        const chatService = require('../lib/chatService');
+                        chatService.useChatStore.getState().initializeGroupChat(groupIdNum);
+                        
+                        // Dann zur Chat-Seite navigieren
+                        setTimeout(() => setLocation(`/chat/${chatId}`), 100);
+                      } else {
+                        // Fallback: direkt navigieren
+                        setLocation(`/chat/${chatId}`);
+                      }
+                    } else {
+                      // Fallback: direkt navigieren
+                      setLocation(`/chat/${chatId}`);
+                    }
+                  }}
                   style={{ 
                     scrollMarginBottom: isMobile ? '6rem' : '4rem', // Erhöhte Scroll-Margin für mobile Geräte
                     borderColor: isJoined ? 'var(--green-500)' : undefined, // Hervorhebung von beigetretenen Gruppen
