@@ -57,6 +57,7 @@ interface GroupStore {
   getGroupsForUser: (userId: number) => Group[];
   getUserInvitations: (userId: number) => number[];
   isGroupMember: (groupId: number, userId?: number) => boolean;
+  isGroupAdmin: (groupId: number, userId?: number) => boolean; // Neue Funktion zum Prüfen von Admin-Rechten
 }
 
 // Helper function to convert DB group to client group
