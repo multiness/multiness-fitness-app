@@ -142,11 +142,11 @@ export default function Home() {
   // Debugging: Alle geladenen Gruppen anzeigen
   console.log(`Anzahl aller geladenen Gruppen: ${allGroups.length}`, allGroups.map(g => g.id));
   
-  // KRITISCHE ÄNDERUNG: Erzwinge konsistente Darstellung ohne Verzögerung
+  // OPTIMIERT: Schnellere & zuverlässigere Darstellung der Gruppen
   // Zustand für trigger force rendering
   const [forceRender, setForceRender] = useState(0);
   
-  // Direkte Aktualisierung ohne Verzögerung
+  // Aggressives sofortiges Rendern bei Änderungen
   useEffect(() => {
     // Bei jedem Laden der Gruppen sofort neu rendern
     if (allGroups.length > 0) {
@@ -154,26 +154,34 @@ export default function Home() {
       // Erzwinge ein erneutes Rendern durch State-Änderung
       setForceRender(prev => prev + 1);
     }
-  }, [allGroups.length]);
+  }, [allGroups.length, groupStore.lastFetched]); // Auch bei lastFetched neu rendern
   
-  // Als zusätzliche Sicherheit ein Timer für wiederholte Überprüfungen
+  // VERBESSERT: Optimierte Ladestrategie für schnellere Anzeige
   useEffect(() => {
-    // Starte sofort einen Timer, der alle Gruppen lädt
+    // Starte sofort einen High-Priority-Timer für ersten Ladeversuch
     const immediateLoad = setTimeout(() => {
+      console.debug("Erster Schnellladeversuch für Gruppen!");
       groupStore.syncWithServer(true); // Mit Force-Refresh
-    }, 200); // Nur 200ms warten
+    }, 50); // Nur 50ms warten für sofortige Ausführung
     
-    // Nach dem ersten Laden, nochmal einen zweiten Timer für zusätzliche Sicherheit
+    // Zweiter Ladeversuch nach einer kurzen Verzögerung
     const secondLoad = setTimeout(() => {
-      if (allGroups.length < 5) { // Wenn weniger als 5 Gruppen angezeigt werden
-        console.debug("Zweiter Ladeversuch für Gruppen gestartet!");
+      console.debug("Zweiter Ladeversuch für Gruppen!");
+      groupStore.syncWithServer(true);
+    }, 500); // Nur 500ms für zweiten Versuch
+    
+    // Dritter Ladeversuch nach etwas längerer Verzögerung
+    const thirdLoad = setTimeout(() => {
+      if (allGroups.length < 6) { // Wenn nicht alle 6 Gruppen angezeigt werden
+        console.debug("Dritter Ladeversuch für Gruppen gestartet!");
         groupStore.syncWithServer(true);
       }
-    }, 2000);
+    }, 1500);
     
     return () => {
       clearTimeout(immediateLoad);
       clearTimeout(secondLoad);
+      clearTimeout(thirdLoad);
     };
   }, []);
   

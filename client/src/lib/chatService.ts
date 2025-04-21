@@ -371,55 +371,100 @@ export const useChatStore = create<ChatStore>()(
               }
             }
             
-            // WebSocket-Verbindung für Nachrichtensendung
+            // Verbesserte WebSocket-Strategie für alle Gerätetypen
             const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
             const wsUrl = `${protocol}//${window.location.host}/ws`;
             
-            const socket = new WebSocket(wsUrl);
+            const isMobileDevice = () => {
+              return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            };
             
-            // Timeout für Verbindungsaufbau
-            const connectionTimeout = setTimeout(() => {
-              console.error('WebSocket-Verbindung konnte nicht hergestellt werden (Timeout)');
-              socket.close();
-            }, 5000);
-            
-            socket.onopen = () => {
-              clearTimeout(connectionTimeout);
-              console.log('Sende Chat-Nachricht über eigene WebSocket-Verbindung');
+            // Einheitliche Nachrichtenversendung für alle Gerätetypen
+            const sendMessageViaWebSocket = () => {
+              console.log('Sende Chat-Nachricht über WebSocket...');
               
-              // Gruppen abonnieren für korrekte Nachrichtenverteilung
-              socket.send(JSON.stringify({ 
-                type: 'subscribe', 
-                topic: 'groups'
-              }));
+              const socket = new WebSocket(wsUrl);
               
-              // Nachricht senden
-              socket.send(JSON.stringify({
-                type: 'chat_message',
-                chatId: chatId,
-                message: message
-              }));
-              
-              // Verbindung nach kurzem Timeout schließen
-              setTimeout(() => {
+              // Timeout für Verbindungsaufbau
+              const connectionTimeout = setTimeout(() => {
+                console.error('WebSocket-Verbindung konnte nicht hergestellt werden (Timeout)');
                 socket.close();
-                console.log('Chat-Nachricht wurde gesendet, WebSocket geschlossen');
-              }, 1000);
+                
+                // Bei Mobile: Versuche alternative Methode nach Timeout
+                if (isMobileDevice()) {
+                  sendMessageViaFetch();
+                }
+              }, 5000);
+              
+              socket.onopen = () => {
+                clearTimeout(connectionTimeout);
+                
+                // Gruppen abonnieren für korrekte Nachrichtenverteilung
+                socket.send(JSON.stringify({ 
+                  type: 'subscribe', 
+                  topic: 'groups'
+                }));
+                
+                // Chat-Kanal abonnieren
+                socket.send(JSON.stringify({
+                  type: 'subscribe',
+                  topic: 'chat',
+                  groupId: message.groupId
+                }));
+                
+                // Nachricht senden
+                socket.send(JSON.stringify({
+                  type: 'chat_message',
+                  chatId: chatId,
+                  message: message
+                }));
+                
+                // Verbindung nach kurzem Timeout schließen
+                setTimeout(() => {
+                  socket.close();
+                  console.log('Chat-Nachricht wurde über WebSocket gesendet');
+                }, 1500); // Längerer Timeout für bessere Zuverlässigkeit
+              };
+              
+              socket.onerror = (error) => {
+                clearTimeout(connectionTimeout);
+                console.error('Fehler beim Senden der Nachricht über WebSocket:', error);
+                
+                // Fallback für mobile Geräte: HTTP POST
+                if (isMobileDevice()) {
+                  sendMessageViaFetch();
+                }
+              };
             };
             
-            socket.onerror = (error) => {
-              clearTimeout(connectionTimeout);
-              console.error('Fehler beim Senden der Nachricht an den Server:', error);
-            };
-            
-            socket.onmessage = (event) => {
+            // Alternative Methode für mobile Geräte: HTTP POST
+            const sendMessageViaFetch = async () => {
               try {
-                const response = JSON.parse(event.data);
-                console.log('Antwort vom Server nach Nachrichtensendung:', response);
-              } catch (e) {
-                console.error('Fehler beim Parsen der WebSocket-Antwort:', e);
+                console.log('Versuche, Chat-Nachricht über HTTP zu senden...');
+                const response = await fetch(`/api/chat/${chatId}/messages`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(message)
+                });
+                
+                if (response.ok) {
+                  console.log('Chat-Nachricht erfolgreich über HTTP gesendet');
+                } else {
+                  console.error('Fehler beim Senden der Nachricht über HTTP:', response.statusText);
+                }
+              } catch (err) {
+                console.error('Netzwerkfehler beim Senden der Nachricht über HTTP:', err);
               }
             };
+            
+            // Primäre Methode wählen basierend auf Gerätetyp
+            if (isMobileDevice()) {
+              // Für mobile Geräte: Versuche zuerst WebSocket, mit Fallback auf HTTP
+              sendMessageViaWebSocket();
+            } else {
+              // Für Desktop: Nur WebSocket verwenden
+              sendMessageViaWebSocket();
+            }
           } else {
             console.log('Keine Gruppennachricht, nicht über WebSocket gesendet:', chatId);
           }
