@@ -51,14 +51,14 @@ export default function Chat() {
   // Markiere den aktuellen Chat als gelesen, wenn er geöffnet wird
   useEffect(() => {
     if (id) {
-      chatStore.setCurrentOpenChat(id);
+      chatStore.markChatAsRead(id);
     }
     
     return () => {
       // Beim Verlassen der Chat-Ansicht den aktuellen Chat zurücksetzen
       chatStore.setCurrentOpenChat(null);
     };
-  }, [id, chatStore]);
+  }, [id]);
   
   // Laden der Chat-Liste - einmalig und bei Änderungen
   useEffect(() => {
@@ -343,19 +343,19 @@ export default function Chat() {
                         
                         if (groupId) {
                           console.log("Extrahierte Gruppen-ID:", groupId);
-                          // Initialisiere den Chat sofort, bevor wir navigieren
-                          // Dies stellt sicher, dass die Daten geladen werden, selbst wenn
-                          // die Navigation fehlschlägt
+                          
+                          // Verwende ein korrektes Chat-ID-Format
+                          const chatId = getChatIdSync(parseInt(String(groupId)), 'group');
+                          console.log("Chat-ID für Navigation:", chatId);
+                          
+                          // Initialisiere den Chat zuerst
                           chatStore.initializeGroupChat(parseInt(String(groupId)));
                           
-                          // Setze den Chat sofort, damit die UI reagiert, auch wenn die Navigation
-                          // verzögert ist oder fehlschlägt
+                          // Setze den Chat sofort
                           setSelectedChat(chat);
                           
-                          // Navigiere dann zur Gruppe
-                          setTimeout(() => {
-                            setLocation(`/chat/group-${groupId}`);
-                          }, 100);
+                          // Navigiere dann zur Gruppe mit der korrekten Chat-ID
+                          setLocation(`/chat/${chatId}`);
                         } else {
                           console.error("Konnte keine gültige Gruppen-ID extrahieren:", chat);
                           // Fallback: Setze direkt den Chat ohne Navigation
@@ -447,9 +447,9 @@ export default function Chat() {
                 </div>
                 
                 {/* Verbesserter Bearbeiten-Button nur für Gruppenadmins */}
-                {selectedChat && selectedChat.isGroup && 'groupId' in selectedChat && (
+                {selectedChat?.isGroup && 'groupId' in selectedChat && selectedChat.groupId && (
                   <>
-                    {selectedChat.groupId && groupStore.isGroupAdmin(selectedChat.groupId, userId) && (
+                    {groupStore.isGroupAdmin(parseInt(String(selectedChat.groupId)), userId) && (
                       <Button
                         variant="ghost"
                         size="icon"
@@ -465,7 +465,7 @@ export default function Chat() {
               </div>
 
               {/* Group Goals Section */}
-              {selectedChat && selectedChat.isGroup && currentGroupGoal && (
+              {selectedChat?.isGroup && currentGroupGoal && (
                 <div className="mt-4 p-4 bg-muted/30 rounded-lg space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -503,7 +503,7 @@ export default function Chat() {
 
             <ScrollArea className="flex-1 p-4">
               <div className="space-y-4">
-                {selectedChat && chatStore.getMessages(selectedChat.chatId).map(message => {
+                {selectedChat?.chatId && chatStore.getMessages(selectedChat.chatId).map(message => {
                   const isCurrentUser = message.userId === currentUser?.id;
                   const sender = users.find(u => u.id === message.userId);
 
@@ -645,7 +645,7 @@ export default function Chat() {
           )}
 
           {/* Gruppeneditierung für Admins */}
-          {selectedChat && selectedChat.isGroup && 'groupId' in selectedChat && (
+          {selectedChat?.isGroup && 'groupId' in selectedChat && selectedChat.groupId && (
             <EditGroupDialog
               open={isEditGroupDialogOpen}
               onOpenChange={setIsEditGroupDialogOpen}
