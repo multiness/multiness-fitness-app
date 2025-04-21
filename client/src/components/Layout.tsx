@@ -288,10 +288,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Main Content - angepasst für Desktop/Mobile */}
       <main className={cn(
         "pt-14", // Gemeinsame Einstellung
-        isMobile ? "pb-16" : "pb-4", // Unterschiedlicher Padding-Bottom je nach Gerät
+        isMobile ? "pb-20" : "pb-4", // Mehr Padding unten für mobile Ansicht
         !isMobile && "container mx-auto px-4" // Zusätzliche Styles für Desktop
       )}>
         {children}
+        {/* Zusätzlicher Spacer für die mobile Ansicht */}
+        {isMobile && <div className="h-16 w-full"></div>}
       </main>
 
       {/* Navigation wird auch im Desktop-Modus angezeigt, wird aber intern angepasst */}

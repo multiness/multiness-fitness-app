@@ -2,10 +2,9 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Users } from "lucide-react";
 import { useUsers } from "../contexts/UserContext";
-import { Link, useLocation } from "wouter";
+import { useLocation } from "wouter";
 import { useGroupStore, type Group } from "../lib/groupStore";
 import { useToast } from "@/hooks/use-toast";
-import { getChatId } from "../lib/chatService";
 import { UserAvatar } from "./UserAvatar";
 
 interface GroupPreviewProps {
@@ -137,6 +136,6 @@ export default function GroupPreview({ group }: GroupPreviewProps) {
           </div>
         </CardContent>
       </Card>
-    </Link>
+    </div>
   );
 }
