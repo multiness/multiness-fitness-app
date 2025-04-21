@@ -6,7 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Search, Send, Image as ImageIcon, ArrowLeft, Users2, Plus, FileText, Video, Target, Pencil } from "lucide-react";
 import { useUsers } from "../contexts/UserContext";
 import { format } from "date-fns";
-import { useChatStore, getChatId } from "../lib/chatService";
+import { useChatStore, getChatId, getChatIdSync } from "../lib/chatService";
 import { useGroupStore } from "../lib/groupStore";
 import { UserAvatar } from "@/components/UserAvatar";
 import { Progress } from "@/components/ui/progress";
@@ -106,24 +106,11 @@ export default function Chat() {
     if (!id) return null;
     
     if (directUser) {
-      // Verwende asynce Funktion mit then/catch für Promises
-      const chatIdPromise = getChatId(directUser.id, 'user');
-      chatIdPromise.then(chatId => {
-        const directChat = {
-          id: chatId,
-          chatId: chatId,
-          name: directUser.username,
-          avatar: directUser.avatar,
-          isGroup: false,
-          userId: directUser.id
-        };
-        setSelectedChat(directChat);
-      });
-      
-      // Temporärer Platzhalter während das Promise aufgelöst wird
+      // Verwende synchrone Funktion für direktes Ergebnis
+      const chatId = getChatIdSync(directUser.id, 'user');
       return {
-        id: `temp-user-${directUser.id}`,
-        chatId: `temp-user-${directUser.id}`,
+        id: chatId,
+        chatId: chatId,
         name: directUser.username,
         avatar: directUser.avatar,
         isGroup: false,
@@ -146,27 +133,12 @@ export default function Chat() {
         console.log("Initialisiere Gruppen-Chat für Gruppe:", group.id);
         chatStore.initializeGroupChat(group.id);
         
-        // Verwende asynce Funktion mit then/catch für Promises
-        const chatIdPromise = getChatId(group.id, 'group');
-        chatIdPromise.then(chatId => {
-          console.log("Chat-ID für Gruppe erhalten:", chatId, "für Gruppe:", group.id);
-          const groupChat = {
-            id: chatId,
-            chatId: chatId,
-            name: group.name,
-            avatar: group.image,
-            isGroup: true,
-            groupId: group.id
-          };
-          setSelectedChat(groupChat);
-        }).catch(error => {
-          console.error("Fehler beim Laden der Gruppen-Chat-ID:", error);
-        });
-        
-        // Temporärer Platzhalter während das Promise aufgelöst wird
+        // Verwende synchrone Funktion für direktes Ergebnis
+        const chatId = getChatIdSync(group.id, 'group');
+        console.log("Chat-ID für Gruppe erhalten:", chatId, "für Gruppe:", group.id);
         return {
-          id: `group-${group.id}`,
-          chatId: `group-${group.id}`,
+          id: chatId,
+          chatId: chatId,
           name: group.name,
           avatar: group.image,
           isGroup: true,

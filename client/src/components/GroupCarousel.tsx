@@ -144,7 +144,7 @@ const GroupCarousel = ({ groups }: GroupCarouselProps) => {
           >
             {chunk.map(group => {
               const isJoined = groupStore.isGroupMember(group.id, userId);
-              const chatId = getChatId(group.id, 'group');
+              const chatId = getChatIdSync(group.id, 'group');
               
               if (isMobile) {
                 console.debug("Rendering mobile group card:", `${group.id} - ${group.name}`);
