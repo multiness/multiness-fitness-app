@@ -125,9 +125,17 @@ const GroupCarousel = ({ groups }: GroupCarouselProps) => {
     );
   }
 
+  // Detect mobile devices
+  const isMobile = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  }, []);
+
+  console.debug("Gruppen nach ID:", groups.map(g => g.id).join(", "));
+  
   return (
-    <div className="overflow-x-auto pb-24 -mx-4 px-4 mb-10"> {/* Erhöhter Abstand unten, damit die letzte Gruppe immer sichtbar bleibt */}
-      <div className="flex gap-4 snap-x snap-mandatory w-full pb-6"> {/* Zusätzlicher Abstand am unteren Rand */}
+    <div className="overflow-x-auto pb-32 -mx-4 px-4 mb-14 relative z-0"> {/* Stark erhöhter Abstand unten für mobile Geräte */}
+      <div className="flex gap-4 snap-x snap-mandatory w-full pb-8"> {/* Erhöhter Abstand am unteren Rand */}
         {groupChunks.map((chunk, chunkIndex) => (
           <div 
             key={chunkIndex}
@@ -137,13 +145,23 @@ const GroupCarousel = ({ groups }: GroupCarouselProps) => {
             {chunk.map(group => {
               const isJoined = groupStore.isGroupMember(group.id, userId);
               const chatId = getChatId(group.id, 'group');
+              
+              if (isMobile) {
+                console.debug("Rendering mobile group card:", `${group.id} - ${group.name}`);
+              } else {
+                console.debug("Rendering desktop group card:", `${group.id} - ${group.name}`);
+              }
 
               return (
                 <Card 
-                  key={`group-card-${group.id}`} // Spezifischerer Key für besseres React-Rendering
-                  className="flex-1 overflow-hidden cursor-pointer bg-card hover:bg-accent/5 transition-colors min-w-[150px] transform-gpu" // Hardware-Beschleunigung mit transform-gpu
+                  key={`group-card-${group.id}`}
+                  className="flex-1 overflow-hidden cursor-pointer bg-card hover:bg-accent/5 transition-colors min-w-[150px] transform-gpu shadow-sm" // Hinzugefügter Schatten
                   onClick={() => setLocation(`/chat/${chatId}`)}
-                  style={{ scrollMarginBottom: '4rem' }} // Scroll-Margin für bessere Sichtbarkeit
+                  style={{ 
+                    scrollMarginBottom: isMobile ? '6rem' : '4rem', // Erhöhte Scroll-Margin für mobile Geräte
+                    borderColor: isJoined ? 'var(--green-500)' : undefined, // Hervorhebung von beigetretenen Gruppen
+                    borderWidth: isJoined ? '2px' : '1px'
+                  }}
                 >
                   <div className="aspect-[3/2] relative overflow-hidden bg-muted">
                     <img

@@ -145,7 +145,7 @@ export function UserAvatar({
         <Avatar className={avatarClasses}>
           {isGroup ? (
             <>
-              {/* Spezielle Behandlung für Gruppenavatar mit zuverlässigerem Fallback */}
+              {/* Verbesserte Behandlung für Gruppenavatar mit zuverlässigerem Fallback */}
               <AvatarImage 
                 src={user.avatar || undefined} 
                 alt={user.username} 
@@ -161,18 +161,28 @@ export function UserAvatar({
             </>
           ) : (
             <>
-              {/* Normaler Benutzeravatar */}
-              <AvatarImage src={user.avatar || undefined} alt={user.username} className="object-cover rounded-full" />
-              <AvatarFallback className="rounded-full">{user.username?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
+              {/* Verbesserter Benutzeravatar mit besserer Fehlerbehandlung */}
+              <AvatarImage 
+                src={user.avatar || undefined} 
+                alt={user.username} 
+                className="object-cover rounded-full"
+                onError={(e) => {
+                  console.log(`Benutzerbild konnte nicht geladen werden für: ${user.id} - ${user.username}`);
+                  e.currentTarget.style.display = "none"; // Verstecke das fehlerhafte Bild
+                }} 
+              />
+              <AvatarFallback className="rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+                {user.username?.[0]?.toUpperCase() || 'U'}
+              </AvatarFallback>
             </>
           )}
         </Avatar>
       </div>
       
-      {/* Gruppenkennzeichnung für bessere visuelle Unterscheidung */}
-      {isGroup && size !== "sm" && (
-        <div className="absolute -top-2 -right-1 px-1.5 py-0.5 bg-green-500 text-white text-[8px] font-semibold rounded-full shadow-sm">
-          GRUPPE
+      {/* Verbesserte Gruppenkennzeichnung für bessere visuelle Unterscheidung */}
+      {isGroup && (
+        <div className={`absolute ${size === "sm" ? "-top-1 -right-1 px-1 py-0.5 text-[6px]" : "-top-2 -right-1 px-1.5 py-0.5 text-[8px]"} bg-green-500 text-white font-semibold rounded-full shadow-sm z-10`}>
+          {size === "sm" ? "G" : "GRUPPE"}
         </div>
       )}
       

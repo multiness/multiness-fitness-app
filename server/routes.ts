@@ -2079,42 +2079,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (extractedGroupId !== null) {
               const groupId = extractedGroupId;
               
-              // VERBESSERT: Sende die Nachricht an alle verbundenen Clients
-              // Dadurch wird sichergestellt, dass die Nachricht an alle Clients gesendet wird,
-              // auch wenn sie den Chat nicht explizit abonniert haben
-              console.log('Sende Nachricht an alle Clients für Gruppe:', groupId);
+              // NEUE STRATEGIE: Erstelle eine Liste aller eindeutigen Clients, die die Nachricht erhalten sollen
+              const targetClients = new Set<WebSocket>();
               
-              // Nachricht an gruppenbezogene Chat-Abonnenten senden
+              // 1. Füge spezifische Gruppen-Chat-Abonnenten hinzu
               if (chatRooms[groupId]) {
-                let groupClientsReached = 0;
                 chatRooms[groupId].forEach(client => {
-                  if (safeMessageSend(client, {
-                    type: 'chat_message',
-                    chatId: data.chatId,
-                    message: data.message
-                  })) {
-                    groupClientsReached++;
+                  if (client.readyState === WebSocket.OPEN) {
+                    targetClients.add(client as WebSocket);
                   }
                 });
-                console.log(`Chat-Nachricht an ${groupClientsReached} Gruppen-Abonnenten weitergeleitet`);
               }
               
-              // Nachricht auch an alle allgemeinen Gruppen-Abonnenten senden
-              let generalClientsReached = 0;
+              // 2. Füge allgemeine Gruppen-Abonnenten hinzu
               subscriptions.groups.forEach(client => {
-                if (safeMessageSend(client, {
-                  type: 'chat_message',
-                  chatId: data.chatId,
-                  message: data.message
-                })) {
-                  generalClientsReached++;
+                if (client.readyState === WebSocket.OPEN) {
+                  targetClients.add(client as WebSocket);
                 }
               });
-              console.log(`Chat-Nachricht zusätzlich an ${generalClientsReached} allgemeine Gruppen-Abonnenten weitergeleitet`);
+              
+              // 3. Füge alle Gruppen-IDs-Abonnenten hinzu (für maximale Verteilung)
+              subscriptions.groupIds.forEach(client => {
+                if (client.readyState === WebSocket.OPEN) {
+                  targetClients.add(client as WebSocket);
+                }
+              });
+              
+              // 4. Füge alle Chat-Abonnenten hinzu (allgemeine Chat-Themen-Abonnenten)
+              subscriptions.chat.forEach(client => {
+                if (client.readyState === WebSocket.OPEN) {
+                  targetClients.add(client as WebSocket);
+                }
+              });
+              
+              // Breite Broadcast-Strategie: Sende an alle offenen Verbindungen für maximale Zuverlässigkeit
+              console.log(`Sende Chat-Nachricht an ${targetClients.size} eindeutige Clients für Gruppe ${groupId} (chatId: ${data.chatId})`);
+              
+              let successCount = 0;
+              targetClients.forEach(client => {
+                try {
+                  if (client.readyState === WebSocket.OPEN) {
+                    client.send(JSON.stringify({
+                      type: 'chat_message',
+                      chatId: data.chatId,
+                      message: data.message
+                    }));
+                    successCount++;
+                  }
+                } catch (err) {
+                  console.error('Fehler beim Senden an einen Client:', err);
+                }
+              });
+              
+              console.log(`Chat-Nachricht erfolgreich an ${successCount} von ${targetClients.size} Clients gesendet`);
               
               // Falls keine Clients gefunden wurden
-              if (!chatRooms[groupId] && subscriptions.groups.size === 0) {
-                console.log(`Kein Client hat Chat für Gruppe ${groupId} abonniert`);
+              if (targetClients.size === 0) {
+                console.log(`Kein aktiver Client für Chat ${data.chatId} (Gruppe ${groupId}) gefunden`);
               }
             } else {
               console.log('Kein Gruppenchat oder ungültiges Format:', data.chatId);
