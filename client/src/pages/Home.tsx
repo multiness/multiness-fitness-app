@@ -154,7 +154,7 @@ export default function Home() {
   
   // Entferne intensives Debug-Logging im Produktionsmodus
   if (process.env.NODE_ENV === 'development') {
-    console.debug("Gruppen nach ID:", allGroups.map(g => g.id).join(", "));
+    console.debug("Gruppen nach ID:", allGroups.map((g: any) => g.id).join(", "));
   }
   
   // Alle Gruppen ohne Filterung verwenden
@@ -287,7 +287,7 @@ export default function Home() {
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
               {/* Hier wichtig: Stellen Sie sicher, dass ALLE Gruppen angezeigt werden */}
               {/* Erzwinge Anzeige aller Gruppen auf dem Desktop mit key={forceRender} */}
-              {groups.map(group => {
+              {groups.map((group: any) => {
                 const chatId = getChatIdSync(group.id, 'group');
                 const isJoined = groupStore.isGroupMember(group.id, 1);
                 
