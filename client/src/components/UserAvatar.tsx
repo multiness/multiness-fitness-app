@@ -6,6 +6,7 @@ import { useUsers, getUsersFromStorage, loadAPIUsers } from "../contexts/UserCon
 import { VerifiedBadge } from "./VerifiedBadge";
 import { useState, useEffect } from "react";
 import ImageModal from "./ImageModal";
+import { Users } from "lucide-react";
 
 export interface UserAvatarProps {
   userId: number;

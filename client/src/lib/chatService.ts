@@ -457,14 +457,15 @@ export const useChatStore = create<ChatStore>()(
               }
             };
             
-            // Primäre Methode wählen basierend auf Gerätetyp
-            if (isMobileDevice()) {
-              // Für mobile Geräte: Versuche zuerst WebSocket, mit Fallback auf HTTP
-              sendMessageViaWebSocket();
-            } else {
-              // Für Desktop: Nur WebSocket verwenden
-              sendMessageViaWebSocket();
-            }
+            // Einheitliche Methode für alle Gerätetypen mit Redundanzstrategie
+            // 1. Sende zuerst per WebSocket für Echtzeit (alle Geräte)
+            sendMessageViaWebSocket();
+            
+            // 2. Sende zusätzlich über HTTP für Zuverlässigkeit und Persistenz (alle Geräte)
+            // Dies stellt sicher, dass die Nachricht auch bei WebSocket-Problemen ankommt
+            setTimeout(() => {
+              sendMessageViaFetch();
+            }, 100);
           } else {
             console.log('Keine Gruppennachricht, nicht über WebSocket gesendet:', chatId);
           }
