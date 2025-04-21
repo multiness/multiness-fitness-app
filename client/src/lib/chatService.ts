@@ -40,6 +40,8 @@ export type GroupGoal = {
 type ChatStore = {
   messages: Record<string, Message[]>;
   groupGoals: Record<string, GroupGoal>;
+  unreadMessages: Record<string, number>;
+  currentOpenChat: string | null;
   addMessage: (chatId: string, message: Message) => void;
   getMessages: (chatId: string) => Message[];
   setGroupGoal: (chatId: string, goal: GroupGoal) => void;
@@ -52,6 +54,10 @@ type ChatStore = {
     title: string;
     preview?: string;
   }) => void;
+  markChatAsRead: (chatId: string) => void;
+  getUnreadCount: (chatId?: string) => number;
+  getTotalUnreadCount: () => number;
+  setCurrentOpenChat: (chatId: string | null) => void;
 };
 
 // WebSocket Manager für konsistente Verbindungen
@@ -164,6 +170,44 @@ export const useChatStore = create<ChatStore>()(
     (set, get) => ({
       messages: {},
       groupGoals: {},
+      unreadMessages: {},
+      currentOpenChat: null,
+      
+      markChatAsRead: (chatId: string) => {
+        set((state) => {
+          // Wenn der Chat bereits 0 ungelesene Nachrichten hat, nichts ändern
+          if (!state.unreadMessages[chatId]) return state;
+          
+          // Setze den Zähler für ungelesene Nachrichten zurück
+          return {
+            unreadMessages: {
+              ...state.unreadMessages,
+              [chatId]: 0
+            },
+            currentOpenChat: chatId
+          };
+        });
+      },
+      
+      getUnreadCount: (chatId?: string) => {
+        const state = get();
+        if (chatId) {
+          return state.unreadMessages[chatId] || 0;
+        }
+        return 0;
+      },
+      
+      getTotalUnreadCount: () => {
+        const state = get();
+        return Object.values(state.unreadMessages).reduce((sum, count) => sum + count, 0);
+      },
+      
+      setCurrentOpenChat: (chatId: string | null) => {
+        set({ currentOpenChat: chatId });
+        if (chatId) {
+          get().markChatAsRead(chatId);
+        }
+      },
       
       initializeGroupChat: (groupId: number) => {
         // Vorhandene synchrone Implementierung, die keine async/await verwendet
@@ -320,13 +364,32 @@ export const useChatStore = create<ChatStore>()(
       },
 
       addMessage: (chatId: string, message: Message) => {
-        // Füge die Nachricht lokal hinzu
-        set((state) => ({
-          messages: {
-            ...state.messages,
-            [chatId]: [...(state.messages[chatId] || []), message],
-          },
-        }));
+        // Füge die Nachricht lokal hinzu und aktualisiere ungelesene Nachrichten
+        set((state) => {
+          // Überprüfe, ob die Nachricht von einem anderen Benutzer ist und nicht vom aktuellen Benutzer
+          const isIncoming = message.userId !== 1; // Standard-User-ID ist 1
+          
+          // Überprüfe, ob dieser Chat gerade geöffnet ist
+          const isChatOpen = state.currentOpenChat === chatId;
+          
+          // Aktualisiere den Zähler für ungelesene Nachrichten nur, wenn 
+          // es eine eingehende Nachricht ist und der Chat nicht aktuell geöffnet ist
+          const currentUnreadCount = state.unreadMessages[chatId] || 0;
+          const newUnreadCount = (isIncoming && !isChatOpen) 
+            ? currentUnreadCount + 1 
+            : currentUnreadCount;
+            
+          return {
+            messages: {
+              ...state.messages,
+              [chatId]: [...(state.messages[chatId] || []), message],
+            },
+            unreadMessages: {
+              ...state.unreadMessages,
+              [chatId]: newUnreadCount
+            }
+          };
+        });
         
         // Sende die Nachricht an den Server und andere Clients per WebSocket
         try {
