@@ -62,6 +62,12 @@ const GroupCarousel = ({ groups }: GroupCarouselProps) => {
     }
   }, [groups]);
 
+  // Detect mobile devices - WICHTIG: Hooks müssen vor bedingtem Rendering kommen
+  const isMobile = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  }, []);
+
   // Memoize group chunks to prevent unnecessary re-calculation
   const groupChunks = useMemo(() => {
     // Ensure groups is an array before chunking
@@ -124,12 +130,6 @@ const GroupCarousel = ({ groups }: GroupCarouselProps) => {
       </div>
     );
   }
-
-  // Detect mobile devices
-  const isMobile = useMemo(() => {
-    if (typeof window === 'undefined') return false;
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  }, []);
 
   console.debug("Gruppen nach ID:", groups.map(g => g.id).join(", "));
   

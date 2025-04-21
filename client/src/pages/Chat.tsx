@@ -406,9 +406,9 @@ export default function Chat() {
                 </div>
                 
                 {/* Verbesserter Bearbeiten-Button nur für Gruppenadmins */}
-                {selectedChat.isGroup && 'groupId' in selectedChat && (
+                {selectedChat && selectedChat.isGroup && 'groupId' in selectedChat && (
                   <>
-                    {groupStore.isGroupAdmin(selectedChat.groupId, userId) && (
+                    {selectedChat.groupId && groupStore.isGroupAdmin(selectedChat.groupId, userId) && (
                       <Button
                         variant="ghost"
                         size="icon"
@@ -424,7 +424,7 @@ export default function Chat() {
               </div>
 
               {/* Group Goals Section */}
-              {selectedChat.isGroup && currentGroupGoal && (
+              {selectedChat && selectedChat.isGroup && currentGroupGoal && (
                 <div className="mt-4 p-4 bg-muted/30 rounded-lg space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -462,7 +462,7 @@ export default function Chat() {
 
             <ScrollArea className="flex-1 p-4">
               <div className="space-y-4">
-                {chatStore.getMessages(selectedChat.chatId).map(message => {
+                {selectedChat && chatStore.getMessages(selectedChat.chatId).map(message => {
                   const isCurrentUser = message.userId === currentUser?.id;
                   const sender = users.find(u => u.id === message.userId);
 
@@ -604,7 +604,7 @@ export default function Chat() {
           )}
 
           {/* Gruppeneditierung für Admins */}
-          {selectedChat.isGroup && 'groupId' in selectedChat && (
+          {selectedChat && selectedChat.isGroup && 'groupId' in selectedChat && (
             <EditGroupDialog
               open={isEditGroupDialogOpen}
               onOpenChange={setIsEditGroupDialogOpen}
