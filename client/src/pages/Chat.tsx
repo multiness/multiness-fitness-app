@@ -106,56 +106,82 @@ export default function Chat() {
     }
   }, [users, groupStore.groups, currentUser]);
   
-  // Chat-Initialisierung basierend auf URL-Parameter
+  // Chat-Initialisierung basierend auf URL-Parameter - Robustere Implementierung
   useEffect(() => {
-    if (!id || !allChats.length) return;
+    if (!id) return;
     
     try {
       console.log("Initialisiere ausgewählten Chat für ID:", id);
       
+      // Cache für häufig verwendete Daten
+      let chatIdentifier = id;
+      let isGruppe = false;
+      let entityId: number | null = null;
+      
       // Für direkten Benutzerchat
       if (directUser) {
-        const chatId = getChatIdSync(directUser.id, 'user');
+        entityId = directUser.id;
+        chatIdentifier = getChatIdSync(entityId, 'user');
+        
         setSelectedChat({
-          id: chatId,
-          chatId: chatId,
+          id: chatIdentifier,
+          chatId: chatIdentifier,
           name: directUser.username,
           avatar: directUser.avatar,
           isGroup: false,
-          userId: directUser.id
+          userId: entityId
         });
         return;
       }
       
-      // Für Gruppen-Chat
+      // Für Gruppen-Chat - Unterstützt alle Formate: group-ID, group-uuid-xxxx
       if (id.startsWith('group-')) {
-        const groupIdStr = id.replace('group-', '');
-        const groupId = parseInt(groupIdStr, 10);
+        isGruppe = true;
         
-        if (isNaN(groupId)) {
-          console.error("Ungültige Gruppen-ID:", groupIdStr);
-          return;
+        // Einfaches Format: group-123
+        if (id.match(/^group-\d+$/)) {
+          const groupIdStr = id.replace('group-', '');
+          entityId = parseInt(groupIdStr, 10);
+        } 
+        // UUID-Format: Durchsuche die IDs aus dem globalGroupIds-Cache
+        else {
+          // Die ID ist bereits der Chat-Identifier
+          chatIdentifier = id;
+          
+          // Suche die eigentliche Gruppen-ID basierend auf dem ID-Muster
+          // Da groupChatIds nicht in der GroupStore-Definition vorhanden ist,
+          // verwenden wir einfach einen manuellen Abgleich mit den Gruppen-IDs
+          for (const groupId in groupStore.groups) {
+            const group = groupStore.groups[groupId];
+            const groupChatId = getChatIdSync(parseInt(groupId), 'group');
+            if (groupChatId === id) {
+              entityId = parseInt(groupId);
+              break;
+            }
+          }
         }
         
-        const group = groupStore.groups[groupId];
-        if (!group) {
-          console.error("Gruppe nicht gefunden:", groupId);
-          return;
+        if (!entityId || isNaN(entityId)) {
+          console.warn("Konnte Gruppen-ID nicht extrahieren:", id);
+          // Trotzdem fortfahren mit Chat-ID als Fallback
+        } else {
+          // Initialisiere die Gruppe wenn eine ID gefunden wurde
+          chatStore.initializeGroupChat(entityId);
+          
+          const group = groupStore.groups[entityId];
+          if (group) {
+            chatIdentifier = getChatIdSync(entityId, 'group');
+            setSelectedChat({
+              id: chatIdentifier,
+              chatId: chatIdentifier,
+              name: group.name,
+              avatar: group.image,
+              isGroup: true,
+              groupId: entityId
+            });
+            return;
+          }
         }
-        
-        // Initialisiere die Gruppe
-        chatStore.initializeGroupChat(groupId);
-        
-        const chatId = getChatIdSync(groupId, 'group');
-        setSelectedChat({
-          id: chatId,
-          chatId: chatId,
-          name: group.name,
-          avatar: group.image,
-          isGroup: true,
-          groupId: groupId
-        });
-        return;
       }
       
       // Suche nach übereinstimmendem Chat in der Liste
@@ -166,7 +192,6 @@ export default function Chat() {
       }
       
       console.warn("Kein passender Chat für ID gefunden:", id);
-      
     } catch (error) {
       console.error("Fehler bei der Chat-Initialisierung:", error);
     }

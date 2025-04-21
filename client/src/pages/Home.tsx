@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import UserSlider from "@/components/UserSlider";
@@ -10,7 +10,7 @@ import EventSlider from "@/components/EventSlider";
 import { ArrowRight, Crown, Heart, Share2, Users, Trophy, Package, RefreshCw, Check, Loader2 } from "lucide-react";
 import { useLocation, Link } from "wouter";
 import { usePostStore } from "../lib/postStore";
-import { getChatId } from "../lib/chatService";
+import { getChatId, getChatIdSync } from "../lib/chatService";
 import {
   Carousel,
   CarouselContent,
@@ -82,92 +82,80 @@ export default function Home() {
     }
   };
   
-  // Synchronisiere Daten mit dem Server beim ersten Rendern
+  // Synchronisiere Daten mit dem Server beim ersten Rendern - Optimiert
   useEffect(() => {
-    // Lade alle Daten synchronisiert vom Server
+    // Wir verwenden ein Flag, um zu verhindern, dass mehrere Anfragen gleichzeitig laufen
+    let isMounted = true;
+    let isLoading = false;
+    
+    // Lade alle Daten synchronisiert vom Server mit Fehlerbehandlung
     const loadAllData = async () => {
+      // Verhindere mehrfache gleichzeitige Ladevorgänge
+      if (isLoading || !isMounted) return;
+      
+      isLoading = true;
+      
       try {
-        console.log("Lade alle Daten vom Server...");
+        // Lade nur die wesentlichen Daten sofort
+        const postsPromise = postStore.loadStoredPosts().catch(e => {
+          console.error("Fehler beim Laden der Posts:", e);
+          return null;
+        });
         
-        // Synchronisiere Posts
-        await postStore.loadStoredPosts();
+        const groupsPromise = groupStore.syncWithServer().catch(e => {
+          console.error("Fehler beim Laden der Gruppen:", e);
+          return null;
+        });
         
-        // Synchronisiere Produkte
-        await loadInitialProducts();
+        // Warte auf die wichtigsten Daten
+        await Promise.all([postsPromise, groupsPromise]);
         
-        // Synchronisiere Gruppen
-        await groupStore.syncWithServer();
-        
-        // Synchronisiere Challenges
-        await syncWithServer();
-        
-        console.log("Alle Daten erfolgreich geladen");
+        // Lade dann die restlichen Daten, wenn die Komponente noch montiert ist
+        if (isMounted) {
+          try {
+            await loadInitialProducts();
+            await syncWithServer();
+          } catch (e) {
+            console.error("Fehler beim Laden sekundärer Daten:", e);
+          }
+        }
       } catch (error) {
+        // Allgemeine Fehlerbehandlung
         console.error("Fehler beim Laden der Daten:", error);
+      } finally {
+        isLoading = false;
       }
     };
     
+    // Initialer Ladevorgang
     loadAllData();
     
-    // Setze ein Intervall für regelmäßige Updates (alle 20 Sekunden)
-    const intervalId = setInterval(async () => {
-      try {
-        console.log("Automatische Aktualisierung...");
-        
-        // Posts aktualisieren
-        await postStore.loadStoredPosts();
-        
-        // Challenges aktualisieren
-        await syncWithServer();
-        
-        // Gruppen aktualisieren mit Erzwingung der Aktualisierung
-        await groupStore.syncWithServer(true); // true = forceRefresh
-      } catch (error) {
-        console.error("Fehler bei der automatischen Aktualisierung:", error);
+    // Deutlich reduziertes Update-Intervall (nur einmal pro Minute)
+    // Dies verhindert übermäßige Server-Anfragen
+    const intervalId = setInterval(() => {
+      if (!isLoading && isMounted) {
+        // Sanfte Aktualisierung ohne Fehlerwerfen
+        postStore.loadStoredPosts().catch(e => console.warn("Update-Fehler:", e));
+        groupStore.syncWithServer(false).catch(e => console.warn("Update-Fehler:", e));
       }
-    }, 15000); // Kürzeres Intervall für häufigere Aktualisierungen
+    }, 60000); // Reduziert auf einmal pro Minute
     
-    // Bereinige das Intervall beim Unmount der Komponente
-    return () => clearInterval(intervalId);
-  }, []);
-  
-  // Lade Daten aus den stores statt aus den mock-Daten
-  // WICHTIG: Hole ALLE Gruppen aus dem Store, OHNE FILTER
-  const allGroups = Object.values(groupStore.groups);
-  
-  // Debug-Ausgabe für alle Gruppen
-  console.log("Available groups:", allGroups);
-  console.debug("Gruppen nach ID:", allGroups.map(g => g.id).join(", "));
-  
-  // Debugging: Alle geladenen Gruppen anzeigen
-  console.log(`Anzahl aller geladenen Gruppen: ${allGroups.length}`, allGroups.map(g => g.id));
-  
-  // Optimierte Darstellung der Gruppen mit nur einer Trigger-Variable
-  const [renderTrigger, setRenderTrigger] = useState(0);
-  
-  // Einfache Aktualisierung bei Änderungen (reduziert)
-  useEffect(() => {
-    // Nur ein Update bei Änderungen
-    if (allGroups.length > 0) {
-      // Wir triggern einen Render, ohne Debug-Informationen anzuzeigen
-      setRenderTrigger(Date.now());
-    }
-  }, [allGroups.length, groupStore.lastFetched]);
-  
-  // Verbesserte Lade-Strategie mit minimaler Verzögerung und hoher Priorität
-  useEffect(() => {
-    // Sofortiger erster Ladeversuch
-    groupStore.syncWithServer(true);
-    
-    // Zweiter Ladeversuch mit leichter Verzögerung
-    const secondLoad = setTimeout(() => {
-      groupStore.syncWithServer(true);
-    }, 300);
-    
+    // Bereinige beim Unmount
     return () => {
-      clearTimeout(secondLoad);
+      isMounted = false;
+      clearInterval(intervalId);
     };
   }, []);
+  
+  // Vereinfachter Zugriff auf Gruppen ohne redundantes Logging
+  const allGroups = useMemo(() => {
+    return Object.values(groupStore.groups);
+  }, [groupStore.groups]);
+  
+  // Entferne intensives Debug-Logging im Produktionsmodus
+  if (process.env.NODE_ENV === 'development') {
+    console.debug("Gruppen nach ID:", allGroups.map(g => g.id).join(", "));
+  }
   
   // Alle Gruppen ohne Filterung verwenden
   const groups = allGroups;
@@ -196,7 +184,8 @@ export default function Home() {
   );
 
   const navigateToGroupChat = (groupId: number) => {
-    const chatId = getChatId(groupId, 'group');
+    // Verwende die SYNCHRONE Funktion statt der asynchronen
+    const chatId = getChatIdSync(groupId, 'group');
     console.log("Navigating to group chat with ID:", chatId);
     setLocation(`/chat/${chatId}`);
   };
@@ -299,7 +288,7 @@ export default function Home() {
               {/* Hier wichtig: Stellen Sie sicher, dass ALLE Gruppen angezeigt werden */}
               {/* Erzwinge Anzeige aller Gruppen auf dem Desktop mit key={forceRender} */}
               {groups.map(group => {
-                const chatId = getChatId(group.id, 'group');
+                const chatId = getChatIdSync(group.id, 'group');
                 const isJoined = groupStore.isGroupMember(group.id, 1);
                 
                 // Hier wird jede einzelne Gruppe angezeigt
