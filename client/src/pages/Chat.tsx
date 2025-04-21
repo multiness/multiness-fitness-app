@@ -288,8 +288,10 @@ export default function Chat() {
                 return (
                   <button
                     key={chat.id}
-                    className={`w-full text-left p-4 hover:bg-muted/50 transition-colors ${
+                    className={`w-full text-left p-4 hover:bg-muted/50 transition-colors border-l-4 ${
                       selectedChat?.id === chat.id ? 'bg-muted' : ''
+                    } ${
+                      chat.isGroup ? 'border-green-500' : 'border-transparent'
                     }`}
                     onClick={() => {
                       if (chat.isGroup) {
@@ -349,7 +351,12 @@ export default function Chat() {
                         />
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{chat.name}</p>
+                        <div className="flex items-center gap-1">
+                          {chat.isGroup && (
+                            <Users2 className="h-3 w-3 text-green-500" />
+                          )}
+                          <p className="font-medium truncate">{chat.name}</p>
+                        </div>
                         {lastMessage && (
                           <p className="text-sm truncate text-muted-foreground">
                             {lastMessage.content}

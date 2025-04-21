@@ -51,8 +51,17 @@ export default function GroupPreview({ group }: GroupPreviewProps) {
     goToGroupChat();
   };
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (isJoined) {
+      goToGroupChat();
+    } else {
+      setLocation(`/groups/${group.id}`);
+    }
+  };
+
   return (
-    <Link href={`/groups/${group.id}`}>
+    <div onClick={handleCardClick}>
       <Card className="overflow-hidden cursor-pointer transition-transform hover:scale-[1.02]">
         <CardHeader className="p-0">
           <img
