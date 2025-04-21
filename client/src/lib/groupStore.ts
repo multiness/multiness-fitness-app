@@ -856,6 +856,13 @@ const initializeStore = persist<GroupStore>(
         const group = get().groups[groupId];
         if (!group) return false;
         return group.participantIds.includes(userId) || group.creatorId === userId;
+      },
+      
+      isGroupAdmin: (groupId, userId = 1) => {
+        const group = get().groups[groupId];
+        if (!group) return false;
+        // Ein Benutzer ist Admin, wenn er Ersteller ist oder in der adminIds-Liste steht
+        return group.creatorId === userId || (group.adminIds && group.adminIds.includes(userId));
       }
     };
   },

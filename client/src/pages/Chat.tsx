@@ -31,6 +31,7 @@ export default function Chat() {
   const groupStore = useGroupStore();
   const [messageInput, setMessageInput] = useState("");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const userId = currentUser?.id || 1; // Standardmäßig Benutzer mit ID 1 für Testzwecke
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [isGroupGoalModalOpen, setIsGroupGoalModalOpen] = useState(false);
