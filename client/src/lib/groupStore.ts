@@ -400,8 +400,8 @@ const initializeStore = persist<GroupStore>(
           const now = Date.now();
           const lastFetched = get().lastFetched;
           
-          // Überprüfe, ob ein Refresh nötig ist (maximal alle 30 Sekunden)
-          if (!forceRefresh && lastFetched && (now - lastFetched < 30000)) {
+          // Überprüfe, ob ein Refresh nötig ist (maximal alle 5 Sekunden, verkürzt von 30)
+          if (!forceRefresh && lastFetched && (now - lastFetched < 5000)) {
             console.log('Verwende zwischengespeicherte Gruppen');
             return;
           }
@@ -412,20 +412,72 @@ const initializeStore = persist<GroupStore>(
           const groupsResponse = await apiRequest('GET', '/api/groups');
           const groups: DbGroup[] = await groupsResponse.json();
           
-          // Lade Mitglieder für jede Gruppe
-          const membersPromises = groups.map(async group => {
-            const membersResponse = await apiRequest('GET', `/api/groups/${group.id}/members`);
-            const members: GroupMember[] = await membersResponse.json();
-            return { groupId: group.id, members };
+          // PERFORMANCE-VERBESSERUNG: Setze Gruppen sofort mit leeren Mitgliederlisten
+          // Das ermöglicht eine schnelle erste Anzeige
+          const initialGroups = groups.map(group => {
+            return {
+              ...group,
+              participantIds: [],
+              adminIds: [group.creatorId || 1]
+            } as Group;
           });
           
-          const membersResults = await Promise.all(membersPromises);
-          const allMembers: GroupMember[] = membersResults.flatMap(result => result.members);
+          const initialGroupsObject: Record<number, Group> = {};
+          initialGroups.forEach(group => {
+            initialGroupsObject[group.id] = group;
+          });
           
-          // Aktualisiere den Store
-          get().setGroups(groups, allMembers);
+          // Schnelles Rendering ermöglichen durch sofortiges Update
+          set({ 
+            groups: initialGroupsObject, 
+            lastFetched: Date.now(),
+            isLoading: false
+          });
           
-          set({ isLoading: false });
+          // Lade Mitglieder für jede Gruppe in einem einzigen Promise.all
+          // Damit kein sequentieller Flaschenhals entsteht
+          const membersPromises = groups.map(async group => {
+            try {
+              const membersResponse = await apiRequest('GET', `/api/groups/${group.id}/members`);
+              const members: GroupMember[] = await membersResponse.json();
+              
+              // Sofort die Gruppe aktualisieren, sobald die Mitglieder geladen sind
+              // Dadurch werden die Gruppen schrittweise vollständig, anstatt zu warten, bis alle fertig sind
+              set(state => {
+                const groupMembers = members || [];
+                const participantIds = groupMembers.map(m => m.userId);
+                const adminIds = groupMembers.filter(m => m.role === 'admin').map(m => m.userId);
+                
+                // Make sure creator is a participant and admin
+                if (group.creatorId && !participantIds.includes(group.creatorId)) {
+                  participantIds.push(group.creatorId);
+                }
+                if (group.creatorId && !adminIds.includes(group.creatorId)) {
+                  adminIds.push(group.creatorId);
+                }
+                
+                return {
+                  groups: {
+                    ...state.groups,
+                    [group.id]: {
+                      ...state.groups[group.id],
+                      participantIds,
+                      adminIds
+                    }
+                  }
+                };
+              });
+              
+              return { groupId: group.id, members };
+            } catch (error) {
+              console.error(`Fehler beim Laden der Mitglieder für Gruppe ${group.id}:`, error);
+              return { groupId: group.id, members: [] };
+            }
+          });
+          
+          // Führe alle Anfragen parallel aus
+          await Promise.all(membersPromises);
+          
         } catch (error) {
           console.error('Error synchronizing groups:', error);
           set({ isLoading: false });

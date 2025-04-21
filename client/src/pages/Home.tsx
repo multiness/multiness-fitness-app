@@ -142,46 +142,30 @@ export default function Home() {
   // Debugging: Alle geladenen Gruppen anzeigen
   console.log(`Anzahl aller geladenen Gruppen: ${allGroups.length}`, allGroups.map(g => g.id));
   
-  // OPTIMIERT: Schnellere & zuverlässigere Darstellung der Gruppen
-  // Zustand für trigger force rendering
-  const [forceRender, setForceRender] = useState(0);
+  // Optimierte Darstellung der Gruppen mit nur einer Trigger-Variable
+  const [renderTrigger, setRenderTrigger] = useState(0);
   
-  // Aggressives sofortiges Rendern bei Änderungen
+  // Einfache Aktualisierung bei Änderungen (reduziert)
   useEffect(() => {
-    // Bei jedem Laden der Gruppen sofort neu rendern
+    // Nur ein Update bei Änderungen
     if (allGroups.length > 0) {
-      console.debug("SOFORTIGE Gruppenaktualisierung ausgeführt. Anzeigegruppen:", allGroups.length);
-      // Erzwinge ein erneutes Rendern durch State-Änderung
-      setForceRender(prev => prev + 1);
+      // Wir triggern einen Render, ohne Debug-Informationen anzuzeigen
+      setRenderTrigger(Date.now());
     }
-  }, [allGroups.length, groupStore.lastFetched]); // Auch bei lastFetched neu rendern
+  }, [allGroups.length, groupStore.lastFetched]);
   
-  // VERBESSERT: Optimierte Ladestrategie für schnellere Anzeige
+  // Verbesserte Lade-Strategie mit minimaler Verzögerung und hoher Priorität
   useEffect(() => {
-    // Starte sofort einen High-Priority-Timer für ersten Ladeversuch
-    const immediateLoad = setTimeout(() => {
-      console.debug("Erster Schnellladeversuch für Gruppen!");
-      groupStore.syncWithServer(true); // Mit Force-Refresh
-    }, 50); // Nur 50ms warten für sofortige Ausführung
+    // Sofortiger erster Ladeversuch
+    groupStore.syncWithServer(true);
     
-    // Zweiter Ladeversuch nach einer kurzen Verzögerung
+    // Zweiter Ladeversuch mit leichter Verzögerung
     const secondLoad = setTimeout(() => {
-      console.debug("Zweiter Ladeversuch für Gruppen!");
       groupStore.syncWithServer(true);
-    }, 500); // Nur 500ms für zweiten Versuch
-    
-    // Dritter Ladeversuch nach etwas längerer Verzögerung
-    const thirdLoad = setTimeout(() => {
-      if (allGroups.length < 6) { // Wenn nicht alle 6 Gruppen angezeigt werden
-        console.debug("Dritter Ladeversuch für Gruppen gestartet!");
-        groupStore.syncWithServer(true);
-      }
-    }, 1500);
+    }, 300);
     
     return () => {
-      clearTimeout(immediateLoad);
       clearTimeout(secondLoad);
-      clearTimeout(thirdLoad);
     };
   }, []);
   
@@ -293,15 +277,7 @@ export default function Home() {
         </div>
         {/* Desktop-Ansicht: Grid-Layout statt Karussell */}
         <div className="hidden md:block">
-          {/* Debug-Info für Desktop-Ansicht */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="mb-4 text-xs bg-muted p-2 rounded">
-              <p>Desktop-Ansicht Gruppen ({groups.length}): 
-                {groups.map(g => ` ${g.id}`).join(', ')}
-              </p>
-              {forceRender > 0 && <p>Force Render: {forceRender} (garantiert alle Gruppen anzeigen)</p>}
-            </div>
-          )}
+          {/* Debug-Info entfernt */}
           
           {/* Wenn keine Gruppen geladen sind, zeigen wir eine Lade-Animation */}
           {groups.length === 0 ? (
@@ -331,7 +307,7 @@ export default function Home() {
                 
                 return (
                   <Card 
-                    key={`group-${group.id}-render-${forceRender}`}
+                    key={`group-${group.id}`}
                     className="overflow-hidden cursor-pointer bg-card hover:bg-accent/5 transition-colors"
                     onClick={() => setLocation(`/chat/${chatId}`)}
                   >
