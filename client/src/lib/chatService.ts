@@ -210,157 +210,53 @@ export const useChatStore = create<ChatStore>()(
       },
       
       initializeGroupChat: (groupId: number) => {
-        // Vorhandene synchrone Implementierung, die keine async/await verwendet
-        const chatIdPromise = getChatId(groupId, 'group');
-        
-        // Mit Promise-Syntax statt async/await arbeiten
-        chatIdPromise.then(chatId => {
-          // Vorhandene Nachrichten laden
-          const fetchMessages = async () => {
-            try {
-              const response = await fetch(`/api/chat/${chatId}/messages`);
-              
-              if (response.ok) {
-                const messages = await response.json();
-                
-                if (messages && messages.length > 0) {
-                  set((state) => {
-                    // Wenn bereits Nachrichten vorhanden sind, überspringe
-                    if (state.messages[chatId] && state.messages[chatId].length > 0) {
-                      console.log(`Chat ${chatId} bereits initialisiert mit ${state.messages[chatId].length} Nachrichten`);
-                      return state;
-                    }
-                    
-                    return {
-                      messages: {
-                        ...state.messages,
-                        [chatId]: messages
-                      }
-                    };
-                  });
+        // VERBESSERT: Verwende die synchrone Funktion für direkte Gruppenchats
+        // Dies vermeidet Timing-Probleme und "Maximum update depth exceeded" Fehler
+        try {
+          console.log('Initialisiere Gruppenchat für Gruppe ID:', groupId);
+          const chatId = getChatIdSync(groupId, 'group');
+          
+          // Stellen Sie sicher, dass der Chat im Store existiert
+          set((state) => {
+            if (!state.messages[chatId]) {
+              return {
+                messages: {
+                  ...state.messages,
+                  [chatId]: [] // Leere Nachrichtenliste initialisieren
                 }
-              } else {
-                console.error('Fehler beim Laden der Chat-Nachrichten:', response.statusText);
-              }
-            } catch (error) {
-              console.error('Fehler beim Abrufen der Chat-Nachrichten:', error);
+              };
             }
-          };
+            return state;
+          });
           
-          // Vorhandene Nachrichten laden
-          fetchMessages();
+          // Vereinfachte Nachrichten-Initialisierung ohne komplexe Logik
+          console.log('Chat-ID für Gruppe', groupId, 'ist', chatId);
           
-          // Nachrichten synchronisieren basierend auf Gerätetyp
-          const isMobileDevice = () => {
-            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-          };
-          
-          if (isMobileDevice()) {
-            // Mobile Geräte: Verwende periodisches Polling für Chat-Nachrichten
-            console.log('Mobiles Gerät erkannt, verwende Polling für Chat-Nachrichten');
-            
-            const pollMessages = async () => {
-              try {
-                const response = await fetch(`/api/chat/${chatId}/messages`);
-                if (response.ok) {
-                  const messages = await response.json();
-                  if (messages && messages.length > 0) {
-                    set((state) => {
-                      const currentMessages = state.messages[chatId] || [];
-                      
-                      // Prüfe auf neue Nachrichten
-                      const newMessages = messages.filter((newMsg: Message) => 
-                        !currentMessages.some(existingMsg => existingMsg.id === newMsg.id)
-                      );
-                      
-                      if (newMessages.length > 0) {
-                        console.log(`${newMessages.length} neue Nachrichten durch Polling gefunden`);
-                        return {
-                          messages: {
-                            ...state.messages,
-                            [chatId]: [...currentMessages, ...newMessages]
-                          }
-                        };
-                      }
-                      
-                      return state;
-                    });
-                  }
+          // Wenn wir Zeit haben, können wir später die Nachrichten laden
+          // Dies ist ein nicht-blockierender Prozess
+          setTimeout(() => {
+            fetch(`/api/chat/${chatId}/messages`)
+              .then(response => {
+                if (response.ok) return response.json();
+                return [];
+              })
+              .then(messages => {
+                if (messages && messages.length > 0) {
+                  set((state) => ({
+                    messages: {
+                      ...state.messages,
+                      [chatId]: [...messages]
+                    }
+                  }));
                 }
-              } catch (error) {
-                console.error('Fehler beim Polling der Chat-Nachrichten:', error);
-              }
-              
-              // Polling alle 10 Sekunden
-              setTimeout(pollMessages, 10000);
-            };
-            
-            // Starte Polling
-            setTimeout(pollMessages, 5000);
-          } else {
-            // Desktop-Geräte: Verwende WebSockets für Echtzeit-Updates
-            const syncChatMessages = () => {
-              try {
-                // WebSocket für Echtzeit-Nachrichten
-                const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-                const wsUrl = `${protocol}//${window.location.host}/ws`;
-                
-                const wsManager = new WebSocketManager(wsUrl);
-                
-                wsManager.connect({
-                  onOpen: () => {
-                    console.log('WebSocket-Verbindung für Chat-Synchronisierung hergestellt');
-                    
-                    try {
-                      // Abonniere Chat-Updates für diese Gruppe
-                      wsManager.send({ 
-                        type: 'subscribe', 
-                        topic: 'chat',
-                        groupId: groupId
-                      });
-                    } catch (err) {
-                      console.error('Fehler beim Senden der Chat-Subscription:', err);
-                    }
-                  },
-                  onMessage: (data) => {
-                    if (data.type === 'chat_message' && data.chatId === chatId) {
-                      console.log('Neue Chat-Nachricht über WebSocket empfangen:', data);
-                      
-                      // Füge die Nachricht ins State ein
-                      set((state) => {
-                        // Prüfe, ob die Nachricht bereits existiert
-                        const existingMessages = state.messages[chatId] || [];
-                        const messageExists = existingMessages.some((m: any) => m.id === data.message.id);
-                        
-                        if (!messageExists) {
-                          console.log('Füge neue Nachricht aus WebSocket hinzu:', data.message);
-                          return {
-                            messages: {
-                              ...state.messages,
-                              [chatId]: [...existingMessages, data.message]
-                            }
-                          };
-                        }
-                        
-                        return state; // Keine Änderung, wenn Nachricht bereits existiert
-                      });
-                    }
-                  },
-                  onError: (error) => {
-                    console.error('WebSocket-Fehler bei Chat-Synchronisierung:', error);
-                  }
-                });
-              } catch (err) {
-                console.error('Fehler beim Einrichten des Chat-WebSockets:', err);
-              }
-            };
-            
-            // Starte WebSocket-Synchronisierung nach kurzer Verzögerung
-            setTimeout(syncChatMessages, 2000);
-          }
-        }).catch(error => {
-          console.error('Fehler beim Abrufen der Chat-ID:', error);
-        });
+              })
+              .catch(err => {
+                console.error('Fehler beim Laden der Chat-Nachrichten:', err);
+              });
+          }, 500);
+        } catch (error) {
+          console.error('Fehler beim Initialisieren des Gruppenchats:', error);
+        }
       },
 
       addMessage: (chatId: string, message: Message) => {
