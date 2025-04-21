@@ -115,10 +115,10 @@ export function UserAvatar({
   const containerClasses = cn(
     "rounded-full p-[2px]",
     isGroup
-      ? "bg-gradient-to-r from-green-500 to-green-400"
+      ? "bg-gradient-to-r from-green-500 to-green-400" // Gruppen-Chats haben einen grünen Rahmen
       : hasActiveGoal
-        ? "bg-gradient-to-r from-blue-400 to-blue-300"
-        : "p-0",
+        ? "bg-gradient-to-r from-blue-400 to-blue-300" // Benutzer mit aktivem Ziel haben einen blauen Rahmen
+        : "p-0", // Normale Benutzer ohne Rahmen
     sizeClasses[size],
     enableImageModal && "cursor-zoom-in hover:opacity-90 transition-opacity",
     !enableImageModal && clickable && "cursor-pointer hover:opacity-90 transition-opacity"

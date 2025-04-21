@@ -126,7 +126,7 @@ const GroupCarousel = ({ groups }: GroupCarouselProps) => {
   }
 
   return (
-    <div className="overflow-x-auto pb-4 -mx-4 px-4">
+    <div className="overflow-x-auto pb-16 -mx-4 px-4"> {/* Erhöhter Abstand unten, damit die letzte Gruppe sichtbar bleibt */}
       <div className="flex gap-4 snap-x snap-mandatory w-full">
         {groupChunks.map((chunk, chunkIndex) => (
           <div 
@@ -148,6 +148,10 @@ const GroupCarousel = ({ groups }: GroupCarouselProps) => {
                       src={group.image || "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=800&auto=format"}
                       alt={group.name}
                       className="w-full h-full object-cover"
+                      onError={(e) => {
+                        // Fallback für Bilder, die nicht geladen werden können
+                        e.currentTarget.src = "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=800&auto=format";
+                      }}
                       loading="lazy" 
                     />
                   </div>
