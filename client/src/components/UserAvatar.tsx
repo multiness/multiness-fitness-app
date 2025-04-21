@@ -115,7 +115,7 @@ export function UserAvatar({
   const containerClasses = cn(
     "rounded-full p-[2px]",
     isGroup
-      ? "bg-gradient-to-r from-green-500 to-green-400" // Gruppen-Chats haben einen grünen Rahmen
+      ? "bg-gradient-to-r from-green-500 to-green-300 ring-2 ring-green-100" // Gruppen-Chats haben einen deutlichen grünen Rahmen
       : hasActiveGoal
         ? "bg-gradient-to-r from-blue-400 to-blue-300" // Benutzer mit aktivem Ziel haben einen blauen Rahmen
         : "p-0", // Normale Benutzer ohne Rahmen
@@ -142,10 +142,39 @@ export function UserAvatar({
     <div className="relative inline-block">
       <div className={containerClasses} onClick={handleClick}>
         <Avatar className={avatarClasses}>
-          <AvatarImage src={user.avatar || undefined} alt={user.username} className="object-cover rounded-full" />
-          <AvatarFallback className="rounded-full">{user.username?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
+          {isGroup ? (
+            <>
+              {/* Spezielle Behandlung für Gruppenavatar mit zuverlässigerem Fallback */}
+              <AvatarImage 
+                src={user.avatar || undefined} 
+                alt={user.username} 
+                className="object-cover rounded-full" 
+                onError={(e) => {
+                  console.log(`Gruppenbild konnte nicht geladen werden für: ${user.id} - ${user.username}`);
+                  e.currentTarget.style.display = "none"; // Verstecke das fehlerhafte Bild
+                }}
+              />
+              <AvatarFallback className="rounded-full bg-gradient-to-br from-green-500 to-green-600">
+                <Users className="h-1/2 w-1/2 text-white" />
+              </AvatarFallback>
+            </>
+          ) : (
+            <>
+              {/* Normaler Benutzeravatar */}
+              <AvatarImage src={user.avatar || undefined} alt={user.username} className="object-cover rounded-full" />
+              <AvatarFallback className="rounded-full">{user.username?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
+            </>
+          )}
         </Avatar>
       </div>
+      
+      {/* Gruppenkennzeichnung für bessere visuelle Unterscheidung */}
+      {isGroup && size !== "sm" && (
+        <div className="absolute -top-2 -right-1 px-1.5 py-0.5 bg-green-500 text-white text-[8px] font-semibold rounded-full shadow-sm">
+          GRUPPE
+        </div>
+      )}
+      
       {/* Team-Position anzeigen, wenn verfügbar */}
       {user.isTeamMember && user.teamRole && size === "lg" && (
         <div className="absolute -bottom-6 left-0 right-0 text-center">
@@ -154,11 +183,13 @@ export function UserAvatar({
           </span>
         </div>
       )}
+      
       {!hideVerifiedBadge && user.isVerified && (
         <div className="absolute -bottom-1 -right-1">
           <VerifiedBadge size={size === "lg" ? "default" : "sm" as "sm" | "default"} />
         </div>
       )}
+      
       {enableImageModal && (
         <ImageModal
           src={user.avatar || "/placeholder-avatar.png"}

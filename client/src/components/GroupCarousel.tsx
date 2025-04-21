@@ -126,12 +126,13 @@ const GroupCarousel = ({ groups }: GroupCarouselProps) => {
   }
 
   return (
-    <div className="overflow-x-auto pb-16 -mx-4 px-4"> {/* Erhöhter Abstand unten, damit die letzte Gruppe sichtbar bleibt */}
-      <div className="flex gap-4 snap-x snap-mandatory w-full">
+    <div className="overflow-x-auto pb-24 -mx-4 px-4 mb-10"> {/* Erhöhter Abstand unten, damit die letzte Gruppe immer sichtbar bleibt */}
+      <div className="flex gap-4 snap-x snap-mandatory w-full pb-6"> {/* Zusätzlicher Abstand am unteren Rand */}
         {groupChunks.map((chunk, chunkIndex) => (
           <div 
             key={chunkIndex}
             className="flex gap-4 shrink-0 snap-start w-[calc(100vw-2rem)]"
+            style={{ scrollSnapAlign: 'start' }} // Explizite Scroll-Snap-Ausrichtung
           >
             {chunk.map(group => {
               const isJoined = groupStore.isGroupMember(group.id, userId);
@@ -139,9 +140,10 @@ const GroupCarousel = ({ groups }: GroupCarouselProps) => {
 
               return (
                 <Card 
-                  key={group.id}
-                  className="flex-1 overflow-hidden cursor-pointer bg-card hover:bg-accent/5 transition-colors min-w-[150px]"
+                  key={`group-card-${group.id}`} // Spezifischerer Key für besseres React-Rendering
+                  className="flex-1 overflow-hidden cursor-pointer bg-card hover:bg-accent/5 transition-colors min-w-[150px] transform-gpu" // Hardware-Beschleunigung mit transform-gpu
                   onClick={() => setLocation(`/chat/${chatId}`)}
+                  style={{ scrollMarginBottom: '4rem' }} // Scroll-Margin für bessere Sichtbarkeit
                 >
                   <div className="aspect-[3/2] relative overflow-hidden bg-muted">
                     <img
