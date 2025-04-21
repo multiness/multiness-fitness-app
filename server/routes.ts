@@ -2029,10 +2029,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Chat-Nachricht über WebSocket empfangen
         else if (data.type === 'chat_message' && data.chatId) {
-          console.log('Chat-Nachricht empfangen:', data.message);
+          console.log('Chat-Nachricht empfangen:', data.message?.content || 'Keine Content-Info');
           
           // Speichere die Nachricht in unserem persistenten Speicher
           try {
+            // Stelle sicher, dass die Nachricht alle erforderlichen Felder hat
+            if (!data.message.id) {
+              data.message.id = Date.now(); // Generiere Nachrichtenkennung wenn nicht vorhanden
+            }
+            if (!data.message.timestamp) {
+              data.message.timestamp = new Date().toISOString(); // Füge Zeitstempel hinzu
+            }
+            
             // Speichere die Nachricht zuerst, dann verteile sie
             await addMessage(data.chatId, data.message);
             console.log('Chat-Nachricht in Datei gespeichert:', data.chatId);
