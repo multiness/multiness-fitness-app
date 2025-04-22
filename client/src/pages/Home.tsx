@@ -559,22 +559,65 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Feed */}
-      <section>
+      {/* Feed - KOMPLETT ÜBERARBEITET */}
+      <section className="mb-20 pb-20">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
             <h2 className="text-2xl font-bold">Neueste Beiträge</h2>
             <Button 
               size="sm" 
-              variant="ghost"
+              variant="outline"
               className="h-8 px-2 ml-2"
               onClick={() => {
-                // Direkte Neuladen-Funktion mit Feedback
-                console.log("Manuelle Aktualisierung der Beiträge...");
-                setForceRender(Date.now());
+                // Verbesserte Neuladen-Funktion, die einen direkten API-Aufruf macht
+                const fetchPosts = async () => {
+                  try {
+                    // Anti-Cache-Parameter und Header
+                    const timestamp = new Date().getTime();
+                    const response = await fetch(`/api/posts?force=${timestamp}`, {
+                      headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache',
+                        'Expires': '0'
+                      }
+                    });
+                    
+                    if (response.ok) {
+                      const freshPosts = await response.json();
+                      console.log("Manuell aktualisierte Posts:", freshPosts.length);
+                      
+                      // Direkt in den State einfügen, damit sie sofort angezeigt werden
+                      if (freshPosts && freshPosts.length > 0) {
+                        setDirectApiPosts(freshPosts);
+                        toast({
+                          title: "Erfolg",
+                          description: `${freshPosts.length} Beiträge geladen`,
+                          variant: "default"
+                        });
+                      }
+                    } else {
+                      throw new Error(`Fehler beim Laden: ${response.status}`);
+                    }
+                  } catch (error) {
+                    console.error("Fehler beim Aktualisieren:", error);
+                    toast({
+                      title: "Fehler beim Laden",
+                      description: "Bitte versuche es erneut",
+                      variant: "destructive"
+                    });
+                  }
+                };
+                
+                // Status und UI aktualisieren
+                console.log("Manueller direkter API-Aufruf für Posts");
                 toast({
                   title: "Aktualisierung",
                   description: "Beiträge werden neu geladen...",
+                });
+                
+                // Führe den API-Aufruf aus und aktualisiere dann den Force-Render-Timestamp
+                fetchPosts().then(() => {
+                  setForceRender(Date.now());
                 });
               }}
             >
@@ -583,84 +626,111 @@ export default function Home() {
             </Button>
           </div>
           
-          <Link href="/create/post" className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1">
-            Beitrag erstellen <ArrowRight className="h-4 w-4" />
-          </Link>
+          <Button
+            size="sm"
+            variant="default"
+            onClick={() => setLocation("/create/post")}
+            className="h-8 px-3"
+          >
+            Beitrag erstellen <ArrowRight className="h-4 w-4 ml-1" />
+          </Button>
         </div>
         
-        <div className="space-y-6">
-          {/* WICHTIG: Zeigt immer Beiträge direkt aus der API an */}
-          {directApiPosts.length > 0 ? (
-            // Wenn die API Beiträge zurückgegeben hat, verwenden wir diese
-            <div className="space-y-6">
-              {/* Banner für neue Beiträge - vereinfacht ohne AlertTitle */}
-              <Alert className="bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800">
-                <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
-                <div>
-                  <div className="font-medium">Aktuelle Beiträge</div>
-                  <AlertDescription>
-                    Alle Beiträge werden direkt aus der Datenbank geladen. <br />
-                    <span className="text-xs text-muted-foreground">Zuletzt aktualisiert: {new Date().toLocaleTimeString()}</span>
-                  </AlertDescription>
-                </div>
-              </Alert>
+        {/* KOMPLETT NEUER ANSATZ FÜR FEED */}
+        <div className="space-y-4 pb-20 mb-20">
+          {(() => {
+            // Sofortiger Aufruf einer Funktion für bessere Kontrolle
+            
+            // Keine Beiträge vorhanden - lade automatisch
+            if (!directApiPosts || directApiPosts.length === 0) {
+              // Automatisch neu laden
+              setTimeout(() => {
+                const timestamp = Date.now();
+                fetch(`/api/posts?force=${timestamp}`, {
+                  headers: {
+                    'Cache-Control': 'no-cache'
+                  }
+                })
+                .then(res => res.json())
+                .then(data => {
+                  console.log("Auto-Lade-Ergebnis:", data.length);
+                  setDirectApiPosts(data);
+                  setForceRender(Date.now());
+                })
+                .catch(e => console.error("Auto-Lade-Fehler:", e));
+              }, 500);
               
-              {directApiPosts.map((post: any) => (
-                <div 
-                  key={`post-api-${post.id}-${forceRender}`} 
-                  className="w-full max-w-xl mx-auto transition-all duration-300 animate-in fade-in slide-in-from-bottom-5"
-                >
-                  <FeedPost post={post} />
+              return (
+                <div className="text-center text-muted-foreground py-8">
+                  <div className="mb-4">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+                  </div>
+                  <p>Beiträge werden geladen...</p>
                 </div>
-              ))}
-              
-              {/* Einfache Bedienelemente für Aktualisierung und Fehlerbehebung */}
-              <div className="flex justify-center my-4">
-                <Button 
-                  variant="outline"
-                  onClick={() => {
-                    console.log("Manuelle Aktualisierung gestartet");
-                    setForceRender(Date.now()); // Löst useEffect aus für direktes Laden
-                    toast({
-                      title: "Aktualisierung",
-                      description: "Beiträge werden neu geladen...",
-                    });
-                  }}
-                  className="mx-2"
-                >
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Beiträge aktualisieren
-                </Button>
+              );
+            }
+            
+            // Sortiere die Beiträge nach Datum absteigend (neueste zuerst)
+            const sortedPosts = [...directApiPosts].sort((a, b) => {
+              return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+            });
+            
+            // Gib Feedback mit der Anzahl
+            console.log("Sortierte Posts für Feed:", sortedPosts.length);
+            
+            // Ergebnis darstellen
+            return (
+              <div>
+                {/* Status-Anzeiger */}
+                <Alert className="bg-green-50 border-green-200 mb-4 dark:bg-green-900/20 dark:border-green-800">
+                  <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  <div>
+                    <div className="font-medium">Aktuelle Beiträge ({sortedPosts.length})</div>
+                    <AlertDescription>
+                      Letzte Aktualisierung: {new Date().toLocaleTimeString()}
+                    </AlertDescription>
+                  </div>
+                </Alert>
+
+                {/* Container mit höherem z-Index und Abstand */}
+                <div className="space-y-4 pb-16" style={{minHeight: "800px", position: "relative", zIndex: 10}}>
+                  {sortedPosts.map((post, index) => (
+                    <div 
+                      key={`post-${post.id}-${index}-${forceRender}`} 
+                      className="mb-6 max-w-xl mx-auto"
+                    >
+                      <FeedPost post={post} />
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Lade-mehr-Button am Ende */}
+                <div className="flex justify-center mt-8 pb-20">
+                  <Button 
+                    variant="outline"
+                    onClick={() => {
+                      // Manueller Trigger für Neuladen
+                      const timestamp = Date.now();
+                      fetch(`/api/posts?force=${timestamp}`)
+                        .then(res => res.json())
+                        .then(data => {
+                          setDirectApiPosts(data);
+                          setForceRender(timestamp);
+                          toast({
+                            title: "Aktualisiert",
+                            description: `${data.length} Beiträge geladen`,
+                          });
+                        })
+                        .catch(e => console.error("Fehler beim Nachladen:", e));
+                    }}
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Aktualisieren
+                  </Button>
+                </div>
               </div>
-            </div>
-          ) : (
-            // Lade-Anzeige, wenn keine Beiträge verfügbar sind
-            <div className="text-center text-muted-foreground py-8">
-              <div className="mb-4">
-                <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-              </div>
-              <p>Beiträge werden geladen...</p>
-              <p className="text-sm mt-2">
-                Wenn keine Beiträge erscheinen, versuche bitte die Aktualisierung.
-              </p>
-              <div className="mt-4">
-                <Button 
-                  variant="default"
-                  onClick={() => {
-                    setForceRender(Date.now());
-                    toast({
-                      title: "Aktualisierung",
-                      description: "Beiträge werden neu geladen...",
-                    });
-                  }}
-                  className="mx-auto"
-                >
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Aktualisieren
-                </Button>
-              </div>
-            </div>
-          )}
+            );
+          })()}
         </div>
       </section>
     </div>
