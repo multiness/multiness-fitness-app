@@ -1530,22 +1530,36 @@ export default function Admin() {
   const challengeStore = useChallengeStore();
   const groupStore = useGroupStore();
   
-  // Funktion zum manuellen Aktualisieren der Benutzerdaten
+  // Funktion für automatische Aktualisierung (ehemals manuell)
   const refreshUsers = () => {
     setIsRefreshing(true);
     loadAPIUsers();
     setTimeout(() => {
       setIsRefreshing(false);
-      toast({
-        title: "Benutzerdaten aktualisiert",
-        description: "Die Benutzerdaten wurden erfolgreich von der API synchronisiert.",
-      });
+      // Nur einen Toast anzeigen, wenn die Funktion von einem Button ausgelöst wurde
+      if (false) { // Deaktiviert, da jetzt automatisch
+        toast({
+          title: "Benutzerdaten aktualisiert",
+          description: "Die Benutzerdaten wurden erfolgreich von der API synchronisiert.",
+        });
+      }
     }, 1000);
   };
 
-  // Automatische Aktualisierung beim Laden der Seite
+  // Automatische Aktualisierung beim Laden der Seite und regelmäßig alle 30 Sekunden
   useEffect(() => {
     refreshUsers();
+    
+    // Automatische Aktualisierung alle 30 Sekunden einrichten
+    const autoRefreshInterval = setInterval(() => {
+      console.log("Admin: Automatische Aktualisierung der Benutzerdaten");
+      refreshUsers();
+    }, 30000); // 30 Sekunden
+    
+    // Bereinigen beim Unmount
+    return () => {
+      clearInterval(autoRefreshInterval);
+    };
   }, []);
   
   // Event-Listener für gelöschte Posts und erzwungene Synchronisierung
@@ -1807,25 +1821,11 @@ export default function Admin() {
                       {users.length}
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      <Button 
-                        variant="link" 
-                        size="sm" 
-                        className="p-0 h-auto text-xs text-muted-foreground flex items-center gap-1"
-                        onClick={refreshUsers}
-                        disabled={isRefreshing}
-                      >
-                        {isRefreshing ? (
-                          <>
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                            Aktualisiere...
-                          </>
-                        ) : (
-                          <>
-                            <RefreshCw className="h-3 w-3" />
-                            Aktualisieren
-                          </>
-                        )}
-                      </Button>
+                      {/* Automatische Aktualisierung, kein manueller Button mehr notwendig */}
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Check className="h-3 w-3 text-green-500" />
+                        Automatische Synchronisierung aktiv
+                      </span>
                     </p>
                   </CardContent>
                 </Card>
@@ -1834,7 +1834,7 @@ export default function Admin() {
           </CardContent>
           <CardFooter className="border-t px-6 py-4">
             <p className="text-xs text-muted-foreground">
-              Die Daten werden alle 2 Stunden automatisch synchronisiert, um eine konsistente Erfahrung auf allen Geräten zu gewährleisten.
+              Die Daten werden alle 30 Sekunden automatisch synchronisiert, um eine konsistente Erfahrung auf allen Geräten zu gewährleisten.
             </p>
           </CardFooter>
         </Card>
