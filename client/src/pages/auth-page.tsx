@@ -17,35 +17,47 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 
+// Interfaces angepasst für AWS Cognito-Kompatibilität
 interface LoginFormData {
-  username: string;
+  email: string;
   password: string;
 }
 
 interface RegisterFormData {
-  username: string;
-  name: string;
   email: string;
   password: string;
   confirmPassword: string;
+  firstName: string;
+  lastName: string;
+  nickname?: string;
 }
 
-export default function AuthPage() {
+/**
+ * AuthComponent - Wiederverwendbare Authentifizierungskomponente
+ * Designt für Kompatibilität mit AWS Cognito
+ */
+export const AuthComponent = ({
+  onLoginSuccess,
+  onRegisterSuccess,
+}: {
+  onLoginSuccess?: (userData: any) => void;
+  onRegisterSuccess?: (userData: any) => void;
+}) => {
   const [activeTab, setActiveTab] = useState("login");
   const [formError, setFormError] = useState<string | null>(null);
   const [loginData, setLoginData] = useState<LoginFormData>({
-    username: "",
+    email: "",
     password: "",
   });
   const [registerData, setRegisterData] = useState<RegisterFormData>({
-    username: "",
-    name: "",
     email: "",
     password: "",
     confirmPassword: "",
+    firstName: "",
+    lastName: "",
+    nickname: "",
   });
   const { toast } = useToast();
-  const [, navigate] = useLocation();
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginFormData) => {
@@ -56,9 +68,13 @@ export default function AuthPage() {
       }
       return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (userData) => {
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-      navigate("/");
+      
+      if (onLoginSuccess) {
+        onLoginSuccess(userData);
+      }
+      
       toast({
         title: "Erfolgreich angemeldet",
         description: "Willkommen zurück!",
@@ -83,9 +99,13 @@ export default function AuthPage() {
       }
       return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (userData) => {
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-      navigate("/");
+      
+      if (onRegisterSuccess) {
+        onRegisterSuccess(userData);
+      }
+      
       toast({
         title: "Registrierung erfolgreich",
         description: "Dein Konto wurde erstellt! Bitte bestätige deine E-Mail-Adresse.",
@@ -117,8 +137,14 @@ export default function AuthPage() {
       return;
     }
 
+    // Passwort muss mindestens 8 Zeichen lang sein (für Cognito)
+    if (registerData.password.length < 8) {
+      setFormError("Das Passwort muss mindestens 8 Zeichen lang sein");
+      return;
+    }
+
     // Basic validation
-    if (!registerData.username || !registerData.email || !registerData.password || !registerData.name) {
+    if (!registerData.email || !registerData.password || !registerData.firstName || !registerData.lastName) {
       setFormError("Bitte fülle alle Pflichtfelder aus");
       return;
     }
@@ -128,11 +154,190 @@ export default function AuthPage() {
   };
 
   const handlePasswordReset = () => {
-    // We'll implement this later
+    // We'll implement this later with Cognito's forgotPassword API
     toast({
       title: "Passwort zurücksetzen",
       description: "Diese Funktion wird bald verfügbar sein.",
     });
+  };
+
+  return (
+    <div className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="login">Anmelden</TabsTrigger>
+          <TabsTrigger value="register">Registrieren</TabsTrigger>
+        </TabsList>
+        <TabsContent value="login">
+          <Card>
+            <CardHeader>
+              <CardTitle>Anmelden</CardTitle>
+              <CardDescription>
+                Gib deine Anmeldedaten ein, um auf dein Konto zuzugreifen.
+              </CardDescription>
+            </CardHeader>
+            <form onSubmit={handleLoginSubmit}>
+              <CardContent className="space-y-4">
+                {formError && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{formError}</AlertDescription>
+                  </Alert>
+                )}
+                <div className="space-y-2">
+                  <Label htmlFor="email">E-Mail</Label>
+                  <Input 
+                    id="email" 
+                    type="email" 
+                    placeholder="deine@email.de" 
+                    value={loginData.email}
+                    onChange={(e) => setLoginData({...loginData, email: e.target.value})}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="password">Passwort</Label>
+                    <Button 
+                      variant="link" 
+                      className="p-0 text-xs"
+                      onClick={handlePasswordReset}
+                      type="button"
+                    >
+                      Passwort vergessen?
+                    </Button>
+                  </div>
+                  <Input 
+                    id="password" 
+                    type="password" 
+                    placeholder="********" 
+                    value={loginData.password}
+                    onChange={(e) => setLoginData({...loginData, password: e.target.value})}
+                    required
+                  />
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button 
+                  type="submit" 
+                  className="w-full"
+                  disabled={loginMutation.isPending}
+                >
+                  {loginMutation.isPending ? "Anmeldung..." : "Anmelden"}
+                </Button>
+              </CardFooter>
+            </form>
+          </Card>
+        </TabsContent>
+        <TabsContent value="register">
+          <Card>
+            <CardHeader>
+              <CardTitle>Konto erstellen</CardTitle>
+              <CardDescription>
+                Gib deine Daten ein, um ein neues Konto zu erstellen.
+              </CardDescription>
+            </CardHeader>
+            <form onSubmit={handleRegisterSubmit}>
+              <CardContent className="space-y-4">
+                {formError && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{formError}</AlertDescription>
+                  </Alert>
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName">Vorname</Label>
+                    <Input 
+                      id="firstName" 
+                      type="text" 
+                      placeholder="Vorname" 
+                      value={registerData.firstName}
+                      onChange={(e) => setRegisterData({...registerData, firstName: e.target.value})}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName">Nachname</Label>
+                    <Input 
+                      id="lastName" 
+                      type="text" 
+                      placeholder="Nachname" 
+                      value={registerData.lastName}
+                      onChange={(e) => setRegisterData({...registerData, lastName: e.target.value})}
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="nickname">Nickname (optional)</Label>
+                  <Input 
+                    id="nickname" 
+                    type="text" 
+                    placeholder="Dein Nickname" 
+                    value={registerData.nickname}
+                    onChange={(e) => setRegisterData({...registerData, nickname: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">E-Mail</Label>
+                  <Input 
+                    id="email" 
+                    type="email" 
+                    placeholder="deine@email.de" 
+                    value={registerData.email}
+                    onChange={(e) => setRegisterData({...registerData, email: e.target.value})}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="register-password">Passwort (mind. 8 Zeichen)</Label>
+                  <Input 
+                    id="register-password" 
+                    type="password" 
+                    placeholder="********" 
+                    value={registerData.password}
+                    onChange={(e) => setRegisterData({...registerData, password: e.target.value})}
+                    minLength={8}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-password">Passwort bestätigen</Label>
+                  <Input 
+                    id="confirm-password" 
+                    type="password" 
+                    placeholder="********" 
+                    value={registerData.confirmPassword}
+                    onChange={(e) => setRegisterData({...registerData, confirmPassword: e.target.value})}
+                    minLength={8}
+                    required
+                  />
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button 
+                  type="submit" 
+                  className="w-full"
+                  disabled={registerMutation.isPending}
+                >
+                  {registerMutation.isPending ? "Registrierung..." : "Registrieren"}
+                </Button>
+              </CardFooter>
+            </form>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+};
+
+/**
+ * AuthPage - Haupt-Auth-Seite, die die AuthComponent verwendet
+ */
+export default function AuthPage() {
+  const [, navigate] = useLocation();
+
+  const handleAuthSuccess = () => {
+    navigate("/");
   };
 
   return (
@@ -198,155 +403,10 @@ export default function AuthPage() {
         </div>
 
         <div className="flex flex-col justify-center">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Anmelden</TabsTrigger>
-              <TabsTrigger value="register">Registrieren</TabsTrigger>
-            </TabsList>
-            <TabsContent value="login">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Anmelden</CardTitle>
-                  <CardDescription>
-                    Gib deine Anmeldedaten ein, um auf dein Konto zuzugreifen.
-                  </CardDescription>
-                </CardHeader>
-                <form onSubmit={handleLoginSubmit}>
-                  <CardContent className="space-y-4">
-                    {formError && (
-                      <Alert variant="destructive">
-                        <AlertDescription>{formError}</AlertDescription>
-                      </Alert>
-                    )}
-                    <div className="space-y-2">
-                      <Label htmlFor="username">Benutzername</Label>
-                      <Input 
-                        id="username" 
-                        type="text" 
-                        placeholder="Benutzername" 
-                        value={loginData.username}
-                        onChange={(e) => setLoginData({...loginData, username: e.target.value})}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="password">Passwort</Label>
-                        <Button 
-                          variant="link" 
-                          className="p-0 text-xs"
-                          onClick={handlePasswordReset}
-                          type="button"
-                        >
-                          Passwort vergessen?
-                        </Button>
-                      </div>
-                      <Input 
-                        id="password" 
-                        type="password" 
-                        placeholder="********" 
-                        value={loginData.password}
-                        onChange={(e) => setLoginData({...loginData, password: e.target.value})}
-                        required
-                      />
-                    </div>
-                  </CardContent>
-                  <CardFooter>
-                    <Button 
-                      type="submit" 
-                      className="w-full"
-                      disabled={loginMutation.isPending}
-                    >
-                      {loginMutation.isPending ? "Anmeldung..." : "Anmelden"}
-                    </Button>
-                  </CardFooter>
-                </form>
-              </Card>
-            </TabsContent>
-            <TabsContent value="register">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Konto erstellen</CardTitle>
-                  <CardDescription>
-                    Gib deine Daten ein, um ein neues Konto zu erstellen.
-                  </CardDescription>
-                </CardHeader>
-                <form onSubmit={handleRegisterSubmit}>
-                  <CardContent className="space-y-4">
-                    {formError && (
-                      <Alert variant="destructive">
-                        <AlertDescription>{formError}</AlertDescription>
-                      </Alert>
-                    )}
-                    <div className="space-y-2">
-                      <Label htmlFor="register-username">Benutzername</Label>
-                      <Input 
-                        id="register-username" 
-                        type="text" 
-                        placeholder="Benutzername" 
-                        value={registerData.username}
-                        onChange={(e) => setRegisterData({...registerData, username: e.target.value})}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Name</Label>
-                      <Input 
-                        id="name" 
-                        type="text" 
-                        placeholder="Dein Name" 
-                        value={registerData.name}
-                        onChange={(e) => setRegisterData({...registerData, name: e.target.value})}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="email">E-Mail</Label>
-                      <Input 
-                        id="email" 
-                        type="email" 
-                        placeholder="deine@email.de" 
-                        value={registerData.email}
-                        onChange={(e) => setRegisterData({...registerData, email: e.target.value})}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="register-password">Passwort</Label>
-                      <Input 
-                        id="register-password" 
-                        type="password" 
-                        placeholder="********" 
-                        value={registerData.password}
-                        onChange={(e) => setRegisterData({...registerData, password: e.target.value})}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="confirm-password">Passwort bestätigen</Label>
-                      <Input 
-                        id="confirm-password" 
-                        type="password" 
-                        placeholder="********" 
-                        value={registerData.confirmPassword}
-                        onChange={(e) => setRegisterData({...registerData, confirmPassword: e.target.value})}
-                        required
-                      />
-                    </div>
-                  </CardContent>
-                  <CardFooter>
-                    <Button 
-                      type="submit" 
-                      className="w-full"
-                      disabled={registerMutation.isPending}
-                    >
-                      {registerMutation.isPending ? "Registrierung..." : "Registrieren"}
-                    </Button>
-                  </CardFooter>
-                </form>
-              </Card>
-            </TabsContent>
-          </Tabs>
+          <AuthComponent 
+            onLoginSuccess={handleAuthSuccess}
+            onRegisterSuccess={handleAuthSuccess}
+          />
         </div>
       </div>
     </div>

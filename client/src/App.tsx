@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
@@ -32,39 +32,79 @@ import Chat from "./pages/Chat";
 import Admin from "./pages/Admin";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/not-found";
+import AuthPage from "./pages/auth-page";
 import { initializeGroupSync } from "./lib/groupSynchronizer";
+import { useQuery } from "@tanstack/react-query";
+
+// Protected Route Komponente für Routen, die Authentifizierung erfordern
+const ProtectedRoute = ({ component: Component, ...rest }: { component: React.ComponentType<any>, path: string }) => {
+  const { data: user, isLoading } = useQuery({
+    queryKey: ["/api/user"],
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+  const [, navigate] = useLocation();
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      navigate('/auth');
+    }
+  }, [user, isLoading, navigate]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null; // Redirection happens in the useEffect
+  }
+
+  return <Component {...rest} />;
+};
 
 function Router() {
   return (
-    <Layout>
-      <Switch>
-        <Route path="/" component={Home} />
-        <Route path="/profile/:id" component={Profile} />
-        <Route path="/challenges" component={Challenges} />
-        <Route path="/challenges/:id" component={ChallengeDetail} />
-        <Route path="/create/challenge" component={CreateChallenge} />
-        <Route path="/create/post" component={CreatePost} />
-        <Route path="/create/group" component={CreateGroup} />
-        <Route path="/create/event" component={CreateEvent} />
-        <Route path="/create/notification" component={CreateNotification} />
-        <Route path="/create/product" component={CreateProduct} />
-        <Route path="/products" component={Products} />
-        <Route path="/products/:id" component={ProductDetail} />
-        <Route path="/groups" component={Groups} />
-        <Route path="/groups/:id" component={GroupPage} />
-        <Route path="/events" component={Events} />
-        <Route path="/events/manager" component={EventManager} />
-        <Route path="/events/edit/:id" component={EditEvent} />
-        <Route path="/events/:id" component={EventDetail} />
-        <Route path="/members" component={Members} />
-        <Route path="/chat" component={Chat} />
-        <Route path="/chat/:id" component={Chat} />
-        <Route path="/chat/:id/direct" component={Chat} />
-        <Route path="/admin" component={Admin} />
-        <Route path="/settings" component={Settings} />
-        <Route component={NotFound} />
-      </Switch>
-    </Layout>
+    <Switch>
+      <Route path="/auth" component={AuthPage} />
+      
+      <Route path="/">
+        {() => (
+          <Layout>
+            <Switch>
+              <ProtectedRoute path="/" component={Home} />
+              <ProtectedRoute path="/profile/:id" component={Profile} />
+              <ProtectedRoute path="/challenges" component={Challenges} />
+              <ProtectedRoute path="/challenges/:id" component={ChallengeDetail} />
+              <ProtectedRoute path="/create/challenge" component={CreateChallenge} />
+              <ProtectedRoute path="/create/post" component={CreatePost} />
+              <ProtectedRoute path="/create/group" component={CreateGroup} />
+              <ProtectedRoute path="/create/event" component={CreateEvent} />
+              <ProtectedRoute path="/create/notification" component={CreateNotification} />
+              <ProtectedRoute path="/create/product" component={CreateProduct} />
+              <ProtectedRoute path="/products" component={Products} />
+              <ProtectedRoute path="/products/:id" component={ProductDetail} />
+              <ProtectedRoute path="/groups" component={Groups} />
+              <ProtectedRoute path="/groups/:id" component={GroupPage} />
+              <ProtectedRoute path="/events" component={Events} />
+              <ProtectedRoute path="/events/manager" component={EventManager} />
+              <ProtectedRoute path="/events/edit/:id" component={EditEvent} />
+              <ProtectedRoute path="/events/:id" component={EventDetail} />
+              <ProtectedRoute path="/members" component={Members} />
+              <ProtectedRoute path="/chat" component={Chat} />
+              <ProtectedRoute path="/chat/:id" component={Chat} />
+              <ProtectedRoute path="/chat/:id/direct" component={Chat} />
+              <ProtectedRoute path="/admin" component={Admin} />
+              <ProtectedRoute path="/settings" component={Settings} />
+              <Route component={NotFound} />
+            </Switch>
+          </Layout>
+        )}
+      </Route>
+    </Switch>
   );
 }
 
