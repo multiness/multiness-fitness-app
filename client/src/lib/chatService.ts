@@ -60,12 +60,20 @@ type ChatStore = {
   setCurrentOpenChat: (chatId: string | null) => void;
 };
 
-// WebSocket Manager für konsistente Verbindungen
-class WebSocketManager {
+// Chat WebSocket Manager für robuste Verbindungen
+class ChatWebSocketManager {
   private socket: WebSocket | null = null;
   private url: string;
   private reconnectInterval = 2000;
+  private maxReconnectInterval = 30000; // 30 Sekunden maximales Intervall
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private reconnectAttempts = 0;
+  private maxReconnectAttempts = 5;
+  private connectionTimeout: ReturnType<typeof setTimeout> | null = null;
+  private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
+  private lastMessageTime = 0;
+  private isPermanentlyClosed = false;
+  
   private callbacks: {
     onOpen?: () => void;
     onMessage?: (data: any) => void;
@@ -83,85 +91,246 @@ class WebSocketManager {
     onError?: (error: Event) => void;
     onClose?: () => void;
   }) {
+    // Zurücksetzen, falls es eine neue Verbindungsanforderung ist
+    this.isPermanentlyClosed = false;
+    this.reconnectAttempts = 0;
     this.callbacks = callbacks;
     this.createConnection();
   }
 
   private createConnection() {
-    // Bereits bestehende Verbindung schließen
-    if (this.socket) {
-      this.socket.close();
+    if (this.isPermanentlyClosed) {
+      console.log('ChatWebSocket ist permanent geschlossen, keine neue Verbindung wird hergestellt');
+      return;
     }
 
-    // Neue Verbindung herstellen
-    this.socket = new WebSocket(this.url);
+    // Bestehende Verbindung schließen
+    this.cleanupConnection();
 
-    this.socket.onopen = () => {
-      console.log('WebSocket verbunden:', this.url);
-      if (this.callbacks.onOpen) {
-        this.callbacks.onOpen();
+    // Verbindungstimeout - falls die Verbindung nicht innerhalb von 5 Sekunden hergestellt wird
+    this.connectionTimeout = setTimeout(() => {
+      console.warn('ChatWebSocket-Verbindungstimeout erreicht, Verbindungsversuch abgebrochen');
+      if (this.socket) {
+        this.socket.close();
+        this.socket = null;
       }
+      this.scheduleReconnect();
+    }, 5000);
 
-      // Zurücksetzen des Reconnect-Intervalls bei erfolgreicher Verbindung
-      this.reconnectInterval = 2000;
-      if (this.reconnectTimer) {
-        clearTimeout(this.reconnectTimer);
-        this.reconnectTimer = null;
-      }
-    };
+    try {
+      // Neue Verbindung herstellen
+      this.socket = new WebSocket(this.url);
 
-    this.socket.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (this.callbacks.onMessage) {
-          this.callbacks.onMessage(data);
+      this.socket.onopen = () => {
+        // Timeout löschen, wenn die Verbindung erfolgreich hergestellt wurde
+        if (this.connectionTimeout) {
+          clearTimeout(this.connectionTimeout);
+          this.connectionTimeout = null;
         }
-      } catch (e) {
-        console.error('Fehler beim Parsen der WebSocket-Nachricht:', e);
-      }
-    };
 
-    this.socket.onerror = (error) => {
-      console.error('WebSocket-Fehler:', error);
-      if (this.callbacks.onError) {
-        this.callbacks.onError(error);
-      }
-    };
+        console.log('WebSocket verbunden:', this.url);
+        
+        // Parameter zurücksetzen
+        this.reconnectAttempts = 0;
+        this.reconnectInterval = 2000;
+        this.lastMessageTime = Date.now();
+        
+        // Heartbeat starten
+        this.startHeartbeat();
+        
+        if (this.callbacks.onOpen) {
+          try {
+            this.callbacks.onOpen();
+          } catch (error) {
+            console.error('Fehler im WebSocket onOpen-Callback:', error);
+          }
+        }
+      };
 
-    this.socket.onclose = () => {
-      console.log('WebSocket-Verbindung geschlossen, versuche erneut zu verbinden...');
-      if (this.callbacks.onClose) {
-        this.callbacks.onClose();
-      }
+      this.socket.onmessage = (event) => {
+        this.lastMessageTime = Date.now();
+        
+        try {
+          const data = JSON.parse(event.data);
+          if (this.callbacks.onMessage) {
+            this.callbacks.onMessage(data);
+          }
+        } catch (e) {
+          console.error('Fehler beim Parsen der WebSocket-Nachricht:', e);
+        }
+      };
 
-      // Exponentielles Backoff für Reconnect
-      this.reconnectInterval = Math.min(30000, this.reconnectInterval * 1.5);
-      this.reconnectTimer = setTimeout(() => this.createConnection(), this.reconnectInterval);
-    };
+      this.socket.onerror = (error) => {
+        console.error('WebSocket-Fehler:', error);
+        
+        if (this.callbacks.onError) {
+          try {
+            this.callbacks.onError(error);
+          } catch (callbackError) {
+            console.error('Fehler im WebSocket onError-Callback:', callbackError);
+          }
+        }
+      };
+
+      this.socket.onclose = (event) => {
+        // Verbindungstimeout löschen
+        if (this.connectionTimeout) {
+          clearTimeout(this.connectionTimeout);
+          this.connectionTimeout = null;
+        }
+
+        // Heartbeat stoppen
+        this.stopHeartbeat();
+        
+        console.log(`WebSocket-Verbindung geschlossen (Code: ${event.code}), bereite Wiederverbindung vor...`);
+        
+        if (this.callbacks.onClose) {
+          try {
+            this.callbacks.onClose();
+          } catch (error) {
+            console.error('Fehler im WebSocket onClose-Callback:', error);
+          }
+        }
+
+        // Nur neu verbinden, wenn nicht permanent geschlossen
+        if (!this.isPermanentlyClosed) {
+          this.scheduleReconnect();
+        }
+      };
+    } catch (error) {
+      console.error('Fehler beim Erstellen der WebSocket-Verbindung:', error);
+      
+      // Verbindungstimeout löschen
+      if (this.connectionTimeout) {
+        clearTimeout(this.connectionTimeout);
+        this.connectionTimeout = null;
+      }
+      
+      // Wiederverbindung planen
+      this.scheduleReconnect();
+    }
+  }
+
+  private scheduleReconnect() {
+    // Wenn bereits ein Reconnect geplant ist, nichts tun
+    if (this.reconnectTimer) return;
+    
+    this.reconnectAttempts++;
+    
+    if (this.reconnectAttempts > this.maxReconnectAttempts) {
+      console.warn(`Maximale Anzahl an Chat-WebSocket-Wiederverbindungsversuchen überschritten.`);
+      this.isPermanentlyClosed = true;
+      return;
+    }
+    
+    // Exponentielles Backoff mit zufälligem Jitter
+    const jitter = Math.random() * 1000;
+    const delay = Math.min(this.maxReconnectInterval, this.reconnectInterval * (1 + (0.5 * Math.random()))) + jitter;
+    
+    console.log(`Versuche WebSocket-Wiederverbindung nach ${Math.round(delay / 1000)} Sekunden... (Versuch ${this.reconnectAttempts})`);
+    
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      this.createConnection();
+    }, delay);
+    
+    // Reconnect-Intervall erhöhen
+    this.reconnectInterval = Math.min(this.maxReconnectInterval, this.reconnectInterval * 1.5);
+  }
+
+  private startHeartbeat() {
+    this.stopHeartbeat();
+    
+    // Alle 15 Sekunden prüfen
+    this.heartbeatInterval = setInterval(() => {
+      const now = Date.now();
+      
+      // Wenn länger als 30 Sekunden keine Nachricht, sende Ping
+      if (now - this.lastMessageTime > 30000) {
+        this.sendPing();
+      }
+      
+      // Wenn länger als 60 Sekunden keine Nachricht, neu verbinden
+      if (now - this.lastMessageTime > 60000) {
+        console.warn('Keine WebSocket-Aktivität in den letzten 60 Sekunden, stelle Verbindung neu her');
+        this.reconnect();
+      }
+    }, 15000);
+  }
+
+  private stopHeartbeat() {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
+  }
+
+  private sendPing() {
+    try {
+      if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+        this.socket.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
+      }
+    } catch (error) {
+      console.error('Fehler beim Senden des WebSocket-Pings:', error);
+    }
+  }
+
+  private cleanupConnection() {
+    // Heartbeat stoppen
+    this.stopHeartbeat();
+    
+    // Reconnect-Timer löschen
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    
+    // Bestehende Verbindung schließen
+    if (this.socket) {
+      try {
+        // Event-Listener entfernen um Memory-Leaks zu vermeiden
+        this.socket.onopen = null;
+        this.socket.onmessage = null;
+        this.socket.onerror = null;
+        this.socket.onclose = null;
+        
+        this.socket.close();
+      } catch (error) {
+        console.error('Fehler beim Schließen der WebSocket-Verbindung:', error);
+      }
+      this.socket = null;
+    }
   }
 
   send(data: any) {
     if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-      this.socket.send(typeof data === 'string' ? data : JSON.stringify(data));
-      return true;
+      try {
+        this.socket.send(typeof data === 'string' ? data : JSON.stringify(data));
+        return true;
+      } catch (error) {
+        console.error('Fehler beim Senden der WebSocket-Nachricht:', error);
+        return false;
+      }
     } else {
       console.warn('WebSocket nicht verbunden, Nachricht konnte nicht gesendet werden');
       return false;
     }
   }
 
+  reconnect() {
+    console.log('WebSocket-Wiederverbindung wird erzwungen...');
+    this.cleanupConnection();
+    this.createConnection();
+  }
+
   close() {
-    console.log('Schließe WebSocket-Verbindung');
-    
-    if (this.reconnectTimer) {
-      clearTimeout(this.reconnectTimer);
-      this.reconnectTimer = null;
-    }
-    
-    if (this.socket) {
-      this.socket.close();
-      this.socket = null;
-    }
+    console.log('WebSocket wird permanent geschlossen');
+    this.isPermanentlyClosed = true;
+    this.cleanupConnection();
+  }
+
+  isConnected(): boolean {
+    return this.socket !== null && this.socket.readyState === WebSocket.OPEN;
   }
 }
 
@@ -342,58 +511,52 @@ export const useChatStore = create<ChatStore>()(
             const sendMessageViaWebSocket = () => {
               console.log('Sende Chat-Nachricht über WebSocket...');
               
-              const socket = new WebSocket(wsUrl);
+              // Neue optimierte Version mit ChatWebSocketManager
+              const chatWsManager = new ChatWebSocketManager(wsUrl);
               
-              // Timeout für Verbindungsaufbau
-              const connectionTimeout = setTimeout(() => {
-                console.error('WebSocket-Verbindung konnte nicht hergestellt werden (Timeout)');
-                socket.close();
-                
-                // Bei Mobile: Versuche alternative Methode nach Timeout
-                if (isMobileDevice()) {
-                  sendMessageViaFetch();
+              chatWsManager.connect({
+                onOpen: () => {
+                  // Gruppen abonnieren für korrekte Nachrichtenverteilung
+                  chatWsManager.send({ 
+                    type: 'subscribe', 
+                    topic: 'groups'
+                  });
+                  
+                  // Chat-Kanal abonnieren
+                  chatWsManager.send({
+                    type: 'subscribe',
+                    topic: 'chat',
+                    groupId: message.groupId
+                  });
+                  
+                  // Nachricht senden
+                  chatWsManager.send({
+                    type: 'chat_message',
+                    chatId: chatId,
+                    message: message
+                  });
+                  
+                  // Verbindung nach kurzem Timeout schließen
+                  setTimeout(() => {
+                    chatWsManager.close();
+                    console.log('Chat-Nachricht wurde über WebSocket gesendet');
+                  }, 1500); // Längerer Timeout für bessere Zuverlässigkeit
+                },
+                onError: (error) => {
+                  console.error('Fehler beim Senden der Nachricht über WebSocket:', error);
+                  
+                  // Fallback für mobile Geräte: HTTP POST
+                  if (isMobileDevice()) {
+                    sendMessageViaFetch();
+                  }
+                  
+                  // Verbindung schließen bei Fehler
+                  chatWsManager.close();
+                },
+                onClose: () => {
+                  console.log('WebSocket-Verbindung für Chat-Nachricht geschlossen');
                 }
-              }, 5000);
-              
-              socket.onopen = () => {
-                clearTimeout(connectionTimeout);
-                
-                // Gruppen abonnieren für korrekte Nachrichtenverteilung
-                socket.send(JSON.stringify({ 
-                  type: 'subscribe', 
-                  topic: 'groups'
-                }));
-                
-                // Chat-Kanal abonnieren
-                socket.send(JSON.stringify({
-                  type: 'subscribe',
-                  topic: 'chat',
-                  groupId: message.groupId
-                }));
-                
-                // Nachricht senden
-                socket.send(JSON.stringify({
-                  type: 'chat_message',
-                  chatId: chatId,
-                  message: message
-                }));
-                
-                // Verbindung nach kurzem Timeout schließen
-                setTimeout(() => {
-                  socket.close();
-                  console.log('Chat-Nachricht wurde über WebSocket gesendet');
-                }, 1500); // Längerer Timeout für bessere Zuverlässigkeit
-              };
-              
-              socket.onerror = (error) => {
-                clearTimeout(connectionTimeout);
-                console.error('Fehler beim Senden der Nachricht über WebSocket:', error);
-                
-                // Fallback für mobile Geräte: HTTP POST
-                if (isMobileDevice()) {
-                  sendMessageViaFetch();
-                }
-              };
+              });
             };
             
             // Alternative Methode für mobile Geräte: HTTP POST

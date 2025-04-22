@@ -139,16 +139,26 @@ let wsManager: WebSocketManager | null = null;
 
 const setupWebSocketForGroupIds = (): void => {
   if (wsManager) {
-    wsManager.disconnect();
+    wsManager.close(); // Verwende die neue close() Methode
   }
   
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
   const wsUrl = `${protocol}//${window.location.host}/ws`;
   
-  wsManager = new WebSocketManager(wsUrl, {
+  wsManager = new WebSocketManager(wsUrl);
+  
+  // Verbinde mit den richtigen Callbacks
+  wsManager.connect({
     onOpen: () => {
       console.log('WebSocket verbunden:', wsUrl);
-      wsManager?.subscribe('groupIds');
+      
+      // Abonniere Gruppen-IDs über WebSocket
+      if (wsManager && wsManager.isConnected()) {
+        wsManager.send(JSON.stringify({
+          type: 'subscribe',
+          topic: 'groupIds'
+        }));
+      }
       
       // Initial Gruppen-IDs abrufen
       fetchGroupIdsFromServer();
@@ -181,6 +191,15 @@ const setupWebSocketForGroupIds = (): void => {
     },
     onError: () => {
       console.log('WebSocket nicht mehr erreichbar, stelle Verbindung wieder her...');
+    },
+    // Neue Callbacks für verbesserte Fehlerbehandlung
+    onReconnect: (attempt) => {
+      console.log(`WebSocket-Wiederverbindungsversuch ${attempt}...`);
+    },
+    onMaxAttemptsExceeded: () => {
+      console.warn('Maximale Anzahl der WebSocket-Wiederverbindungsversuche überschritten.');
+      // Bei dauerhaftem Fehler auf Polling umschalten
+      startGroupIdsPolling();
     }
   });
 };
