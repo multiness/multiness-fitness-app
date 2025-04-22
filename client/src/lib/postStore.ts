@@ -77,6 +77,46 @@ const getUsersFromStorage = () => {
 // Konstante für den lokalen Speicher
 const LOCAL_STORAGE_POSTS_KEY = 'fitness-app-posts';
 
+// Konstante für den Schlüssel der gelöschten Posts
+const DELETED_POSTS_KEY = 'fitness-app-deleted-posts';
+
+// Event-Listener für lokale Storage-Änderungen, um Synchronisation zu verbessern
+if (typeof window !== 'undefined') {  
+  window.addEventListener('storage', (event) => {
+    // Reagiere auf Änderungen der gelöschten Posts
+    if (event.key === DELETED_POSTS_KEY) {
+      console.log('Änderung an gelöschten Posts erkannt', event.newValue);
+      
+      // Löst eine manuelle Aktualisierung in allen geöffneten Tabs aus
+      try {
+        const deleteEvent = new CustomEvent('force-deleted-posts-sync');
+        window.dispatchEvent(deleteEvent);
+        console.log('force-deleted-posts-sync Event ausgelöst');
+      } catch (e) {
+        console.error('Fehler beim Auslösen des Sync-Events:', e);
+      }
+    }
+    
+    // Prüfe auf temporäre Schlüssel, die einen gelöschten Post signalisieren
+    if (event.key && event.key.startsWith('post-deleted-trigger-')) {
+      try {
+        const deletedPostId = Number(event.newValue);
+        if (!isNaN(deletedPostId)) {
+          console.log(`Post ${deletedPostId} wurde in einem anderen Tab gelöscht`);
+          
+          // Auslösen des post-deleted Events
+          const deleteEvent = new CustomEvent('post-deleted', { 
+            detail: { postId: deletedPostId } 
+          });
+          window.dispatchEvent(deleteEvent);
+        }
+      } catch (e) {
+        console.warn('Fehler bei der Verarbeitung der gelöschten Post-ID:', e);
+      }
+    }
+  });
+}
+
 export const usePostStore = create<PostStore>()(
   persist(
     (set, get) => ({
@@ -87,11 +127,15 @@ export const usePostStore = create<PostStore>()(
       posts: {},
       isLoading: false,
 
-      // Methode zum Laden der Posts von der API
+      // Methode zum Laden der Posts von der API mit verbesserter Synchronisierung
       loadStoredPosts: async () => {
         try {
-          console.debug("loadStoredPosts: Lade Posts von der API...");
+          console.log("loadStoredPosts: Lade Posts von der API...");
           set({ isLoading: true });
+          
+          // Hole zunächst die Liste der gelöschten Post-IDs aus dem localStorage
+          const deletedPostIds = JSON.parse(localStorage.getItem(DELETED_POSTS_KEY) || '[]');
+          console.log("Gelöschte Post-IDs vor API-Aufruf:", deletedPostIds);
           
           // Cache-Problem umgehen mit einem Parameter
           const timestamp = new Date().getTime();
@@ -111,7 +155,6 @@ export const usePostStore = create<PostStore>()(
           }
           
           // Lade Liste der gelöschten Posts
-          const DELETED_POSTS_KEY = 'fitness-app-deleted-posts';
           let deletedPostsIds: number[] = [];
           try {
             const deletedPostsStr = localStorage.getItem(DELETED_POSTS_KEY);
@@ -715,7 +758,19 @@ export const usePostStore = create<PostStore>()(
           if (!deletedPostsIds.includes(postIdNum)) {
             deletedPostsIds.push(postIdNum);
             localStorage.setItem(DELETED_POSTS_KEY, JSON.stringify(deletedPostsIds));
-            console.log(`Post ID ${postIdNum} zur Liste der gelöschten Posts hinzugefügt`);
+            console.log(`Post ID ${postIdNum} zur Liste der gelöschten Posts hinzugefügt (lokal)`);
+          }
+          
+          // Stellen wir sicher, dass diese Änderung auch auf allen anderen Tabs/Geräten synchronisiert wird
+          // Stoßen wir das Browser-weite storage Event an
+          try {
+            // Setze einen temporären sessionStorage-Wert, um ein Storage-Event auszulösen
+            const tempKey = `post-deleted-trigger-${Date.now()}`;
+            sessionStorage.setItem(tempKey, String(postIdNum));
+            // Entferne den temporären Wert gleich wieder
+            setTimeout(() => sessionStorage.removeItem(tempKey), 100);
+          } catch (e) {
+            console.warn("Konnte sessionStorage nicht nutzen für Synchronisierung:", e);
           }
           
           // Lokalen State aktualisieren
