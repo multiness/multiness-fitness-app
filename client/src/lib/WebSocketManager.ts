@@ -202,22 +202,22 @@ export class WebSocketManager {
     // Stoppe einen bestehenden Heartbeat
     this.stopHeartbeat();
     
-    // Starte einen neuen Heartbeat
+    // Starte einen neuen Heartbeat mit reduzierten Zeiträumen für schnellere Erkennung von Verbindungsproblemen
     this.heartbeatInterval = setInterval(() => {
       const now = Date.now();
       
-      // Wenn in den letzten 30 Sekunden keine Nachricht empfangen wurde, sende einen Ping
-      if (now - this.lastMessageTime > 30000) {
+      // Wenn in den letzten 20 Sekunden keine Nachricht empfangen wurde, sende einen Ping
+      if (now - this.lastMessageTime > 20000) {
         this.sendPing();
       }
       
-      // Wenn in den letzten 90 Sekunden keine Nachricht empfangen wurde,
+      // Wenn in den letzten 45 Sekunden keine Nachricht empfangen wurde,
       // ist die Verbindung wahrscheinlich tot, also neu verbinden
-      if (now - this.lastMessageTime > 90000) {
-        console.warn('Keine WebSocket-Aktivität in den letzten 90 Sekunden, Verbindung wird neu hergestellt');
+      if (now - this.lastMessageTime > 45000) {
+        console.warn('Keine WebSocket-Aktivität in den letzten 45 Sekunden, Verbindung wird neu hergestellt');
         this.reconnect();
       }
-    }, 15000); // Überprüfe alle 15 Sekunden
+    }, 10000); // Überprüfe alle 10 Sekunden
   }
 
   private stopHeartbeat() {
@@ -230,7 +230,8 @@ export class WebSocketManager {
   private sendPing() {
     try {
       if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-        console.log('Sende WebSocket Ping...');
+        // Ping nur im Log ausgeben, wenn wir im Debug-Modus sind, um die Konsole nicht zu überfluten
+        // console.log('Sende WebSocket Ping...');
         this.socket.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
       }
     } catch (error) {

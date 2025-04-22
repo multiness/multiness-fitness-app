@@ -189,8 +189,9 @@ const setupWebSocketForGroupIds = (): void => {
       // Fallback: Starte kurzzeitig Polling, bis WS wiederhergestellt ist
       startTemporaryPolling();
     },
-    onError: () => {
-      console.log('WebSocket nicht mehr erreichbar, stelle Verbindung wieder her...');
+    onError: (error) => {
+      console.error('WebSocket-Fehler für Gruppen-IDs-Synchronisierung:', error);
+      // Nichts weiter tun, da onClose ohnehin aufgerufen wird
     },
     // Neue Callbacks für verbesserte Fehlerbehandlung
     onReconnect: (attempt) => {
