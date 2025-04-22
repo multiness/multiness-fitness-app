@@ -718,57 +718,65 @@ export const syncGroupIds = async () => {
           // Starte Polling nach einer kurzen Verzögerung
           setTimeout(pollGroupIds, 5000);
         } else {
-          // Für Desktop: Verwende WebSockets für Echtzeit-Updates
+          // Für Desktop: Verwende ChatWebSocketManager für Echtzeit-Updates
           const setupWebSocketSync = () => {
             try {
               const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
               const wsUrl = `${protocol}//${window.location.host}/ws`;
               
-              const socket = new WebSocket(wsUrl);
+              // Neue optimierte Version mit ChatWebSocketManager
+              const chatWsManager = new ChatWebSocketManager(wsUrl);
               
-              socket.onopen = () => {
-                console.log('WebSocket-Verbindung für Gruppen-IDs-Synchronisierung hergestellt');
-                
-                try {
-                  // Abonniere Gruppen-IDs-Updates
-                  socket.send(JSON.stringify({
-                    type: 'subscribe',
-                    topic: 'groupIds'
-                  }));
-                } catch (err) {
-                  console.error('Fehler beim Senden der Subscription-Nachricht:', err);
-                }
-              };
-              
-              socket.onmessage = (event) => {
-                try {
-                  const data = JSON.parse(event.data);
+              chatWsManager.connect({
+                onOpen: () => {
+                  console.log('WebSocket-Verbindung für Gruppen-IDs-Synchronisierung hergestellt');
                   
-                  if (data.type === 'groupIds' && data.groupIds) {
-                    console.log('Gruppen-IDs per WebSocket aktualisiert:', data.groupIds);
-                    
-                    // Aktualisiere den globalen Cache
-                    globalGroupIds = data.groupIds;
-                    
-                    // Aktualisiere den localStorage
-                    Object.entries(globalGroupIds).forEach(([key, value]) => {
-                      localStorage.setItem(`group_chat_id_${key}`, value as string);
+                  try {
+                    // Abonniere Gruppen-IDs-Updates
+                    chatWsManager.send({
+                      type: 'subscribe',
+                      topic: 'groupIds'
                     });
+                  } catch (err) {
+                    console.error('Fehler beim Senden der Subscription-Nachricht:', err);
                   }
-                } catch (error) {
-                  console.error('Fehler beim Verarbeiten der WebSocket-Gruppen-IDs-Nachricht:', error);
+                },
+                
+                onMessage: (data) => {
+                  try {
+                    if (data.type === 'groupIds' && data.groupIds) {
+                      console.log('Gruppen-IDs per WebSocket aktualisiert:', data.groupIds);
+                      
+                      // Aktualisiere den globalen Cache
+                      globalGroupIds = data.groupIds;
+                      
+                      // Aktualisiere den localStorage
+                      Object.entries(globalGroupIds).forEach(([key, value]) => {
+                        localStorage.setItem(`group_chat_id_${key}`, value as string);
+                      });
+                    }
+                  } catch (error) {
+                    console.error('Fehler beim Verarbeiten der WebSocket-Gruppen-IDs-Nachricht:', error);
+                  }
+                },
+                
+                onError: (error) => {
+                  console.error('WebSocket-Fehler für Gruppen-IDs-Synchronisierung:', error);
+                },
+                
+                onClose: () => {
+                  console.log('WebSocket-Verbindung für Gruppen-IDs-Synchronisierung geschlossen, versuche erneut zu verbinden...');
+                  // Die ChatWebSocketManager-Klasse versucht bereits automatisch, sich erneut zu verbinden,
+                  // aber wir können nach einer gewissen Zeit einen vollständigen Neustart erzwingen
+                  setTimeout(() => {
+                    try {
+                      setupWebSocketSync();
+                    } catch (error) {
+                      console.error('Fehler beim Neuaufbau der WebSocket-Verbindung:', error);
+                    }
+                  }, 15000);
                 }
-              };
-              
-              socket.onerror = (error) => {
-                console.error('WebSocket-Fehler für Gruppen-IDs-Synchronisierung:', error);
-              };
-              
-              socket.onclose = () => {
-                console.log('WebSocket-Verbindung für Gruppen-IDs-Synchronisierung geschlossen, versuche erneut zu verbinden...');
-                // Weniger aggressive Reconnect-Strategie
-                setTimeout(setupWebSocketSync, 10000);
-              };
+              });
             } catch (err) {
               console.error('Kritischer Fehler beim Einrichten des WebSockets:', err);
               // Bei kritischen Fehlern längere Wartezeit vor neuem Versuch
