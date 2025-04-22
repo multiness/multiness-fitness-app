@@ -67,18 +67,21 @@ export default function ProductSlider({ products: propProducts }: ProductSliderP
                   <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
                     {product.description}
                   </p>
-                  {/* Optimierte Layout-Struktur für Desktop-Ansicht */}
-                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
-                    {/* Preis-Informationen mit besserer Formatierung */}
-                    <div className="flex items-center gap-1 font-semibold">
+                  {/* Neu strukturiertes Layout für optimierte Darstellung */}
+                  <div className="flex flex-col gap-3">
+                    {/* Preis-Informationen in eigener Zeile, damit sie immer voll sichtbar sind */}
+                    <div className="flex items-center flex-wrap gap-2 font-semibold">
                       {product.onSale ? (
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           {product.salePrice ? (
                             <>
-                              <span className="text-red-500">€{Number(product.salePrice).toFixed(2)}</span>
-                              <span className="text-sm line-through text-muted-foreground">
+                              <span className="text-red-500 font-bold">€{Number(product.salePrice).toFixed(2)}</span>
+                              <span className="text-xs line-through text-muted-foreground">
                                 €{Number(product.price).toFixed(2)}
                               </span>
+                              <Badge variant="outline" className="bg-red-50 text-red-500 ml-auto">
+                                Angebot
+                              </Badge>
                             </>
                           ) : (
                             <div className="flex items-center gap-1">
@@ -91,16 +94,16 @@ export default function ProductSlider({ products: propProducts }: ProductSliderP
                         Number(product.price) === 0 ? (
                           <span className="text-green-500">Gratis</span>
                         ) : (
-                          <>
+                          <div className="flex items-center gap-1">
                             <Euro className="h-4 w-4" />
-                            {Number(product.price).toFixed(2)}
-                          </>
+                            <span>{Number(product.price).toFixed(2)}</span>
+                          </div>
                         )
                       )}
                     </div>
                     
-                    {/* Optimierter Button für Desktop-Ansicht */}
-                    <div className="w-full md:w-auto">
+                    {/* Button immer in voller Breite, auch auf Desktop */}
+                    <div className="w-full">
                       {product.stockEnabled && product.stock === 0 ? (
                         <Badge variant="outline" className="text-red-500">
                           Ausverkauft
@@ -108,7 +111,7 @@ export default function ProductSlider({ products: propProducts }: ProductSliderP
                       ) : (
                         <Button 
                           size="sm" 
-                          className="w-full md:w-auto text-xs px-3"
+                          className="w-full text-sm py-1 h-8"
                           disabled={product.stockEnabled && product.stock === 0}
                         >
                           {product.stockEnabled && product.stock === 0 ? "Ausverkauft" : "Jetzt kaufen"}
