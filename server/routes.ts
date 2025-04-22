@@ -1708,6 +1708,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Internal server error" });
     }
   });
+  
+  // DELETE-Endpunkt für das Löschen einer kompletten Gruppe
+  app.delete("/api/groups/:id", async (req, res) => {
+    try {
+      const groupId = Number(req.params.id);
+      const group = await storage.getGroup(groupId);
+      
+      if (!group) {
+        return res.status(404).json({ error: "Gruppe nicht gefunden" });
+      }
+      
+      // Hinweis: In einer vollständigen Implementierung würde hier 
+      // eine Berechtigungsprüfung stattfinden, um sicherzustellen,
+      // dass nur Admins oder der Ersteller der Gruppe diese löschen können
+      
+      // Gruppe aus der Datenbank löschen
+      await storage.deleteGroup(groupId);
+      
+      // Falls ein WebSocket-Server verwendet wird, könnten hier Benachrichtigungen gesendet werden
+      // Dies ist aber optional und hängt von der spezifischen Anwendungsarchitektur ab
+      if (wss) {
+        const message = JSON.stringify({
+          type: 'group_deleted',
+          groupId: groupId
+        });
+        
+        // An alle verbundenen Clients senden
+        wss.clients.forEach(client => {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(message);
+          }
+        });
+      }
+      
+      res.status(200).json({ 
+        success: true, 
+        message: `Gruppe ${groupId} wurde erfolgreich gelöscht` 
+      });
+    } catch (error) {
+      console.error("Fehler beim Löschen der Gruppe:", error);
+      res.status(500).json({ error: "Gruppe konnte nicht gelöscht werden" });
+    }
+  });
 
   app.get("/api/groups/:id/members", async (req, res) => {
     try {

@@ -6,12 +6,31 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Send, Users, Image as ImageIcon, MessageCircle, Info } from "lucide-react";
+import { 
+  Send, 
+  Users, 
+  Image as ImageIcon, 
+  MessageCircle, 
+  Info, 
+  Trash2, 
+  AlertTriangle 
+} from "lucide-react";
 import { useUsers } from "../contexts/UserContext";
 import { useGroupStore } from "../lib/groupStore";
 import { useChatStore } from "../lib/chatService";
 import { UserAvatar } from "@/components/UserAvatar";
 import { format } from "date-fns";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 export default function GroupDetail() {
   const { id } = useParams();
@@ -19,9 +38,12 @@ export default function GroupDetail() {
   const { users, currentUser } = useUsers();
   const groupStore = useGroupStore();
   const chatStore = useChatStore();
+  const { toast } = useToast();
   const [newMessage, setNewMessage] = useState("");
   const [showInfo, setShowInfo] = useState(false);
   const [activeTab, setActiveTab] = useState<"group" | "direct">("group");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Verwende die ID, um die Gruppe aus dem Store zu finden
   const groupId = parseInt(id || "0");
@@ -53,9 +75,55 @@ export default function GroupDetail() {
     .map(id => users.find(u => u.id === id))
     .filter(Boolean);
     
+  // Prüfen, ob der aktuelle Benutzer Admin-Rechte hat
+  const isAdmin = currentUser && groupStore.isGroupAdmin(groupId, currentUser?.id);
+    
   // Navigieren zum Gruppenchat
   const navigateToGroupChat = () => {
     setLocation(`/chat/${chatId}`);
+  };
+  
+  // Handler für das Löschen der Gruppe
+  const handleDeleteGroup = async () => {
+    if (!isAdmin) {
+      toast({
+        title: "Keine Berechtigung",
+        description: "Nur Gruppenadministratoren können Gruppen löschen.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      setIsDeleting(true);
+      // Gruppe löschen und Ergebnis prüfen
+      const deleteResult = await groupStore.removeGroup(groupId);
+      
+      if (deleteResult) {
+        toast({
+          title: "Gruppe gelöscht",
+          description: `Die Gruppe "${group.name}" wurde erfolgreich gelöscht.`
+        });
+        // Zurück zur Gruppenliste navigieren
+        setLocation('/groups');
+      } else {
+        toast({
+          title: "Fehler",
+          description: "Die Gruppe konnte nicht gelöscht werden. Bitte versuchen Sie es erneut.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Fehler beim Löschen der Gruppe:", error);
+      toast({
+        title: "Fehler",
+        description: "Die Gruppe konnte nicht gelöscht werden. Bitte versuchen Sie es erneut.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
+    }
   };
 
   const handleSendMessage = (e: React.FormEvent) => {
@@ -118,6 +186,30 @@ export default function GroupDetail() {
 
   return (
     <div className="h-screen flex">
+      {/* Bestätigungsdialog für Gruppen-Löschung */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Gruppe löschen</AlertDialogTitle>
+            <AlertDialogDescription>
+              Möchten Sie die Gruppe "{group.name}" wirklich löschen? 
+              Diese Aktion kann nicht rückgängig gemacht werden und alle Gruppendaten 
+              werden unwiderruflich gelöscht.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteGroup}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? "Wird gelöscht..." : "Löschen"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col max-w-[calc(100%-300px)]">
         {/* Header */}
@@ -135,6 +227,19 @@ export default function GroupDetail() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {/* Admin-Löschbutton (nur für Admins sichtbar) */}
+            {isAdmin && (
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => setDeleteDialogOpen(true)}
+                aria-label="Gruppe löschen"
+                className="text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="h-5 w-5" />
+              </Button>
+            )}
+            
             <Button 
               variant="ghost" 
               size="icon" 

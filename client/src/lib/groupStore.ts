@@ -63,7 +63,7 @@ interface GroupStore {
   // Group functions
   addGroup: (group: NewGroup) => Promise<number>;
   updateGroup: (id: number, updatedGroup: Partial<Group>) => void;
-  removeGroup: (id: number) => void;
+  removeGroup: (id: number) => Promise<boolean>;
   joinGroup: (groupId: number, userId: number) => void;
   leaveGroup: (groupId: number, userId: number) => void;
   inviteToGroup: (groupId: number, userId: number, inviterId: number) => void;
