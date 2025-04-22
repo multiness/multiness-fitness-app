@@ -11,12 +11,19 @@ export const users = pgTable("users", {
   bio: text("bio"),
   avatar: text("avatar"),
   coverImage: text("cover_image"),
-  email: text("email").unique(),
+  email: text("email").notNull().unique(),
+  emailVerified: boolean("email_verified").default(false).notNull(),
+  emailVerificationToken: text("email_verification_token"),
+  emailVerificationTokenExpiry: timestamp("email_verification_token_expiry"),
+  password: text("password").notNull(),
+  passwordResetToken: text("password_reset_token"),
+  passwordResetTokenExpiry: timestamp("password_reset_token_expiry"),
   phone: text("phone"),
   isAdmin: boolean("is_admin").default(false).notNull(),
   isVerified: boolean("is_verified").default(false),
   isTeamMember: boolean("is_team_member").default(false),
   teamRole: text("team_role"),
+  role: text("role").default("user").notNull(), // 'user', 'moderator', 'admin'
   preferences: jsonb("preferences"), // Notification & Anzeige-Einstellungen
   metrics: jsonb("metrics"), // Leistungsmetriken wie Gewicht, Körperfett, Größe usw.
   lastActive: timestamp("last_active"),
