@@ -241,12 +241,20 @@ export default function Home() {
   }, []);
   
   // Lade Posts aus dem postStore mit verbesserter Filterung und Sortierung
-  const allPosts = Object.values(postStore.posts).filter(post => post !== null && post !== undefined).sort((a, b) =>
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
+  const allPosts = Object.values(postStore.posts)
+    .filter(post => post !== null && post !== undefined)
+    .sort((a, b) => {
+      // Stelle sicher, dass beide Daten korrekt als Date-Objekte behandelt werden
+      const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
+      const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
+      // Sortiere absteigend (neueste zuerst)
+      return dateB.getTime() - dateA.getTime();
+    });
   
-  // Debugging: Protokolliere die aktuelle Post-Sammlung
-  console.log("Aktuelle Posts in Home.tsx:", allPosts, "Anzahl:", allPosts.length);
+  // Debugging: Protokolliere die aktuelle Post-Sammlung mit IDs
+  console.log("Aktuelle Posts in Home.tsx:", 
+    allPosts.map(p => ({id: p.id, content: p.content.substring(0, 15)})), 
+    "Anzahl:", allPosts.length);
   
   // Für ältere Browser fallback, wenn die Sortierung nicht funktioniert
   if (allPosts.length === 0) {
@@ -507,11 +515,49 @@ export default function Home() {
           {/* Zeige Posts direkt aus der API an, wenn vorhanden */}
           {allPosts.length > 0 ? (
             // Normale Anzeige, wenn Posts gefunden wurden
-            allPosts.map((post: any) => (
-              <div key={`post-${post.id}-${forceRender}`} className="w-full max-w-xl mx-auto">
-                <FeedPost post={post as any} />
+            <div className="space-y-6">
+              {allPosts.map((post: any) => (
+                <div key={`post-${post.id}-${post.content.substring(0, 5)}-${forceRender}`} className="w-full max-w-xl mx-auto">
+                  <FeedPost post={post as any} />
+                </div>
+              ))}
+              
+              {/* Debug-Informationspanel */}
+              <div className="border border-slate-200 dark:border-slate-700 rounded-md p-3 mt-6 bg-slate-50 dark:bg-slate-900 text-xs">
+                <details>
+                  <summary className="font-medium cursor-pointer">Debug-Informationen</summary>
+                  <div className="mt-2 space-y-1 text-slate-600 dark:text-slate-400">
+                    <p>Zeitstempel: {new Date().toLocaleTimeString()}</p>
+                    <p>Anzahl Posts: {allPosts.length}</p>
+                    <p>Neueste Post-IDs: {allPosts.slice(0, 5).map(p => p.id).join(', ')}</p>
+                  </div>
+                  <Button
+                    className="w-full mt-2"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      console.log("Manuelles Neuladen der Posts gestartet...");
+                      
+                      // Verzögere die Aktualisierung leicht, um UI-Updates zu ermöglichen
+                      setTimeout(() => {
+                        postStore.loadStoredPosts().then(() => {
+                          console.log("Posts manuell neu geladen, Anzahl:", 
+                            Object.keys(postStore.posts).length);
+                          setForceRender(Date.now());
+                          toast({
+                            title: "Aktualisierung abgeschlossen",
+                            description: `${Object.keys(postStore.posts).length} Beiträge wurden geladen.`,
+                          });
+                        });
+                      }, 100);
+                    }}
+                  >
+                    <RefreshCw className="h-3 w-3 mr-1" />
+                    Beiträge neu laden
+                  </Button>
+                </details>
               </div>
-            ))
+            </div>
           ) : (
             // Versuch, direkt über die API zu laden oder Ladeindikator anzeigen
             Object.keys(postStore.posts).length > 0 ? (
