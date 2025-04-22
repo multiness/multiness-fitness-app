@@ -178,10 +178,27 @@ export default function FeedPost({ post }: FeedPostProps) {
   const isLiked = postStore.hasLiked(post.id, currentUser?.id || 1);
   const likes = postStore.getLikes(post.id);
   const comments = postStore.getComments(post.id);
+  
+  // Debugging: Protokolliere den Post
+  console.log(`Rendering FeedPost ID ${post.id}:`, post);
+  console.log("Verfügbare Benutzer:", users.length);
+  
   const user = users.find(u => u.id === post.userId);
   const isOwnPost = currentUser?.id === post.userId;
 
-  if (!user) return null;
+  // Fallback für fehlende Benutzerdaten - ein temporärer Benutzerobjekt erstellen, wenn der eigentliche noch nicht geladen ist
+  if (!user) {
+    console.warn(`Benutzer mit ID ${post.userId} für Post ${post.id} nicht gefunden - versuche erneut zu laden`);
+    // Versuche, einen Fallback zu erstellen oder zu warten
+    return (
+      <Card className="opacity-70">
+        <CardContent className="p-4">
+          <p className="text-sm text-muted-foreground">Lade Beitrag...</p>
+          <p className="mt-2">{post.content}</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const handleLike = () => {
     const userId = currentUser?.id || 1;
