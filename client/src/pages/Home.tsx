@@ -161,15 +161,16 @@ export default function Home() {
     // Initialer Ladevorgang
     loadAllData();
     
-    // Deutlich reduziertes Update-Intervall (nur einmal pro Minute)
-    // Dies verhindert übermäßige Server-Anfragen
+    // Automatische Aktualisierung alle 15 Sekunden
+    // Häufigere Aktualisierung für bessere Echtzeit-Erfahrung
     const intervalId = setInterval(() => {
       if (!isLoading && isMounted) {
         // Sanfte Aktualisierung ohne Fehlerwerfen
+        console.log("Automatische Aktualisierung der Posts und Gruppen (15s-Intervall)");
         postStore.loadStoredPosts().catch(e => console.warn("Update-Fehler:", e));
         groupStore.syncWithServer(false).catch(e => console.warn("Update-Fehler:", e));
       }
-    }, 60000); // Reduziert auf einmal pro Minute
+    }, 15000); // Aktualisierung alle 15 Sekunden
     
     // Bereinige beim Unmount
     return () => {
@@ -681,18 +682,9 @@ export default function Home() {
             // Ergebnis darstellen
             return (
               <div>
-                {/* Minimale Statusanzeige als einfacher Text */}
-                <div className="flex justify-between items-center mb-4 text-sm text-muted-foreground">
+                {/* Minimale Statusanzeige ohne manuellen Aktualisierungsbutton */}
+                <div className="mb-4 text-sm text-muted-foreground">
                   <span>{sortedPosts.length} Beiträge</span>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => setForceRender(Date.now())}
-                    className="flex items-center gap-1"
-                  >
-                    <RefreshCw className="h-3 w-3" />
-                    <span className="text-xs">Aktualisieren</span>
-                  </Button>
                 </div>
 
                 {/* Container mit höherem z-Index und Abstand */}
@@ -707,29 +699,9 @@ export default function Home() {
                   ))}
                 </div>
                 
-                {/* Lade-mehr-Button am Ende */}
-                <div className="flex justify-center mt-8 pb-20">
-                  <Button 
-                    variant="outline"
-                    onClick={() => {
-                      // Manueller Trigger für Neuladen
-                      const timestamp = Date.now();
-                      fetch(`/api/posts?force=${timestamp}`)
-                        .then(res => res.json())
-                        .then(data => {
-                          setDirectApiPosts(data);
-                          setForceRender(timestamp);
-                          toast({
-                            title: "Aktualisiert",
-                            description: `${data.length} Beiträge geladen`,
-                          });
-                        })
-                        .catch(e => console.error("Fehler beim Nachladen:", e));
-                    }}
-                  >
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Aktualisieren
-                  </Button>
+                {/* Platzhalter mit Hinweis, dass automatisch aktualisiert wird */}
+                <div className="flex flex-col items-center justify-center mt-8 pb-20 text-xs text-muted-foreground">
+                  <p>Beiträge werden automatisch aktualisiert</p>
                 </div>
               </div>
             );
