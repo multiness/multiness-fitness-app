@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, Users2, Plus, Pencil } from "lucide-react";
+import { Search, Users2, Plus, Pencil, Share2, MessageCircle } from "lucide-react";
 import { useUsers } from "../contexts/UserContext";
 import { useGroupStore } from "../lib/groupStore";
 import { Link, useLocation } from "wouter";
@@ -10,6 +10,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { getChatId } from "../lib/chatService";
 import { UserAvatar } from "@/components/UserAvatar";
 import { Badge } from "@/components/ui/badge";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useToast } from "@/hooks/use-toast";
+import ShareDialog from "@/components/ShareDialog";
 
 import EditGroupDialog from "@/components/EditGroupDialog"; // Korrigierter Import-Pfad
 
@@ -21,7 +24,10 @@ export default function Groups() {
   const [, setLocation] = useLocation();
   const [selectedGroup, setSelectedGroup] = useState<null | any>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [shareGroupId, setShareGroupId] = useState<number | null>(null);
   const { users } = useUsers();
+  const { toast } = useToast();
   const groups = Object.values(groupStore.groups);
 
   console.log("Available groups:", groups);
@@ -45,6 +51,46 @@ export default function Groups() {
 
   const handleGroupUpdate = (groupId: number, updatedData: any) => {
     groupStore.updateGroup(groupId, updatedData);
+  };
+  
+  // Funktion zum Öffnen des Share-Dialogs
+  const handleShareGroup = (e: React.MouseEvent, group: any) => {
+    e.stopPropagation(); // Verhindert Navigation beim Klicken
+    setShareGroupId(group.id);
+    setIsShareDialogOpen(true);
+  };
+  
+  // Funktion zum Teilen über native Share-API (wenn verfügbar)
+  const handleNativeShare = async (e: React.MouseEvent, group: any) => {
+    e.stopPropagation(); // Verhindert Navigation beim Klicken
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: group.name,
+          text: `Schau dir die Gruppe ${group.name} an: ${group.description}`,
+          url: window.location.origin + `/groups/${group.id}`
+        });
+        toast({
+          title: "Erfolgreich geteilt!",
+          description: "Die Gruppe wurde über deine bevorzugte App geteilt.",
+        });
+      } catch (error) {
+        console.error("Sharing failed:", error);
+        toast({
+          title: "Teilen fehlgeschlagen",
+          description: "Beim Teilen ist ein Fehler aufgetreten.",
+          variant: "destructive",
+        });
+      }
+    } else {
+      // Fallback, wenn Share API nicht verfügbar ist
+      toast({
+        title: "Teilen nicht verfügbar",
+        description: "Die Share-Funktion wird auf diesem Gerät nicht unterstützt.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -146,6 +192,29 @@ export default function Groups() {
                             {group.participantIds?.length || 0} Mitglieder
                           </span>
                         </div>
+                        
+                        {/* Share Buttons */}
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={(e) => handleShareGroup(e, group)}
+                            title="In der App teilen"
+                          >
+                            <MessageCircle className="h-4 w-4" />
+                          </Button>
+                          
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={(e) => handleNativeShare(e, group)}
+                            title="Extern teilen"
+                          >
+                            <Share2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -162,6 +231,28 @@ export default function Groups() {
           onOpenChange={setIsEditDialogOpen}
           group={selectedGroup}
           onSave={handleGroupUpdate}
+        />
+      )}
+      
+      {/* Share Dialog für Gruppen */}
+      {shareGroupId && (
+        <ShareDialog
+          open={isShareDialogOpen}
+          onOpenChange={setIsShareDialogOpen}
+          type="chat"
+          title="Gruppe teilen"
+          onShare={() => {
+            toast({
+              title: "Geteilt!",
+              description: "Die Gruppe wurde in deinem Chat geteilt.",
+            });
+          }}
+          content={{
+            id: shareGroupId,
+            type: "group",
+            title: groups.find(g => g.id === shareGroupId)?.name || "",
+            preview: groups.find(g => g.id === shareGroupId)?.description || ""
+          }}
         />
       )}
     </div>
