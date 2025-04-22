@@ -264,21 +264,54 @@ export default function Home() {
     };
   }, []);
   
+  // HIER: Direkter API-Aufruf für die neuesten Beiträge
+  const [directApiPosts, setDirectApiPosts] = useState<any[]>([]);
+  
+  // Immer direkt die neuesten Posts laden, wenn die Komponente geladen wird
+  useEffect(() => {
+    const fetchLatestPosts = async () => {
+      try {
+        // Anti-Cache-Parameter
+        const timestamp = new Date().getTime();
+        const response = await fetch(`/api/posts?nocache=${timestamp}`, {
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Home.tsx: Direkt geladene Posts:", data.map((p: any) => p.id));
+          setDirectApiPosts(data);
+        }
+      } catch (error) {
+        console.error("Fehler beim direkten Laden der Posts:", error);
+      }
+    };
+    
+    fetchLatestPosts();
+  }, [forceRender]); // Bei forceRender neu laden
+  
   // Lade Posts aus dem postStore mit verbesserter Filterung und Sortierung
-  const allPosts = Object.values(postStore.posts)
-    .filter(post => post !== null && post !== undefined)
-    .sort((a, b) => {
-      // Stelle sicher, dass beide Daten korrekt als Date-Objekte behandelt werden
-      const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
-      const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
-      // Sortiere absteigend (neueste zuerst)
-      return dateB.getTime() - dateA.getTime();
-    });
+  const allPosts = directApiPosts.length > 0 
+    ? directApiPosts // API-Posts zuerst verwenden, wenn verfügbar!
+    : Object.values(postStore.posts)
+        .filter(post => post !== null && post !== undefined)
+        .sort((a, b) => {
+          // Stelle sicher, dass beide Daten korrekt als Date-Objekte behandelt werden
+          const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
+          const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
+          // Sortiere absteigend (neueste zuerst)
+          return dateB.getTime() - dateA.getTime();
+        });
   
   // Debugging: Protokolliere die aktuelle Post-Sammlung mit IDs
   console.log("Aktuelle Posts in Home.tsx:", 
-    allPosts.map(p => ({id: p.id, content: p.content.substring(0, 15)})), 
-    "Anzahl:", allPosts.length);
+    allPosts.map((p: any) => ({id: p.id, content: p.content.substring(0, 15)})), 
+    "Anzahl:", allPosts.length,
+    "API-Posts:", directApiPosts.length);
   
   // Für ältere Browser fallback, wenn die Sortierung nicht funktioniert
   if (allPosts.length === 0) {
@@ -556,94 +589,75 @@ export default function Home() {
         </div>
         
         <div className="space-y-6">
-          {/* Zeige Posts direkt aus der API an, wenn vorhanden */}
-          {allPosts.length > 0 ? (
-            // Normale Anzeige, wenn Posts gefunden wurden
+          {/* WICHTIG: Zeigt immer Beiträge direkt aus der API an */}
+          {directApiPosts.length > 0 ? (
+            // Wenn die API Beiträge zurückgegeben hat, verwenden wir diese
             <div className="space-y-6">
-              {allPosts.map((post: any) => (
-                <div key={`post-${post.id}-${post.content.substring(0, 5)}-${forceRender}`} className="w-full max-w-xl mx-auto">
-                  <FeedPost post={post as any} />
+              {/* Banner für neue Beiträge, um auf die Aktualität hinzuweisen */}
+              <Alert className="bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800">
+                <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                <AlertTitle>Aktuelle Beiträge</AlertTitle>
+                <AlertDescription>
+                  Alle Beiträge werden direkt aus der Datenbank geladen. <br />
+                  <span className="text-xs text-muted-foreground">Zuletzt aktualisiert: {new Date().toLocaleTimeString()}</span>
+                </AlertDescription>
+              </Alert>
+              
+              {directApiPosts.map((post: any) => (
+                <div 
+                  key={`post-api-${post.id}-${forceRender}`} 
+                  className="w-full max-w-xl mx-auto transition-all duration-300 animate-in fade-in slide-in-from-bottom-5"
+                >
+                  <FeedPost post={post} />
                 </div>
               ))}
               
-              {/* Debug-Informationspanel */}
-              <div className="border border-slate-200 dark:border-slate-700 rounded-md p-3 mt-6 bg-slate-50 dark:bg-slate-900 text-xs">
-                <details>
-                  <summary className="font-medium cursor-pointer">Debug-Informationen</summary>
-                  <div className="mt-2 space-y-1 text-slate-600 dark:text-slate-400">
-                    <p>Zeitstempel: {new Date().toLocaleTimeString()}</p>
-                    <p>Anzahl Posts: {allPosts.length}</p>
-                    <p>Neueste Post-IDs: {allPosts.slice(0, 5).map(p => p.id).join(', ')}</p>
-                  </div>
-                  <Button
-                    className="w-full mt-2"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      console.log("Manuelles Neuladen der Posts gestartet...");
-                      
-                      // Verzögere die Aktualisierung leicht, um UI-Updates zu ermöglichen
-                      setTimeout(() => {
-                        postStore.loadStoredPosts().then(() => {
-                          console.log("Posts manuell neu geladen, Anzahl:", 
-                            Object.keys(postStore.posts).length);
-                          setForceRender(Date.now());
-                          toast({
-                            title: "Aktualisierung abgeschlossen",
-                            description: `${Object.keys(postStore.posts).length} Beiträge wurden geladen.`,
-                          });
-                        });
-                      }, 100);
-                    }}
-                  >
-                    <RefreshCw className="h-3 w-3 mr-1" />
-                    Beiträge neu laden
-                  </Button>
-                </details>
+              {/* Einfache Bedienelemente für Aktualisierung und Fehlerbehebung */}
+              <div className="flex justify-center my-4">
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    console.log("Manuelle Aktualisierung gestartet");
+                    setForceRender(Date.now()); // Löst useEffect aus für direktes Laden
+                    toast({
+                      title: "Aktualisierung",
+                      description: "Beiträge werden neu geladen...",
+                    });
+                  }}
+                  className="mx-2"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Beiträge aktualisieren
+                </Button>
               </div>
             </div>
           ) : (
-            // Versuch, direkt über die API zu laden oder Ladeindikator anzeigen
-            Object.keys(postStore.posts).length > 0 ? (
-              // Lade direkt über API, wenn Post im Store ist
-              Object.entries(postStore.posts).map(([id, post]: [string, any]) => (
-                <div key={`post-direct-${id}-${forceRender}`} className="w-full max-w-xl mx-auto">
-                  <FeedPost post={post as any} />
-                </div>
-              ))
-            ) : (
-              // Keine Posts gefunden, zeige Mitteilung an
-              <div className="text-center text-muted-foreground py-8">
-                <div className="mb-4">
-                  <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted" />
-                </div>
-                <p>Beiträge werden geladen...</p>
-                <p className="text-sm mt-2">
-                  Falls nach längerer Zeit keine Beiträge angezeigt werden, erstelle einen neuen Beitrag.
-                </p>
-                <div className="mt-4">
-                  <Button 
-                    variant="outline"
-                    onClick={() => {
-                      // Manuelle Aktualisierung der Posts
-                      // Wir verwenden die loadStoredPosts-Methode, die bereits existiert
-                      postStore.loadStoredPosts().then(() => {
-                        console.log("Posts manuell neu geladen");
-                      });
-                      setForceRender(Date.now());
-                      toast({
-                        title: "Aktualisierung",
-                        description: "Beiträge werden neu geladen...",
-                      });
-                    }}
-                    className="mx-auto"
-                  >
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Neu laden
-                  </Button>
-                </div>
+            // Lade-Anzeige, wenn keine Beiträge verfügbar sind
+            <div className="text-center text-muted-foreground py-8">
+              <div className="mb-4">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
               </div>
-            )
+              <p>Beiträge werden geladen...</p>
+              <p className="text-sm mt-2">
+                Wenn keine Beiträge erscheinen, versuche bitte die Aktualisierung.
+              </p>
+              <div className="mt-4">
+                <Button 
+                  variant="default"
+                  onClick={() => {
+                    setForceRender(Date.now());
+                    toast({
+                      title: "Aktualisierung",
+                      description: "Beiträge werden neu geladen...",
+                    });
+                  }}
+                  className="mx-auto"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Aktualisieren
+                </Button>
+              </div>
+            </div>
           )}
         </div>
       </section>
