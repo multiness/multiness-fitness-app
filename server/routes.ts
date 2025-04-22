@@ -1281,6 +1281,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Post einzeln abrufen
+  app.get("/api/posts/:id", async (req, res) => {
+    try {
+      const postId = Number(req.params.id);
+      const post = await storage.getPost(postId);
+      
+      if (!post) {
+        return res.status(404).json({ error: "Post nicht gefunden" });
+      }
+      
+      res.json(post);
+    } catch (error) {
+      console.error("Error fetching post:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Post aktualisieren (bearbeiten)
+  app.patch("/api/posts/:id", async (req, res) => {
+    try {
+      const postId = Number(req.params.id);
+      const { content } = req.body;
+      
+      if (!content) {
+        return res.status(400).json({ error: "Content ist erforderlich" });
+      }
+      
+      // Zuerst prüfen, ob der Post existiert
+      const existingPost = await storage.getPost(postId);
+      if (!existingPost) {
+        return res.status(404).json({ error: "Post nicht gefunden" });
+      }
+      
+      // Post mit neuem Inhalt aktualisieren
+      const updatedPost = await storage.updatePost(postId, { 
+        content, 
+        updatedAt: new Date() 
+      });
+      
+      res.json(updatedPost);
+    } catch (error) {
+      console.error("Error updating post:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Post löschen
+  app.delete("/api/posts/:id", async (req, res) => {
+    try {
+      const postId = Number(req.params.id);
+      
+      // Zuerst prüfen, ob der Post existiert
+      const existingPost = await storage.getPost(postId);
+      if (!existingPost) {
+        return res.status(404).json({ error: "Post nicht gefunden" });
+      }
+      
+      // Post löschen
+      await storage.deletePost(postId);
+      
+      res.json({ success: true, message: "Post erfolgreich gelöscht" });
+    } catch (error) {
+      console.error("Error deleting post:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Group Routes
   app.get("/api/groups", async (req, res) => {
     try {
