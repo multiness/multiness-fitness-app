@@ -681,16 +681,19 @@ export default function Home() {
             // Ergebnis darstellen
             return (
               <div>
-                {/* Status-Anzeiger */}
-                <Alert className="bg-green-50 border-green-200 mb-4 dark:bg-green-900/20 dark:border-green-800">
-                  <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
-                  <div>
-                    <div className="font-medium">Aktuelle Beiträge ({sortedPosts.length})</div>
-                    <AlertDescription>
-                      Letzte Aktualisierung: {new Date().toLocaleTimeString()}
-                    </AlertDescription>
-                  </div>
-                </Alert>
+                {/* Minimale Statusanzeige als einfacher Text */}
+                <div className="flex justify-between items-center mb-4 text-sm text-muted-foreground">
+                  <span>{sortedPosts.length} Beiträge</span>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setForceRender(Date.now())}
+                    className="flex items-center gap-1"
+                  >
+                    <RefreshCw className="h-3 w-3" />
+                    <span className="text-xs">Aktualisieren</span>
+                  </Button>
+                </div>
 
                 {/* Container mit höherem z-Index und Abstand */}
                 <div className="space-y-4 pb-16" style={{minHeight: "800px", position: "relative", zIndex: 10}}>

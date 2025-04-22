@@ -103,8 +103,12 @@ export default function Profile() {
   };
 
   return (
-    <div className="container max-w-4xl mx-auto p-4">
-      {/* Profile Header */}
+    <div className="container max-w-4xl mx-auto px-4 pb-20 mb-20" style={{
+      /* Verbesserte Touch-Handhabung für mobile Geräte */
+      overscrollBehavior: "touch",
+      WebkitOverflowScrolling: "touch"
+    }}>
+      {/* Profile Header - Leicht angepasst für verbesserte Performance */}
       <div className="relative mb-8">
         <div className="h-32 overflow-hidden rounded-t-lg">
           {user.bannerImage ? (
@@ -112,6 +116,7 @@ export default function Profile() {
               src={user.bannerImage}
               alt="Profile Banner"
               className="w-full h-full object-cover"
+              loading="eager"
             />
           ) : (
             <div className="h-full bg-gradient-to-r from-primary/20 to-primary/10" />
@@ -143,7 +148,7 @@ export default function Profile() {
             <p className="text-center mt-2 max-w-md text-muted-foreground">{user.bio}</p>
           )}
 
-          {/* Stats */}
+          {/* Stats - mit verbesserten Performance-Attributen */}
           <div className="flex gap-4 mt-4">
             <div className="text-center">
               <span className="text-lg font-semibold">{userPosts.length}</span>
@@ -234,10 +239,33 @@ export default function Profile() {
             </TabsTrigger>
           </TabsList>
 
-          {/* Groups Tab - verbesserte Scroll-Unterstützung */}
-          <TabsContent value="groups" className="space-y-4">
+          {/* Groups Tab - mit optimiertem Scrolling und Touch-Handhabung */}
+          <TabsContent 
+            value="groups" 
+            className="space-y-4"
+            style={{
+              touchAction: "pan-y", 
+              WebkitOverflowScrolling: "touch",
+              overscrollBehavior: "contain"
+            }}
+          >
+            {/* "Nach oben"-Button für einfache Navigation */}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="mb-4 text-xs w-full flex gap-1"
+              onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}
+            >
+              <ArrowRight className="h-3 w-3 rotate-270" />
+              Nach oben scrollen
+            </Button>
+            
             {userGroups.length > 0 ? (
-              <div className="grid gap-4 grid-cols-1">
+              <div className="grid gap-4 grid-cols-1 pb-20">
+                <div className="text-sm text-muted-foreground mb-2">
+                  {userGroups.length} Gruppen
+                </div>
+              
                 {userGroups.map(group => {
                   const isCreator = group.creatorId === userId;
                   const isAdmin = group.adminIds?.includes(userId);
@@ -247,6 +275,7 @@ export default function Profile() {
                       key={group.id}
                       className="cursor-pointer hover:shadow-lg transition-shadow"
                       onClick={() => navigateToGroupChat(group.id)}
+                      style={{touchAction: "pan-y"}} // Verbesserte Berührungssteuerung
                     >
                       <CardContent className="p-4">
                         <div className="flex items-center gap-4">
@@ -315,46 +344,134 @@ export default function Profile() {
                     </Card>
                   );
                 })}
+                
+                {/* Verbesserte Scroll-Hilfe am Ende */}
+                <div className="h-20 flex flex-col items-center justify-center text-muted-foreground text-xs pt-8">
+                  <div className="mb-2">Ende der Gruppen</div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-xs" 
+                    onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}
+                  >
+                    Nach oben
+                  </Button>
+                </div>
               </div>
             ) : (
-              <p className="text-center text-muted-foreground">Keine Gruppen gefunden</p>
+              <div className="text-center text-muted-foreground py-8">
+                Keine Gruppen gefunden
+              </div>
             )}
           </TabsContent>
 
-          {/* Posts TabContent - Verbesserte Anzeige mit explizitem Container */}
-          <TabsContent value="posts" className="pb-8 mb-20">
+          {/* Posts TabContent - Komplett überarbeiteter Container mit besserem Touch-Handling */}
+          <TabsContent 
+            value="posts" 
+            className="pb-8 mb-20"
+            style={{
+              touchAction: "pan-y", // Verbesserte Touch-Unterstützung
+              WebkitOverflowScrolling: "touch", // Verbesserte iOS-Scrolling-Unterstützung
+              overscrollBehavior: "contain" // Verhindert Pull-to-Refresh auf mobilen Geräten
+            }}
+          >
             <div className="space-y-5 pb-20 mb-20">
+              {/* "Nach oben"-Button für einfache Navigation */}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="mb-4 text-xs w-full flex gap-1"
+                onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}
+              >
+                <ArrowRight className="h-3 w-3 rotate-270" />
+                Nach oben scrollen
+              </Button>
+              
               {userPosts.length > 0 ? (
-                userPosts.map((post) => (
-                  <div key={`profile-post-${post.id}`} className="mb-6">
-                    <FeedPost post={post} />
+                <>
+                  <div className="text-sm text-muted-foreground mb-2">
+                    {userPosts.length} Beiträge
                   </div>
-                ))
+                  
+                  {userPosts.map((post) => (
+                    <div 
+                      key={`profile-post-${post.id}`} 
+                      className="mb-6 rounded-lg overflow-hidden"
+                      style={{touchAction: "pan-y"}} // Verbesserte Berührungssteuerung
+                    >
+                      <FeedPost post={post} />
+                    </div>
+                  ))}
+                </>
               ) : (
                 <div className="text-center text-muted-foreground py-8">
                   Keine Beiträge gefunden
                 </div>
               )}
               
-              {/* Sicherstellen, dass genug Platz zum Scrollen da ist */}
-              <div className="h-20"></div>
+              {/* Zusätzlicher Platz und Scroll-Hilfe am Ende */}
+              <div className="h-40 flex flex-col items-center justify-center text-muted-foreground text-xs pt-8">
+                <div className="mb-2">Ende der Beiträge</div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-xs" 
+                  onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}
+                >
+                  Nach oben
+                </Button>
+              </div>
             </div>
           </TabsContent>
 
-          {/* Challenges TabContent - Mit verbesserten Scrolling-Eigenschaften */}
-          <TabsContent value="challenges" className="space-y-4 pb-20">
+          {/* Challenges TabContent - Mit verbessertem Touch-Handling */}
+          <TabsContent 
+            value="challenges" 
+            className="space-y-4 pb-20"
+            style={{
+              touchAction: "pan-y", 
+              WebkitOverflowScrolling: "touch",
+              overscrollBehavior: "contain"
+            }}
+          >
+            {/* "Nach oben"-Button für einfache Navigation */}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="mb-4 text-xs w-full flex gap-1"
+              onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}
+            >
+              <ArrowRight className="h-3 w-3 rotate-270" />
+              Nach oben scrollen
+            </Button>
+            
             {activeUserChallenges.length > 0 ? (
               <div className="grid gap-4 pb-20">
+                <div className="text-sm text-muted-foreground mb-2">
+                  {activeUserChallenges.length} aktive Challenges
+                </div>
+                
                 {activeUserChallenges.map((challenge) => (
-                  <ChallengeCard
-                    key={challenge.id}
-                    challenge={challenge}
-                    variant="full"
-                  />
+                  <div key={challenge.id} style={{touchAction: "pan-y"}}>
+                    <ChallengeCard
+                      challenge={challenge}
+                      variant="full"
+                    />
+                  </div>
                 ))}
                 
-                {/* Extra Platz am Ende für besseres Scrollen */}
-                <div className="h-20"></div>
+                {/* Verbesserte Scroll-Hilfe am Ende */}
+                <div className="h-40 flex flex-col items-center justify-center text-muted-foreground text-xs pt-8">
+                  <div className="mb-2">Ende der Challenges</div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-xs" 
+                    onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}
+                  >
+                    Nach oben
+                  </Button>
+                </div>
               </div>
             ) : (
               <div className="text-center text-muted-foreground py-8">
