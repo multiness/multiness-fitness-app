@@ -327,34 +327,39 @@ export default function Chat() {
                         // Debug-Ausgabe für Gruppennavigation
                         console.log("Navigiere zu Gruppenchat:", chat.id);
                         
-                        // Extrahiere die Gruppen-ID aus dem Chat-ID
-                        // Verbesserte Gruppennavigation - unterstützt verschiedene ID-Formate
-                        let groupId;
+                        // Direkte Methode: Verwende die groupId aus dem chat-Objekt
+                        const groupId = 'groupId' in chat ? chat.groupId : null;
                         
-                        // Standardformat 'group-123'
-                        const standardMatch = chat.id.match(/group-(\d+)/);
-                        if (standardMatch && standardMatch[1]) {
-                          groupId = standardMatch[1];
-                        } 
-                        // Fallback für das UUID-Format
-                        else if ('groupId' in chat) {
-                          groupId = chat.groupId;
+                        // Alternativ: Extrahiere die Gruppen-ID aus dem Chat-ID, als Fallback
+                        let extractedGroupId = null;
+                        if (!groupId) {
+                          // Standardformat 'group-123'
+                          const standardMatch = chat.id.match(/group-(\d+)/);
+                          if (standardMatch && standardMatch[1]) {
+                            extractedGroupId = parseInt(standardMatch[1]);
+                          }
                         }
                         
-                        if (groupId) {
-                          console.log("Extrahierte Gruppen-ID:", groupId);
+                        // Verwende entweder die direkte ID oder die extrahierte
+                        const finalGroupId = groupId || extractedGroupId;
+                        
+                        if (finalGroupId) {
+                          console.log("Gruppen-ID für Chat-Navigation:", finalGroupId);
                           
                           // Verwende ein korrektes Chat-ID-Format
-                          const chatId = getChatIdSync(parseInt(String(groupId)), 'group');
+                          const chatId = getChatIdSync(finalGroupId, 'group');
                           console.log("Chat-ID für Navigation:", chatId);
                           
                           // Initialisiere den Chat zuerst
-                          chatStore.initializeGroupChat(parseInt(String(groupId)));
+                          chatStore.initializeGroupChat(finalGroupId);
                           
-                          // Setze den Chat sofort
+                          // Setze den Chat sofort für bessere Benutzererfahrung
                           setSelectedChat(chat);
                           
-                          // Navigiere dann zur Gruppe mit der korrekten Chat-ID
+                          // Markiere den Chat als gelesen
+                          chatStore.markChatAsRead(chatId);
+                          
+                          // Navigiere zur Gruppe mit der korrekten Chat-ID
                           setLocation(`/chat/${chatId}`);
                         } else {
                           console.error("Konnte keine gültige Gruppen-ID extrahieren:", chat);
@@ -364,6 +369,11 @@ export default function Chat() {
                       } else {
                         // Direkte Benutzer-Chats
                         setSelectedChat(chat);
+                        
+                        // Markiere den Chat als gelesen
+                        if (chat && chat.id) {
+                          chatStore.markChatAsRead(chat.id);
+                        }
                       }
                     }}
                   >

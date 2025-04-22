@@ -157,12 +157,18 @@ const GroupCarousel = ({ groups }: GroupCarouselProps) => {
                   key={`group-card-${group.id}`}
                   className="flex-1 overflow-hidden cursor-pointer bg-card hover:bg-accent/5 transition-colors min-w-[150px] transform-gpu shadow-sm" // Hinzugefügter Schatten
                   onClick={() => {
-                    // Vereinfachte Navigation zu Gruppenchats
+                    // Verbesserte Navigation zu Gruppenchats
                     console.log(`Navigiere zu Chat für Gruppe ${group.id}`);
                     
-                    // Zur Chat-Seite navigieren mit 'group-' Präfix + ID
-                    // Diese einfache Navigationsform ist robuster
-                    setLocation(`/chat/group-${group.id}`);
+                    if (isJoined) {
+                      // Wenn Benutzer bereits Mitglied ist, direkt zum Chat navigieren
+                      const chatId = getChatIdSync(group.id, 'group');
+                      console.log(`Chat-ID für Gruppe ${group.id} ist ${chatId}`);
+                      setLocation(`/chat/${chatId}`);
+                    } else {
+                      // Wenn Benutzer kein Mitglied ist, zur Gruppendetailseite navigieren
+                      setLocation(`/groups/${group.id}`);
+                    }
                   }}
                   style={{ 
                     scrollMarginBottom: isMobile ? '6rem' : '4rem', // Erhöhte Scroll-Margin für mobile Geräte
