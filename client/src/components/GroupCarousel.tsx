@@ -212,9 +212,10 @@ const GroupCarousel: React.FC<GroupCarouselProps> = ({ groups }) => {
               }
 
               // Bestimme spezifische Eigenschaften für mobile und Desktop-Ansicht
+              // Gemeinsame Stile für beide Ansichten anwenden
               const cardClasses = isMobile 
                 ? "flex-1 overflow-hidden cursor-pointer bg-card hover:bg-accent/5 transition-colors min-w-[150px] max-w-[350px] transform-gpu shadow-md border-0 rounded-lg" // Mobile-optimiert - keine Ränder, abgerundete Ecken, stärkerer Schatten
-                : "flex-1 overflow-hidden cursor-pointer bg-card hover:bg-accent/5 transition-colors min-w-[280px] max-w-[350px] transform-gpu shadow-sm"; // Desktop bleibt unverändert
+                : "flex-1 overflow-hidden cursor-pointer bg-card hover:bg-accent/5 transition-colors min-w-[280px] max-w-[350px] transform-gpu shadow-sm"; // Desktop hat einen dezenten Schatten
 
               return (
                 <Card 

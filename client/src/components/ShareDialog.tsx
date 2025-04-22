@@ -16,18 +16,35 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { useChatStore } from "../lib/chatService";
 
+// Grundlegende Schnittstellendefinitionen für User und Group
+interface IUser {
+  id: number;
+  username: string;
+  name: string;
+}
+
+interface IGroup {
+  id: number;
+  name: string;
+  description: string;
+  image?: string;
+  participantIds?: number[];
+}
+
+interface SharedContent {
+  id: number;
+  type: 'challenge' | 'event' | 'post' | 'group';
+  title: string;
+  preview?: string;
+}
+
 interface ShareDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   type: 'chat' | 'group';
   title: string;
   onShare: (id: number) => void;
-  content?: {
-    id: number;
-    type: 'challenge' | 'event' | 'post' | 'group';
-    title: string;
-    preview?: string;
-  };
+  content?: SharedContent;
 }
 
 export default function ShareDialog({
@@ -47,19 +64,19 @@ export default function ShareDialog({
   const [, setLocation] = useLocation();
 
   // Filtere die Benutzer/Gruppen basierend auf der Suche
-  const items = type === 'chat'
+  const items: (IUser | IGroup)[] = type === 'chat'
     ? users.filter(user =>
         user.id !== currentUser?.id && (
           user.username.toLowerCase().includes(search.toLowerCase()) ||
           user.name.toLowerCase().includes(search.toLowerCase())
         )
-      )
+      ) as IUser[]
     : Object.values(groupStore.groups).filter(group =>
         group.participantIds?.includes(currentUser?.id || 0) && (
           group.name.toLowerCase().includes(search.toLowerCase()) ||
           group.description.toLowerCase().includes(search.toLowerCase())
         )
-      );
+      ) as IGroup[];
 
   const handleShare = () => {
     if (selectedId && currentUser && content) {
@@ -67,7 +84,14 @@ export default function ShareDialog({
       const chatId = type === 'group' ? `group-${selectedId}` : `chat-${selectedId}`;
 
       // Inhalt im Chat speichern
-      chatStore.shareContent(chatId, currentUser.id, content);
+      // Hier behandeln wir den Fall für 'group' in der content.type explizit,
+      // da dies in der Schnittstelle der chatService.shareContent nicht direkt unterstützt wird
+      const compatibleContent = {
+        ...content,
+        type: content.type === 'group' ? 'challenge' as const : content.type
+      };
+      
+      chatStore.shareContent(chatId, currentUser.id, compatibleContent);
 
       // Toast anzeigen
       toast({
@@ -115,10 +139,10 @@ export default function ShareDialog({
                   onClick={() => setSelectedId(item.id)}
                 >
                   {isGroup ? (
-                    item.image ? (
+                    (item as IGroup).image ? (
                       <img 
-                        src={item.image} 
-                        alt={item.name}
+                        src={(item as IGroup).image} 
+                        alt={(item as IGroup).name}
                         className="w-8 h-8 rounded-full object-cover"
                       />
                     ) : (
@@ -134,10 +158,10 @@ export default function ShareDialog({
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">
-                      {isGroup ? item.name : item.username}
+                      {isGroup ? (item as IGroup).name : (item as IUser).username}
                     </p>
                     <p className="text-xs text-muted-foreground truncate">
-                      {isGroup ? item.description : item.name}
+                      {isGroup ? (item as IGroup).description : (item as IUser).name}
                     </p>
                   </div>
                 </div>
