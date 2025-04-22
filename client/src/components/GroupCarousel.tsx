@@ -21,7 +21,7 @@ interface GroupCarouselProps {
   groups: Group[];
 }
 
-const GroupCarousel = ({ groups }: GroupCarouselProps) => {
+const GroupCarousel: React.FC<GroupCarouselProps> = ({ groups }) => {
   const groupStore = useGroupStore();
   const { toast } = useToast();
   const [, setLocation] = useLocation();

@@ -24,7 +24,7 @@ interface ShareDialogProps {
   onShare: (id: number) => void;
   content?: {
     id: number;
-    type: 'challenge' | 'event' | 'post';
+    type: 'challenge' | 'event' | 'post' | 'group';
     title: string;
     preview?: string;
   };
