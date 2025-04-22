@@ -216,31 +216,31 @@ export default function Profile() {
         </div>
       )}
 
-      <ScrollArea className="max-h-[90vh]">
-        <Tabs value={selectedTab} onValueChange={setSelectedTab} className="mt-6">
-          <TabsList className="grid w-full grid-cols-3 mb-4">
+      {/* Tabs ohne ScrollArea - verbesserte Scroll-Funktionalität */}
+      <div className="mt-6 pb-16">
+        <Tabs value={selectedTab} onValueChange={setSelectedTab} className="mb-6">
+          <TabsList className="grid w-full grid-cols-3 mb-4 sticky top-0 z-10">
             <TabsTrigger value="posts" className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4" />
-              Beiträge
+              Beiträge ({userPosts.length})
             </TabsTrigger>
             <TabsTrigger value="challenges" className="flex items-center gap-2">
               <Trophy className="h-4 w-4" />
-              Challenges
+              Challenges ({activeUserChallenges.length})
             </TabsTrigger>
             <TabsTrigger value="groups" className="flex items-center gap-2">
               <Users2 className="h-4 w-4" />
-              Gruppen
+              Gruppen ({userGroups.length})
             </TabsTrigger>
           </TabsList>
 
-          {/* Groups Tab */}
+          {/* Groups Tab - verbesserte Scroll-Unterstützung */}
           <TabsContent value="groups" className="space-y-4">
             {userGroups.length > 0 ? (
               <div className="grid gap-4 grid-cols-1">
                 {userGroups.map(group => {
                   const isCreator = group.creatorId === userId;
                   const isAdmin = group.adminIds?.includes(userId);
-                  console.log(`Group ${group.name} - Creator: ${isCreator}, Admin: ${isAdmin}`);
 
                   return (
                     <Card
@@ -320,16 +320,31 @@ export default function Profile() {
               <p className="text-center text-muted-foreground">Keine Gruppen gefunden</p>
             )}
           </TabsContent>
-          <TabsContent value="posts">
-            {/* Posts TabContent */}
-            {userPosts.map((post) => (
-              <FeedPost key={post.id} post={post} />
-            ))}
+
+          {/* Posts TabContent - Verbesserte Anzeige mit explizitem Container */}
+          <TabsContent value="posts" className="pb-8 mb-20">
+            <div className="space-y-5 pb-20 mb-20">
+              {userPosts.length > 0 ? (
+                userPosts.map((post) => (
+                  <div key={`profile-post-${post.id}`} className="mb-6">
+                    <FeedPost post={post} />
+                  </div>
+                ))
+              ) : (
+                <div className="text-center text-muted-foreground py-8">
+                  Keine Beiträge gefunden
+                </div>
+              )}
+              
+              {/* Sicherstellen, dass genug Platz zum Scrollen da ist */}
+              <div className="h-20"></div>
+            </div>
           </TabsContent>
-          {/* Challenges TabContent */}
-          <TabsContent value="challenges" className="space-y-4">
+
+          {/* Challenges TabContent - Mit verbesserten Scrolling-Eigenschaften */}
+          <TabsContent value="challenges" className="space-y-4 pb-20">
             {activeUserChallenges.length > 0 ? (
-              <div className="grid gap-4">
+              <div className="grid gap-4 pb-20">
                 {activeUserChallenges.map((challenge) => (
                   <ChallengeCard
                     key={challenge.id}
@@ -337,6 +352,9 @@ export default function Profile() {
                     variant="full"
                   />
                 ))}
+                
+                {/* Extra Platz am Ende für besseres Scrollen */}
+                <div className="h-20"></div>
               </div>
             ) : (
               <div className="text-center text-muted-foreground py-8">
@@ -345,7 +363,7 @@ export default function Profile() {
             )}
           </TabsContent>
         </Tabs>
-      </ScrollArea>
+      </div>
       <EditProfileDialog
         open={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
