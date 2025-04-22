@@ -211,10 +211,13 @@ export default function Home() {
       minute: '2-digit'
     }) : 'Noch nie';
 
-  // Lade Posts aus dem postStore
-  const allPosts = Object.values(postStore.posts).sort((a, b) =>
+  // Lade Posts aus dem postStore mit verbesserter Filterung und Sortierung
+  const allPosts = Object.values(postStore.posts).filter(post => post !== null && post !== undefined).sort((a, b) =>
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
+  
+  // Debugging: Protokolliere die aktuelle Post-Sammlung
+  console.log("Aktuelle Posts in Home.tsx:", allPosts);
 
   const navigateToGroupChat = (groupId: number) => {
     // Verwende die SYNCHRONE Funktion statt der asynchronen
