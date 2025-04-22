@@ -1548,6 +1548,33 @@ export default function Admin() {
     refreshUsers();
   }, []);
   
+  // Event-Listener für gelöschte Posts und erzwungene Synchronisierung
+  useEffect(() => {
+    let isMounted = true;
+    
+    // Handler für erzwungene Synchronisierung aller gelöschten Posts
+    const handleForcedSync = (event: CustomEvent) => {
+      console.log("Admin: Erzwungene Synchronisierung der gelöschten Posts", event.detail);
+      
+      if (isMounted) {
+        // Stelle sicher, dass vollständige Neusynchronisierung durchgeführt wird
+        console.log("Admin-Ansicht: Starte vollständige Neusynchronisierung aufgrund von force-deleted-posts-sync");
+        postStore.loadStoredPosts().catch(e => {
+          console.warn("Admin-Ansicht: Fehler bei der erzwungenen Synchronisierung:", e);
+        });
+      }
+    };
+    
+    // Event-Listener für erzwungene Synchronisierung registrieren
+    window.addEventListener('force-deleted-posts-sync', handleForcedSync as EventListener);
+    
+    // Bereinige beim Unmount
+    return () => {
+      isMounted = false;
+      window.removeEventListener('force-deleted-posts-sync', handleForcedSync as EventListener);
+    };
+  }, []);
+  
   // Synchronisieren der Challenges mit der Datenbank
   const syncWithServer = async () => {
     setSyncing(true);
