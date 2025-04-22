@@ -211,13 +211,53 @@ export default function Home() {
       minute: '2-digit'
     }) : 'Noch nie';
 
+  // Zusätzlicher Status für erzwungene Neurendering
+  const [forceRender, setForceRender] = useState<number>(Date.now());
+
+  // Lade alle Posts und erzwinge neue Ansicht, wenn sich forceRender ändert
+  useEffect(() => {
+    console.log("Home: Erzwungene Neuladung der Posts durch State-Änderung");
+    postStore.loadStoredPosts().then(() => {
+      console.log("Home: Posts neu geladen, Status aktualisiert");
+    });
+  }, [forceRender]);
+
+  // Behandle POST-Event von der FeedPost-Komponente
+  useEffect(() => {
+    const handlePostEvent = (event: CustomEvent) => {
+      console.log("Home: Post-Event empfangen", event.detail);
+      setForceRender(Date.now());
+    };
+    
+    window.addEventListener('post-created', handlePostEvent as EventListener);
+    window.addEventListener('post-updated', handlePostEvent as EventListener);
+    window.addEventListener('post-deleted', handlePostEvent as EventListener);
+    
+    return () => {
+      window.removeEventListener('post-created', handlePostEvent as EventListener);
+      window.removeEventListener('post-updated', handlePostEvent as EventListener);
+      window.removeEventListener('post-deleted', handlePostEvent as EventListener);
+    };
+  }, []);
+  
   // Lade Posts aus dem postStore mit verbesserter Filterung und Sortierung
   const allPosts = Object.values(postStore.posts).filter(post => post !== null && post !== undefined).sort((a, b) =>
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
   
   // Debugging: Protokolliere die aktuelle Post-Sammlung
-  console.log("Aktuelle Posts in Home.tsx:", allPosts);
+  console.log("Aktuelle Posts in Home.tsx:", allPosts, "Anzahl:", allPosts.length);
+  
+  // Für ältere Browser fallback, wenn die Sortierung nicht funktioniert
+  if (allPosts.length === 0) {
+    console.warn("Keine Posts gefunden! API gibt aber", Object.keys(postStore.posts).length, "Posts zurück");
+    
+    // Erneut versuchen, Posts direkt von der API zu laden und als Array zu konvertieren
+    console.log("Versuche direkte Konvertierung von API-Daten...");
+    
+    // Trigger für Neuladen nach einer kurzen Verzögerung
+    setTimeout(() => setForceRender(Date.now()), 500);
+  }
 
   const navigateToGroupChat = (groupId: number) => {
     // Verwende die SYNCHRONE Funktion statt der asynchronen
@@ -462,16 +502,47 @@ export default function Home() {
             Beitrag erstellen <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
+        
         <div className="space-y-6">
-          {allPosts.map((post: any) => (
-            <div key={post.id} className="w-full max-w-xl mx-auto">
-              <FeedPost post={post as any} />
-            </div>
-          ))}
-          {allPosts.length === 0 && (
-            <div className="text-center text-muted-foreground py-8">
-              Noch keine Beiträge vorhanden
-            </div>
+          {/* Zeige Posts direkt aus der API an, wenn vorhanden */}
+          {allPosts.length > 0 ? (
+            // Normale Anzeige, wenn Posts gefunden wurden
+            allPosts.map((post: any) => (
+              <div key={`post-${post.id}-${forceRender}`} className="w-full max-w-xl mx-auto">
+                <FeedPost post={post as any} />
+              </div>
+            ))
+          ) : (
+            // Versuch, direkt über die API zu laden oder Ladeindikator anzeigen
+            Object.keys(postStore.posts).length > 0 ? (
+              // Lade direkt über API, wenn Post im Store ist
+              Object.entries(postStore.posts).map(([id, post]: [string, any]) => (
+                <div key={`post-direct-${id}-${forceRender}`} className="w-full max-w-xl mx-auto">
+                  <FeedPost post={post as any} />
+                </div>
+              ))
+            ) : (
+              // Keine Posts gefunden, zeige Mitteilung an
+              <div className="text-center text-muted-foreground py-8">
+                <div className="mb-4">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted" />
+                </div>
+                <p>Beiträge werden geladen...</p>
+                <p className="text-sm mt-2">
+                  Falls nach längerer Zeit keine Beiträge angezeigt werden, erstelle einen neuen Beitrag.
+                </p>
+                <div className="mt-4">
+                  <Button 
+                    variant="outline"
+                    onClick={() => setForceRender(Date.now())}
+                    className="mx-auto"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Neu laden
+                  </Button>
+                </div>
+              </div>
+            )
           )}
         </div>
       </section>

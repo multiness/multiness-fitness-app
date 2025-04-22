@@ -1071,6 +1071,53 @@ export const usePostStore = create<PostStore>()(
             }
           }
         };
+      },
+
+      // Neue Funktion zum erzwungenen Neuladen der Posts
+      forceRefreshPosts: () => {
+        console.log("Erzwinge manuelles Neuladen aller Posts...");
+        // Wir führen eine direkte API-Anfrage durch und aktualisieren den gesamten State
+        setTimeout(async () => {
+          try {
+            const response = await fetch('/api/posts');
+            if (!response.ok) {
+              throw new Error(`Server responded with ${response.status}`);
+            }
+            
+            const posts = await response.json();
+            console.log(`Manuelles Neuladen: ${posts.length} Posts vom Server geladen`);
+            
+            const formattedPosts: Record<number, Post> = {};
+            posts.forEach((post: any) => {
+              formattedPosts[post.id] = {
+                id: post.id,
+                userId: post.userId,
+                content: post.content,
+                image: post.image,
+                createdAt: new Date(post.createdAt),
+                updatedAt: post.updatedAt ? new Date(post.updatedAt) : undefined,
+                dailyGoal: null
+              };
+            });
+            
+            // Komplett neuer State ohne Merge mit existierenden Daten
+            set({ 
+              posts: formattedPosts,
+              isLoading: false
+            });
+            
+            // Benachrichtigung über die Änderung auslösen
+            window.dispatchEvent(new CustomEvent('force-posts-update', {
+              detail: {
+                timestamp: Date.now(),
+                count: posts.length
+              }
+            }));
+            
+          } catch (error) {
+            console.error("Fehler beim manuellen Neuladen der Posts:", error);
+          }
+        }, 100);
       }
     }
   )
