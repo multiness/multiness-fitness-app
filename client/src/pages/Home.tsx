@@ -127,6 +127,21 @@ export default function Home() {
       }
     };
     
+    // Handler für gelöschte Posts
+    const handlePostDeleted = (event: CustomEvent) => {
+      console.log("Home: Erkenne gelöschten Post", event.detail);
+      
+      // Stelle sicher, dass wir die Posts aktualisieren
+      if (isMounted && !isLoading) {
+        postStore.loadStoredPosts().catch(e => {
+          console.warn("Fehler beim Aktualisieren nach Post-Löschung:", e);
+        });
+      }
+    };
+    
+    // Event-Listener hinzufügen
+    window.addEventListener('post-deleted', handlePostDeleted as EventListener);
+    
     // Initialer Ladevorgang
     loadAllData();
     
@@ -144,6 +159,7 @@ export default function Home() {
     return () => {
       isMounted = false;
       clearInterval(intervalId);
+      window.removeEventListener('post-deleted', handlePostDeleted as EventListener);
     };
   }, []);
   
