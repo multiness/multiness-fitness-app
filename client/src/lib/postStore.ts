@@ -110,12 +110,26 @@ export const usePostStore = create<PostStore>()(
             throw new Error('Ungültiges Datenformat vom Server');
           }
           
+          // Lade Liste der gelöschten Posts
+          const DELETED_POSTS_KEY = 'fitness-app-deleted-posts';
+          let deletedPostsIds: number[] = [];
+          try {
+            const deletedPostsStr = localStorage.getItem(DELETED_POSTS_KEY);
+            if (deletedPostsStr) {
+              deletedPostsIds = JSON.parse(deletedPostsStr);
+              console.log("Geladene gelöschte Post-IDs:", deletedPostsIds);
+            }
+          } catch (error) {
+            console.error("Fehler beim Laden der gelöschten Posts:", error);
+          }
+          
           // Konvertiere das Array in ein Record-Objekt und bearbeite Daten
           const postsRecord: Record<number, Post> = {};
           
           posts.forEach((post: any) => {
-            // Wenn das Post-Objekt gültig ist
-            if (post && typeof post === 'object' && 'id' in post) {
+            // Wenn das Post-Objekt gültig ist und nicht in der Liste der gelöschten Posts
+            if (post && typeof post === 'object' && 'id' in post && 
+                !deletedPostsIds.includes(Number(post.id))) {
               postsRecord[post.id] = {
                 id: post.id,
                 userId: post.userId,
@@ -135,7 +149,9 @@ export const usePostStore = create<PostStore>()(
                   customName: post.dailyGoal?.customName || null
                 } : null
               };
-            } else {
+            } else if (deletedPostsIds.includes(Number(post.id))) {
+              console.log(`Post ID ${post.id} übersprungen, da als gelöscht markiert`);
+            } else if (!post || typeof post !== 'object' || !('id' in post)) {
               console.warn("Ungültiges Post-Objekt in API-Antwort:", post);
             }
           });
@@ -146,9 +162,18 @@ export const usePostStore = create<PostStore>()(
           // Merge mit bestehenden Posts, damit lokale Daten nicht verloren gehen
           const existingPosts = get().posts;
           
+          // Entferne alle gelöschten Posts aus den existierenden Posts
+          const filteredExistingPosts: Record<number, Post> = {};
+          Object.entries(existingPosts).forEach(([key, value]) => {
+            const postId = Number(key);
+            if (!deletedPostsIds.includes(postId)) {
+              filteredExistingPosts[postId] = value;
+            }
+          });
+          
           // Kombiniere existierende und neue Posts
           const mergedPosts = {
-            ...existingPosts,
+            ...filteredExistingPosts,
             ...postsRecord
           };
           
@@ -159,6 +184,24 @@ export const usePostStore = create<PostStore>()(
           
           // Speichere im localStorage für Notfall-Fallback
           localStorage.setItem(LOCAL_STORAGE_POSTS_KEY, JSON.stringify(mergedPosts));
+          
+          // Füge einen Event-Listener für post-deleted hinzu
+          const handlePostDeleted = (event: CustomEvent) => {
+            const { postId } = event.detail;
+            console.log(`Event post-deleted empfangen für Post ID ${postId}`);
+            
+            // Entferne den gelöschten Post aus dem State
+            set((state) => {
+              const { [postId]: _, ...remainingPosts } = state.posts;
+              return { posts: remainingPosts };
+            });
+          };
+          
+          // Entferne den alten Listener, um Duplikate zu vermeiden
+          window.removeEventListener('post-deleted', handlePostDeleted as EventListener);
+          // Füge den neuen Listener hinzu
+          window.addEventListener('post-deleted', handlePostDeleted as EventListener);
+          
         } catch (e) {
           console.error('Fehler beim Laden der Posts von API:', e);
           set({ isLoading: false });
@@ -661,6 +704,20 @@ export const usePostStore = create<PostStore>()(
           
           console.log("Post erfolgreich vom Server gelöscht");
           
+          // Speichere eine Liste der gelöschten Posts im localStorage für die Synchronisierung
+          const DELETED_POSTS_KEY = 'fitness-app-deleted-posts';
+          let deletedPostsIds = JSON.parse(localStorage.getItem(DELETED_POSTS_KEY) || '[]');
+          
+          // Stelle sicher, dass die postId als Zahl gespeichert wird
+          const postIdNum = Number(postId);
+          
+          // Füge die ID zur Liste der gelöschten Posts hinzu, wenn sie noch nicht vorhanden ist
+          if (!deletedPostsIds.includes(postIdNum)) {
+            deletedPostsIds.push(postIdNum);
+            localStorage.setItem(DELETED_POSTS_KEY, JSON.stringify(deletedPostsIds));
+            console.log(`Post ID ${postIdNum} zur Liste der gelöschten Posts hinzugefügt`);
+          }
+          
           // Lokalen State aktualisieren
           const { [postId]: deletedPost, ...remainingPosts } = get().posts;
           const { [postId]: deletedLikes, ...remainingLikes } = get().likes;
@@ -675,8 +732,15 @@ export const usePostStore = create<PostStore>()(
           set(updatedState);
           localStorage.setItem(LOCAL_STORAGE_POSTS_KEY, JSON.stringify(remainingPosts));
           
-          // Lade die aktuellen Posts neu, um überall synchronisiert zu sein
-          await get().loadStoredPosts();
+          // Broadcast ein benutzerdefiniertes Event, damit andere Tabs/Fenster die Änderung mitbekommen
+          const deleteEvent = new CustomEvent('post-deleted', { detail: { postId: postIdNum } });
+          window.dispatchEvent(deleteEvent);
+          
+          // Wir erzwingen eine komplette Aktualisierung des Zustand
+          setTimeout(async () => {
+            console.log("Erzwinge Post-Aktualisierung nach dem Löschen...");
+            await get().loadStoredPosts();
+          }, 100);
         } catch (error) {
           console.error('Fehler beim Löschen des Posts:', error);
           

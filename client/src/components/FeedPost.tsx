@@ -239,12 +239,28 @@ export default function FeedPost({ post }: FeedPostProps) {
 
   const handleDelete = async () => {
     try {
+      console.log("Starte Löschvorgang für Post ID:", post.id);
       await postStore.deletePost(post.id);
       setIsDeleteDialogOpen(false);
       toast({
         title: "Post gelöscht",
         description: "Dein Post wurde erfolgreich gelöscht.",
       });
+      
+      // Eine kurze Verzögerung, damit der State aktualisiert werden kann
+      setTimeout(() => {
+        console.log("Post wurde gelöscht, aktualisiere die Ansicht...");
+        // Trigger ein Event, das den gelöschten Post auch in anderen Bereichen entfernt
+        const deleteEvent = new CustomEvent('post-deleted', { 
+          detail: { postId: post.id } 
+        });
+        window.dispatchEvent(deleteEvent);
+        
+        // Optional: Seite neu laden, um sicherzustellen, dass die UI aktualisiert wird
+        // Dies kann in der Produktion entfernt werden, wenn die Synchronisierung stabil ist
+        // window.location.reload();
+      }, 300);
+      
     } catch (error) {
       console.error("Fehler beim Löschen des Posts:", error);
       toast({
