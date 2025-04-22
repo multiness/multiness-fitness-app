@@ -236,11 +236,27 @@ const initializeStore = persist<GroupStore>(
         }
       },
       
-      removeGroup: (groupId) => {
-        set(state => {
-          const { [groupId]: removed, ...rest } = state.groups;
-          return { groups: rest };
-        });
+      removeGroup: async (groupId) => {
+        try {
+          // Optimistic UI update - entfernt die Gruppe sofort aus dem UI
+          set(state => {
+            const { [groupId]: removed, ...rest } = state.groups;
+            return { groups: rest };
+          });
+          
+          // API-Aufruf zum serverseitigen Löschen
+          await apiRequest('DELETE', `/api/groups/${groupId}`);
+          
+          console.log(`Gruppe ${groupId} erfolgreich gelöscht`);
+          return true;
+        } catch (error) {
+          console.error(`Fehler beim Löschen der Gruppe ${groupId}:`, error);
+          
+          // Bei Fehler: Server-Status neu abrufen
+          await get().syncWithServer(true);
+          
+          return false;
+        }
       },
       
       joinGroup: (groupId, userId = 1) => {
