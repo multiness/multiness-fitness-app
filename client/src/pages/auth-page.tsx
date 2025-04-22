@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -13,9 +13,8 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
-import { useMutation } from "@tanstack/react-query";
 
 // Interfaces angepasst für AWS Cognito-Kompatibilität
 interface LoginFormData {
@@ -58,68 +57,41 @@ export const AuthComponent = ({
     nickname: "",
   });
   const { toast } = useToast();
-
-  const loginMutation = useMutation({
-    mutationFn: async (credentials: LoginFormData) => {
-      const res = await apiRequest("POST", "/api/login", credentials);
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(errorText || "Anmeldung fehlgeschlagen");
-      }
-      return await res.json();
-    },
-    onSuccess: (userData) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-      
+  const { loginMutation, registerMutation } = useAuth();
+  
+  // Login success handler  
+  useEffect(() => {
+    if (loginMutation.isSuccess && loginMutation.data) {
+      setFormError(null);
       if (onLoginSuccess) {
-        onLoginSuccess(userData);
+        onLoginSuccess(loginMutation.data);
       }
-      
-      toast({
-        title: "Erfolgreich angemeldet",
-        description: "Willkommen zurück!",
-      });
-    },
-    onError: (error: Error) => {
-      setFormError(error.message);
-      toast({
-        title: "Anmeldung fehlgeschlagen",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const registerMutation = useMutation({
-    mutationFn: async (data: Omit<RegisterFormData, "confirmPassword">) => {
-      const res = await apiRequest("POST", "/api/register", data);
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(errorText || "Registrierung fehlgeschlagen");
-      }
-      return await res.json();
-    },
-    onSuccess: (userData) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-      
+    }
+  }, [loginMutation.isSuccess, loginMutation.data, onLoginSuccess]);
+  
+  // Register success handler
+  useEffect(() => {
+    if (registerMutation.isSuccess && registerMutation.data) {
+      setFormError(null);
       if (onRegisterSuccess) {
-        onRegisterSuccess(userData);
+        onRegisterSuccess(registerMutation.data);
       }
-      
-      toast({
-        title: "Registrierung erfolgreich",
-        description: "Dein Konto wurde erstellt! Bitte bestätige deine E-Mail-Adresse.",
-      });
-    },
-    onError: (error: Error) => {
-      setFormError(error.message);
-      toast({
-        title: "Registrierung fehlgeschlagen",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+    }
+  }, [registerMutation.isSuccess, registerMutation.data, onRegisterSuccess]);
+  
+  // Error handling for login
+  useEffect(() => {
+    if (loginMutation.isError && loginMutation.error) {
+      setFormError(loginMutation.error.message);
+    }
+  }, [loginMutation.isError, loginMutation.error]);
+  
+  // Error handling for registration
+  useEffect(() => {
+    if (registerMutation.isError && registerMutation.error) {
+      setFormError(registerMutation.error.message);
+    }
+  }, [registerMutation.isError, registerMutation.error]);
 
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -335,6 +307,14 @@ export const AuthComponent = ({
  */
 export default function AuthPage() {
   const [, navigate] = useLocation();
+  const { user, isLoading } = useAuth();
+
+  // Wenn Benutzer bereits angemeldet ist, zu Startseite umleiten
+  useEffect(() => {
+    if (user && !isLoading) {
+      navigate("/");
+    }
+  }, [user, isLoading, navigate]);
 
   const handleAuthSuccess = () => {
     navigate("/");

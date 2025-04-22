@@ -54,12 +54,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     data: user,
     error,
     isLoading,
-  } = useQuery<User | undefined, Error>({
+  } = useQuery<User | null, Error>({
     queryKey: ["/api/user"],
     queryFn: async ({ signal }) => {
-      const res = await fetch("/api/user", { signal });
+      const res = await fetch("/api/user", { 
+        signal,
+        credentials: "include" 
+      });
       if (res.status === 401) {
-        return undefined;
+        return null; // Null statt undefined zurückgeben
       }
       if (!res.ok) {
         throw new Error("Fehler beim Abrufen des Benutzers");
