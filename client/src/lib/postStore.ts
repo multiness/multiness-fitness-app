@@ -208,31 +208,30 @@ export const usePostStore = create<PostStore>()(
       // Methode zum Laden der Posts von der API mit verbesserter Synchronisierung
       loadStoredPosts: async () => {
         try {
-          console.log("loadStoredPosts: Lade Posts von der API...");
+          console.log("loadStoredPosts: Lade Posts von der API und prüfe auf Aktualisierungen...");
           set({ isLoading: true });
           
           // Hole zunächst die Liste der gelöschten Post-IDs aus dem localStorage
           const deletedPostIds = JSON.parse(localStorage.getItem(DELETED_POSTS_KEY) || '[]');
           console.log("Gelöschte Post-IDs vor API-Aufruf:", deletedPostIds);
           
-          // Cache-Problem umgehen mit einem Parameter
+          // Verhindere Cache-Probleme durch Hinzufügen eines Zeitstempels
           const timestamp = new Date().getTime();
-          const response = await fetch(`/api/posts?_=${timestamp}`);
+          const response = await fetch(`/api/posts?nocache=${timestamp}`);
           
           if (!response.ok) {
             throw new Error(`Server returned ${response.status}: ${response.statusText}`);
           }
           
           const posts = await response.json();
-          // Stille Verarbeitung, logge nur die Anzahl der Posts
-          console.debug(`loadStoredPosts: ${posts.length} Posts von API geladen`);
+          console.log(`loadStoredPosts: ${posts.length} Posts von API geladen:`, posts);
           
-          // Keine Posts im Server-Response
+          // Validiere das Antwortformat
           if (!Array.isArray(posts)) {
             throw new Error('Ungültiges Datenformat vom Server');
           }
           
-          // Lade Liste der gelöschten Posts
+          // Lade die aktuelle Liste der gelöschten Posts
           let deletedPostsIds: number[] = [];
           try {
             const deletedPostsStr = localStorage.getItem(DELETED_POSTS_KEY);
@@ -493,6 +492,10 @@ export const usePostStore = create<PostStore>()(
           
           const newPost = await response.json();
           console.log("Antwort vom Server beim Post erstellen:", newPost);
+          
+          // Wichtig: Direkt nach dem Erstellen eines neuen Posts immer alle aktuellen Daten vom Server laden
+          console.log("Lade alle Posts neu, um Synchronisierung sicherzustellen");
+          await get().loadStoredPosts();
           
           // Stelle sicher, dass wir ein korrektes Post-Objekt haben
           if (newPost && typeof newPost === 'object' && 'id' in newPost) {
