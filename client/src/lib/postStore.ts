@@ -493,9 +493,21 @@ export const usePostStore = create<PostStore>()(
           const newPost = await response.json();
           console.log("Antwort vom Server beim Post erstellen:", newPost);
           
-          // Wichtig: Direkt nach dem Erstellen eines neuen Posts immer alle aktuellen Daten vom Server laden
+          // Verzögerung hinzufügen, um sicherzustellen, dass der Server den Post speichern kann
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // WICHTIG: Direkt nach dem Erstellen eines neuen Posts immer alle aktuellen Daten vom Server laden
           console.log("Lade alle Posts neu, um Synchronisierung sicherzustellen");
           await get().loadStoredPosts();
+          
+          // Zusätzlich Event zum Aktualisieren der Ansicht auslösen
+          window.dispatchEvent(new CustomEvent('force-posts-update', { 
+            detail: { 
+              timestamp: Date.now(),
+              action: 'post-created',
+              postId: newPost.id
+            } 
+          }));
           
           // Stelle sicher, dass wir ein korrektes Post-Objekt haben
           if (newPost && typeof newPost === 'object' && 'id' in newPost) {
