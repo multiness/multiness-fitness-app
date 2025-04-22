@@ -134,8 +134,8 @@ const GroupCarousel = ({ groups }: GroupCarouselProps) => {
   console.debug("Gruppen nach ID:", groups.map(g => g.id).join(", "));
   
   return (
-    <div className="overflow-x-auto pb-16 md:pb-8 -mx-4 px-4 mb-8 relative z-0"> {/* Optimierter Abstand für Desktop/Mobile */}
-      <div className="flex gap-4 snap-x snap-mandatory w-full pb-4"> {/* Reduzierter Abstand am unteren Rand */}
+    <div className="overflow-x-auto pb-8 md:pb-8 -mx-4 px-4 mb-4 relative z-0"> {/* Reduzierter Abstand für Mobile, Desktop bleibt gleich */}
+      <div className="flex gap-4 snap-x snap-mandatory w-full pb-2"> {/* Reduzierter Abstand am unteren Rand */}
         {groupChunks.map((chunk, chunkIndex) => (
           <div 
             key={chunkIndex}
@@ -152,10 +152,15 @@ const GroupCarousel = ({ groups }: GroupCarouselProps) => {
                 console.debug("Rendering desktop group card:", `${group.id} - ${group.name}`);
               }
 
+              // Bestimme spezifische Eigenschaften für mobile und Desktop-Ansicht
+              const cardClasses = isMobile 
+                ? "flex-1 overflow-hidden cursor-pointer bg-card hover:bg-accent/5 transition-colors min-w-[150px] max-w-[350px] transform-gpu shadow-md border-0 rounded-lg" // Mobile-optimiert - keine Ränder, abgerundete Ecken, stärkerer Schatten
+                : "flex-1 overflow-hidden cursor-pointer bg-card hover:bg-accent/5 transition-colors min-w-[280px] max-w-[350px] transform-gpu shadow-sm"; // Desktop bleibt unverändert
+
               return (
                 <Card 
                   key={`group-card-${group.id}`}
-                  className="flex-1 overflow-hidden cursor-pointer bg-card hover:bg-accent/5 transition-colors min-w-[150px] md:min-w-[280px] max-w-[350px] transform-gpu shadow-sm" // Optimiert für Desktop
+                  className={cardClasses}
                   onClick={() => {
                     // Verbesserte Navigation zu Gruppenchats
                     console.log(`Navigiere zu Chat für Gruppe ${group.id}`);
@@ -172,8 +177,10 @@ const GroupCarousel = ({ groups }: GroupCarouselProps) => {
                   }}
                   style={{ 
                     scrollMarginBottom: isMobile ? '6rem' : '2rem', // Angepasste Scroll-Margin für Desktop
-                    borderColor: isJoined ? 'var(--green-500)' : undefined, // Hervorhebung von beigetretenen Gruppen
-                    borderWidth: isJoined ? '2px' : '1px'
+                    ...(isMobile ? {} : { // Nur für Desktop-Ansicht:
+                      borderColor: isJoined ? 'var(--green-500)' : undefined, // Hervorhebung von beigetretenen Gruppen
+                      borderWidth: isJoined ? '2px' : '1px'
+                    })
                   }}
                 >
                   <div className="aspect-[3/2] relative overflow-hidden bg-muted">
@@ -189,7 +196,7 @@ const GroupCarousel = ({ groups }: GroupCarouselProps) => {
                     />
                   </div>
 
-                  <div className="p-3 space-y-2">
+                  <div className={`${isMobile ? 'p-4' : 'p-3'} space-y-2`}>
                     <div className="space-y-1">
                       <h3 className="font-semibold text-sm leading-tight line-clamp-1">
                         {group.name}
