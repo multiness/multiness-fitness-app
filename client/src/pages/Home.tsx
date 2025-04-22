@@ -565,66 +565,7 @@ export default function Home() {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
             <h2 className="text-2xl font-bold">Neueste Beiträge</h2>
-            <Button 
-              size="sm" 
-              variant="outline"
-              className="h-8 px-2 ml-2"
-              onClick={() => {
-                // Verbesserte Neuladen-Funktion, die einen direkten API-Aufruf macht
-                const fetchPosts = async () => {
-                  try {
-                    // Anti-Cache-Parameter und Header
-                    const timestamp = new Date().getTime();
-                    const response = await fetch(`/api/posts?force=${timestamp}`, {
-                      headers: {
-                        'Cache-Control': 'no-cache, no-store, must-revalidate',
-                        'Pragma': 'no-cache',
-                        'Expires': '0'
-                      }
-                    });
-                    
-                    if (response.ok) {
-                      const freshPosts = await response.json();
-                      console.log("Manuell aktualisierte Posts:", freshPosts.length);
-                      
-                      // Direkt in den State einfügen, damit sie sofort angezeigt werden
-                      if (freshPosts && freshPosts.length > 0) {
-                        setDirectApiPosts(freshPosts);
-                        toast({
-                          title: "Erfolg",
-                          description: `${freshPosts.length} Beiträge geladen`,
-                          variant: "default"
-                        });
-                      }
-                    } else {
-                      throw new Error(`Fehler beim Laden: ${response.status}`);
-                    }
-                  } catch (error) {
-                    console.error("Fehler beim Aktualisieren:", error);
-                    toast({
-                      title: "Fehler beim Laden",
-                      description: "Bitte versuche es erneut",
-                      variant: "destructive"
-                    });
-                  }
-                };
-                
-                // Status und UI aktualisieren
-                console.log("Manueller direkter API-Aufruf für Posts");
-                toast({
-                  title: "Aktualisierung",
-                  description: "Beiträge werden neu geladen...",
-                });
-                
-                // Führe den API-Aufruf aus und aktualisiere dann den Force-Render-Timestamp
-                fetchPosts().then(() => {
-                  setForceRender(Date.now());
-                });
-              }}
-            >
-              <RefreshCw className="h-4 w-4 mr-1" />
-              <span className="text-xs">Aktualisieren</span>
-            </Button>
+            {/* Aktualisieren-Button entfernt - Updates erfolgen automatisch im Hintergrund */}
           </div>
           
           <Button
