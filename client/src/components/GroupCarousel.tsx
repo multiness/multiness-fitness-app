@@ -31,6 +31,18 @@ const GroupCarousel: React.FC<GroupCarouselProps> = ({ groups }) => {
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [shareType, setShareType] = useState<'chat' | 'group'>('chat');
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
+  
+  // Shared Content für den ShareDialog
+  const sharedContent = useMemo(() => {
+    if (!selectedGroup) return undefined;
+    
+    return {
+      id: selectedGroup.id,
+      type: 'group' as const,
+      title: selectedGroup.name,
+      preview: selectedGroup.description
+    };
+  }, [selectedGroup]);
 
   // Optimiertes Laden
   useEffect(() => {
@@ -182,14 +194,6 @@ const GroupCarousel: React.FC<GroupCarouselProps> = ({ groups }) => {
   }
 
   console.debug("Gruppen nach ID:", groups.map(g => g.id).join(", "));
-  
-  // Inhalt, der im ShareDialog angezeigt wird
-  const sharedContent = selectedGroup ? {
-    id: selectedGroup.id,
-    type: 'group' as const,
-    title: selectedGroup.name,
-    preview: selectedGroup.description || 'Gruppendetails anzeigen'
-  } : undefined;
 
   return (
     <>
