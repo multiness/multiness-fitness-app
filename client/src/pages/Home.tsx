@@ -127,7 +127,7 @@ export default function Home() {
       }
     };
     
-    // Handler für gelöschte Posts
+    // Handler für direkt gelöschte Posts 
     const handlePostDeleted = (event: CustomEvent) => {
       console.log("Home: Erkenne gelöschten Post", event.detail);
       
@@ -139,8 +139,24 @@ export default function Home() {
       }
     };
     
-    // Event-Listener hinzufügen
+    // Handler für erzwungene Synchronisierung aller gelöschten Posts
+    const handleForcedSync = (event: CustomEvent) => {
+      console.log("Home: Erzwungene Synchronisierung der gelöschten Posts", event.detail);
+      
+      if (isMounted && !isLoading) {
+        // Stelle sicher, dass vollständige Neusynchronisierung durchgeführt wird
+        console.log("Starte vollständige Neusynchronisierung aufgrund von force-deleted-posts-sync");
+        postStore.loadStoredPosts().catch(e => {
+          console.warn("Fehler bei der erzwungenen Synchronisierung:", e);
+        });
+      }
+    };
+    
+    // Event-Listener für einzelne Löschvorgänge
     window.addEventListener('post-deleted', handlePostDeleted as EventListener);
+    
+    // Event-Listener für erzwungene Synchronisierung
+    window.addEventListener('force-deleted-posts-sync', handleForcedSync as EventListener);
     
     // Initialer Ladevorgang
     loadAllData();
@@ -160,6 +176,7 @@ export default function Home() {
       isMounted = false;
       clearInterval(intervalId);
       window.removeEventListener('post-deleted', handlePostDeleted as EventListener);
+      window.removeEventListener('force-deleted-posts-sync', handleForcedSync as EventListener);
     };
   }, []);
   

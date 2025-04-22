@@ -149,6 +149,49 @@ if (typeof window !== 'undefined') {
     console.log('Tab ist aktiv geworden, lade gelöschte Posts');
     const deletedIds = getDeletedPostIds();
     console.log('Aktuell gelöschte Post-IDs:', deletedIds);
+    
+    // Löse ein force-deleted-posts-sync Event aus, um Daten zu aktualisieren
+    const forceSyncEvent = new CustomEvent('force-deleted-posts-sync', { 
+      detail: { 
+        timestamp: Date.now(),
+        reason: 'tab-focus', 
+        deletedPostIds: deletedIds 
+      } 
+    });
+    window.dispatchEvent(forceSyncEvent);
+  });
+  
+  // Reagiere auf localStorage Änderungen in anderen Tabs
+  window.addEventListener('storage', (event) => {
+    // Prüfe, ob es sich um den Schlüssel für gelöschte Posts handelt
+    if (event.key === DELETED_POSTS_KEY) {
+      console.log('Storage-Event: Gelöschte Posts haben sich geändert');
+      
+      // Löse ein force-deleted-posts-sync Event aus
+      const forceSyncEvent = new CustomEvent('force-deleted-posts-sync', { 
+        detail: { 
+          timestamp: Date.now(),
+          reason: 'storage-change',
+          deletedPostIds: event.newValue ? JSON.parse(event.newValue) : []
+        } 
+      });
+      window.dispatchEvent(forceSyncEvent);
+    }
+    // Reagiere auf die speziellen Delete-Trigger-Keys
+    else if (event.key && event.key.startsWith(POST_DELETE_TRIGGER_PREFIX)) {
+      console.log('Storage-Event: Post-Lösch-Trigger erkannt');
+      
+      // Extrahiere die Post-ID aus dem localStorage-Wert
+      const postId = event.newValue ? parseInt(event.newValue, 10) : null;
+      
+      if (postId && !isNaN(postId)) {
+        console.log(`Storage-Event: Post mit ID ${postId} als gelöscht markiert`);
+        
+        // Sende ein lokales post-deleted Event
+        const deleteEvent = new CustomEvent('post-deleted', { detail: { postId } });
+        window.dispatchEvent(deleteEvent);
+      }
+    }
   });
 }
 
@@ -262,6 +305,16 @@ export const usePostStore = create<PostStore>()(
           
           // Speichere im localStorage für Notfall-Fallback
           localStorage.setItem(LOCAL_STORAGE_POSTS_KEY, JSON.stringify(mergedPosts));
+          
+          // Löse ein force-deleted-posts-sync Event aus, um alle Tabs zu synchronisieren
+          const forceSyncEvent = new CustomEvent('force-deleted-posts-sync', { 
+            detail: { 
+              timestamp: Date.now(),
+              deletedPostIds: deletedPostsIds 
+            } 
+          });
+          window.dispatchEvent(forceSyncEvent);
+          console.log("Tab-übergreifende Synchronisierung ausgelöst mit force-deleted-posts-sync");
           
           // Füge einen Event-Listener für post-deleted hinzu
           const handlePostDeleted = (event: CustomEvent) => {
