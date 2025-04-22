@@ -534,7 +534,18 @@ export default function Home() {
                 <div className="mt-4">
                   <Button 
                     variant="outline"
-                    onClick={() => setForceRender(Date.now())}
+                    onClick={() => {
+                      // Manuelle Aktualisierung der Posts
+                      // Wir verwenden die loadStoredPosts-Methode, die bereits existiert
+                      postStore.loadStoredPosts().then(() => {
+                        console.log("Posts manuell neu geladen");
+                      });
+                      setForceRender(Date.now());
+                      toast({
+                        title: "Aktualisierung",
+                        description: "Beiträge werden neu geladen...",
+                      });
+                    }}
                     className="mx-auto"
                   >
                     <RefreshCw className="h-4 w-4 mr-2" />
