@@ -107,10 +107,11 @@ export function UserAvatar({
 
   const hasActiveGoal = showActiveGoal && postStore.getDailyGoal(userId);
 
+  // Optimierte Größen für bessere Darstellung im Desktop-Layout
   const sizeClasses = {
     sm: "h-8 w-8",
     md: "h-12 w-12",
-    lg: "h-24 w-24"
+    lg: "h-16 w-16" // Kleinere große Avatare für bessere Einpassung in Karten
   };
 
   const containerClasses = cn(
@@ -186,10 +187,10 @@ export function UserAvatar({
         </div>
       )}
       
-      {/* Team-Position anzeigen, wenn verfügbar */}
+      {/* Team-Position anzeigen, wenn verfügbar - optimiert für Desktop */}
       {user.isTeamMember && user.teamRole && size === "lg" && (
-        <div className="absolute -bottom-6 left-0 right-0 text-center">
-          <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+        <div className="absolute -bottom-5 left-0 right-0 text-center">
+          <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-medium rounded-full whitespace-nowrap">
             {user.teamRole.replace('_', ' ')}
           </span>
         </div>

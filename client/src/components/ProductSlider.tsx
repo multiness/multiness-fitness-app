@@ -67,7 +67,9 @@ export default function ProductSlider({ products: propProducts }: ProductSliderP
                   <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
                     {product.description}
                   </p>
-                  <div className="flex items-center justify-between">
+                  {/* Optimierte Layout-Struktur für Desktop-Ansicht */}
+                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
+                    {/* Preis-Informationen mit besserer Formatierung */}
                     <div className="flex items-center gap-1 font-semibold">
                       {product.onSale ? (
                         <div className="flex items-center gap-2">
@@ -96,15 +98,23 @@ export default function ProductSlider({ products: propProducts }: ProductSliderP
                         )
                       )}
                     </div>
-                    {product.stockEnabled && product.stock === 0 ? (
-                      <Badge variant="outline" className="text-red-500">
-                        Ausverkauft
-                      </Badge>
-                    ) : (
-                      <Button size="sm" disabled={product.stockEnabled && product.stock === 0}>
-                        {product.stockEnabled && product.stock === 0 ? "Ausverkauft" : "Jetzt kaufen"}
-                      </Button>
-                    )}
+                    
+                    {/* Optimierter Button für Desktop-Ansicht */}
+                    <div className="w-full md:w-auto">
+                      {product.stockEnabled && product.stock === 0 ? (
+                        <Badge variant="outline" className="text-red-500">
+                          Ausverkauft
+                        </Badge>
+                      ) : (
+                        <Button 
+                          size="sm" 
+                          className="w-full md:w-auto text-xs px-3"
+                          disabled={product.stockEnabled && product.stock === 0}
+                        >
+                          {product.stockEnabled && product.stock === 0 ? "Ausverkauft" : "Jetzt kaufen"}
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>

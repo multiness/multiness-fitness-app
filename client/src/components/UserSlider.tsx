@@ -63,23 +63,30 @@ export default function UserSlider() {
 
 function UserCard({ user, onVerify }: { user: any, onVerify: (id: number) => void }) {
   return (
-    <Card className="border-primary/10 hover:border-primary/20 transition-colors">
+    <Card className="border-primary/10 hover:border-primary/20 transition-colors overflow-hidden">
       <CardContent className="p-3">
-        <div className="flex flex-col items-center gap-2">
-          <UserAvatar
-            userId={user.id}
-            size="lg"
-            className="w-full h-full"
-            disableLink={true}
-          />
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="text-xs leading-tight h-auto w-full whitespace-normal text-center"
-            onClick={() => onVerify(user.id)}
-          >
-            {user.username}
-          </Button>
+        <div className="flex flex-col items-center gap-3">
+          {/* Optimierter Avatar-Container für Desktop-Ansicht */}
+          <div className="flex justify-center items-center">
+            <UserAvatar
+              userId={user.id}
+              size="lg"
+              className="w-full h-full"
+              disableLink={true}
+            />
+          </div>
+          
+          {/* Verbesserte Benutzernamendarstellung mit optimierter Höhe und Umbrüchen */}
+          <div className="w-full text-center mt-1">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-xs py-1 px-2 h-auto w-full max-w-full overflow-hidden text-ellipsis"
+              onClick={() => onVerify(user.id)}
+            >
+              <span className="truncate block">{user.username}</span>
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>

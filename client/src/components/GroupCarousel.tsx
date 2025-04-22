@@ -134,12 +134,12 @@ const GroupCarousel = ({ groups }: GroupCarouselProps) => {
   console.debug("Gruppen nach ID:", groups.map(g => g.id).join(", "));
   
   return (
-    <div className="overflow-x-auto pb-32 -mx-4 px-4 mb-14 relative z-0"> {/* Stark erhöhter Abstand unten für mobile Geräte */}
-      <div className="flex gap-4 snap-x snap-mandatory w-full pb-8"> {/* Erhöhter Abstand am unteren Rand */}
+    <div className="overflow-x-auto pb-16 md:pb-8 -mx-4 px-4 mb-8 relative z-0"> {/* Optimierter Abstand für Desktop/Mobile */}
+      <div className="flex gap-4 snap-x snap-mandatory w-full pb-4"> {/* Reduzierter Abstand am unteren Rand */}
         {groupChunks.map((chunk, chunkIndex) => (
           <div 
             key={chunkIndex}
-            className="flex gap-4 shrink-0 snap-start w-[calc(100vw-2rem)]"
+            className="flex gap-4 shrink-0 snap-start w-[calc(100vw-2rem)] md:w-auto md:min-w-[600px]"
             style={{ scrollSnapAlign: 'start' }} // Explizite Scroll-Snap-Ausrichtung
           >
             {chunk.map(group => {
@@ -155,7 +155,7 @@ const GroupCarousel = ({ groups }: GroupCarouselProps) => {
               return (
                 <Card 
                   key={`group-card-${group.id}`}
-                  className="flex-1 overflow-hidden cursor-pointer bg-card hover:bg-accent/5 transition-colors min-w-[150px] transform-gpu shadow-sm" // Hinzugefügter Schatten
+                  className="flex-1 overflow-hidden cursor-pointer bg-card hover:bg-accent/5 transition-colors min-w-[150px] md:min-w-[280px] max-w-[350px] transform-gpu shadow-sm" // Optimiert für Desktop
                   onClick={() => {
                     // Verbesserte Navigation zu Gruppenchats
                     console.log(`Navigiere zu Chat für Gruppe ${group.id}`);
@@ -171,7 +171,7 @@ const GroupCarousel = ({ groups }: GroupCarouselProps) => {
                     }
                   }}
                   style={{ 
-                    scrollMarginBottom: isMobile ? '6rem' : '4rem', // Erhöhte Scroll-Margin für mobile Geräte
+                    scrollMarginBottom: isMobile ? '6rem' : '2rem', // Angepasste Scroll-Margin für Desktop
                     borderColor: isJoined ? 'var(--green-500)' : undefined, // Hervorhebung von beigetretenen Gruppen
                     borderWidth: isJoined ? '2px' : '1px'
                   }}
@@ -191,7 +191,7 @@ const GroupCarousel = ({ groups }: GroupCarouselProps) => {
 
                   <div className="p-3 space-y-2">
                     <div className="space-y-1">
-                      <h3 className="font-semibold text-sm leading-tight">
+                      <h3 className="font-semibold text-sm leading-tight line-clamp-1">
                         {group.name}
                       </h3>
                       <div className="flex items-center gap-1.5">
@@ -199,7 +199,7 @@ const GroupCarousel = ({ groups }: GroupCarouselProps) => {
                           userId={group.creatorId || 1}
                           size="sm"
                         />
-                        <p className="text-xs text-muted-foreground truncate">
+                        <p className="text-xs text-muted-foreground truncate max-w-[180px]">
                           {group.creatorId === 1 ? "Max Mustermann" : "Gruppenersteller"}
                         </p>
                       </div>
@@ -214,7 +214,7 @@ const GroupCarousel = ({ groups }: GroupCarouselProps) => {
                         variant={isJoined ? "outline" : "default"}
                         size="sm"
                         onClick={(e) => handleJoin(e, group)}
-                        className="h-7 px-2 text-xs"
+                        className="h-7 px-2 text-xs whitespace-nowrap"
                       >
                         {isJoined ? "Beigetreten" : "Beitreten"}
                       </Button>
