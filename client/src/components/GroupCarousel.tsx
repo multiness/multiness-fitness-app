@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users } from "lucide-react";
+import { Users, Share2, MessageCircle } from "lucide-react";
 import { useUsers } from "../contexts/UserContext";
 import { useLocation } from "wouter";
 import { getChatIdSync } from "../lib/chatService";
@@ -9,6 +9,13 @@ import { UserAvatar } from "./UserAvatar";
 import { useGroupStore, type Group } from "../lib/groupStore";
 import { useToast } from "@/hooks/use-toast";
 import { memo, useState, useEffect, useMemo } from "react";
+import ShareDialog from "./ShareDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface GroupCarouselProps {
   groups: Group[];
@@ -18,9 +25,12 @@ const GroupCarousel = ({ groups }: GroupCarouselProps) => {
   const groupStore = useGroupStore();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const { users } = useUsers();
-  const userId = 1; // Für dieses Beispiel nehmen wir an, dass der aktuelle Benutzer die ID 1 hat
+  const { users, currentUser } = useUsers();
+  const userId = currentUser?.id || 1; // Für dieses Beispiel nehmen wir an, dass der aktuelle Benutzer die ID 1 hat
   const [isLoading, setIsLoading] = useState(true);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [shareType, setShareType] = useState<'chat' | 'group'>('chat');
+  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
 
   // Optimiertes Laden
   useEffect(() => {
@@ -52,6 +62,46 @@ const GroupCarousel = ({ groups }: GroupCarouselProps) => {
       });
       const chatId = getChatIdSync(group.id, 'group');
       setLocation(`/chat/${chatId}`);
+    }
+  };
+  
+  // Funktion für das native Teilen (mobile Geräte oder WhatsApp)
+  const handleNativeShare = async (e: React.MouseEvent, group: Group) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const shareData = {
+      title: group.name,
+      text: `Schau dir diese Gruppe an: ${group.name}`,
+      url: `${window.location.origin}/groups/${group.id}`,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        // Fallback auf WhatsApp, wenn Web Share API nicht verfügbar ist
+        const url = `${window.location.origin}/groups/${group.id}`;
+        window.open(`https://wa.me/?text=${encodeURIComponent(`${group.name} - ${url}`)}`);
+      }
+    } catch (err) {
+      console.error('Error sharing:', err);
+    }
+  };
+
+  // Funktion zum Öffnen des ShareDialogs für interne App-Teilung
+  const handleInternalShare = (type: 'chat' | 'group', e: React.MouseEvent, group: Group) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShareType(type);
+    setSelectedGroup(group);
+    setShareDialogOpen(true);
+  };
+
+  // Callback-Funktion für die Weitergabe an den ShareDialog
+  const handleShare = (id: number) => {
+    if (selectedGroup) {
+      console.log(`Sharing group ${selectedGroup.id} to ${shareType} ${id}`);
     }
   };
 
@@ -133,9 +183,18 @@ const GroupCarousel = ({ groups }: GroupCarouselProps) => {
 
   console.debug("Gruppen nach ID:", groups.map(g => g.id).join(", "));
   
+  // Inhalt, der im ShareDialog angezeigt wird
+  const sharedContent = selectedGroup ? {
+    id: selectedGroup.id,
+    type: 'group' as const,
+    title: selectedGroup.name,
+    preview: selectedGroup.description || 'Gruppendetails anzeigen'
+  } : undefined;
+
   return (
-    <div className="overflow-x-auto pb-8 md:pb-8 -mx-4 px-4 mb-4 relative z-0"> {/* Reduzierter Abstand für Mobile, Desktop bleibt gleich */}
-      <div className="flex gap-4 snap-x snap-mandatory w-full pb-2"> {/* Reduzierter Abstand am unteren Rand */}
+    <>
+      <div className="overflow-x-auto pb-8 md:pb-8 -mx-4 px-4 mb-4 relative z-0"> {/* Reduzierter Abstand für Mobile, Desktop bleibt gleich */}
+        <div className="flex gap-4 snap-x snap-mandatory w-full pb-2"> {/* Reduzierter Abstand am unteren Rand */}
         {groupChunks.map((chunk, chunkIndex) => (
           <div 
             key={chunkIndex}
@@ -212,6 +271,7 @@ const GroupCarousel = ({ groups }: GroupCarouselProps) => {
                       </div>
                     </div>
 
+                    {/* Mitglieder-Anzeige und Buttons */}
                     <div className="flex items-center justify-between pt-1">
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Users className="h-3 w-3" />
@@ -226,14 +286,74 @@ const GroupCarousel = ({ groups }: GroupCarouselProps) => {
                         {isJoined ? "Beigetreten" : "Beitreten"}
                       </Button>
                     </div>
+                    
+                    {/* Teilen-Buttons am unteren Rand */}
+                    <div className="flex items-center justify-between pt-3 border-t mt-2">
+                      <div className="flex items-center gap-2">
+                        {/* Button für externes Teilen (WhatsApp, etc.) */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          onClick={(e) => handleNativeShare(e, group)}
+                        >
+                          <Share2 className="h-4 w-4" />
+                        </Button>
+                        
+                        {/* Dropdown für App-internes Teilen */}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild onClick={(e) => e.preventDefault()}>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <MessageCircle className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={(e) => handleInternalShare('chat', e, group)}>
+                              <MessageCircle className="h-4 w-4 mr-2" />
+                              <span>An Chat senden</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => handleInternalShare('group', e, group)}>
+                              <Users className="h-4 w-4 mr-2" />
+                              <span>In Gruppe teilen</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                      
+                      <div>
+                        {/* Details-Button */}
+                        <Button 
+                          size="sm" 
+                          variant="secondary"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setLocation(`/groups/${group.id}`);
+                          }}
+                        >
+                          Details
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </Card>
               );
             })}
           </div>
         ))}
+        </div>
       </div>
-    </div>
+      
+      {/* ShareDialog für App-internes Teilen */}
+      <ShareDialog
+        open={shareDialogOpen}
+        onOpenChange={setShareDialogOpen}
+        type={shareType}
+        title={shareType === 'chat' ? 'An Chat senden' : 'In Gruppe teilen'}
+        onShare={handleShare}
+        content={sharedContent}
+      />
+    </>
   );
 };
 
