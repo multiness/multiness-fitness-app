@@ -6,7 +6,7 @@ export class WebSocketManager {
   private maxReconnectInterval = 30000; // 30 Sekunden maximales Intervall
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 10;
+  private maxReconnectAttempts = 3; // Auf 3 reduziert um unnötige Verbindungsversuche zu vermeiden
   private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
   private lastMessageTime = 0;
   private connectionTimeout: ReturnType<typeof setTimeout> | null = null;
