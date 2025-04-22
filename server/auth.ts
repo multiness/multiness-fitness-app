@@ -1,28 +1,59 @@
+import passport from "passport";
+import { Strategy as LocalStrategy } from "passport-local";
 import { Express, Request, Response, NextFunction } from "express";
 import session from "express-session";
-import { scrypt, randomBytes, timingSafeEqual } from "crypto";
+import { scrypt, randomBytes, timingSafeEqual, randomUUID } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
-import { v4 as uuidv4 } from "uuid";
-import { User } from "@shared/schema";
+import connectPg from "connect-pg-simple";
+import { pool } from "./db";
 
-// Helper für kryptografische Funktionen
-const scryptAsync = promisify(scrypt);
+// Benutzertyp-Definition (statt aus schema zu importieren)
+interface SelectUser {
+  id: number;
+  username: string;
+  name: string;
+  email: string;
+  password: string;
+  avatar?: string | null;
+  isVerified: boolean;
+  isAdmin: boolean;
+  isTeamMember: boolean;
+  teamRole?: string | null;
+  bio?: string | null;
+  createdAt: Date;
+  updatedAt?: Date;
+  emailVerificationToken?: string | null;
+  emailVerificationExpires?: Date | null;
+  passwordResetToken?: string | null;
+  passwordResetExpires?: Date | null;
+}
 
-// Session-Deklaration für TypeScript
-declare global {
-  namespace Express {
-    interface User extends User {}
+// Typerweiterung für Express's Session
+declare module "express-session" {
+  interface Session {
+    userId?: number;
+    isAdmin?: boolean;
   }
 }
 
-// Passwort-Funktionen
+// TypeScript-Typerweiterung für Express.User
+declare global {
+  namespace Express {
+    interface User extends SelectUser {}
+  }
+}
+
+const scryptAsync = promisify(scrypt);
+
+// Funktion zum Passwort Hashen
 async function hashPassword(password: string): Promise<string> {
   const salt = randomBytes(16).toString("hex");
   const buf = (await scryptAsync(password, salt, 64)) as Buffer;
   return `${buf.toString("hex")}.${salt}`;
 }
 
+// Funktion zum Passwortvergleich
 async function comparePasswords(supplied: string, stored: string): Promise<boolean> {
   const [hashed, salt] = stored.split(".");
   const hashedBuf = Buffer.from(hashed, "hex");
@@ -30,261 +61,315 @@ async function comparePasswords(supplied: string, stored: string): Promise<boole
   return timingSafeEqual(hashedBuf, suppliedBuf);
 }
 
-// Email-Verifikation und Passwort-Reset Token Funktionen
+// Hilfsfunktion für Tokens
 function generateToken(): string {
-  return randomBytes(32).toString("hex");
+  return randomUUID();
 }
 
-// Middleware für Authentifizierungsprüfung
+// Middleware zum Prüfen, ob ein Benutzer angemeldet ist
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
-  if (!req.session.userId) {
-    return res.status(401).json({ error: "Nicht authentifiziert" });
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Nicht autorisiert" });
   }
+  
+  if (!req.session.userId) {
+    return res.status(401).json({ message: "Ungültige Sitzung" });
+  }
+  
   next();
 }
 
-// Middleware für Admin-Rechte
+// Middleware zum Prüfen, ob ein Benutzer Admin ist
 export function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Nicht autorisiert" });
+  }
+  
   if (!req.session.userId) {
-    return res.status(401).json({ error: "Nicht authentifiziert" });
+    return res.status(401).json({ message: "Ungültige Sitzung" });
   }
   
   if (!req.session.isAdmin) {
-    return res.status(403).json({ error: "Keine Administratorrechte" });
+    return res.status(403).json({ message: "Keine Administratorrechte" });
   }
   
   next();
 }
 
-// Authentifizierungsrouten einrichten
+// Hauptfunktion zum Einrichten der Authentifizierung
 export function setupAuth(app: Express) {
-  // Sessionkonfiguration
+  // PostgreSQL-Session-Store einrichten
+  const PostgresStore = connectPg(session);
+  
+  // Session-Einstellungen
   const sessionSettings: session.SessionOptions = {
-    secret: process.env.SESSION_SECRET || "fitness-app-secret-key",
+    store: new PostgresStore({
+      pool,
+      tableName: 'session', // Name der Session-Tabelle
+      createTableIfMissing: true // Tabelle automatisch erstellen, falls nicht vorhanden
+    }),
+    secret: process.env.SESSION_SECRET || 'fitness-app-secret-key', // In Produktionsumgebung sollte dies aus einer Umgebungsvariable kommen
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.NODE_ENV === "production",
       maxAge: 1000 * 60 * 60 * 24 * 7, // 1 Woche
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // Nur in Produktion auf true setzen
+      sameSite: 'lax'
     }
   };
 
+  // Express-Einstellungen für Proxies
+  app.set("trust proxy", 1);
+
+  // Session-Middleware anwenden
   app.use(session(sessionSettings));
 
-  // Benutzerregistrierung
-  app.post("/api/register", async (req, res) => {
+  // Passport initialisieren
+  app.use(passport.initialize());
+  app.use(passport.session());
+
+  // LocalStrategy für Benutzer/Passwort-Login konfigurieren
+  passport.use(
+    new LocalStrategy(
+      {
+        usernameField: 'email', // E-Mail statt Benutzername verwenden
+        passwordField: 'password'
+      },
+      async (email, password, done) => {
+        try {
+          // Benutzer anhand der E-Mail suchen
+          const user = await storage.getUserByEmail(email);
+          
+          // Wenn Benutzer nicht gefunden oder Passwort falsch
+          if (!user || !(await comparePasswords(password, user.password))) {
+            return done(null, false, { message: "Ungültige E-Mail oder Passwort" });
+          }
+          
+          // Erfolgreich authentifiziert
+          return done(null, user);
+        } catch (error) {
+          return done(error);
+        }
+      }
+    )
+  );
+
+  // Serialisierung: Speichern nur der Benutzer-ID in der Session
+  passport.serializeUser((user, done) => {
+    // Typumwandlung, da Express.User und User unterschiedliche Typen sind
+    const { id, isAdmin } = user as SelectUser;
+    
+    // Session-Daten setzen
+    if (done.req) {
+      done.req.session.userId = id;
+      done.req.session.isAdmin = isAdmin;
+    }
+    
+    done(null, id);
+  });
+
+  // Deserialisierung: Laden des vollen Benutzerobjekts aus der ID
+  passport.deserializeUser(async (id: number, done) => {
+    try {
+      const user = await storage.getUser(id);
+      if (!user) {
+        return done(null, false);
+      }
+      
+      // Session-Daten aktualisieren
+      if (done.req) {
+        done.req.session.userId = user.id;
+        done.req.session.isAdmin = user.isAdmin;
+      }
+      
+      done(null, user);
+    } catch (error) {
+      done(error);
+    }
+  });
+
+  // Registrierungsroute
+  app.post("/api/register", async (req, res, next) => {
     try {
       const { email, password, firstName, lastName, nickname } = req.body;
-
+      
       // Prüfen, ob E-Mail bereits existiert
-      const existingUserByEmail = await storage.getUserByEmail(email);
-      if (existingUserByEmail) {
-        return res.status(400).json({ error: "E-Mail wird bereits verwendet" });
-      }
-
-      // Standardbenutzername aus Vor- und Nachname erstellen
-      let username = nickname || (firstName.toLowerCase() + "." + lastName.toLowerCase());
-      
-      // Überprüfen, ob Benutzername bereits existiert
-      const existingUserByUsername = await storage.getUserByUsername(username);
-      if (existingUserByUsername) {
-        // Zufälligen Suffix hinzufügen, wenn Benutzername bereits existiert
-        username = `${username}.${randomBytes(2).toString("hex")}`;
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).send("E-Mail wird bereits verwendet");
       }
       
-      // E-Mail-Verifikationstoken erstellen
+      // Benutzername aus Vor- und Nachname erzeugen
+      const username = `${firstName.toLowerCase()}${lastName.toLowerCase()}${Math.floor(Math.random() * 1000)}`;
+      
+      // Name aus Vor- und Nachname zusammensetzen
+      const name = `${firstName} ${lastName}`;
+      
+      // Passwort hashen
+      const hashedPassword = await hashPassword(password);
+      
+      // E-Mail-Bestätigungstoken generieren
       const emailVerificationToken = generateToken();
-      const now = new Date();
-      const emailVerificationTokenExpiry = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 Stunden
       
       // Benutzer erstellen
-      const hashedPassword = await hashPassword(password);
       const user = await storage.createUser({
         username,
-        name: `${firstName} ${lastName}`,
+        name,
         email,
         password: hashedPassword,
+        avatar: null, // Standardavatar wird später hinzugefügt
+        isVerified: false,
+        isAdmin: false,
+        isTeamMember: false,
         emailVerificationToken,
-        emailVerificationTokenExpiry,
-        role: "user",
+        emailVerificationExpires: new Date(Date.now() + 1000 * 60 * 60 * 24), // 24 Stunden gültig
+        passwordResetToken: null,
+        passwordResetExpires: null,
+        bio: nickname || null // Nickname als Bio verwenden, wenn angegeben
       });
-
-      // In einer echten Anwendung würde hier eine E-Mail mit dem Verifikationslink gesendet
-      console.log(`Verifikationstoken für ${email}: ${emailVerificationToken}`);
-
-      // Login-Session einrichten
-      req.session.userId = user.id;
-      req.session.isAdmin = user.isAdmin || false;
       
-      // Benutzer ohne Passwort zurückgeben
-      const { password: _, ...userWithoutPassword } = user;
-      res.status(201).json(userWithoutPassword);
+      // Anmelden nach Registrierung
+      req.login(user, (err) => {
+        if (err) return next(err);
+        
+        // Session-Daten setzen
+        req.session.userId = user.id;
+        req.session.isAdmin = user.isAdmin;
+        
+        // Erfolgsantwort ohne sensible Daten
+        const { password, emailVerificationToken, emailVerificationExpires, passwordResetToken, passwordResetExpires, ...userWithoutSensitiveData } = user;
+        res.status(201).json(userWithoutSensitiveData);
+      });
     } catch (error) {
-      console.error("Fehler bei der Registrierung:", error);
-      res.status(500).json({ error: "Serverfehler bei der Registrierung" });
+      next(error);
     }
   });
 
-  // Benutzeranmeldung
-  app.post("/api/login", async (req, res) => {
-    try {
-      const { email, password } = req.body;
-
-      // Benutzer per E-Mail finden
-      const user = await storage.getUserByEmail(email);
+  // Login-Route
+  app.post("/api/login", (req, res, next) => {
+    passport.authenticate("local", (err, user, info) => {
+      if (err) return next(err);
+      
       if (!user) {
-        return res.status(401).json({ error: "Ungültige Anmeldedaten" });
-      }
-
-      // Passwort überprüfen
-      const passwordMatch = await comparePasswords(password, user.password);
-      if (!passwordMatch) {
-        return res.status(401).json({ error: "Ungültige Anmeldedaten" });
-      }
-
-      // Login-Session einrichten
-      req.session.userId = user.id;
-      req.session.isAdmin = user.isAdmin || false;
-      
-      // Letzten Login-Zeitpunkt aktualisieren
-      await storage.updateUser(user.id, { lastActive: new Date() });
-      
-      // Benutzer ohne Passwort zurückgeben
-      const { password: _, ...userWithoutPassword } = user;
-      res.json(userWithoutPassword);
-    } catch (error) {
-      console.error("Fehler bei der Anmeldung:", error);
-      res.status(500).json({ error: "Serverfehler bei der Anmeldung" });
-    }
-  });
-  
-  // Aktuelle angemeldete Benutzerinformationen
-  app.get("/api/user", async (req, res) => {
-    try {
-      if (!req.session.userId) {
-        return res.status(401).json({ error: "Nicht angemeldet" });
+        return res.status(401).json({ message: info?.message || "Ungültige Anmeldeinformationen" });
       }
       
-      const user = await storage.getUser(req.session.userId);
-      if (!user) {
-        // Session löschen, wenn Benutzer nicht gefunden
-        req.session.destroy(() => {});
-        return res.status(401).json({ error: "Benutzer nicht gefunden" });
-      }
-      
-      // Benutzer ohne Passwort zurückgeben
-      const { password, ...userWithoutPassword } = user;
-      res.json(userWithoutPassword);
-    } catch (error) {
-      console.error("Fehler beim Abrufen des Benutzers:", error);
-      res.status(500).json({ error: "Serverfehler" });
-    }
+      req.login(user, (err) => {
+        if (err) return next(err);
+        
+        // Session-Daten setzen
+        req.session.userId = user.id;
+        req.session.isAdmin = user.isAdmin;
+        
+        // Erfolgsantwort ohne sensible Daten
+        const { password, emailVerificationToken, emailVerificationExpires, passwordResetToken, passwordResetExpires, ...userWithoutSensitiveData } = user;
+        res.status(200).json(userWithoutSensitiveData);
+      });
+    })(req, res, next);
   });
 
-  // Abmelden
-  app.post("/api/logout", (req, res) => {
-    req.session.destroy((err) => {
-      if (err) {
-        console.error("Fehler beim Abmelden:", err);
-        return res.status(500).json({ error: "Fehler beim Abmelden" });
-      }
-      res.status(200).json({ message: "Erfolgreich abgemeldet" });
+  // Logout-Route
+  app.post("/api/logout", (req, res, next) => {
+    req.logout((err) => {
+      if (err) return next(err);
+      res.sendStatus(200);
     });
   });
 
-  // E-Mail-Verifikation
-  app.get("/api/verify-email/:token", async (req, res) => {
+  // Benutzerinfo-Route
+  app.get("/api/user", (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "Nicht angemeldet" });
+    }
+    
+    // Erfolgsantwort ohne sensible Daten
+    const { password, emailVerificationToken, emailVerificationExpires, passwordResetToken, passwordResetExpires, ...userWithoutSensitiveData } = req.user as SelectUser;
+    res.json(userWithoutSensitiveData);
+  });
+
+  // E-Mail-Bestätigungsroute (wird später implementiert)
+  app.get("/api/verify-email/:token", async (req, res, next) => {
     try {
-      const { token } = req.params;
-      
-      // Benutzer mit diesem Token finden
+      const token = req.params.token;
       const user = await storage.getUserByEmailVerificationToken(token);
+      
       if (!user) {
-        return res.status(400).json({ error: "Ungültiger oder abgelaufener Token" });
+        return res.status(400).json({ message: "Ungültiger oder abgelaufener Token" });
       }
       
-      // Prüfen, ob Token abgelaufen ist
-      const now = new Date();
-      if (user.emailVerificationTokenExpiry && new Date(user.emailVerificationTokenExpiry) < now) {
-        return res.status(400).json({ error: "Token ist abgelaufen" });
+      if (user.emailVerificationExpires && new Date(user.emailVerificationExpires) < new Date()) {
+        return res.status(400).json({ message: "Token abgelaufen" });
       }
       
-      // Benutzer aktualisieren
+      // Benutzer als verifiziert markieren
       await storage.updateUser(user.id, {
-        emailVerified: true,
+        isVerified: true,
         emailVerificationToken: null,
-        emailVerificationTokenExpiry: null,
+        emailVerificationExpires: null
       });
       
-      res.json({ message: "E-Mail erfolgreich verifiziert" });
+      res.json({ message: "E-Mail erfolgreich bestätigt" });
     } catch (error) {
-      console.error("Fehler bei der E-Mail-Verifikation:", error);
-      res.status(500).json({ error: "Serverfehler bei der E-Mail-Verifikation" });
+      next(error);
     }
   });
 
-  // Passwort-Reset anfordern
-  app.post("/api/forgot-password", async (req, res) => {
+  // Passwort-Reset-Anfrage (wird später implementiert)
+  app.post("/api/forgot-password", async (req, res, next) => {
     try {
       const { email } = req.body;
-      
-      // Benutzer per E-Mail finden
       const user = await storage.getUserByEmail(email);
+      
       if (!user) {
-        // Aus Sicherheitsgründen trotzdem erfolgreiche Antwort senden
-        return res.json({ message: "Wenn ein Konto mit dieser E-Mail existiert, wurde eine E-Mail gesendet" });
+        return res.status(404).json({ message: "Kein Konto mit dieser E-Mail gefunden" });
       }
       
-      // Token erstellen
-      const passwordResetToken = generateToken();
-      const now = new Date();
-      const passwordResetTokenExpiry = new Date(now.getTime() + 1 * 60 * 60 * 1000); // 1 Stunde
+      // Token generieren
+      const token = generateToken();
+      const expires = new Date(Date.now() + 1000 * 60 * 60); // 1 Stunde gültig
       
-      // Benutzer aktualisieren
+      // Token in der DB speichern
       await storage.updateUser(user.id, {
-        passwordResetToken,
-        passwordResetTokenExpiry,
+        passwordResetToken: token,
+        passwordResetExpires: expires
       });
       
-      // In einer echten Anwendung würde hier eine E-Mail mit dem Reset-Link gesendet
-      console.log(`Passwort-Reset-Token für ${email}: ${passwordResetToken}`);
+      // TODO: E-Mail mit Reset-Link senden
       
-      res.json({ message: "Wenn ein Konto mit dieser E-Mail existiert, wurde eine E-Mail gesendet" });
+      res.json({ message: "Anweisungen zum Zurücksetzen des Passworts wurden an deine E-Mail-Adresse gesendet" });
     } catch (error) {
-      console.error("Fehler beim Passwort-Reset:", error);
-      res.status(500).json({ error: "Serverfehler beim Passwort-Reset" });
+      next(error);
     }
   });
 
-  // Passwort zurücksetzen
-  app.post("/api/reset-password", async (req, res) => {
+  // Passwort-Reset-Bestätigung (wird später implementiert)
+  app.post("/api/reset-password/:token", async (req, res, next) => {
     try {
-      const { token, password } = req.body;
+      const { token } = req.params;
+      const { password } = req.body;
       
-      // Benutzer mit diesem Token finden
       const user = await storage.getUserByPasswordResetToken(token);
+      
       if (!user) {
-        return res.status(400).json({ error: "Ungültiger oder abgelaufener Token" });
+        return res.status(400).json({ message: "Ungültiger oder abgelaufener Token" });
       }
       
-      // Prüfen, ob Token abgelaufen ist
-      const now = new Date();
-      if (user.passwordResetTokenExpiry && new Date(user.passwordResetTokenExpiry) < now) {
-        return res.status(400).json({ error: "Token ist abgelaufen" });
+      if (user.passwordResetExpires && new Date(user.passwordResetExpires) < new Date()) {
+        return res.status(400).json({ message: "Token abgelaufen" });
       }
       
-      // Passwort ändern
+      // Passwort hashen und aktualisieren
       const hashedPassword = await hashPassword(password);
       await storage.updateUser(user.id, {
         password: hashedPassword,
         passwordResetToken: null,
-        passwordResetTokenExpiry: null,
+        passwordResetExpires: null
       });
       
       res.json({ message: "Passwort erfolgreich zurückgesetzt" });
     } catch (error) {
-      console.error("Fehler beim Zurücksetzen des Passworts:", error);
-      res.status(500).json({ error: "Serverfehler beim Zurücksetzen des Passworts" });
+      next(error);
     }
   });
 }

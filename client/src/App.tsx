@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Switch, Route, useLocation } from "wouter";
+import { Switch, Route } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
@@ -8,6 +8,7 @@ import { AdminProvider } from "./contexts/AdminContext";
 import { ProductProvider } from "./contexts/ProductContext";
 import { EventProvider } from "./contexts/EventContext";
 import { ThemeProvider } from "./contexts/ThemeProvider";
+import { AuthProvider } from "./hooks/use-auth";
 import Layout from "./components/Layout";
 import Home from "./pages/Home";
 import Profile from "./pages/Profile";
@@ -34,37 +35,7 @@ import Settings from "./pages/Settings";
 import NotFound from "./pages/not-found";
 import AuthPage from "./pages/auth-page";
 import { initializeGroupSync } from "./lib/groupSynchronizer";
-import { useQuery } from "@tanstack/react-query";
-
-// Protected Route Komponente für Routen, die Authentifizierung erfordern
-const ProtectedRoute = ({ component: Component, ...rest }: { component: React.ComponentType<any>, path: string }) => {
-  const { data: user, isLoading } = useQuery({
-    queryKey: ["/api/user"],
-    retry: false,
-    refetchOnWindowFocus: false,
-  });
-  const [, navigate] = useLocation();
-
-  useEffect(() => {
-    if (!isLoading && !user) {
-      navigate('/auth');
-    }
-  }, [user, isLoading, navigate]);
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return null; // Redirection happens in the useEffect
-  }
-
-  return <Component {...rest} />;
-};
+import { ProtectedRoute, AdminRoute } from "./lib/protected-route";
 
 function Router() {
   return (
@@ -121,16 +92,18 @@ function App() {
   return (
     <ThemeProvider defaultTheme="light">
       <QueryClientProvider client={queryClient}>
-        <UserProvider>
-          <AdminProvider>
-            <ProductProvider>
-              <EventProvider>
-                <Router />
-                <Toaster />
-              </EventProvider>
-            </ProductProvider>
-          </AdminProvider>
-        </UserProvider>
+        <AuthProvider>
+          <UserProvider>
+            <AdminProvider>
+              <ProductProvider>
+                <EventProvider>
+                  <Router />
+                  <Toaster />
+                </EventProvider>
+              </ProductProvider>
+            </AdminProvider>
+          </UserProvider>
+        </AuthProvider>
       </QueryClientProvider>
     </ThemeProvider>
   );

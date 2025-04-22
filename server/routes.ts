@@ -18,6 +18,7 @@ import {
   backups
 } from "../shared/schema";
 import { WebSocketServer, WebSocket } from "ws";
+import { setupAuth, requireAuth, requireAdmin } from "./auth";
 
 import { 
   addMessage, 
@@ -32,6 +33,9 @@ import {
 } from "./data/chats.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Authentifizierungsrouten einrichten
+  setupAuth(app);
+  
   // Benutzer-Speicher mit Persistenz über Storage-API
   let users = [
     {
