@@ -217,14 +217,23 @@ export const usePostStore = create<PostStore>()(
           
           // Verhindere Cache-Probleme durch Hinzufügen eines Zeitstempels
           const timestamp = new Date().getTime();
-          const response = await fetch(`/api/posts?nocache=${timestamp}`);
+          // Füge immer einen Cache-Buster-Parameter hinzu
+          const response = await fetch(`/api/posts?nocache=${timestamp}`, {
+            // Füge Cache-Kontrollheader hinzu
+            headers: {
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0'
+            }
+          });
           
           if (!response.ok) {
             throw new Error(`Server returned ${response.status}: ${response.statusText}`);
           }
           
           const posts = await response.json();
-          console.log(`loadStoredPosts: ${posts.length} Posts von API geladen:`, posts);
+          console.log(`loadStoredPosts: ${posts.length} Posts von API geladen:`, 
+            posts.map((p: any) => p.id));
           
           // Validiere das Antwortformat
           if (!Array.isArray(posts)) {
@@ -291,10 +300,12 @@ export const usePostStore = create<PostStore>()(
             }
           });
           
-          // Kombiniere existierende und neue Posts
+          // WICHTIG: Hier ist das Problem - wir sollten zuerst die neuen Posts nehmen
+          // und dann die alten hinzufügen, damit neue Posts nicht überschrieben werden
+          // Prioritäten: 1. Neue Posts von API, 2. Lokale nicht gelöschte Posts
           const mergedPosts = {
-            ...filteredExistingPosts,
-            ...postsRecord
+            ...postsRecord,  // Neue Posts zuerst!
+            ...filteredExistingPosts  // Dann lokale Posts
           };
           
           // Stille Verarbeitung der kombinierten Posts

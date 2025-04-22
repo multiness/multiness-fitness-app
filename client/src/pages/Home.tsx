@@ -216,10 +216,34 @@ export default function Home() {
 
   // Lade alle Posts und erzwinge neue Ansicht, wenn sich forceRender ändert
   useEffect(() => {
-    console.log("Home: Erzwungene Neuladung der Posts durch State-Änderung");
-    postStore.loadStoredPosts().then(() => {
-      console.log("Home: Posts neu geladen, Status aktualisiert");
-    });
+    console.log("Home: Erzwungene Neuladung der Posts durch State-Änderung", new Date().toISOString());
+    
+    // Direkt auf den neuesten Server-Stand bringen mit Timeout, um Rendern zu ermöglichen
+    const loadPosts = async () => {
+      try {
+        // Hole Posts mit Nocache-Parameter, um Caching zu verhindern
+        const timestamp = new Date().getTime();
+        const response = await fetch(`/api/posts?nocache=${timestamp}`);
+        
+        if (!response.ok) {
+          throw new Error(`Fehler beim Laden der Posts: ${response.status}`);
+        }
+        
+        const freshPosts = await response.json();
+        console.log(`Home: ${freshPosts.length} Posts direkt vom Server geladen`, 
+          freshPosts.map((p: any) => p.id));
+          
+        // Manuelles Update des Post-Stores
+        await postStore.loadStoredPosts();
+        
+        // Force-Render nicht direkt erneut auslösen, um Rekursion zu vermeiden
+        console.log("Home: Posts neu geladen, Status aktualisiert");
+      } catch (error) {
+        console.error("Fehler beim Neuladen der Posts:", error);
+      }
+    };
+    
+    loadPosts();
   }, [forceRender]);
 
   // Behandle POST-Event von der FeedPost-Komponente
@@ -505,7 +529,27 @@ export default function Home() {
       {/* Feed */}
       <section>
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold">Neueste Beiträge</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-2xl font-bold">Neueste Beiträge</h2>
+            <Button 
+              size="sm" 
+              variant="ghost"
+              className="h-8 px-2 ml-2"
+              onClick={() => {
+                // Direkte Neuladen-Funktion mit Feedback
+                console.log("Manuelle Aktualisierung der Beiträge...");
+                setForceRender(Date.now());
+                toast({
+                  title: "Aktualisierung",
+                  description: "Beiträge werden neu geladen...",
+                });
+              }}
+            >
+              <RefreshCw className="h-4 w-4 mr-1" />
+              <span className="text-xs">Aktualisieren</span>
+            </Button>
+          </div>
+          
           <Link href="/create/post" className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1">
             Beitrag erstellen <ArrowRight className="h-4 w-4" />
           </Link>
