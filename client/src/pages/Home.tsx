@@ -7,7 +7,7 @@ import GroupPreview from "@/components/GroupPreview";
 import ChallengeCard from "@/components/ChallengeCard";
 import FeedPost from "@/components/FeedPost";
 import EventSlider from "@/components/EventSlider";
-import { ArrowRight, Crown, Heart, Share2, Users, Trophy, Package, RefreshCw, Check, Loader2 } from "lucide-react";
+import { ArrowRight, Crown, Heart, Share2, Users, Trophy, Package, RefreshCw, Check, Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
 import { useLocation, Link } from "wouter";
 import { usePostStore } from "../lib/postStore";
 import { getChatId, getChatIdSync } from "../lib/chatService";
@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/carousel";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import GroupCarousel from "@/components/GroupCarousel";
 import { UserAvatar } from "@/components/UserAvatar";
 import ProductSlider from "@/components/ProductSlider";
@@ -593,14 +593,16 @@ export default function Home() {
           {directApiPosts.length > 0 ? (
             // Wenn die API Beiträge zurückgegeben hat, verwenden wir diese
             <div className="space-y-6">
-              {/* Banner für neue Beiträge, um auf die Aktualität hinzuweisen */}
+              {/* Banner für neue Beiträge - vereinfacht ohne AlertTitle */}
               <Alert className="bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800">
                 <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
-                <AlertTitle>Aktuelle Beiträge</AlertTitle>
-                <AlertDescription>
-                  Alle Beiträge werden direkt aus der Datenbank geladen. <br />
-                  <span className="text-xs text-muted-foreground">Zuletzt aktualisiert: {new Date().toLocaleTimeString()}</span>
-                </AlertDescription>
+                <div>
+                  <div className="font-medium">Aktuelle Beiträge</div>
+                  <AlertDescription>
+                    Alle Beiträge werden direkt aus der Datenbank geladen. <br />
+                    <span className="text-xs text-muted-foreground">Zuletzt aktualisiert: {new Date().toLocaleTimeString()}</span>
+                  </AlertDescription>
+                </div>
               </Alert>
               
               {directApiPosts.map((post: any) => (
