@@ -51,8 +51,8 @@ export default function UserSlider() {
         </Carousel>
       </div>
 
-      {/* Desktop: Grid-Layout - Größere Karten mit weniger Spalten */}
-      <div className="hidden md:grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
+      {/* Desktop: Grid-Layout - Größere Karten mit optimiertem Abstand */}
+      <div className="hidden md:grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8 mt-4">
         {users.slice(0, 10).map((user) => (
           <UserCard key={user.id} user={user} onVerify={toggleVerification} />
         ))}
@@ -63,44 +63,34 @@ export default function UserSlider() {
 
 function UserCard({ user, onVerify }: { user: any, onVerify: (id: number) => void }) {
   return (
-    <Card className="border-primary/10 hover:border-primary/20 transition-colors overflow-hidden shadow-sm">
-      <CardContent className="p-4 md:p-5">
-        <div className="flex flex-col items-center gap-4">
-          {/* Größerer Avatar-Container für bessere Sichtbarkeit */}
-          <div className="flex justify-center items-center">
-            <UserAvatar
-              userId={user.id}
-              size="lg"
-              className="w-full h-full scale-125" // Vergrößerter Avatar
-              disableLink={true}
-            />
-          </div>
-          
-          {/* Verbesserte Benutzernamendarstellung mit größerem Text */}
-          <div className="w-full text-center mt-1">
-            <h3 className="font-medium text-sm mb-1">
-              {user.name || user.username}
-            </h3>
-            
-            {/* Position/Rolle anzeigen wenn verfügbar */}
-            {user.position && (
-              <p className="text-xs text-muted-foreground mb-2">
-                {user.position}
-              </p>
-            )}
-            
-            {/* Verifikations-Button */}
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="text-sm py-1.5 px-3 h-auto w-full mt-1"
-              onClick={() => onVerify(user.id)}
-            >
-              {user.isVerified ? "Verifiziert" : "Verifizieren"}
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="flex flex-col items-center gap-6 p-4 md:p-5">
+      {/* Größerer Avatar-Container für bessere Sichtbarkeit */}
+      <div className="flex justify-center items-center relative">
+        <UserAvatar
+          userId={user.id}
+          size="lg"
+          className="w-full h-full scale-125" // Vergrößerter Avatar
+          disableLink={true}
+          hideVerifiedBadge={false} // Zeige Verifizierungsbadge wenn der Nutzer verifiziert ist
+        />
+      </div>
+      
+      {/* Benutzerinformationen untereinander */}
+      <div className="w-full text-center">
+        <h3 className="font-medium text-base mb-2">
+          {user.name || user.username}
+        </h3>
+        
+        {/* Position/Rolle anzeigen wenn verfügbar */}
+        {user.position && (
+          <p className="text-sm text-muted-foreground">
+            {user.position}
+          </p>
+        )}
+        
+        {/* Hinweis: Verifikations-Button entfernt, da die Verifikation nur
+            im Admin-Bereich erfolgen soll */}
+      </div>
+    </div>
   );
 }
