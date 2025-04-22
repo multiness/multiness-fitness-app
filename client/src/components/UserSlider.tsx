@@ -8,6 +8,7 @@ import { useUsers } from "../contexts/UserContext";
 import { UserAvatar } from "./UserAvatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { useState, useEffect } from "react";
+import { Link } from "wouter";
 
 export default function UserSlider() {
   const { toggleVerification } = useUsers();
@@ -32,7 +33,7 @@ export default function UserSlider() {
 
   return (
     <>
-      {/* Mobile: Karussell-Layout */}
+      {/* Mobile: Karussell-Layout mit optimiertem Abstand und Styling */}
       <div className="block md:hidden">
         <Carousel
           opts={{
@@ -41,9 +42,9 @@ export default function UserSlider() {
           }}
           className="w-full"
         >
-          <CarouselContent className="-ml-2">
+          <CarouselContent className="-ml-2 px-2">
             {users.map((user) => (
-              <CarouselItem key={user.id} className="pl-2 basis-[30%]">
+              <CarouselItem key={user.id} className="pl-3 pr-1 basis-[40%]">
                 <UserCard user={user} onVerify={toggleVerification} />
               </CarouselItem>
             ))}
@@ -63,34 +64,34 @@ export default function UserSlider() {
 
 function UserCard({ user, onVerify }: { user: any, onVerify: (id: number) => void }) {
   return (
-    <div className="flex flex-col items-center gap-6 p-4 md:p-5">
-      {/* Größerer Avatar-Container für bessere Sichtbarkeit */}
-      <div className="flex justify-center items-center relative">
-        <UserAvatar
-          userId={user.id}
-          size="lg"
-          className="w-full h-full scale-125" // Vergrößerter Avatar
-          disableLink={true}
-          hideVerifiedBadge={false} // Zeige Verifizierungsbadge wenn der Nutzer verifiziert ist
-        />
-      </div>
-      
-      {/* Benutzerinformationen untereinander */}
-      <div className="w-full text-center">
-        <h3 className="font-medium text-base mb-2">
-          {user.name || user.username}
-        </h3>
+    <Link href={`/profile/${user.id}`} className="block transition-all hover:opacity-90">
+      <div className="flex flex-col items-center gap-6 p-4 md:p-5 cursor-pointer">
+        {/* Größerer Avatar-Container für bessere Sichtbarkeit */}
+        <div className="flex justify-center items-center relative">
+          <UserAvatar
+            userId={user.id}
+            size="lg"
+            className="w-full h-full scale-125" // Vergrößerter Avatar
+            disableLink={true} // Wir verwenden jetzt Link oben statt im Avatar
+            hideVerifiedBadge={false} // Zeige Verifizierungsbadge wenn der Nutzer verifiziert ist
+            clickable={false} // Deaktiviere interne Klickbarkeit, da wir Link oben verwenden
+          />
+        </div>
         
-        {/* Position/Rolle anzeigen wenn verfügbar */}
-        {user.position && (
-          <p className="text-sm text-muted-foreground">
-            {user.position}
-          </p>
-        )}
-        
-        {/* Hinweis: Verifikations-Button entfernt, da die Verifikation nur
-            im Admin-Bereich erfolgen soll */}
+        {/* Benutzerinformationen untereinander */}
+        <div className="w-full text-center">
+          <h3 className="font-medium text-base mb-2">
+            {user.name || user.username}
+          </h3>
+          
+          {/* Position/Rolle anzeigen wenn verfügbar */}
+          {user.position && (
+            <p className="text-sm text-muted-foreground">
+              {user.position}
+            </p>
+          )}
+        </div>
       </div>
-    </div>
+    </Link>
   );
 }
