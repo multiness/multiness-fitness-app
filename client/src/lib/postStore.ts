@@ -74,11 +74,30 @@ const getUsersFromStorage = () => {
   return savedUsers ? JSON.parse(savedUsers) : [];
 };
 
-// Konstante für den lokalen Speicher
+// Konstanten für den lokalen Speicher
 const LOCAL_STORAGE_POSTS_KEY = 'fitness-app-posts';
-
-// Konstante für den Schlüssel der gelöschten Posts
 const DELETED_POSTS_KEY = 'fitness-app-deleted-posts';
+const POST_DELETE_TRIGGER_PREFIX = 'post-deleted-trigger-';
+
+// Hilfsfunktion zum Laden der gelöschten Post-IDs
+function getDeletedPostIds(): number[] {
+  try {
+    const deletedPostsStr = localStorage.getItem(DELETED_POSTS_KEY);
+    return deletedPostsStr ? JSON.parse(deletedPostsStr) : [];
+  } catch (error) {
+    console.error('Fehler beim Laden der gelöschten Posts:', error);
+    return [];
+  }
+}
+
+// Hilfsfunktion zum Speichern der gelöschten Post-IDs
+function saveDeletedPostIds(ids: number[]) {
+  try {
+    localStorage.setItem(DELETED_POSTS_KEY, JSON.stringify(ids));
+  } catch (error) {
+    console.error('Fehler beim Speichern der gelöschten Posts:', error);
+  }
+}
 
 // Event-Listener für lokale Storage-Änderungen, um Synchronisation zu verbessern
 if (typeof window !== 'undefined') {  
@@ -89,7 +108,9 @@ if (typeof window !== 'undefined') {
       
       // Löst eine manuelle Aktualisierung in allen geöffneten Tabs aus
       try {
-        const deleteEvent = new CustomEvent('force-deleted-posts-sync');
+        const deleteEvent = new CustomEvent('force-deleted-posts-sync', {
+          detail: { deletedIds: getDeletedPostIds() }
+        });
         window.dispatchEvent(deleteEvent);
         console.log('force-deleted-posts-sync Event ausgelöst');
       } catch (e) {
@@ -98,7 +119,7 @@ if (typeof window !== 'undefined') {
     }
     
     // Prüfe auf temporäre Schlüssel, die einen gelöschten Post signalisieren
-    if (event.key && event.key.startsWith('post-deleted-trigger-')) {
+    if (event.key && event.key.startsWith(POST_DELETE_TRIGGER_PREFIX)) {
       try {
         const deletedPostId = Number(event.newValue);
         if (!isNaN(deletedPostId)) {
@@ -109,11 +130,25 @@ if (typeof window !== 'undefined') {
             detail: { postId: deletedPostId } 
           });
           window.dispatchEvent(deleteEvent);
+          
+          // Füge die gelöschte ID zur Liste hinzu
+          const deletedIds = getDeletedPostIds();
+          if (!deletedIds.includes(deletedPostId)) {
+            deletedIds.push(deletedPostId);
+            saveDeletedPostIds(deletedIds);
+          }
         }
       } catch (e) {
         console.warn('Fehler bei der Verarbeitung der gelöschten Post-ID:', e);
       }
     }
+  });
+  
+  // Wenn ein Tab aktiv wird, synchronisiere die gelöschten Posts neu
+  window.addEventListener('focus', () => {
+    console.log('Tab ist aktiv geworden, lade gelöschte Posts');
+    const deletedIds = getDeletedPostIds();
+    console.log('Aktuell gelöschte Post-IDs:', deletedIds);
   });
 }
 
@@ -764,13 +799,18 @@ export const usePostStore = create<PostStore>()(
           // Stellen wir sicher, dass diese Änderung auch auf allen anderen Tabs/Geräten synchronisiert wird
           // Stoßen wir das Browser-weite storage Event an
           try {
-            // Setze einen temporären sessionStorage-Wert, um ein Storage-Event auszulösen
-            const tempKey = `post-deleted-trigger-${Date.now()}`;
-            sessionStorage.setItem(tempKey, String(postIdNum));
-            // Entferne den temporären Wert gleich wieder
-            setTimeout(() => sessionStorage.removeItem(tempKey), 100);
+            // Setze einen temporären localStorage-Wert, um ein Storage-Event auszulösen
+            // LocalStorage-Events werden zwischen Tabs/Browsern synchronisiert, sessionStorage nicht
+            const tempKey = `${POST_DELETE_TRIGGER_PREFIX}${Date.now()}`;
+            localStorage.setItem(tempKey, String(postIdNum));
+            
+            // Erst nach der erfolgten Synchronisierung im Storage entfernen wir den temporären Key
+            setTimeout(() => {
+              localStorage.removeItem(tempKey);
+              console.log(`Temporärer Key ${tempKey} für Post-Löschung entfernt`);
+            }, 500); // Längere Verzögerung um mehr Zeit für die Synchronisierung zu geben
           } catch (e) {
-            console.warn("Konnte sessionStorage nicht nutzen für Synchronisierung:", e);
+            console.warn("Konnte localStorage nicht nutzen für Synchronisierung:", e);
           }
           
           // Lokalen State aktualisieren
