@@ -593,33 +593,107 @@ export const usePostStore = create<PostStore>()(
         }
       },
 
-      updatePost: (postId, content) => {
-        const updatedPosts = {
-          ...get().posts,
-          [postId]: {
-            ...get().posts[postId],
-            content,
-            updatedAt: new Date()
+      updatePost: async (postId, content) => {
+        try {
+          console.log("updatePost aufgerufen mit:", { postId, content });
+          
+          // Server-Änderung ausführen
+          const response = await fetch(`/api/posts/${postId}`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ content }),
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
           }
-        };
-        
-        set({ posts: updatedPosts });
-        localStorage.setItem(LOCAL_STORAGE_POSTS_KEY, JSON.stringify(updatedPosts));
+          
+          const updatedPostFromServer = await response.json();
+          console.log("Antwort vom Server nach Post-Update:", updatedPostFromServer);
+          
+          // Lokalen State aktualisieren
+          const updatedPosts = {
+            ...get().posts,
+            [postId]: {
+              ...get().posts[postId],
+              content,
+              updatedAt: new Date()
+            }
+          };
+          
+          set({ posts: updatedPosts });
+          localStorage.setItem(LOCAL_STORAGE_POSTS_KEY, JSON.stringify(updatedPosts));
+          
+          // Lade die aktuellen Posts neu, um überall synchronisiert zu sein
+          await get().loadStoredPosts();
+        } catch (error) {
+          console.error('Fehler beim Aktualisieren des Posts:', error);
+          
+          // Lokalen State trotzdem aktualisieren als Fallback
+          const updatedPosts = {
+            ...get().posts,
+            [postId]: {
+              ...get().posts[postId],
+              content,
+              updatedAt: new Date()
+            }
+          };
+          
+          set({ posts: updatedPosts });
+          localStorage.setItem(LOCAL_STORAGE_POSTS_KEY, JSON.stringify(updatedPosts));
+        }
       },
 
-      deletePost: (postId) => {
-        const { [postId]: deletedPost, ...remainingPosts } = get().posts;
-        const { [postId]: deletedLikes, ...remainingLikes } = get().likes;
-        const { [postId]: deletedComments, ...remainingComments } = get().comments;
+      deletePost: async (postId) => {
+        try {
+          console.log("deletePost aufgerufen mit:", { postId });
+          
+          // Server-Löschung ausführen
+          const response = await fetch(`/api/posts/${postId}`, {
+            method: 'DELETE',
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
+          }
+          
+          console.log("Post erfolgreich vom Server gelöscht");
+          
+          // Lokalen State aktualisieren
+          const { [postId]: deletedPost, ...remainingPosts } = get().posts;
+          const { [postId]: deletedLikes, ...remainingLikes } = get().likes;
+          const { [postId]: deletedComments, ...remainingComments } = get().comments;
 
-        const updatedState = {
-          posts: remainingPosts,
-          likes: remainingLikes,
-          comments: remainingComments
-        };
-        
-        set(updatedState);
-        localStorage.setItem(LOCAL_STORAGE_POSTS_KEY, JSON.stringify(remainingPosts));
+          const updatedState = {
+            posts: remainingPosts,
+            likes: remainingLikes,
+            comments: remainingComments
+          };
+          
+          set(updatedState);
+          localStorage.setItem(LOCAL_STORAGE_POSTS_KEY, JSON.stringify(remainingPosts));
+          
+          // Lade die aktuellen Posts neu, um überall synchronisiert zu sein
+          await get().loadStoredPosts();
+        } catch (error) {
+          console.error('Fehler beim Löschen des Posts:', error);
+          
+          // Falls der Server-Aufruf scheitert, trotzdem lokal löschen
+          const { [postId]: deletedPost, ...remainingPosts } = get().posts;
+          const { [postId]: deletedLikes, ...remainingLikes } = get().likes;
+          const { [postId]: deletedComments, ...remainingComments } = get().comments;
+
+          const updatedState = {
+            posts: remainingPosts,
+            likes: remainingLikes,
+            comments: remainingComments
+          };
+          
+          set(updatedState);
+          localStorage.setItem(LOCAL_STORAGE_POSTS_KEY, JSON.stringify(remainingPosts));
+        }
       },
 
       hasActiveGoal: (userId) => {

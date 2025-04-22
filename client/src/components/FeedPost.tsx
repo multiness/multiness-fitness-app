@@ -218,23 +218,41 @@ export default function FeedPost({ post }: FeedPostProps) {
     }
   };
 
-  const handleEdit = () => {
+  const handleEdit = async () => {
     if (!editContent.trim()) return;
-    postStore.updatePost(post.id, editContent);
-    setIsEditDialogOpen(false);
-    toast({
-      title: "Post bearbeitet",
-      description: "Dein Post wurde erfolgreich aktualisiert.",
-    });
+    try {
+      await postStore.updatePost(post.id, editContent);
+      setIsEditDialogOpen(false);
+      toast({
+        title: "Post bearbeitet",
+        description: "Dein Post wurde erfolgreich aktualisiert.",
+      });
+    } catch (error) {
+      console.error("Fehler beim Bearbeiten des Posts:", error);
+      toast({
+        title: "Fehler",
+        description: "Beim Bearbeiten des Posts ist ein Fehler aufgetreten.",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleDelete = () => {
-    postStore.deletePost(post.id);
-    setIsDeleteDialogOpen(false);
-    toast({
-      title: "Post gelöscht",
-      description: "Dein Post wurde erfolgreich gelöscht.",
-    });
+  const handleDelete = async () => {
+    try {
+      await postStore.deletePost(post.id);
+      setIsDeleteDialogOpen(false);
+      toast({
+        title: "Post gelöscht",
+        description: "Dein Post wurde erfolgreich gelöscht.",
+      });
+    } catch (error) {
+      console.error("Fehler beim Löschen des Posts:", error);
+      toast({
+        title: "Fehler",
+        description: "Beim Löschen des Posts ist ein Fehler aufgetreten.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleComment = (e: React.FormEvent) => {
