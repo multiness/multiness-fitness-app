@@ -72,9 +72,10 @@ import {
   adminViewBackups, 
   adminDeleteBackup 
 } from "../lib/backupService";
+import UserManagement from "@/components/UserManagement";
 
-// Benutzerverwaltung - für administrative Funktionen
-function UserManagement() {
+// Alte lokale Benutzerverwaltung - wird durch importierte Komponente ersetzt
+function OldUserManagement() {
   const { users, toggleLock, resetPassword, deleteUser } = useUsers();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
@@ -2205,7 +2206,7 @@ export default function Admin() {
       </div>
 
       {/* Datenbank Synchronisierung */}
-      {/* User Management */}
+      {/* User Management - importierte Komponente */}
       <div id="users">
         <UserManagement />
       </div>

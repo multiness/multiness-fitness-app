@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useUsers } from "@/contexts/UserContext";
+import type { User } from "@/types/userTypes";
 import {
   Card,
   CardContent,
@@ -47,7 +48,7 @@ import {
   Search,
   Shield,
   Trash2,
-  User,
+  User as UserIcon,
   UserCog,
   Users
 } from "lucide-react";
@@ -58,7 +59,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import UserAvatar from "@/components/UserAvatar";
-import type { User } from "@/types/userTypes";
+// User-Typ wird bereits aus dem Context importiert
 
 // Bearbeitungsfenster für Benutzer
 const EditUserDialog = ({
@@ -534,7 +535,8 @@ const UserManagement = () => {
                       <TableRow key={user.id}>
                         <TableCell className="flex items-center gap-3">
                           <UserAvatar
-                            user={user}
+                            userId={user.id}
+                            size="md"
                             className="h-10 w-10"
                           />
                           <div>
