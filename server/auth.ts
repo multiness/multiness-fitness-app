@@ -410,6 +410,36 @@ export function setupAuth(app: Express) {
       next(error);
     }
   });
+  
+  // Passwort-Reset für Admins (zeigt das neue Passwort an)
+  app.post("/api/users/:id/reset-password", requireAdmin, async (req, res, next) => {
+    try {
+      const userId = Number(req.params.id);
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "Benutzer nicht gefunden" });
+      }
+      
+      // Erstelle ein zufälliges temporäres Passwort
+      const temporaryPassword = generateRandomPassword(10);
+      
+      // Passwort hashen und aktualisieren
+      const hashedPassword = await hashPassword(temporaryPassword);
+      await storage.updateUser(user.id, {
+        password: hashedPassword,
+        passwordResetToken: null,
+        passwordResetExpires: null
+      });
+      
+      res.json({ 
+        message: "Passwort erfolgreich zurückgesetzt",
+        temporaryPassword: temporaryPassword
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
 
   // Passwort-Reset-Bestätigung (wird später implementiert)
   app.post("/api/reset-password/:token", async (req, res, next) => {
