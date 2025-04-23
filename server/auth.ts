@@ -133,17 +133,17 @@ export function setupAuth(app: Express) {
   passport.use(
     new LocalStrategy(
       {
-        usernameField: 'email', // E-Mail statt Benutzername verwenden
+        usernameField: 'username', // Zurück zu Benutzername für die Anmeldung
         passwordField: 'password'
       },
-      async (email, password, done) => {
+      async (username, password, done) => {
         try {
-          // Benutzer anhand der E-Mail suchen
-          const user = await storage.getUserByEmail(email);
+          // Benutzer anhand des Benutzernamens suchen
+          const user = await storage.getUserByUsername(username);
           
           // Wenn Benutzer nicht gefunden oder Passwort falsch
           if (!user || !(await comparePasswords(password, user.password))) {
-            return done(null, false, { message: "Ungültige E-Mail oder Passwort" });
+            return done(null, false, { message: "Ungültiger Benutzername oder Passwort" });
           }
           
           // Erfolgreich authentifiziert

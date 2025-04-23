@@ -18,7 +18,7 @@ import { useLocation } from "wouter";
 
 // Interfaces angepasst für AWS Cognito-Kompatibilität
 interface LoginFormData {
-  email: string;
+  username: string;
   password: string;
 }
 
@@ -45,7 +45,7 @@ export const AuthComponent = ({
   const [activeTab, setActiveTab] = useState("login");
   const [formError, setFormError] = useState<string | null>(null);
   const [loginData, setLoginData] = useState<LoginFormData>({
-    email: "",
+    username: "",
     password: "",
   });
   const [registerData, setRegisterData] = useState<RegisterFormData>({
@@ -156,13 +156,13 @@ export const AuthComponent = ({
                   </Alert>
                 )}
                 <div className="space-y-2">
-                  <Label htmlFor="email">E-Mail</Label>
+                  <Label htmlFor="username">Benutzername</Label>
                   <Input 
-                    id="email" 
-                    type="email" 
-                    placeholder="deine@email.de" 
-                    value={loginData.email}
-                    onChange={(e) => setLoginData({...loginData, email: e.target.value})}
+                    id="username" 
+                    type="text" 
+                    placeholder="Benutzername" 
+                    value={loginData.username}
+                    onChange={(e) => setLoginData({...loginData, username: e.target.value})}
                     required
                   />
                 </div>
