@@ -1861,7 +1861,9 @@ function BannerManagement() {
                           <div className="font-medium mb-2">Web Format</div>
                           <div className="text-xs text-muted-foreground">
                             {position.webDimensions.width} x {position.webDimensions.height}px
-                            <div className="mt-1">Empfohlene Mindestgröße</div>
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            Empfohlene Mindestgröße
                           </div>
                         </div>
                       </div>
