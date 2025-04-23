@@ -61,7 +61,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import UserAvatar from "@/components/UserAvatar";
-import type { User } from "@/types/userTypes";
+import type { User as UserType } from "@/types/userTypes";
 
 // Context für temporäres Passwort
 type TemporaryPasswordContextType = {
