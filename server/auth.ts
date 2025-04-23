@@ -303,9 +303,24 @@ export function setupAuth(app: Express) {
 
   // Logout-Route
   app.post("/api/logout", (req, res, next) => {
+    console.log('Logout-Anfrage erhalten für Benutzer:', req.user?.username);
+    
     req.logout((err) => {
-      if (err) return next(err);
-      res.sendStatus(200);
+      if (err) {
+        console.error('Logout-Fehler:', err);
+        return next(err);
+      }
+      
+      // Session zerstören
+      req.session.destroy((err) => {
+        if (err) {
+          console.error('Session-Destroy-Fehler:', err);
+          return next(err);
+        }
+        
+        console.log('Logout erfolgreich durchgeführt');
+        res.sendStatus(200);
+      });
     });
   });
 

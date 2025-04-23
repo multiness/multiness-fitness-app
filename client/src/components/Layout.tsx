@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useNotificationStore, getNotificationIcon } from "../lib/notificationStore";
+import { useAuth } from "../hooks/use-auth";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
@@ -277,11 +278,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem onClick={() => {
-                  const { logoutMutation } = require("../hooks/use-auth").useAuth();
-                  logoutMutation.mutate();
-                  setTimeout(() => {
-                    setLocation("/auth");
-                  }, 500);
+                  const { logoutMutation } = useAuth();
+                  logoutMutation.mutate(undefined, {
+                    onSuccess: () => {
+                      setLocation("/auth");
+                    }
+                  });
                 }}>
                   Abmelden
                 </DropdownMenuItem>
