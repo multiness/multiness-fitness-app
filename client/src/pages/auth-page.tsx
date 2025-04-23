@@ -23,6 +23,7 @@ interface LoginFormData {
 }
 
 interface RegisterFormData {
+  username: string;
   email: string;
   password: string;
   confirmPassword: string;
@@ -49,6 +50,7 @@ export const AuthComponent = ({
     password: "",
   });
   const [registerData, setRegisterData] = useState<RegisterFormData>({
+    username: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -116,8 +118,14 @@ export const AuthComponent = ({
     }
 
     // Basic validation
-    if (!registerData.email || !registerData.password || !registerData.firstName || !registerData.lastName) {
+    if (!registerData.username || !registerData.email || !registerData.password || !registerData.firstName || !registerData.lastName) {
       setFormError("Bitte fülle alle Pflichtfelder aus");
+      return;
+    }
+    
+    // Validierung des Benutzernamens (nur alphanumerisch)
+    if (!/^[a-zA-Z0-9_]+$/.test(registerData.username)) {
+      setFormError("Der Benutzername darf nur Buchstaben, Zahlen und Unterstriche enthalten");
       return;
     }
 
@@ -238,6 +246,17 @@ export const AuthComponent = ({
                       required
                     />
                   </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="username">Benutzername <span className="text-red-500">*</span></Label>
+                  <Input 
+                    id="username" 
+                    type="text" 
+                    placeholder="Wähle einen Benutzernamen (für die Anmeldung)" 
+                    value={registerData.username}
+                    onChange={(e) => setRegisterData({...registerData, username: e.target.value})}
+                    required
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="nickname">Nickname (optional)</Label>

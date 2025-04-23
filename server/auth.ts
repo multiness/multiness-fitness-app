@@ -209,16 +209,24 @@ export function setupAuth(app: Express) {
   // Registrierungsroute
   app.post("/api/register", async (req, res, next) => {
     try {
-      const { email, password, firstName, lastName, nickname } = req.body;
+      const { username, email, password, firstName, lastName, nickname } = req.body;
       
       // Prüfen, ob E-Mail bereits existiert
-      const existingUser = await storage.getUserByEmail(email);
-      if (existingUser) {
+      const existingEmailUser = await storage.getUserByEmail(email);
+      if (existingEmailUser) {
         return res.status(400).send("E-Mail wird bereits verwendet");
       }
       
-      // Benutzername aus Vor- und Nachname erzeugen
-      const username = `${firstName.toLowerCase()}${lastName.toLowerCase()}${Math.floor(Math.random() * 1000)}`;
+      // Prüfen, ob Benutzername bereits existiert
+      const existingUsernameUser = await storage.getUserByUsername(username);
+      if (existingUsernameUser) {
+        return res.status(400).send("Dieser Benutzername ist bereits vergeben");
+      }
+      
+      // Validieren des Benutzernamens (nur alphanumerische Zeichen und Unterstriche)
+      if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+        return res.status(400).send("Der Benutzername darf nur Buchstaben, Zahlen und Unterstriche enthalten");
+      }
       
       // Name aus Vor- und Nachname zusammensetzen
       const name = `${firstName} ${lastName}`;

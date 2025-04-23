@@ -125,7 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  // Logout-Mutation
+  // Logout-Mutation - optimiert ohne Verzögerung
   const logoutMutation = useMutation({
     mutationFn: async () => {
       // Direkte Verwendung von fetch mit bestimmten Optionen statt apiRequest
@@ -146,21 +146,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       return;
     },
+    onMutate: () => {
+      // Sofortige UI-Aktualisierung vor dem Abschluss des Netzwerkanfrage
+      // Dies beschleunigt den Abmeldeprozess aus Nutzersicht erheblich
+      queryClient.setQueryData(["/api/user"], null);
+    },
     onSuccess: () => {
       // Cache leeren
       queryClient.clear();
-      // Explizit den User auf null setzen
-      queryClient.setQueryData(["/api/user"], null);
       
       // Erfolgsmeldung
       toast({
         title: "Abgemeldet",
         description: "Du wurdest erfolgreich abgemeldet.",
       });
-      
-      console.log("Logout erfolgreich durchgeführt");
     },
     onError: (error: Error) => {
+      // Cache-Aktualisierung rückgängig machen, falls ein Fehler auftritt
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      
       console.error("Logout fehlgeschlagen:", error);
       toast({
         title: "Abmeldung fehlgeschlagen",
