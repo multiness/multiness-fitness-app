@@ -81,6 +81,21 @@ export default function Admin() {
   const postStore = usePostStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [showVerifiedOnly, setShowVerifiedOnly] = useState(false);
+  const [error, setError] = useState<null | string>(null);
+
+  // Fehlerbehandlung
+  useEffect(() => {
+    const handleError = (err: Error) => {
+      console.error("Admin-Bereich Fehler:", err);
+      setError(`Fehler im Admin-Bereich: ${err.message}`);
+    };
+
+    window.addEventListener('error', (e) => handleError(e.error));
+    
+    return () => {
+      window.removeEventListener('error', (e) => handleError(e.error));
+    };
+  }, []);
 
   // Berechne das Datum der letzten Synchronisierung
   const lastSyncTime = challengeStore.lastFetched ? 
@@ -94,24 +109,52 @@ export default function Admin() {
 
   // Filtere Benutzer basierend auf Suche und Verifizierungsstatus
   const filteredUsers = users.filter(user => {
-    const matchesSearch = user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          user.name.toLowerCase().includes(searchQuery.toLowerCase());
-    if (showVerifiedOnly) {
-      return user.isVerified && matchesSearch;
+    try {
+      const matchesSearch = user.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          user.name?.toLowerCase().includes(searchQuery.toLowerCase());
+      if (showVerifiedOnly) {
+        return user.isVerified && matchesSearch;
+      }
+      return matchesSearch;
+    } catch (err) {
+      console.error("Fehler beim Filtern der Benutzer:", err);
+      return false;
     }
-    return matchesSearch;
   });
 
   const copyShortcode = (shortcode: string) => {
-    navigator.clipboard.writeText(`[banner position="${shortcode}"]`);
-    toast({
-      title: "Shortcode kopiert!",
-      description: "Fügen Sie diesen Code an der gewünschten Stelle Ihrer Website ein. Der Banner wird nur angezeigt, wenn er aktiv ist, ansonsten wird der Container automatisch ausgeblendet."
-    });
+    try {
+      navigator.clipboard.writeText(`[banner position="${shortcode}"]`);
+      toast({
+        title: "Shortcode kopiert!",
+        description: "Fügen Sie diesen Code an der gewünschten Stelle Ihrer Website ein. Der Banner wird nur angezeigt, wenn er aktiv ist, ansonsten wird der Container automatisch ausgeblendet."
+      });
+    } catch (err) {
+      console.error("Fehler beim Kopieren:", err);
+      toast({
+        title: "Fehler beim Kopieren",
+        description: "Der Shortcode konnte nicht kopiert werden.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
     <div className="container mx-auto p-4 pb-8 space-y-8">
+      {/* Fehleranzeige */}
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6" role="alert">
+          <strong className="font-bold">Fehler! </strong>
+          <span className="block sm:inline">{error}</span>
+          <button 
+            className="absolute top-0 bottom-0 right-0 px-4 py-3"
+            onClick={() => setError(null)}
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+      )}
+      
       {/* Insights Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <Card className="col-span-1">
@@ -235,22 +278,22 @@ export default function Admin() {
       </section>
 
       {/* Team-Verwaltung */}
-      <TeamManagement />
+      {typeof TeamManagement === 'function' && <TeamManagement />}
 
       {/* Gruppen-Synchronisierung */}
-      <GroupSyncManagement />
+      {typeof GroupSyncManagement === 'function' && <GroupSyncManagement />}
 
       {/* Backup-Verwaltung */}
-      <BackupManagement />
+      {typeof BackupManagement === 'function' && <BackupManagement />}
 
       {/* Produkt-Verwaltung */}
-      <ProductManagement />
+      {typeof ProductManagement === 'function' && <ProductManagement />}
       
       {/* Banner-Verwaltung */}
-      <BannerManagement />
+      {typeof BannerManagement === 'function' && <BannerManagement />}
       
       {/* Event-Verwaltung */}
-      <EventSection />
+      {typeof EventSection === 'function' && <EventSection />}
     </div>
   );
 }
