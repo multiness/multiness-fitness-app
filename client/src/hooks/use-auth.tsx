@@ -78,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     mutationFn: async (credentials: LoginData) => {
       // Cache leeren vor dem Login
       queryClient.clear();
+      localStorage.removeItem('fitness-app-user');
       
       const res = await apiRequest("POST", "/api/login", credentials);
       if (!res.ok) {
@@ -100,6 +101,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       
       console.log("Login erfolgreich durchgeführt für Benutzer:", userData.username);
+      
+      // Hard-Refresh nach Login, um alle Caches zu leeren
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 500);
     },
     onError: (error: Error) => {
       toast({

@@ -98,7 +98,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
                   
                   if (fullUserData) {
                     console.log("Vollständige Benutzerdaten gefunden:", fullUserData);
-                    setCurrentUser(fullUserData);
+                    // Wichtig: Hier verwenden wir die Daten vom Server, nicht vom LocalStorage
+                    // Das hilft bei Problemen mit abweichenden Benutzerdaten
+                    setCurrentUser({
+                      ...fullUserData,
+                      isAdmin: currentApiUser.isAdmin,  // Admin-Status direkt vom API-Benutzer übernehmen
+                    });
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(fullUserData));
                     return;
                   }
