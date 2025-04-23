@@ -38,6 +38,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [users, setUsers] = useState<User[]>([DEFAULT_USER]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
   // Hilfsfunktion zum Komprimieren von Bildern
   const compressImage = (dataUrl: string, maxWidth: number): Promise<string> => {

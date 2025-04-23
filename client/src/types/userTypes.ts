@@ -17,6 +17,14 @@ export type User = {
   teamRole: string | null;
   createdAt?: string | Date;
   updatedAt?: string | Date;
+  isLocked?: boolean; // Gibt an, ob das Benutzerkonto gesperrt ist
+  lockedReason?: string | null; // Grund für die Sperrung
+  lockDate?: string | Date | null; // Zeitpunkt der Sperrung
+  lastLogin?: string | Date | null; // Zeitpunkt der letzten Anmeldung
+  emailVerificationToken?: string | null; // Token für E-Mail-Bestätigung
+  emailVerificationExpires?: string | Date | null; // Ablaufzeit des Tokens
+  passwordResetToken?: string | null; // Token für Passwort-Reset
+  passwordResetExpires?: string | Date | null; // Ablaufzeit des Reset-Tokens
 };
 
 export interface UserContextType {
@@ -30,6 +38,11 @@ export interface UserContextType {
   getAllUsers: () => User[];
   createUser: (userData: Partial<User>) => User;
   getUsersFromStorage: () => User[];
+  toggleLock: (userId: number, reason?: string) => void; // Benutzer sperren/entsperren
+  updateUser: (userId: number, userData: Partial<User>) => void; // Benutzerdaten aktualisieren
+  resetPassword: (userId: number) => Promise<string | null>; // Passwort zurücksetzen und neues generieren
+  deleteUser: (userId: number) => Promise<boolean>; // Benutzer löschen
+  getUserById: (userId: number) => User | undefined; // Benutzer anhand ID abrufen
 }
 
 export type NotificationUser = {
