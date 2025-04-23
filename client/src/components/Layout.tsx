@@ -279,9 +279,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 )}
                 <DropdownMenuItem onClick={() => {
                   const { logoutMutation } = useAuth();
+                  console.log("Logout wird initiiert...");
                   logoutMutation.mutate(undefined, {
                     onSuccess: () => {
-                      setLocation("/auth");
+                      console.log("Logout erfolgreich, leite weiter zur Anmeldeseite");
+                      // Kurze Verzögerung für die Animation und Nachricht
+                      setTimeout(() => {
+                        setLocation("/auth");
+                        // Seite neu laden, um sicherzustellen, dass alle Daten zurückgesetzt werden
+                        window.location.reload();
+                      }, 300);
                     }
                   });
                 }}>

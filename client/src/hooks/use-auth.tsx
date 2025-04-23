@@ -128,19 +128,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Logout-Mutation
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/logout");
+      // Direkte Verwendung von fetch mit bestimmten Optionen statt apiRequest
+      const res = await fetch("/api/logout", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
+      
+      // Wenn nicht 2xx, dann werfen wir einen Fehler
       if (!res.ok) {
-        throw new Error("Abmeldung fehlgeschlagen");
+        const errorText = await res.text();
+        console.error("Logout Fehler:", errorText);
+        throw new Error("Abmeldung fehlgeschlagen: " + errorText);
       }
+      
+      return;
     },
     onSuccess: () => {
+      // Cache leeren
+      queryClient.clear();
+      // Explizit den User auf null setzen
       queryClient.setQueryData(["/api/user"], null);
+      
+      // Erfolgsmeldung
       toast({
         title: "Abgemeldet",
         description: "Du wurdest erfolgreich abgemeldet.",
       });
+      
+      console.log("Logout erfolgreich durchgeführt");
     },
     onError: (error: Error) => {
+      console.error("Logout fehlgeschlagen:", error);
       toast({
         title: "Abmeldung fehlgeschlagen",
         description: error.message,
