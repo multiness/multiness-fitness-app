@@ -84,7 +84,32 @@ export function UserProvider({ children }: { children: ReactNode }) {
               // Aktualisiere lokalen Speicher mit Server-Daten
               localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(apiUsers));
               
-              // Prüfe auf gespeicherten Current User ID
+              // WICHTIGE ÄNDERUNG: Versuche zuerst, den aktuellen Benutzer von der API zu holen
+              try {
+                console.log("Lade aktuellen Benutzer von der API...");
+                const userResponse = await fetch('/api/user');
+                
+                if (userResponse.ok) {
+                  const currentApiUser = await userResponse.json();
+                  console.log("Aktueller Benutzer von API geladen:", currentApiUser);
+                  
+                  // Benutzer vollständig aus der Liste laden, um alle Eigenschaften zu haben
+                  const fullUserData = apiUsers.find((u: User) => u.id === currentApiUser.id);
+                  
+                  if (fullUserData) {
+                    console.log("Vollständige Benutzerdaten gefunden:", fullUserData);
+                    setCurrentUser(fullUserData);
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(fullUserData));
+                    return;
+                  }
+                } else {
+                  console.log("Kein authentifizierter Benutzer gefunden, Status:", userResponse.status);
+                }
+              } catch (authError) {
+                console.warn("Fehler beim Abrufen des authentifizierten Benutzers:", authError);
+              }
+              
+              // Nur wenn kein authentifizierter Benutzer gefunden wurde, auf gespeicherten zurückgreifen
               const savedUser = localStorage.getItem(STORAGE_KEY);
               if (savedUser) {
                 try {
@@ -92,25 +117,24 @@ export function UserProvider({ children }: { children: ReactNode }) {
                   // WICHTIG: Immer den aktuellen Benutzer aus der API-Liste nehmen
                   const foundUser = apiUsers.find((u: User) => u.id === parsedUser.id);
                   if (foundUser) {
-                    console.log("Aktueller Benutzer von API aktualisiert:", foundUser);
+                    console.log("Benutzer aus localStorage in API gefunden:", foundUser);
                     setCurrentUser(foundUser);
-                    // Aktualisiere den lokalen Speicher mit der aktualisierten Version
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(foundUser));
                   } else {
-                    console.log("Benutzer nicht in API-Daten gefunden, verwende ersten Benutzer");
-                    setCurrentUser(apiUsers[0]);
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(apiUsers[0]));
+                    console.log("Benutzer nicht in API-Daten gefunden, setze null");
+                    setCurrentUser(null);
+                    localStorage.removeItem(STORAGE_KEY);
                   }
                 } catch (parseError) {
                   console.warn("Fehler beim Parsen des gespeicherten Benutzers:", parseError);
-                  setCurrentUser(apiUsers[0]);
-                  localStorage.setItem(STORAGE_KEY, JSON.stringify(apiUsers[0]));
+                  setCurrentUser(null);
+                  localStorage.removeItem(STORAGE_KEY);
                 }
               } else {
-                // Kein gespeicherter Benutzer, verwende den ersten aus der API
-                console.log("Kein gespeicherter Benutzer, verwende ersten Benutzer aus API");
-                setCurrentUser(apiUsers[0]);
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(apiUsers[0]));
+                // Kein gespeicherter oder authentifizierter Benutzer
+                console.log("Kein Benutzer gefunden, setze null");
+                setCurrentUser(null);
+                localStorage.removeItem(STORAGE_KEY);
               }
               
               setIsLoading(false);

@@ -171,6 +171,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Sofortige UI-Aktualisierung vor dem Abschluss des Netzwerkanfrage
       // Dies beschleunigt den Abmeldeprozess aus Nutzersicht erheblich
       queryClient.setQueryData(["/api/user"], null);
+      
+      // Auch im lokalen Speicher die Benutzerdaten entfernen
+      localStorage.removeItem('fitness-app-user');
+      
+      // Cache-Header invalidieren
+      document.cookie = 'fitness_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
     },
     onSuccess: () => {
       // Cache leeren
@@ -181,6 +187,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Abgemeldet",
         description: "Du wurdest erfolgreich abgemeldet.",
       });
+      
+      // Umleitung zur Login-Seite
+      setTimeout(() => {
+        window.location.href = '/auth';
+      }, 500);
     },
     onError: (error: Error) => {
       // Cache-Aktualisierung rückgängig machen, falls ein Fehler auftritt
