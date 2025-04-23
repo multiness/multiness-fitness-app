@@ -73,10 +73,7 @@ function Router() {
     useEffect(() => {
       // Prüfe, ob der Benutzer ein Admin ist
       if (!isLoading && (!user || !user.isAdmin)) {
-        console.log("Kein Admin-Zugriff:", user);
         navigate('/');
-      } else if (!isLoading && user && user.isAdmin) {
-        console.log("Admin-Zugriff gewährt für:", user.username);
       }
     }, [user, isLoading, navigate]);
     

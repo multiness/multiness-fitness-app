@@ -66,17 +66,6 @@ function generateToken(): string {
   return randomUUID();
 }
 
-// Hilfsfunktion zum Generieren eines zufälligen Passworts
-function generateRandomPassword(length: number): string {
-  const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
-  let password = "";
-  for (let i = 0; i < length; i++) {
-    const randomIndex = Math.floor(Math.random() * charset.length);
-    password += charset[randomIndex];
-  }
-  return password;
-}
-
 // Middleware zum Prüfen, ob ein Benutzer angemeldet ist
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
   if (!req.isAuthenticated()) {
@@ -417,36 +406,6 @@ export function setupAuth(app: Express) {
       // TODO: E-Mail mit Reset-Link senden
       
       res.json({ message: "Anweisungen zum Zurücksetzen des Passworts wurden an deine E-Mail-Adresse gesendet" });
-    } catch (error) {
-      next(error);
-    }
-  });
-  
-  // Passwort-Reset für Admins (zeigt das neue Passwort an)
-  app.post("/api/users/:id/reset-password", requireAdmin, async (req, res, next) => {
-    try {
-      const userId = Number(req.params.id);
-      const user = await storage.getUser(userId);
-      
-      if (!user) {
-        return res.status(404).json({ message: "Benutzer nicht gefunden" });
-      }
-      
-      // Erstelle ein zufälliges temporäres Passwort
-      const temporaryPassword = generateRandomPassword(10);
-      
-      // Passwort hashen und aktualisieren
-      const hashedPassword = await hashPassword(temporaryPassword);
-      await storage.updateUser(user.id, {
-        password: hashedPassword,
-        passwordResetToken: null,
-        passwordResetExpires: null
-      });
-      
-      res.json({ 
-        message: "Passwort erfolgreich zurückgesetzt",
-        temporaryPassword: temporaryPassword
-      });
     } catch (error) {
       next(error);
     }

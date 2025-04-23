@@ -1,4 +1,4 @@
-import React, { useState, useEffect, createContext, useContext } from "react";
+import React, { useState, useEffect } from "react";
 import { useUsers } from "@/contexts/UserContext";
 import {
   Card,
@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/card";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -40,10 +39,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   CheckCircle2,
-  ClipboardCopy,
   Edit,
   Key,
-  Loader2,
   Lock,
   LockOpen,
   MoreHorizontal,
@@ -61,23 +58,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import UserAvatar from "@/components/UserAvatar";
-import type { User as UserType } from "@/types/userTypes";
-
-// Context für temporäres Passwort
-type TemporaryPasswordContextType = {
-  temporaryPassword: string | null;
-  setTemporaryPassword: (password: string | null) => void;
-};
-
-const TemporaryPasswordContext = createContext<TemporaryPasswordContextType | null>(null);
-
-const useTemporaryPasswordContext = () => {
-  const context = useContext(TemporaryPasswordContext);
-  if (!context) {
-    throw new Error('useTemporaryPasswordContext muss innerhalb eines TemporaryPasswordProvider verwendet werden');
-  }
-  return context;
-};
+import type { User } from "@/types/userTypes";
 
 // Bearbeitungsfenster für Benutzer
 const EditUserDialog = ({
@@ -170,110 +151,34 @@ const EditUserDialog = ({
         </div>
       </div>
       <DialogFooter>
-        <DialogClose asChild>
-          <Button variant="outline">Abbrechen</Button>
-        </DialogClose>
         <Button onClick={handleSubmit}>Speichern</Button>
       </DialogFooter>
     </DialogContent>
   );
 };
 
-// Bestätigungsfenster für Passwort-Reset mit Anzeige des temporären Passworts
+// Bestätigungsfenster für Passwort-Reset
 const ResetPasswordDialog = ({
   user,
   onConfirm,
 }: {
   user: User | null;
-  onConfirm: () => Promise<void>;
+  onConfirm: () => void;
 }) => {
-  const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
-  const { temporaryPassword } = useTemporaryPasswordContext();
-  
   if (!user) return null;
-  
-  const handleConfirm = async () => {
-    setLoading(true);
-    await onConfirm();
-    setLoading(false);
-  };
-  
+
   return (
-    <DialogContent className="sm:max-w-[425px]">
+    <DialogContent>
       <DialogHeader>
         <DialogTitle>Passwort zurücksetzen</DialogTitle>
         <DialogDescription>
-          {!temporaryPassword ? (
-            "Möchten Sie das Passwort dieses Benutzers zurücksetzen? Ein neues temporäres Passwort wird generiert."
-          ) : (
-            "Das Passwort wurde erfolgreich zurückgesetzt. Notieren Sie das temporäre Passwort und teilen Sie es dem Benutzer mit."
-          )}
+          Möchten Sie wirklich das Passwort für {user.name} zurücksetzen?
+          Es wird ein temporäres Passwort generiert.
         </DialogDescription>
       </DialogHeader>
-      <div className="py-4">
-        <div className="flex items-center gap-3 p-3 border rounded-md">
-          <UserAvatar user={user} className="h-10 w-10" />
-          <div>
-            <p className="font-medium">{user.name}</p>
-            <p className="text-sm text-muted-foreground">@{user.username}</p>
-          </div>
-        </div>
-        
-        {temporaryPassword && (
-          <div className="mt-4">
-            <Label htmlFor="tempPassword">Temporäres Passwort</Label>
-            <div className="flex mt-1.5">
-              <Input 
-                id="tempPassword"
-                className="font-mono bg-secondary"
-                value={temporaryPassword}
-                readOnly
-                onClick={(e) => e.currentTarget.select()}
-              />
-              <Button
-                className="ml-2"
-                variant="outline"
-                size="icon"
-                onClick={() => {
-                  navigator.clipboard.writeText(temporaryPassword);
-                  toast({
-                    title: "Kopiert!",
-                    description: "Passwort wurde in die Zwischenablage kopiert",
-                  });
-                }}
-              >
-                <ClipboardCopy className="h-4 w-4" />
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1.5">
-              Klicken Sie auf das Feld, um das Passwort zu markieren, oder auf die Schaltfläche, um es zu kopieren.
-            </p>
-          </div>
-        )}
-      </div>
       <DialogFooter>
-        {!temporaryPassword ? (
-          <>
-            <DialogClose asChild>
-              <Button variant="outline">Abbrechen</Button>
-            </DialogClose>
-            <Button onClick={handleConfirm} disabled={loading}>
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Zurücksetzen...
-                </>
-              ) : (
-                "Passwort zurücksetzen"
-              )}
-            </Button>
-          </>
-        ) : (
-          <DialogClose asChild>
-            <Button>Schließen</Button>
-          </DialogClose>
-        )}
+        <Button variant="outline" onClick={() => {}}>Abbrechen</Button>
+        <Button variant="destructive" onClick={onConfirm}>Zurücksetzen</Button>
       </DialogFooter>
     </DialogContent>
   );
@@ -299,9 +204,7 @@ const DeleteUserDialog = ({
         </DialogDescription>
       </DialogHeader>
       <DialogFooter>
-        <DialogClose asChild>
-          <Button variant="outline">Abbrechen</Button>
-        </DialogClose>
+        <Button variant="outline" onClick={() => {}}>Abbrechen</Button>
         <Button variant="destructive" onClick={onConfirm}>Löschen</Button>
       </DialogFooter>
     </DialogContent>
@@ -339,27 +242,14 @@ const LockUserDialog = ({
         />
       </div>
       <DialogFooter>
-        <DialogClose asChild>
-          <Button variant="outline">Abbrechen</Button>
-        </DialogClose>
+        <Button variant="outline" onClick={() => {}}>Abbrechen</Button>
         <Button variant="destructive" onClick={() => onConfirm(reason)}>Sperren</Button>
       </DialogFooter>
     </DialogContent>
   );
 };
 
-const UserManagementWrapper = () => {
-  // Zustand für das angezeigte temporäre Passwort
-  const [temporaryPassword, setTemporaryPassword] = useState<string | null>(null);
-
-  return (
-    <TemporaryPasswordContext.Provider value={{ temporaryPassword, setTemporaryPassword }}>
-      <UserManagementContent />
-    </TemporaryPasswordContext.Provider>
-  );
-};
-
-const UserManagementContent = () => {
+const UserManagement = () => {
   const { 
     users, 
     toggleVerification, 
@@ -372,7 +262,6 @@ const UserManagementContent = () => {
   } = useUsers();
   
   const { toast } = useToast();
-  const { temporaryPassword, setTemporaryPassword } = useTemporaryPasswordContext();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -396,30 +285,22 @@ const UserManagementContent = () => {
     
     return matchesSearch;
   });
-  
+
   // Behandlung des Passwort-Resets
   const handleResetPassword = async () => {
     if (!selectedUser) return;
     
     try {
-      // Reset-Dialog-Status aktualisieren, um "Wird zurückgesetzt..." anzuzeigen
-      setTemporaryPassword(null);
-      
       const newPassword = await resetPassword(selectedUser.id);
+      setShowResetDialog(false);
       
       if (newPassword) {
-        setTemporaryPassword(newPassword);
-        // Wir schließen den Dialog NICHT, damit das Passwort angezeigt werden kann
-      } else {
-        setShowResetDialog(false);
         toast({
-          title: "Fehler",
-          description: "Das neue Passwort konnte nicht generiert werden.",
-          variant: "destructive",
+          title: "Passwort zurückgesetzt",
+          description: `Neues temporäres Passwort: ${newPassword}`,
         });
       }
     } catch (error) {
-      setShowResetDialog(false);
       toast({
         title: "Fehler",
         description: "Passwort konnte nicht zurückgesetzt werden.",
@@ -739,4 +620,4 @@ const UserManagementContent = () => {
   );
 };
 
-export default UserManagementWrapper;
+export default UserManagement;

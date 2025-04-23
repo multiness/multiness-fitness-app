@@ -78,7 +78,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     mutationFn: async (credentials: LoginData) => {
       // Cache leeren vor dem Login
       queryClient.clear();
-      localStorage.removeItem('fitness-app-user');
       
       const res = await apiRequest("POST", "/api/login", credentials);
       if (!res.ok) {
@@ -101,11 +100,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       
       console.log("Login erfolgreich durchgeführt für Benutzer:", userData.username);
-      
-      // Hard-Refresh nach Login, um alle Caches zu leeren
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 500);
     },
     onError: (error: Error) => {
       toast({
@@ -177,12 +171,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Sofortige UI-Aktualisierung vor dem Abschluss des Netzwerkanfrage
       // Dies beschleunigt den Abmeldeprozess aus Nutzersicht erheblich
       queryClient.setQueryData(["/api/user"], null);
-      
-      // Auch im lokalen Speicher die Benutzerdaten entfernen
-      localStorage.removeItem('fitness-app-user');
-      
-      // Cache-Header invalidieren
-      document.cookie = 'fitness_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
     },
     onSuccess: () => {
       // Cache leeren
@@ -193,11 +181,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Abgemeldet",
         description: "Du wurdest erfolgreich abgemeldet.",
       });
-      
-      // Umleitung zur Login-Seite
-      setTimeout(() => {
-        window.location.href = '/auth';
-      }, 500);
     },
     onError: (error: Error) => {
       // Cache-Aktualisierung rückgängig machen, falls ein Fehler auftritt
