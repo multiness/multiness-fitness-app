@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Post as DbPost, DailyGoal as DbDailyGoal } from '@shared/schema';
+import { Post as DbPost, DailyGoal as DbDailyGoal } from '../../../shared/schema';
 import { apiRequest } from './queryClient';
 
 export type Post = {

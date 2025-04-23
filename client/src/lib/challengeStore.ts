@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { mockChallenges } from '../data/mockData';
-import { Challenge as DbChallenge, ChallengeParticipant } from '@shared/schema';
+import { Challenge as DbChallenge, ChallengeParticipant } from '../../../shared/schema';
 import { apiRequest } from './queryClient';
 
 // Konstante für den lokalen Speicher

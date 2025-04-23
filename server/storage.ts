@@ -41,7 +41,7 @@ import {
   notifications,
   type Notification,
   type InsertNotification
-} from "@shared/schema";
+} from "../shared/schema";
 import { db } from "./db";
 import { eq, and, gte, lte, desc, asc, sql, like } from "drizzle-orm";
 

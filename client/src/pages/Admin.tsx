@@ -43,7 +43,7 @@ import {
   CalendarRange,
   CalendarDays,
 } from "lucide-react";
-import { DEFAULT_BANNER_POSITIONS } from "@shared/schema";
+import { DEFAULT_BANNER_POSITIONS } from "../../../shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
 import { format } from "date-fns";

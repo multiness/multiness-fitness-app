@@ -1,4 +1,4 @@
-import { User, Post, Challenge, Group } from "@shared/schema";
+import { User, Post, Challenge, Group } from "../../../shared/schema";
 
 // Lade gespeicherte Challenges aus dem localStorage
 const loadStoredChallenges = (): Challenge[] => {
