@@ -1,35 +1,45 @@
 import { useAuth } from "../hooks/use-auth";
 import { Loader2 } from "lucide-react";
-import { Redirect, Route } from "wouter";
+import { Redirect, Route, useLocation } from "wouter";
 
 export function ProtectedRoute({
   path,
   component: Component,
 }: {
   path: string;
-  component: React.ComponentType;
+  component: React.ComponentType<any>;
 }) {
   const { user, isLoading } = useAuth();
+  const [location] = useLocation();
 
-  if (isLoading) {
+  // Prüfe, ob der aktuelle Pfad diesem Pfad entspricht
+  const isCurrentPath = location === path;
+
+  if (isLoading && isCurrentPath) {
     return (
       <Route path={path}>
-        <div className="flex items-center justify-center min-h-screen">
-          <Loader2 className="h-8 w-8 animate-spin text-border" />
-        </div>
+        {(params) => (
+          <div className="flex items-center justify-center min-h-screen">
+            <Loader2 className="h-8 w-8 animate-spin text-border" />
+          </div>
+        )}
       </Route>
     );
   }
 
-  if (!user) {
+  if (!user && isCurrentPath) {
     return (
       <Route path={path}>
-        <Redirect to="/auth" />
+        {() => <Redirect to="/auth" />}
       </Route>
     );
   }
 
-  return <Route path={path} component={Component} />;
+  return (
+    <Route path={path}>
+      {(params) => <Component {...params} />}
+    </Route>
+  );
 }
 
 export function AdminRoute({
@@ -37,27 +47,37 @@ export function AdminRoute({
   component: Component,
 }: {
   path: string;
-  component: React.ComponentType;
+  component: React.ComponentType<any>;
 }) {
   const { user, isLoading } = useAuth();
+  const [location] = useLocation();
+  
+  // Prüfe, ob der aktuelle Pfad diesem Pfad entspricht
+  const isCurrentPath = location === path;
 
-  if (isLoading) {
+  if (isLoading && isCurrentPath) {
     return (
       <Route path={path}>
-        <div className="flex items-center justify-center min-h-screen">
-          <Loader2 className="h-8 w-8 animate-spin text-border" />
-        </div>
+        {(params) => (
+          <div className="flex items-center justify-center min-h-screen">
+            <Loader2 className="h-8 w-8 animate-spin text-border" />
+          </div>
+        )}
       </Route>
     );
   }
 
-  if (!user || !user.isAdmin) {
+  if ((!user || !user.isAdmin) && isCurrentPath) {
     return (
       <Route path={path}>
-        <Redirect to="/" />
+        {() => <Redirect to="/" />}
       </Route>
     );
   }
 
-  return <Route path={path} component={Component} />;
+  return (
+    <Route path={path}>
+      {(params) => <Component {...params} />}
+    </Route>
+  );
 }
