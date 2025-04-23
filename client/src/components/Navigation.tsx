@@ -1,18 +1,20 @@
-import { Home, Award, Users, MessageSquare, Plus } from "lucide-react";
+import { Home, Award, Users, MessageSquare, Plus, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useChatStore } from "../lib/chatService";
+import { useAuth } from "@/hooks/use-auth";
 
 interface NavigationProps {
   onCreateClick: () => void;
 }
 
 export default function Navigation({ onCreateClick }: NavigationProps) {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [isMobile, setIsMobile] = useState(true);
   const chatStore = useChatStore();
+  const { logoutMutation } = useAuth();
   
   // Holen der Gesamtanzahl ungelesener Nachrichten
   const totalUnreadCount = chatStore.getTotalUnreadCount();
@@ -32,6 +34,17 @@ export default function Navigation({ onCreateClick }: NavigationProps) {
   }, []);
 
   const isActive = (path: string) => location === path;
+
+  // Logout Funktion für beide Darstellungen (Mobil und Desktop)
+  const handleLogout = async () => {
+    try {
+      await logoutMutation.mutateAsync();
+      // Reload der Seite nach erfolgreichem Abmelden
+      window.location.reload();
+    } catch (error) {
+      console.error("Logout fehlgeschlagen:", error);
+    }
+  };
 
   // Auf Desktop-Geräten einen unauffälligeren Footer anzeigen
   if (!isMobile) {
@@ -58,6 +71,12 @@ export default function Navigation({ onCreateClick }: NavigationProps) {
               >
                 Erstellen
               </button>
+              <button 
+                className="inline underline cursor-pointer text-red-500"
+                onClick={handleLogout}
+              >
+                Abmelden
+              </button>
             </div>
           </div>
         </div>
@@ -67,75 +86,90 @@ export default function Navigation({ onCreateClick }: NavigationProps) {
 
   // Auf mobilen Geräten die ursprüngliche Navigation anzeigen
   return (
-    <nav className="fixed bottom-0 left-0 right-0 h-16 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
-      <div className="container max-w-xl mx-auto h-full">
-        {/* Navigation Items with Plus Button in the middle */}
-        <div className="grid grid-cols-5 h-full">
-          {/* First two items */}
-          <div className="col-span-2 grid grid-cols-2">
-            <Link href="/">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="w-full h-full rounded-none"
-              >
-                <Home className={`h-6 w-6 ${isActive("/") ? "text-primary" : "text-muted-foreground"}`} />
-              </Button>
-            </Link>
+    <>
+      {/* Abmeldebutton oben links */}
+      <div className="fixed top-2 right-2 z-50">
+        <Button
+          variant="outline"
+          size="sm"
+          className="text-xs px-2 py-1 h-8 border-red-500 text-red-500 hover:bg-red-50/10"
+          onClick={handleLogout}
+        >
+          <LogOut className="h-3 w-3 mr-1" />
+          Abmelden
+        </Button>
+      </div>
+      
+      <nav className="fixed bottom-0 left-0 right-0 h-16 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
+        <div className="container max-w-xl mx-auto h-full">
+          {/* Navigation Items with Plus Button in the middle */}
+          <div className="grid grid-cols-5 h-full">
+            {/* First two items */}
+            <div className="col-span-2 grid grid-cols-2">
+              <Link href="/">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="w-full h-full rounded-none"
+                >
+                  <Home className={`h-6 w-6 ${isActive("/") ? "text-primary" : "text-muted-foreground"}`} />
+                </Button>
+              </Link>
 
-            <Link href="/challenges">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="w-full h-full rounded-none"
-              >
-                <Award className={`h-6 w-6 ${isActive("/challenges") ? "text-primary" : "text-muted-foreground"}`} />
-              </Button>
-            </Link>
-          </div>
+              <Link href="/challenges">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="w-full h-full rounded-none"
+                >
+                  <Award className={`h-6 w-6 ${isActive("/challenges") ? "text-primary" : "text-muted-foreground"}`} />
+                </Button>
+              </Link>
+            </div>
 
-          {/* Center column for Plus Button */}
-          <div className="relative">
-            <Button
-              variant="outline"
-              size="icon"
-              type="button"
-              className="absolute left-1/2 -translate-x-1/2 -translate-y-1/3 w-14 h-14 rounded-full bg-background border-2 hover:bg-muted"
-              onClick={onCreateClick}
-            >
-              <Plus className="h-6 w-6 text-primary" />
-            </Button>
-          </div>
-
-          {/* Last two items */}
-          <div className="col-span-2 grid grid-cols-2">
-            <Link href="/groups">
+            {/* Center column for Plus Button */}
+            <div className="relative">
               <Button
-                variant="ghost"
+                variant="outline"
                 size="icon"
-                className="w-full h-full rounded-none"
+                type="button"
+                className="absolute left-1/2 -translate-x-1/2 -translate-y-1/3 w-14 h-14 rounded-full bg-background border-2 hover:bg-muted"
+                onClick={onCreateClick}
               >
-                <Users className={`h-6 w-6 ${isActive("/groups") ? "text-primary" : "text-muted-foreground"}`} />
+                <Plus className="h-6 w-6 text-primary" />
               </Button>
-            </Link>
+            </div>
 
-            <Link href="/chat">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="w-full h-full rounded-none relative"
-              >
-                <MessageSquare className={`h-6 w-6 ${isActive("/chat") ? "text-primary" : "text-muted-foreground"}`} />
-                {totalUnreadCount > 0 && (
-                  <div className="absolute top-3 right-3 flex items-center justify-center bg-primary text-primary-foreground rounded-full min-w-5 h-5 px-1 text-xs font-medium">
-                    {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
-                  </div>
-                )}
-              </Button>
-            </Link>
+            {/* Last two items */}
+            <div className="col-span-2 grid grid-cols-2">
+              <Link href="/groups">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="w-full h-full rounded-none"
+                >
+                  <Users className={`h-6 w-6 ${isActive("/groups") ? "text-primary" : "text-muted-foreground"}`} />
+                </Button>
+              </Link>
+
+              <Link href="/chat">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="w-full h-full rounded-none relative"
+                >
+                  <MessageSquare className={`h-6 w-6 ${isActive("/chat") ? "text-primary" : "text-muted-foreground"}`} />
+                  {totalUnreadCount > 0 && (
+                    <div className="absolute top-3 right-3 flex items-center justify-center bg-primary text-primary-foreground rounded-full min-w-5 h-5 px-1 text-xs font-medium">
+                      {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
+                    </div>
+                  )}
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+    </>
   );
 }
