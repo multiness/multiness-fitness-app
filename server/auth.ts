@@ -305,6 +305,9 @@ export function setupAuth(app: Express) {
   app.post("/api/logout", (req, res, next) => {
     console.log('Logout-Anfrage erhalten für Benutzer:', req.user?.username);
     
+    // Benutzer-ID für Protokollierung speichern
+    const username = req.user?.username;
+    
     req.logout((err) => {
       if (err) {
         console.error('Logout-Fehler:', err);
@@ -318,8 +321,18 @@ export function setupAuth(app: Express) {
           return next(err);
         }
         
-        console.log('Logout erfolgreich durchgeführt');
-        res.sendStatus(200);
+        // HTTP-Only Cookie löschen, das für die Session verwendet wird
+        res.clearCookie('connect.sid', { 
+          path: '/',
+          httpOnly: true,
+          sameSite: 'lax' 
+        });
+        
+        console.log('Logout erfolgreich durchgeführt für Benutzer:', username);
+        res.status(200).json({ 
+          success: true, 
+          message: "Erfolgreich abgemeldet" 
+        });
       });
     });
   });
