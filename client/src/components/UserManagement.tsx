@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useUsers } from "@/contexts/UserContext";
-import type { User } from "@/types/userTypes";
+import type { User as UserType } from "@/types/userTypes";
 import {
   Card,
   CardContent,
@@ -66,10 +66,10 @@ const EditUserDialog = ({
   user,
   onSave,
 }: {
-  user: User | null;
-  onSave: (userData: Partial<User>) => void;
+  user: UserType | null;
+  onSave: (userData: Partial<UserType>) => void;
 }) => {
-  const [userData, setUserData] = useState<Partial<User>>({});
+  const [userData, setUserData] = useState<Partial<UserType>>({});
 
   useEffect(() => {
     if (user) {
@@ -163,7 +163,7 @@ const ResetPasswordDialog = ({
   user,
   onConfirm,
 }: {
-  user: User | null;
+  user: UserType | null;
   onConfirm: () => void;
 }) => {
   if (!user) return null;
@@ -190,7 +190,7 @@ const DeleteUserDialog = ({
   user,
   onConfirm,
 }: {
-  user: User | null;
+  user: UserType | null;
   onConfirm: () => void;
 }) => {
   if (!user) return null;
@@ -217,7 +217,7 @@ const LockUserDialog = ({
   user,
   onConfirm,
 }: {
-  user: User | null;
+  user: UserType | null;
   onConfirm: (reason: string) => void;
 }) => {
   const [reason, setReason] = useState("");
@@ -264,7 +264,7 @@ const UserManagement = () => {
   
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -355,7 +355,7 @@ const UserManagement = () => {
   };
 
   // Behandlung der Benutzerbearbeitung
-  const handleUpdateUser = async (userData: Partial<User>) => {
+  const handleUpdateUser = async (userData: Partial<UserType>) => {
     if (!selectedUser) return;
     
     try {
@@ -376,7 +376,7 @@ const UserManagement = () => {
   };
 
   // Benutzeraktionen-Dropdown
-  const UserActions = ({ user }: { user: User }) => (
+  const UserActions = ({ user }: { user: UserType }) => (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="h-8 w-8 p-0">
