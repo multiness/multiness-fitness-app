@@ -73,6 +73,8 @@ import {
   adminDeleteBackup 
 } from "../lib/backupService";
 import UserManagementWrapper from "@/components/UserManagement";
+
+// Die alte UserManagement-Komponente wurde durch UserManagementWrapper ersetzt
         <CardContent>
           <div className="space-y-6">
             {/* Statistik */}
