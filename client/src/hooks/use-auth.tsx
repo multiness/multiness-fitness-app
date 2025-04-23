@@ -76,6 +76,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Login-Mutation
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
+      // Cache leeren vor dem Login
+      queryClient.clear();
+      
       const res = await apiRequest("POST", "/api/login", credentials);
       if (!res.ok) {
         const errorText = await res.text();
@@ -84,11 +87,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return await res.json();
     },
     onSuccess: (userData: User) => {
+      // Alle vorherigen Abfragen ungültig machen und neu laden
+      queryClient.invalidateQueries();
+      
+      // Danach explizit die Benutzerdaten setzen
       queryClient.setQueryData(["/api/user"], userData);
+      
+      // Erfolgsmeldung
       toast({
         title: "Erfolgreich angemeldet",
         description: "Willkommen zurück!",
       });
+      
+      console.log("Login erfolgreich durchgeführt für Benutzer:", userData.username);
     },
     onError: (error: Error) => {
       toast({
@@ -102,6 +113,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Registrierungs-Mutation
   const registerMutation = useMutation({
     mutationFn: async (data: RegisterData) => {
+      // Cache leeren vor der Registrierung
+      queryClient.clear();
+      
       const res = await apiRequest("POST", "/api/register", data);
       if (!res.ok) {
         const errorText = await res.text();
@@ -110,11 +124,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return await res.json();
     },
     onSuccess: (userData: User) => {
+      // Alle vorherigen Abfragen ungültig machen und neu laden
+      queryClient.invalidateQueries();
+      
+      // Danach explizit die Benutzerdaten setzen
       queryClient.setQueryData(["/api/user"], userData);
+      
       toast({
         title: "Registrierung erfolgreich",
         description: "Dein Konto wurde erstellt! Bitte bestätige deine E-Mail-Adresse.",
       });
+      
+      console.log("Registrierung erfolgreich durchgeführt für Benutzer:", userData.username);
     },
     onError: (error: Error) => {
       toast({
