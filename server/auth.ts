@@ -66,6 +66,17 @@ function generateToken(): string {
   return randomUUID();
 }
 
+// Hilfsfunktion zum Generieren eines zufälligen Passworts
+function generateRandomPassword(length: number): string {
+  const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+  let password = "";
+  for (let i = 0; i < length; i++) {
+    const randomIndex = Math.floor(Math.random() * charset.length);
+    password += charset[randomIndex];
+  }
+  return password;
+}
+
 // Middleware zum Prüfen, ob ein Benutzer angemeldet ist
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
   if (!req.isAuthenticated()) {

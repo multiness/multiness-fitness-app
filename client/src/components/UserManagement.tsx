@@ -286,21 +286,32 @@ const UserManagement = () => {
     return matchesSearch;
   });
 
+  // Zustand für das angezeigte temporäre Passwort
+  const [temporaryPassword, setTemporaryPassword] = useState<string | null>(null);
+  
   // Behandlung des Passwort-Resets
   const handleResetPassword = async () => {
     if (!selectedUser) return;
     
     try {
+      // Reset-Dialog-Status aktualisieren, um "Wird zurückgesetzt..." anzuzeigen
+      setTemporaryPassword(null);
+      
       const newPassword = await resetPassword(selectedUser.id);
-      setShowResetDialog(false);
       
       if (newPassword) {
+        setTemporaryPassword(newPassword);
+        // Wir schließen den Dialog NICHT, damit das Passwort angezeigt werden kann
+      } else {
+        setShowResetDialog(false);
         toast({
-          title: "Passwort zurückgesetzt",
-          description: `Neues temporäres Passwort: ${newPassword}`,
+          title: "Fehler",
+          description: "Das neue Passwort konnte nicht generiert werden.",
+          variant: "destructive",
         });
       }
     } catch (error) {
+      setShowResetDialog(false);
       toast({
         title: "Fehler",
         description: "Passwort konnte nicht zurückgesetzt werden.",
