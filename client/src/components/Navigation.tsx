@@ -86,20 +86,7 @@ export default function Navigation({ onCreateClick }: NavigationProps) {
 
   // Auf mobilen Geräten die ursprüngliche Navigation anzeigen
   return (
-    <>
-      {/* Abmeldebutton oben links */}
-      <div className="fixed top-2 right-2 z-50">
-        <Button
-          variant="outline"
-          size="sm"
-          className="text-xs px-2 py-1 h-8 border-red-500 text-red-500 hover:bg-red-50/10"
-          onClick={handleLogout}
-        >
-          <LogOut className="h-3 w-3 mr-1" />
-          Abmelden
-        </Button>
-      </div>
-      
+    <>      
       <nav className="fixed bottom-0 left-0 right-0 h-16 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
         <div className="container max-w-xl mx-auto h-full">
           {/* Navigation Items with Plus Button in the middle */}
