@@ -1,18 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { User } from "../types/userTypes";
-
-interface UserContextType {
-  users: User[];
-  currentUser: User | null;
-  updateCurrentUser: (userData: Partial<User>) => void;
-  toggleVerification: (userId: number) => void;
-  toggleTeamMember: (userId: number) => void;
-  toggleAdmin: (userId: number) => void;
-  updateTeamRole: (userId: number, teamRole: string) => void;
-  getAllUsers: () => User[];
-  createUser: (userData: Partial<User>) => User;
-  getUsersFromStorage: () => User[];
-}
+import { User, UserContextType } from "../types/userTypes";
+import { useToast } from "@/hooks/use-toast";
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
@@ -38,7 +26,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [users, setUsers] = useState<User[]>([DEFAULT_USER]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
+  const toast = { toast: (props: any) => console.log("Toast:", props) };
 
   // Hilfsfunktion zum Komprimieren von Bildern
   const compressImage = (dataUrl: string, maxWidth: number): Promise<string> => {
@@ -622,18 +610,242 @@ export function UserProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // Fehlende Funktionen aus UserTypes implementieren
+  
+  // Benutzer anhand ID abrufen
+  const getUserById = (userId: number): User | undefined => {
+    return users.find(user => user.id === userId);
+  };
+  
+  // Benutzer sperren/entsperren
+  const toggleLock = async (userId: number, reason?: string): Promise<void> => {
+    const userToUpdate = users.find(user => user.id === userId);
+    if (!userToUpdate) return;
+    
+    const isLocked = !userToUpdate.isLocked;
+    
+    // Updaten in lokaler Liste
+    const updatedUsers = users.map((user: User) =>
+      user.id === userId
+        ? { 
+            ...user, 
+            isLocked,
+            lockedReason: isLocked ? reason || null : null,
+            lockDate: isLocked ? new Date().toISOString() : null
+          }
+        : user
+    );
+    setUsers(updatedUsers);
+    
+    // Aktuellen Benutzer aktualisieren, falls es sich um denselben handelt
+    if (currentUser && currentUser.id === userId) {
+      const updatedCurrentUser = { 
+        ...currentUser, 
+        isLocked,
+        lockedReason: isLocked ? reason || null : null,
+        lockDate: isLocked ? new Date().toISOString() : null
+      };
+      setCurrentUser(updatedCurrentUser);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedCurrentUser));
+    }
+    
+    // Zum Server senden
+    try {
+      const response = await fetch(`/api/users/${userId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          isLocked,
+          lockedReason: isLocked ? reason || null : null,
+          lockDate: isLocked ? new Date().toISOString() : null
+        }),
+      });
+      
+      if (response.ok) {
+        console.log(`Sperrstatus des Benutzers ${userId} wurde erfolgreich aktualisiert`);
+      } else {
+        console.error(`Fehler beim Aktualisieren des Sperrstatus für Benutzer ${userId}:`, await response.text());
+      }
+    } catch (error) {
+      console.error("Fehler bei der Kommunikation mit dem Server:", error);
+    }
+    
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
+  };
+  
+  // Benutzer aktualisieren (allgemein)
+  const updateUser = async (userId: number, userData: Partial<User>): Promise<User> => {
+    const userToUpdate = users.find(user => user.id === userId);
+    if (!userToUpdate) throw new Error("Benutzer nicht gefunden");
+    
+    const updatedUser = { ...userToUpdate, ...userData };
+    
+    // In lokaler Liste aktualisieren
+    const updatedUsers = users.map((user: User) =>
+      user.id === userId ? updatedUser : user
+    );
+    setUsers(updatedUsers);
+    
+    // Aktuellen Benutzer aktualisieren, falls es sich um denselben handelt
+    if (currentUser && currentUser.id === userId) {
+      setCurrentUser(updatedUser);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedUser));
+    }
+    
+    // Zum Server senden
+    try {
+      const response = await fetch(`/api/users/${userId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+      });
+      
+      if (response.ok) {
+        console.log(`Benutzer ${userId} wurde erfolgreich aktualisiert`);
+        const savedUser = await response.json();
+        
+        // Lokale Änderungen haben Vorrang
+        const mergedUser = {
+          ...savedUser,
+          ...userData
+        };
+        
+        // Aktualisiere mit dem vom Server zurückgegebenen + lokalen Änderungen
+        const finalUpdatedUsers = users.map((user: User) =>
+          user.id === userId ? mergedUser : user
+        );
+        setUsers(finalUpdatedUsers);
+        
+        if (currentUser && currentUser.id === userId) {
+          setCurrentUser(mergedUser);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(mergedUser));
+        }
+        
+        localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(finalUpdatedUsers));
+        
+        return mergedUser;
+      } else {
+        console.error(`Fehler beim Aktualisieren des Benutzers ${userId}:`, await response.text());
+        localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
+        return updatedUser;
+      }
+    } catch (error) {
+      console.error("Fehler bei der Kommunikation mit dem Server:", error);
+      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
+      return updatedUser;
+    }
+  };
+  
+  // Passwort zurücksetzen
+  const resetPassword = async (userId: number): Promise<string | null> => {
+    try {
+      const response = await fetch(`/api/users/${userId}/reset-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log(`Passwort für Benutzer ${userId} wurde zurückgesetzt`);
+        return data.temporaryPassword || null;
+      } else {
+        console.error(`Fehler beim Zurücksetzen des Passworts für Benutzer ${userId}:`, await response.text());
+        return null;
+      }
+    } catch (error) {
+      console.error("Fehler bei der Kommunikation mit dem Server:", error);
+      return null;
+    }
+  };
+  
+  // Benutzer löschen
+  const deleteUser = async (userId: number): Promise<boolean> => {
+    // Optimistische UI-Aktualisierung
+    const updatedUsers = users.filter(user => user.id !== userId);
+    setUsers(updatedUsers);
+    
+    // Aktuellen Benutzer aktualisieren, falls gelöscht
+    if (currentUser && currentUser.id === userId) {
+      if (updatedUsers.length > 0) {
+        setCurrentUser(updatedUsers[0]);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedUsers[0]));
+      } else {
+        setCurrentUser(null);
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    }
+    
+    // Zum Server senden
+    try {
+      const response = await fetch(`/api/users/${userId}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        console.log(`Benutzer ${userId} wurde erfolgreich gelöscht`);
+        localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
+        return true;
+      } else {
+        console.error(`Fehler beim Löschen des Benutzers ${userId}:`, await response.text());
+        
+        // Bei Fehler Änderungen rückgängig machen
+        const originalUsers = [...users];
+        setUsers(originalUsers);
+        localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(originalUsers));
+        
+        if (currentUser && currentUser.id === userId) {
+          const userToRestore = originalUsers.find(user => user.id === userId);
+          if (userToRestore) {
+            setCurrentUser(userToRestore);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(userToRestore));
+          }
+        }
+        
+        return false;
+      }
+    } catch (error) {
+      console.error("Fehler bei der Kommunikation mit dem Server:", error);
+      
+      // Bei Fehler Änderungen rückgängig machen
+      const originalUsers = [...users];
+      setUsers(originalUsers);
+      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(originalUsers));
+      
+      if (currentUser && currentUser.id === userId) {
+        const userToRestore = originalUsers.find(user => user.id === userId);
+        if (userToRestore) {
+          setCurrentUser(userToRestore);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(userToRestore));
+        }
+      }
+      
+      return false;
+    }
+  };
+
   return (
     <UserContext.Provider value={{ 
       users, 
       currentUser, 
       updateCurrentUser, 
       toggleVerification,
-      toggleTeamMember,  // Neue Funktion hinzugefügt
-      toggleAdmin,       // Neue Funktion hinzugefügt
-      updateTeamRole,    // Neue Funktion hinzugefügt
+      toggleTeamMember,
+      toggleAdmin,
+      updateTeamRole,
       getAllUsers: () => users,
       createUser,
-      getUsersFromStorage: () => users // Gib die aktuelle Benutzerliste zurück, nicht mehr async
+      getUsersFromStorage: () => users,
+      toggleLock,
+      updateUser,
+      resetPassword,
+      deleteUser,
+      getUserById
     }}>
       {isLoading ? <div>Lade Benutzerdaten...</div> : children}
     </UserContext.Provider>

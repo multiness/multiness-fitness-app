@@ -42,6 +42,14 @@ import {
   Info,
   CalendarRange,
   CalendarDays,
+  UserCog,
+  UserX,
+  Key,
+  Lock,
+  Unlock,
+  Edit,
+  AlertTriangle,
+  MoreHorizontal,
 } from "lucide-react";
 import { DEFAULT_BANNER_POSITIONS } from "../../../shared/schema";
 import { useToast } from "@/hooks/use-toast";
@@ -64,6 +72,481 @@ import {
   adminViewBackups, 
   adminDeleteBackup 
 } from "../lib/backupService";
+
+// Benutzerverwaltung - für administrative Funktionen
+function UserManagement() {
+  const { users, toggleLock, resetPassword, deleteUser } = useUsers();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<"delete" | "reset" | "lock" | "unlock" | null>(null);
+  const [lockReason, setLockReason] = useState("");
+  const [isLockDialogOpen, setIsLockDialogOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState<string | null>(null);
+  const [isPasswordResetModalOpen, setIsPasswordResetModalOpen] = useState(false);
+  const { toast } = useToast();
+
+  // Benutzer nach Name oder Benutzernamen filtern
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = 
+      user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.username?.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSearch;
+  });
+
+  // Konto sperren Dialog öffnen
+  const openLockDialog = (userId: number) => {
+    setSelectedUserId(userId);
+    setLockReason("");
+    setIsLockDialogOpen(true);
+  };
+
+  // Bestätigungsdialog schließen und Zustände zurücksetzen
+  const closeConfirmDialog = () => {
+    setIsConfirmOpen(false);
+    setConfirmAction(null);
+    setSelectedUserId(null);
+  };
+
+  // Bestätigungsdialog öffnen
+  const openConfirmDialog = (userId: number, action: "delete" | "reset" | "lock" | "unlock") => {
+    setSelectedUserId(userId);
+    setConfirmAction(action);
+    setIsConfirmOpen(true);
+  };
+
+  // Bestätigte Aktion ausführen
+  const executeConfirmedAction = async () => {
+    if (!selectedUserId || !confirmAction) return;
+    
+    try {
+      const selectedUser = users.find(u => u.id === selectedUserId);
+      if (!selectedUser) return;
+
+      switch (confirmAction) {
+        case "delete":
+          await deleteUser(selectedUserId);
+          toast({
+            title: "Benutzer gelöscht",
+            description: `Das Konto von ${selectedUser.name} wurde erfolgreich gelöscht.`,
+          });
+          break;
+        case "reset":
+          const newPwd = await resetPassword(selectedUserId);
+          if (newPwd) {
+            setNewPassword(newPwd);
+            setIsPasswordResetModalOpen(true);
+          }
+          break;
+        case "lock":
+        case "unlock":
+          toggleLock(selectedUserId, confirmAction === "lock" ? "Administrativer Eingriff" : undefined);
+          toast({
+            title: confirmAction === "lock" ? "Konto gesperrt" : "Konto entsperrt",
+            description: confirmAction === "lock" 
+              ? `Das Konto von ${selectedUser.name} wurde gesperrt.` 
+              : `Das Konto von ${selectedUser.name} wurde entsperrt.`,
+            variant: confirmAction === "lock" ? "destructive" : "default",
+          });
+          break;
+      }
+    } catch (error) {
+      console.error("Fehler bei der Ausführung der Aktion:", error);
+      toast({
+        title: "Fehler",
+        description: "Die Aktion konnte nicht ausgeführt werden.",
+        variant: "destructive",
+      });
+    } finally {
+      closeConfirmDialog();
+    }
+  };
+
+  // Konto sperren mit Grund
+  const lockAccountWithReason = () => {
+    if (!selectedUserId) return;
+    
+    toggleLock(selectedUserId, lockReason || "Administrativer Eingriff");
+    
+    const selectedUser = users.find(u => u.id === selectedUserId);
+    if (selectedUser) {
+      toast({
+        title: "Konto gesperrt",
+        description: `Das Konto von ${selectedUser.name} wurde gesperrt.`,
+        variant: "destructive",
+      });
+    }
+    
+    setIsLockDialogOpen(false);
+    setSelectedUserId(null);
+    setLockReason("");
+  };
+
+  return (
+    <section className="mb-10">
+      <h2 className="text-2xl font-bold mb-6">Benutzerverwaltung</h2>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <UserCog className="h-5 w-5" />
+            Benutzerkonten verwalten
+          </CardTitle>
+          <CardDescription>
+            Hier können Sie Benutzerkonten sperren, entsperren, löschen oder Passwörter zurücksetzen.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            {/* Statistik */}
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-2xl font-bold text-primary">
+                    {users.length}
+                  </div>
+                  <p className="text-sm text-muted-foreground">Gesamte Benutzer</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-2xl font-bold text-red-600">
+                    {users.filter(u => u.isLocked).length}
+                  </div>
+                  <p className="text-sm text-muted-foreground">Gesperrte Konten</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-2xl font-bold text-yellow-600">
+                    {users.filter(u => !u.isVerified).length}
+                  </div>
+                  <p className="text-sm text-muted-foreground">Unbestätigte Konten</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-2xl font-bold text-green-600">
+                    {users.filter(u => u.isVerified && !u.isLocked).length}
+                  </div>
+                  <p className="text-sm text-muted-foreground">Aktive Konten</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Suchleiste */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Nutzer suchen..."
+                className="pl-9"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+
+            {/* Benutzerliste - Desktop Ansicht */}
+            <div className="hidden sm:block border rounded-md">
+              <div className="grid grid-cols-12 gap-2 p-3 font-medium text-sm border-b bg-muted/40">
+                <div className="col-span-4">Benutzer</div>
+                <div className="col-span-2">Status</div>
+                <div className="col-span-2">Registriert am</div>
+                <div className="col-span-4 text-right">Aktionen</div>
+              </div>
+              <ScrollArea className="h-[400px]">
+                {filteredUsers.map(user => (
+                  <div key={user.id} className="grid grid-cols-12 gap-2 p-3 items-center border-b last:border-b-0">
+                    <div className="col-span-4 flex items-center gap-2">
+                      <img 
+                        src={user.avatar || "https://via.placeholder.com/32"} 
+                        alt={user.name}
+                        className="w-8 h-8 rounded-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src = "https://via.placeholder.com/32";
+                        }}
+                      />
+                      <div>
+                        <div className="font-medium flex items-center gap-1">
+                          {user.name}
+                          {user.isVerified && <VerifiedBadge size="sm" />}
+                        </div>
+                        <div className="text-xs text-muted-foreground">@{user.username}</div>
+                      </div>
+                    </div>
+                    <div className="col-span-2">
+                      {user.isLocked ? (
+                        <Badge variant="destructive" className="gap-1">
+                          <Lock className="h-3 w-3" />
+                          Gesperrt
+                        </Badge>
+                      ) : user.isVerified ? (
+                        <Badge variant="outline" className="text-green-600 border-green-200 gap-1 bg-green-50">
+                          <Check className="h-3 w-3" />
+                          Aktiv
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="gap-1">
+                          <AlertTriangle className="h-3 w-3" />
+                          Unbestätigt
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="col-span-2 text-sm text-muted-foreground">
+                      {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '-'}
+                    </div>
+                    <div className="col-span-4 flex justify-end gap-2">
+                      {user.isLocked ? (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => openConfirmDialog(user.id, "unlock")}
+                          disabled={user.id === 1 && user.username === "maxmustermann"}
+                          className="gap-1"
+                        >
+                          <Unlock className="h-3.5 w-3.5" />
+                          Entsperren
+                        </Button>
+                      ) : (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => openLockDialog(user.id)}
+                          disabled={user.id === 1 && user.username === "maxmustermann"}
+                          className="gap-1 border-amber-200 hover:bg-amber-50"
+                        >
+                          <Lock className="h-3.5 w-3.5" />
+                          Sperren
+                        </Button>
+                      )}
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => openConfirmDialog(user.id, "reset")}
+                        disabled={user.id === 1 && user.username === "maxmustermann"}
+                        className="gap-1"
+                      >
+                        <Key className="h-3.5 w-3.5" />
+                        Passwort
+                      </Button>
+                      <Button 
+                        variant="destructive" 
+                        size="sm"
+                        onClick={() => openConfirmDialog(user.id, "delete")}
+                        disabled={user.id === 1 && user.username === "maxmustermann"}
+                        className="gap-1"
+                      >
+                        <Trash className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </ScrollArea>
+            </div>
+            
+            {/* Benutzerliste - Mobile Ansicht */}
+            <div className="sm:hidden border rounded-md">
+              <div className="p-3 font-medium text-sm border-b bg-muted/40">
+                Benutzer & Aktionen
+              </div>
+              <ScrollArea className="h-[400px]">
+                {filteredUsers.map(user => (
+                  <div key={user.id} className="p-3 border-b last:border-b-0">
+                    {/* Benutzerinfo und Avatar */}
+                    <div className="flex items-center gap-2 mb-3">
+                      <img 
+                        src={user.avatar || "https://via.placeholder.com/32"} 
+                        alt={user.name}
+                        className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                        onError={(e) => {
+                          e.currentTarget.src = "https://via.placeholder.com/32";
+                        }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium flex items-center gap-1 truncate">
+                          {user.name}
+                          {user.isVerified && <VerifiedBadge size="sm" />}
+                        </div>
+                        <div className="text-xs text-muted-foreground">@{user.username}</div>
+                        <div className="flex mt-1 items-center gap-2">
+                          {user.isLocked ? (
+                            <Badge variant="destructive" className="gap-1">
+                              <Lock className="h-3 w-3" />
+                              Gesperrt
+                            </Badge>
+                          ) : user.isVerified ? (
+                            <Badge variant="outline" className="text-green-600 border-green-200 gap-1 bg-green-50">
+                              <Check className="h-3 w-3" />
+                              Aktiv
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="gap-1">
+                              <AlertTriangle className="h-3 w-3" />
+                              Unbestätigt
+                            </Badge>
+                          )}
+                          <span className="text-xs text-muted-foreground">
+                            Registriert: {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '-'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Aktionsbuttons */}
+                    <div className="flex flex-wrap gap-2">
+                      {user.isLocked ? (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => openConfirmDialog(user.id, "unlock")}
+                          disabled={user.id === 1 && user.username === "maxmustermann"}
+                          className="gap-1 flex-1"
+                        >
+                          <Unlock className="h-3.5 w-3.5" />
+                          Entsperren
+                        </Button>
+                      ) : (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => openLockDialog(user.id)}
+                          disabled={user.id === 1 && user.username === "maxmustermann"}
+                          className="gap-1 border-amber-200 hover:bg-amber-50 flex-1"
+                        >
+                          <Lock className="h-3.5 w-3.5" />
+                          Sperren
+                        </Button>
+                      )}
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => openConfirmDialog(user.id, "reset")}
+                        disabled={user.id === 1 && user.username === "maxmustermann"}
+                        className="gap-1 flex-1"
+                      >
+                        <Key className="h-3.5 w-3.5" />
+                        Passwort zurücksetzen
+                      </Button>
+                      <Button 
+                        variant="destructive" 
+                        size="sm"
+                        onClick={() => openConfirmDialog(user.id, "delete")}
+                        disabled={user.id === 1 && user.username === "maxmustermann"}
+                        className="gap-1"
+                      >
+                        <Trash className="h-3.5 w-3.5" />
+                        Löschen
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </ScrollArea>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Bestätigungsdialog */}
+      {isConfirmOpen && selectedUserId && confirmAction && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-background rounded-lg p-6 max-w-md w-full shadow-lg">
+            <h3 className="text-lg font-semibold mb-4">
+              {confirmAction === "delete" ? "Benutzer löschen" :
+               confirmAction === "reset" ? "Passwort zurücksetzen" :
+               confirmAction === "lock" ? "Konto sperren" : "Konto entsperren"}
+            </h3>
+            <p className="mb-6 text-muted-foreground">
+              {confirmAction === "delete" ? "Sind Sie sicher, dass Sie diesen Benutzer löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden." :
+               confirmAction === "reset" ? "Möchten Sie das Passwort dieses Benutzers zurücksetzen? Ein neues Passwort wird generiert." :
+               confirmAction === "lock" ? "Möchten Sie dieses Konto sperren? Der Benutzer kann sich nicht mehr anmelden." :
+               "Möchten Sie dieses Konto entsperren? Der Benutzer kann sich wieder anmelden."}
+            </p>
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={closeConfirmDialog}>
+                Abbrechen
+              </Button>
+              <Button 
+                variant={confirmAction === "delete" ? "destructive" : "default"}
+                onClick={executeConfirmedAction}
+              >
+                Bestätigen
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sperrgrund-Dialog */}
+      {isLockDialogOpen && selectedUserId && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-background rounded-lg p-6 max-w-md w-full shadow-lg">
+            <h3 className="text-lg font-semibold mb-4">Konto sperren</h3>
+            <p className="mb-4 text-muted-foreground">
+              Bitte geben Sie einen Grund für die Sperrung an (optional):
+            </p>
+            <Input
+              placeholder="Grund für die Sperrung"
+              value={lockReason}
+              onChange={(e) => setLockReason(e.target.value)}
+              className="mb-4"
+            />
+            <div className="flex justify-end gap-3">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setIsLockDialogOpen(false);
+                  setSelectedUserId(null);
+                }}
+              >
+                Abbrechen
+              </Button>
+              <Button variant="destructive" onClick={lockAccountWithReason}>
+                Konto sperren
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Passwort-Reset-Modal */}
+      {isPasswordResetModalOpen && newPassword && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-background rounded-lg p-6 max-w-md w-full shadow-lg">
+            <h3 className="text-lg font-semibold mb-4">Neues Passwort</h3>
+            <p className="mb-4 text-muted-foreground">
+              Das Passwort wurde zurückgesetzt. Bitte notieren Sie sich das neue Passwort und teilen Sie es dem Benutzer mit:
+            </p>
+            <div className="bg-muted p-3 rounded-md font-mono text-center mb-4 break-all">
+              {newPassword}
+            </div>
+            <div className="flex justify-end gap-3">
+              <Button 
+                variant="outline" 
+                className="gap-1"
+                onClick={() => {
+                  navigator.clipboard.writeText(newPassword);
+                  toast({
+                    title: "Kopiert!",
+                    description: "Das Passwort wurde in die Zwischenablage kopiert."
+                  });
+                }}
+              >
+                <Copy className="h-4 w-4" />
+                Kopieren
+              </Button>
+              <Button 
+                onClick={() => {
+                  setIsPasswordResetModalOpen(false);
+                  setNewPassword(null);
+                }}
+              >
+                Schließen
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
 
 // Team-Mitglied-Verwaltung
 function TeamManagement() {
@@ -1508,7 +1991,15 @@ function EventSection() {
 // Die BackupManagement-Komponente wurde bereits oben im Code implementiert
 
 export default function Admin() {
-  const { users, toggleVerification } = useUsers();
+  const { 
+    users, 
+    toggleVerification, 
+    toggleLock, 
+    updateUser, 
+    resetPassword, 
+    deleteUser,
+    getUserById 
+  } = useUsers();
   const [searchQuery, setSearchQuery] = useState("");
   const [location] = useLocation();
   
@@ -1714,6 +2205,11 @@ export default function Admin() {
       </div>
 
       {/* Datenbank Synchronisierung */}
+      {/* User Management */}
+      <div id="users">
+        <UserManagement />
+      </div>
+
       <section className="mb-6">
         <h2 className="text-2xl font-bold mb-6">Datenbank & Synchronisation</h2>
         <Card>
