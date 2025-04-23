@@ -276,7 +276,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     Admin Dashboard
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => {
+                  const { logoutMutation } = require("../hooks/use-auth").useAuth();
+                  logoutMutation.mutate();
+                  setTimeout(() => {
+                    setLocation("/auth");
+                  }, 500);
+                }}>
                   Abmelden
                 </DropdownMenuItem>
               </DropdownMenuContent>
