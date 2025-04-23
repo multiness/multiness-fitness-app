@@ -24,9 +24,25 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [location, setLocation] = useLocation();
   const { currentUser } = useUsers();
+  const { logoutMutation } = useAuth();
   
   // Hilfsfunktion zur Bestimmung des aktiven Menüpunkts
   const isActive = (path: string) => location === path;
+  
+  // Hilfsfunktion für das Abmelden
+  const handleLogout = async () => {
+    try {
+      await logoutMutation.mutateAsync();
+      console.log("Logout erfolgreich, leite weiter zur Anmeldeseite");
+      // Kurze Verzögerung für die Animation und Nachricht
+      setTimeout(() => {
+        // Seite neu laden, um sicherzustellen, dass alle Daten zurückgesetzt werden
+        window.location.reload();
+      }, 300);
+    } catch (error) {
+      console.error("Logout fehlgeschlagen:", error);
+    }
+  };
   
   // Responsives Design - prüfe Bildschirmgröße
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -277,21 +293,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     Admin Dashboard
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem onClick={() => {
-                  const { logoutMutation } = useAuth();
-                  console.log("Logout wird initiiert...");
-                  logoutMutation.mutate(undefined, {
-                    onSuccess: () => {
-                      console.log("Logout erfolgreich, leite weiter zur Anmeldeseite");
-                      // Kurze Verzögerung für die Animation und Nachricht
-                      setTimeout(() => {
-                        setLocation("/auth");
-                        // Seite neu laden, um sicherzustellen, dass alle Daten zurückgesetzt werden
-                        window.location.reload();
-                      }, 300);
-                    }
-                  });
-                }}>
+                <DropdownMenuItem onClick={handleLogout}>
                   Abmelden
                 </DropdownMenuItem>
               </DropdownMenuContent>
