@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/carousel";
 import { useProducts } from "@/contexts/ProductContext";
 import { Product } from "../lib/productStore";
+import { formatPrice } from "@/lib/utils";
 
 // Fallback-Bilder für verschiedene Produkttypen
 const defaultProductImages: Record<string, string> = {
@@ -75,9 +76,9 @@ export default function ProductSlider({ products: propProducts }: ProductSliderP
                         <div className="flex flex-wrap items-center gap-2">
                           {product.salePrice ? (
                             <>
-                              <span className="text-red-500 font-bold">€{Number(product.salePrice).toFixed(2)}</span>
+                              <span className="text-red-500 font-bold">€{formatPrice(product.salePrice)}</span>
                               <span className="text-xs line-through text-muted-foreground">
-                                €{Number(product.price).toFixed(2)}
+                                €{formatPrice(product.price)}
                               </span>
                               <Badge variant="outline" className="bg-red-50 text-red-500 ml-auto">
                                 Angebot
@@ -86,7 +87,7 @@ export default function ProductSlider({ products: propProducts }: ProductSliderP
                           ) : (
                             <div className="flex items-center gap-1">
                               <span className="text-red-500">Angebot</span>
-                              <span>€{Number(product.price).toFixed(2)}</span>
+                              <span>€{formatPrice(product.price)}</span>
                             </div>
                           )}
                         </div>
@@ -96,7 +97,7 @@ export default function ProductSlider({ products: propProducts }: ProductSliderP
                         ) : (
                           <div className="flex items-center gap-1">
                             <Euro className="h-4 w-4" />
-                            <span>{Number(product.price).toFixed(2)}</span>
+                            <span>{formatPrice(product.price)}</span>
                           </div>
                         )
                       )}
