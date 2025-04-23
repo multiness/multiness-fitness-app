@@ -138,17 +138,34 @@ export function setupAuth(app: Express) {
       },
       async (username, password, done) => {
         try {
+          console.log(`Versuche Login mit Benutzername: ${username}`);
+          
           // Benutzer anhand des Benutzernamens suchen
           const user = await storage.getUserByUsername(username);
           
-          // Wenn Benutzer nicht gefunden oder Passwort falsch
-          if (!user || !(await comparePasswords(password, user.password))) {
+          // Debug-Ausgabe
+          console.log(`Benutzer gefunden:`, user ? `ID: ${user.id}, Name: ${user.username}` : 'Nicht gefunden');
+          
+          // Wenn Benutzer nicht gefunden
+          if (!user) {
+            console.log('Benutzer nicht gefunden');
+            return done(null, false, { message: "Ungültiger Benutzername oder Passwort" });
+          }
+          
+          // Passwort überprüfen
+          const isValidPassword = await comparePasswords(password, user.password);
+          console.log(`Passwort gültig:`, isValidPassword);
+          
+          if (!isValidPassword) {
+            console.log('Ungültiges Passwort');
             return done(null, false, { message: "Ungültiger Benutzername oder Passwort" });
           }
           
           // Erfolgreich authentifiziert
+          console.log('Authentifizierung erfolgreich');
           return done(null, user);
         } catch (error) {
+          console.error('Fehler bei der Authentifizierung:', error);
           return done(error);
         }
       }
@@ -248,15 +265,30 @@ export function setupAuth(app: Express) {
 
   // Login-Route
   app.post("/api/login", (req, res, next) => {
+    console.log('Login-Anfrage erhalten mit Daten:', {
+      username: req.body.username,
+      email: req.body.email,
+      bodyKeys: Object.keys(req.body)
+    });
+    
     passport.authenticate("local", (err, user, info) => {
-      if (err) return next(err);
+      if (err) {
+        console.error('Authentifizierungsfehler:', err);
+        return next(err);
+      }
       
       if (!user) {
+        console.log('Authentifizierung fehlgeschlagen:', info?.message);
         return res.status(401).json({ message: info?.message || "Ungültige Anmeldeinformationen" });
       }
       
       req.login(user, (err) => {
-        if (err) return next(err);
+        if (err) {
+          console.error('Login-Fehler:', err);
+          return next(err);
+        }
+        
+        console.log('Login erfolgreich für Benutzer:', user.username);
         
         // Session-Daten setzen
         req.session.userId = user.id;
