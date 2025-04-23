@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/card";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -169,6 +170,9 @@ const EditUserDialog = ({
         </div>
       </div>
       <DialogFooter>
+        <DialogClose asChild>
+          <Button variant="outline">Abbrechen</Button>
+        </DialogClose>
         <Button onClick={handleSubmit}>Speichern</Button>
       </DialogFooter>
     </DialogContent>
@@ -295,7 +299,9 @@ const DeleteUserDialog = ({
         </DialogDescription>
       </DialogHeader>
       <DialogFooter>
-        <Button variant="outline" onClick={() => {}}>Abbrechen</Button>
+        <DialogClose asChild>
+          <Button variant="outline">Abbrechen</Button>
+        </DialogClose>
         <Button variant="destructive" onClick={onConfirm}>Löschen</Button>
       </DialogFooter>
     </DialogContent>
@@ -333,7 +339,9 @@ const LockUserDialog = ({
         />
       </div>
       <DialogFooter>
-        <Button variant="outline" onClick={() => {}}>Abbrechen</Button>
+        <DialogClose asChild>
+          <Button variant="outline">Abbrechen</Button>
+        </DialogClose>
         <Button variant="destructive" onClick={() => onConfirm(reason)}>Sperren</Button>
       </DialogFooter>
     </DialogContent>

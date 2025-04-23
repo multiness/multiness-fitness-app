@@ -72,6 +72,7 @@ import {
   adminViewBackups, 
   adminDeleteBackup 
 } from "../lib/backupService";
+import UserManagementWrapper from "@/components/UserManagement";
 
 // Benutzerverwaltung - für administrative Funktionen
 function UserManagement() {
