@@ -5,21 +5,11 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
-  CardFooter,
 } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
-import { useToast } from "@/hooks/use-toast";
-import { useUsers } from "@/contexts/UserContext";
-import { useGroupStore } from "@/lib/groupStore";
-import { useChallengeStore } from "@/lib/challengeStore";
-import { usePostStore } from "@/lib/postStore";
-import { 
+import {
   Users,
   Trophy,
   Users2,
@@ -54,34 +44,32 @@ import {
   Key,
   X,
   FileText,
-  Download
+  Download,
+  Eye,
+  Edit,
+  CalendarRange,
+  CalendarDays,
+  HardDrive,
+  Info
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { DEFAULT_BANNER_POSITIONS } from "../../../shared/schema";
+import { useToast } from "@/hooks/use-toast";
+import { Link } from "wouter";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { format } from "date-fns/format";
 import { de } from "date-fns/locale/de";
-// Mock-Funktionen für Backup-Verwaltung (später durch echte Implementierung ersetzen)
-const adminViewBackups = async () => {
-  // Mock-Daten für Backups
-  return [
-    { id: '1', date: new Date().toISOString(), size: '2.3 MB' },
-    { id: '2', date: new Date(Date.now() - 86400000).toISOString(), size: '2.1 MB' }
-  ];
-};
-
-const adminBackupDatabase = async () => {
-  // Mock-Funktion für Backup-Erstellung
-  return { success: true };
-};
-
-const adminRestoreBackup = async (id: string) => {
-  // Mock-Funktion für Backup-Wiederherstellung
-  return { success: true };
-};
-
-const adminDeleteBackup = async (id: string) => {
-  // Mock-Funktion für Backup-Löschung
-  return { success: true };
-};
+import { useUsers } from "@/contexts/UserContext";
+import { useGroupStore } from "@/lib/groupStore";
+import { useChallengeStore } from "@/lib/challengeStore";
+import { usePostStore } from "@/lib/postStore";
+import { useProducts } from "@/contexts/ProductContext";
+import { 
+  adminCreateBackup, 
+  adminRestoreBackup, 
+  adminViewBackups, 
+  adminDeleteBackup 
+} from "../lib/backupService";
 import UserManagementWrapper from "@/components/UserManagement";
 
 export default function Admin() {
@@ -343,7 +331,7 @@ function TeamManagement() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Nutzer suchen..."
+                placeholder="Team-Mitglied suchen..."
                 className="pl-9"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -380,102 +368,83 @@ function TeamManagement() {
                       </div>
                     </div>
                     <div className="col-span-2">
-                      {user.isTeamMember ? (
-                        <select
-                          className="w-full p-1 text-sm rounded border"
-                          value={user.teamRole || "member"}
-                          onChange={(e) => {
-                            updateTeamRole(user.id, e.target.value);
-                            toast({
-                              title: "Rolle aktualisiert",
-                              description: `Die Rolle von ${user.name} wurde geändert.`,
-                            });
-                          }}
-                        >
-                          {teamRoles.map(role => (
-                            <option key={role.id} value={role.id}>{role.label}</option>
-                          ))}
-                        </select>
-                      ) : (
-                        <span className="text-muted-foreground text-sm">-</span>
-                      )}
+                      <select
+                        className="w-full p-1 text-sm rounded border"
+                        value={user.teamRole || "member"}
+                        onChange={(e) => {
+                          updateTeamRole(user.id, e.target.value);
+                          toast({
+                            title: "Rolle aktualisiert",
+                            description: `Die Rolle von ${user.name} wurde zu "${e.target.value}" geändert.`
+                          });
+                        }}
+                        disabled={!user.isTeamMember}
+                      >
+                        {teamRoles.map(role => (
+                          <option key={role.id} value={role.id}>{role.label}</option>
+                        ))}
+                      </select>
                     </div>
                     <div className="col-span-2 text-center">
-                      <Switch
-                        checked={!!user.isTeamMember}
-                        disabled={user.id === 1 && user.username === "maxmustermann"}
-                        onCheckedChange={() => {
+                      <Button
+                        variant={user.isTeamMember ? "default" : "outline"}
+                        size="sm"
+                        className={`rounded-full h-6 min-w-[60px] ${user.isTeamMember ? 'bg-primary text-primary-foreground' : 'border-muted-foreground text-muted-foreground'}`}
+                        onClick={() => {
                           toggleTeamMember(user.id);
                           toast({
                             title: user.isTeamMember ? "Aus Team entfernt" : "Zum Team hinzugefügt",
-                            description: user.isTeamMember
-                              ? `${user.name} ist kein Team-Mitglied mehr.`
-                              : `${user.name} ist jetzt Teil des Teams.`,
+                            description: user.isTeamMember 
+                              ? `${user.name} wurde aus dem Team entfernt.` 
+                              : `${user.name} wurde zum Team hinzugefügt.`
                           });
                         }}
-                      />
+                      >
+                        {user.isTeamMember ? "Ja" : "Nein"}
+                      </Button>
                     </div>
                     <div className="col-span-2 text-center">
-                      <Switch
-                        checked={!!user.isAdmin}
-                        disabled={user.id === 1 && user.username === "maxmustermann"}
-                        onCheckedChange={() => {
+                      <Button
+                        variant={user.isAdmin ? "default" : "outline"}
+                        size="sm"
+                        className={`rounded-full h-6 min-w-[60px] ${user.isAdmin ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'border-muted-foreground text-muted-foreground'}`}
+                        onClick={() => {
                           toggleAdmin(user.id);
                           toast({
-                            title: user.isAdmin ? "Admin-Rechte entzogen" : "Als Admin festgelegt",
-                            description: user.isAdmin
-                              ? `${user.name} ist kein Administrator mehr.`
-                              : `${user.name} hat jetzt Administrator-Rechte.`,
+                            title: user.isAdmin ? "Admin-Rechte entzogen" : "Admin-Rechte gewährt",
+                            description: user.isAdmin 
+                              ? `${user.name} ist kein Administrator mehr.` 
+                              : `${user.name} ist jetzt Administrator.`
                           });
                         }}
-                      />
+                      >
+                        {user.isAdmin ? "Ja" : "Nein"}
+                      </Button>
                     </div>
-                    <div className="col-span-3 flex justify-end">
-                      <Button 
-                        variant="secondary" 
+                    <div className="col-span-3 flex justify-end gap-2">
+                      <Button
+                        variant="outline"
                         size="sm"
                         className="gap-1"
                         onClick={() => {
-                          if (user.isTeamMember) {
-                            toggleTeamMember(user.id);
-                            toast({
-                              title: "Aus Team entfernt",
-                              description: `${user.name} ist kein Team-Mitglied mehr.`,
-                            });
-                          } else {
-                            toggleTeamMember(user.id);
-                            toast({
-                              title: "Zum Team hinzugefügt",
-                              description: `${user.name} ist jetzt Teil des Teams.`,
-                            });
-                          }
+                          // Profil anzeigen
                         }}
-                        disabled={user.id === 1 && user.username === "maxmustermann"}
                       >
-                        {user.isTeamMember ? (
-                          <>
-                            <X className="h-3.5 w-3.5" />
-                            Entfernen
-                          </>
-                        ) : (
-                          <>
-                            <Plus className="h-3.5 w-3.5" />
-                            Hinzufügen
-                          </>
-                        )}
+                        <User className="h-3.5 w-3.5" />
+                        Profil
                       </Button>
                     </div>
                   </div>
                 ))}
               </ScrollArea>
             </div>
-            
+
             {/* Benutzerliste - Mobile Ansicht */}
             <div className="sm:hidden space-y-4">
               {filteredUsers.map(user => (
-                <Card key={user.id} className="overflow-hidden">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3 mb-3">
+                <Card key={user.id}>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-3 mb-4">
                       <img 
                         src={user.avatar || "https://via.placeholder.com/40"} 
                         alt={user.name}
@@ -484,8 +453,8 @@ function TeamManagement() {
                           e.currentTarget.src = "https://via.placeholder.com/40";
                         }}
                       />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium flex items-center gap-1 truncate">
+                      <div>
+                        <div className="font-medium flex items-center gap-1">
                           {user.name}
                           {user.isVerified && <VerifiedBadge size="sm" />}
                         </div>
@@ -493,95 +462,59 @@ function TeamManagement() {
                       </div>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-3 mb-3">
-                      <div className="flex justify-between items-center border rounded-md p-2">
-                        <span className="text-sm">Team-Mitglied</span>
-                        <Switch
-                          checked={!!user.isTeamMember}
-                          disabled={user.id === 1 && user.username === "maxmustermann"}
-                          onCheckedChange={() => {
-                            toggleTeamMember(user.id);
-                            toast({
-                              title: user.isTeamMember ? "Aus Team entfernt" : "Zum Team hinzugefügt",
-                              description: user.isTeamMember
-                                ? `${user.name} ist kein Team-Mitglied mehr.`
-                                : `${user.name} ist jetzt Teil des Teams.`,
-                            });
-                          }}
-                        />
+                    {/* Status & Rolle */}
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">Team-Mitglied</p>
+                        <Button
+                          variant={user.isTeamMember ? "default" : "outline"}
+                          size="sm"
+                          className={`w-full ${user.isTeamMember ? 'bg-primary text-primary-foreground' : 'border-muted-foreground text-muted-foreground'}`}
+                          onClick={() => toggleTeamMember(user.id)}
+                        >
+                          {user.isTeamMember ? "Ja" : "Nein"}
+                        </Button>
                       </div>
-                      <div className="flex justify-between items-center border rounded-md p-2">
-                        <span className="text-sm">Administrator</span>
-                        <Switch
-                          checked={!!user.isAdmin}
-                          disabled={user.id === 1 && user.username === "maxmustermann"}
-                          onCheckedChange={() => {
-                            toggleAdmin(user.id);
-                            toast({
-                              title: user.isAdmin ? "Admin-Rechte entzogen" : "Als Admin festgelegt",
-                              description: user.isAdmin
-                                ? `${user.name} ist kein Administrator mehr.`
-                                : `${user.name} hat jetzt Administrator-Rechte.`,
-                            });
-                          }}
-                        />
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">Administrator</p>
+                        <Button
+                          variant={user.isAdmin ? "default" : "outline"}
+                          size="sm"
+                          className={`w-full ${user.isAdmin ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'border-muted-foreground text-muted-foreground'}`}
+                          onClick={() => toggleAdmin(user.id)}
+                        >
+                          {user.isAdmin ? "Ja" : "Nein"}
+                        </Button>
                       </div>
                     </div>
-                    
-                    {user.isTeamMember && (
-                      <div className="mb-3">
-                        <label className="text-sm mb-1 block">Team-Rolle</label>
-                        <select
-                          className="w-full p-2 text-sm rounded border"
-                          value={user.teamRole || "member"}
-                          onChange={(e) => {
-                            updateTeamRole(user.id, e.target.value);
-                            toast({
-                              title: "Rolle aktualisiert",
-                              description: `Die Rolle von ${user.name} wurde geändert.`,
-                            });
-                          }}
-                        >
-                          {teamRoles.map(role => (
-                            <option key={role.id} value={role.id}>{role.label}</option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-                    
-                    <div className="flex justify-end">
-                      <Button 
-                        variant="secondary" 
-                        size="sm"
-                        className="gap-1"
-                        onClick={() => {
-                          if (user.isTeamMember) {
-                            toggleTeamMember(user.id);
-                            toast({
-                              title: "Aus Team entfernt",
-                              description: `${user.name} ist kein Team-Mitglied mehr.`,
-                            });
-                          } else {
-                            toggleTeamMember(user.id);
-                            toast({
-                              title: "Zum Team hinzugefügt",
-                              description: `${user.name} ist jetzt Teil des Teams.`,
-                            });
-                          }
-                        }}
-                        disabled={user.id === 1 && user.username === "maxmustermann"}
+
+                    {/* Teamrolle */}
+                    <div className="mb-4">
+                      <p className="text-xs text-muted-foreground mb-1">Team-Rolle</p>
+                      <select
+                        className="w-full p-2 rounded border"
+                        value={user.teamRole || "member"}
+                        onChange={(e) => updateTeamRole(user.id, e.target.value)}
+                        disabled={!user.isTeamMember}
                       >
-                        {user.isTeamMember ? (
-                          <>
-                            <X className="h-3.5 w-3.5" />
-                            Aus Team entfernen
-                          </>
-                        ) : (
-                          <>
-                            <Plus className="h-3.5 w-3.5" />
-                            Zum Team hinzufügen
-                          </>
-                        )}
+                        {teamRoles.map(role => (
+                          <option key={role.id} value={role.id}>{role.label}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Aktionen */}
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1 flex-1"
+                        onClick={() => {
+                          // Profil anzeigen
+                        }}
+                      >
+                        <User className="h-3.5 w-3.5" />
+                        Profil
                       </Button>
                     </div>
                   </CardContent>
@@ -595,149 +528,75 @@ function TeamManagement() {
   );
 }
 
-// Gruppen-Synchronisation Verwaltung
+// Gruppen-Synchronisierung verwalten
 function GroupSyncManagement() {
+  const [isResetting, setIsResetting] = useState(false);
+  const groupStore = useGroupStore();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
-  const [syncStatus, setSyncStatus] = useState<{
-    lastSync: string | null;
-    groupCount: number | null;
-    deletedCount: number | null;
-  }>({
-    lastSync: null,
-    groupCount: null,
-    deletedCount: null
-  });
 
-  // Event-Handler für erzwungene Synchronisierung
-  const handleForcedSync = (event: CustomEvent) => {
-    if (event.detail?.source === 'manual') {
-      synchronizeGroups();
-    }
-  };
-
-  // Effekt zum Einrichten des Event-Listeners
-  useEffect(() => {
-    window.addEventListener('forcedSync', handleForcedSync as EventListener);
-    return () => {
-      window.removeEventListener('forcedSync', handleForcedSync as EventListener);
-    };
-  }, []);
-
-  // Hilfsfunktion zum Abrufen des Status
-  const fetchSyncStatus = async () => {
-    try {
-      const response = await fetch('/api/groups/sync/status');
-      if (response.ok) {
-        const data = await response.json();
-        setSyncStatus({
-          lastSync: data.lastSync,
-          groupCount: data.groupCount,
-          deletedCount: data.deletedCount
-        });
-      }
-    } catch (error) {
-      console.error("Fehler beim Abrufen des Synchronisierungsstatus:", error);
-    }
-  };
-
-  // Lade den Status beim ersten Render
-  useEffect(() => {
-    fetchSyncStatus();
-  }, []);
-
-  // Funktion zur Synchronisierung der Gruppen
-  const synchronizeGroups = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch('/api/groups/sync', {
-        method: 'POST'
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
+  const handleResetGroupIds = async () => {
+    if (window.confirm('ACHTUNG: Alle Gruppen-IDs werden zurückgesetzt. Dies kann bestehende Chat-Zuordnungen beeinflussen. Fortfahren?')) {
+      try {
+        setIsResetting(true);
+        const result = await groupStore.resetGroupIds();
+        
         toast({
-          title: "Gruppen synchronisiert",
-          description: `${data.syncedCount} Gruppen wurden erfolgreich synchronisiert.`
+          title: "Gruppen-IDs zurückgesetzt",
+          description: "Alle Gruppen-IDs wurden erfolgreich zurückgesetzt und neu synchronisiert.",
+          variant: "default"
         });
-        fetchSyncStatus(); // Aktualisiere den Status nach der Synchronisierung
-      } else {
+        
+        console.log("Reset-Ergebnis:", result);
+      } catch (error) {
+        console.error("Fehler beim Zurücksetzen der Gruppen-IDs:", error);
         toast({
-          title: "Synchronisierungsfehler",
-          description: "Bei der Synchronisierung der Gruppen ist ein Fehler aufgetreten.",
+          title: "Fehler beim Zurücksetzen",
+          description: "Es ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.",
           variant: "destructive"
         });
+      } finally {
+        setIsResetting(false);
       }
-    } catch (error) {
-      console.error("Fehler bei der Gruppensynchronisierung:", error);
-      toast({
-        title: "Synchronisierungsfehler",
-        description: "Bei der Synchronisierung der Gruppen ist ein Fehler aufgetreten.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
     }
   };
 
   return (
-    <section className="mb-6">
+    <section>
       <h2 className="text-2xl font-bold mb-6">Gruppen-Synchronisation</h2>
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Users2 className="h-5 w-5" />
-            Gruppen synchronisieren
+            <RefreshCw className="h-5 w-5" />
+            Gruppen-IDs zurücksetzen
           </CardTitle>
           <CardDescription>
-            Synchronisieren Sie die Gruppen mit der Datenbank und bereinigen Sie gelöschte Gruppen
+            Bei Problemen mit der Gruppen-Synchronisation können Sie hier alle Gruppen-IDs zurücksetzen.
+            Dies führt zur Neugenerierung aller UUIDs. Bestehende Chat-Zuordnungen gehen dabei verloren.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-2xl font-bold text-primary">
-                    {syncStatus.groupCount !== null ? syncStatus.groupCount : "-"}
-                  </div>
-                  <p className="text-sm text-muted-foreground">Aktive Gruppen</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-2xl font-bold text-amber-600">
-                    {syncStatus.deletedCount !== null ? syncStatus.deletedCount : "-"}
-                  </div>
-                  <p className="text-sm text-muted-foreground">Gelöschte Gruppen</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-2xl font-bold">
-                    {syncStatus.lastSync ? new Date(syncStatus.lastSync).toLocaleString('de-DE') : "Noch nie"}
-                  </div>
-                  <p className="text-sm text-muted-foreground">Letzte Synchronisierung</p>
-                </CardContent>
-              </Card>
+            <div className="bg-amber-50 border border-amber-200 rounded-md p-4 text-amber-800 text-sm">
+              <div className="flex items-start">
+                <AlertTriangle className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-semibold mb-1">Achtung: Dieser Vorgang ist nicht umkehrbar!</p>
+                  <p>Setzen Sie die Gruppen-IDs nur zurück, wenn es Synchronisationsprobleme gibt oder explizit vom Support angewiesen.</p>
+                </div>
+              </div>
             </div>
             
             <div className="flex justify-end">
               <Button 
-                disabled={isLoading} 
-                onClick={synchronizeGroups}
-                className="gap-1"
+                variant="destructive" 
+                className="gap-1" 
+                disabled={isResetting} 
+                onClick={handleResetGroupIds}
               >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Synchronisiere...
-                  </>
+                {isResetting ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" /> Wird zurückgesetzt...</>
                 ) : (
-                  <>
-                    <RotateCw className="h-4 w-4" />
-                    Jetzt synchronisieren
-                  </>
+                  <><RotateCw className="h-4 w-4" /> Gruppen-IDs zurücksetzen</>
                 )}
               </Button>
             </div>
@@ -748,204 +607,273 @@ function GroupSyncManagement() {
   );
 }
 
-// Typ-Definition für Backup-Informationen
-interface BackupInfo {
-  id: string;
-  date: string;
-  size: string;
-}
-
 // Backup-Verwaltung
 function BackupManagement() {
-  const { toast } = useToast();
+  interface BackupInfo {
+    name: string;
+    timestamp: string;
+    size?: string;
+    isLocalBackup?: boolean;
+    isServerBackup?: boolean;
+  }
+  
   const [backups, setBackups] = useState<BackupInfo[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
+  const [isCreatingBackup, setIsCreatingBackup] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [selectedBackup, setSelectedBackup] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
-  // Backups abrufen
-  const loadBackups = async () => {
-    setIsLoading(true);
-    try {
-      const backupsData = await adminViewBackups();
-      // Stellen Sie sicher, dass die Daten dem erwarteten Format entsprechen
-      setBackups(backupsData as BackupInfo[]);
-    } catch (error) {
-      console.error("Fehler beim Abrufen der Backups:", error);
-      toast({
-        title: "Fehler",
-        description: "Die Backups konnten nicht geladen werden.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Backups beim ersten Render laden
+  // Backup-Daten beim Laden der Komponente abrufen
   useEffect(() => {
     loadBackups();
   }, []);
 
-  // Backup erstellen
-  const createBackup = async () => {
-    setIsCreating(true);
+  // Backups laden mit Polling für bessere mobile und Desktop Synchronisation
+  const loadBackups = async () => {
+    setIsLoading(true);
     try {
-      await adminBackupDatabase();
+      // Erste Abfrage der Backups
+      const availableBackups = await adminViewBackups();
+      setBackups(availableBackups as BackupInfo[]);
+      
+      // Nach einer kurzen Verzögerung erneut abfragen, um sicherzustellen, dass wir die neuesten Daten haben
+      // Dies hilft besonders auf mobilen Geräten, die möglicherweise eine schlechtere Verbindung haben
+      setTimeout(async () => {
+        try {
+          const refreshedBackups = await adminViewBackups();
+          
+          // Nur aktualisieren, wenn sich die Anzahl der Backups geändert hat
+          if (refreshedBackups.length !== availableBackups.length) {
+            console.log("🔄 Backup-Liste aktualisiert: Neue Anzahl =", refreshedBackups.length);
+            setBackups(refreshedBackups as BackupInfo[]);
+          } else {
+            console.log("✓ Backup-Liste ist aktuell");
+          }
+        } catch (refreshError) {
+          console.warn("Fehler bei der Aktualisierung der Backup-Liste:", refreshError);
+        } finally {
+          setIsLoading(false);
+        }
+      }, 1000); // 1 Sekunde Verzögerung für die Aktualisierung
+      
+    } catch (error) {
+      console.error("Fehler beim Laden der Backups:", error);
       toast({
-        title: "Backup erstellt",
-        description: "Die Datenbank wurde erfolgreich gesichert."
+        title: "Fehler beim Laden der Backups",
+        description: "Es ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.",
+        variant: "destructive"
       });
-      loadBackups(); // Liste aktualisieren
+      setIsLoading(false);
+    }
+  };
+
+  const createBackup = async () => {
+    try {
+      setIsCreatingBackup(true);
+      
+      // Backup erstellen
+      const result = await adminCreateBackup();
+      
+      if (result) {
+        toast({
+          title: "Backup erstellt",
+          description: "Das Backup wurde erfolgreich erstellt.",
+          variant: "default"
+        });
+        
+        // Backup-Liste aktualisieren
+        loadBackups();
+      } else {
+        throw new Error("Backup konnte nicht erstellt werden.");
+      }
     } catch (error) {
       console.error("Fehler beim Erstellen des Backups:", error);
       toast({
-        title: "Fehler",
-        description: "Das Backup konnte nicht erstellt werden.",
+        title: "Fehler beim Erstellen des Backups",
+        description: "Es ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.",
         variant: "destructive"
       });
     } finally {
-      setIsCreating(false);
+      setIsCreatingBackup(false);
     }
   };
 
-  // Backup wiederherstellen
-  const restoreBackup = async (backupId: string) => {
-    if (!confirm("Sind Sie sicher, dass Sie dieses Backup wiederherstellen möchten? Alle aktuellen Daten werden überschrieben.")) {
-      return;
-    }
-    
-    setIsRestoring(true);
-    setSelectedBackup(backupId);
-    try {
-      await adminRestoreBackup(backupId);
-      toast({
-        title: "Backup wiederhergestellt",
-        description: "Die Datenbank wurde erfolgreich wiederhergestellt."
-      });
-    } catch (error) {
-      console.error("Fehler bei der Wiederherstellung:", error);
-      toast({
-        title: "Fehler",
-        description: "Das Backup konnte nicht wiederhergestellt werden.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsRestoring(false);
-      setSelectedBackup(null);
+  const restoreBackup = async (id: string) => {
+    if (window.confirm("ACHTUNG: Beim Wiederherstellen eines Backups werden ALLE aktuellen Daten überschrieben. Dieser Vorgang kann nicht rückgängig gemacht werden. Möchten Sie fortfahren?")) {
+      try {
+        setIsRestoring(true);
+        setSelectedBackup(id);
+        
+        // Backup wiederherstellen
+        const result = await adminRestoreBackup(id);
+        
+        if (result) {
+          toast({
+            title: "Backup wiederhergestellt",
+            description: "Das Backup wurde erfolgreich wiederhergestellt. Die Anwendung wird neu geladen.",
+            variant: "default"
+          });
+          
+          // Kurze Verzögerung für den Toast
+          setTimeout(() => {
+            // Seite neu laden, um Änderungen zu übernehmen
+            window.location.reload();
+          }, 2000);
+        } else {
+          throw new Error("Backup konnte nicht wiederhergestellt werden.");
+        }
+      } catch (error) {
+        console.error("Fehler bei der Wiederherstellung des Backups:", error);
+        toast({
+          title: "Fehler bei der Wiederherstellung",
+          description: "Es ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.",
+          variant: "destructive"
+        });
+        setIsRestoring(false);
+        setSelectedBackup(null);
+      }
     }
   };
 
-  // Backup löschen
-  const deleteBackup = async (backupId: string) => {
-    if (!confirm("Sind Sie sicher, dass Sie dieses Backup löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.")) {
-      return;
+  const deleteBackup = async (id: string) => {
+    if (window.confirm("Sind Sie sicher, dass Sie dieses Backup löschen möchten? Dieser Vorgang kann nicht rückgängig gemacht werden.")) {
+      try {
+        // Backup löschen
+        const result = await adminDeleteBackup(id);
+        
+        if (result) {
+          toast({
+            title: "Backup gelöscht",
+            description: "Das Backup wurde erfolgreich gelöscht.",
+            variant: "default"
+          });
+          
+          // Backup-Liste aktualisieren
+          loadBackups();
+        } else {
+          throw new Error("Backup konnte nicht gelöscht werden.");
+        }
+      } catch (error) {
+        console.error("Fehler beim Löschen des Backups:", error);
+        toast({
+          title: "Fehler beim Löschen des Backups",
+          description: "Es ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.",
+          variant: "destructive"
+        });
+      }
     }
-    
+  };
+
+  const formatDate = (dateString: string) => {
     try {
-      await adminDeleteBackup(backupId);
-      toast({
-        title: "Backup gelöscht",
-        description: "Das Backup wurde erfolgreich gelöscht."
+      const date = new Date(dateString);
+      return date.toLocaleString('de-DE', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
       });
-      loadBackups(); // Liste aktualisieren
-    } catch (error) {
-      console.error("Fehler beim Löschen des Backups:", error);
-      toast({
-        title: "Fehler",
-        description: "Das Backup konnte nicht gelöscht werden.",
-        variant: "destructive"
-      });
+    } catch (e) {
+      console.error("Ungültiges Datumsformat:", dateString);
+      return dateString;
     }
   };
 
   return (
-    <section className="mb-6">
+    <section>
       <h2 className="text-2xl font-bold mb-6">Datenbank-Backup</h2>
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Archive className="h-5 w-5" />
+            <HardDrive className="h-5 w-5" />
             Backups verwalten
           </CardTitle>
           <CardDescription>
-            Sichern und wiederherstellen Sie die Datenbank
+            Erstellen und verwalten Sie Backups der Datenbank. Sie können jederzeit zu einem früheren Zustand zurückkehren.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-medium">Verfügbare Backups</h3>
+              <div>
+                <h3 className="text-lg font-medium">Verfügbare Backups</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Alle {backups.length} Backups werden angezeigt.
+                </p>
+              </div>
               <Button 
                 onClick={createBackup} 
-                disabled={isCreating}
+                disabled={isCreatingBackup}
                 className="gap-1"
               >
-                {isCreating ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Erstelle Backup...
-                  </>
+                {isCreatingBackup ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" /> Backup wird erstellt...</>
                 ) : (
-                  <>
-                    <Plus className="h-4 w-4" />
-                    Neues Backup erstellen
-                  </>
+                  <><Save className="h-4 w-4" /> Neues Backup erstellen</>
                 )}
               </Button>
             </div>
             
             {isLoading ? (
-              <div className="flex justify-center p-8">
+              <div className="flex items-center justify-center h-40">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
             ) : backups.length === 0 ? (
-              <div className="text-center p-8 border rounded-md bg-muted/20">
-                <Archive className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
-                <p className="text-muted-foreground">Keine Backups vorhanden</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Erstellen Sie Ihr erstes Backup, um Ihre Daten zu sichern.
+              <div className="bg-muted rounded-md p-8 text-center">
+                <Archive className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium mb-2">Keine Backups vorhanden</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Es wurden noch keine Backups erstellt. Erstellen Sie Ihr erstes Backup, um Ihre Daten zu sichern.
                 </p>
+                <Button onClick={createBackup} disabled={isCreatingBackup}>
+                  {isCreatingBackup ? "Backup wird erstellt..." : "Neues Backup erstellen"}
+                </Button>
               </div>
             ) : (
               <div className="border rounded-md overflow-hidden">
-                <div className="grid grid-cols-12 gap-2 p-3 font-medium text-sm border-b bg-muted/40">
-                  <div className="col-span-5">Datum</div>
-                  <div className="col-span-3">Größe</div>
-                  <div className="col-span-4 text-right">Aktionen</div>
+                <div className="grid grid-cols-12 gap-2 p-3 font-medium bg-muted/40 text-sm border-b">
+                  <div className="col-span-5">Name</div>
+                  <div className="col-span-3">Datum</div>
+                  <div className="col-span-2">Größe</div>
+                  <div className="col-span-2 text-right">Aktionen</div>
                 </div>
-                <ScrollArea className="max-h-[300px]">
+                <ScrollArea className="max-h-[400px]">
                   {backups.map((backup) => (
-                    <div key={backup.id} className="grid grid-cols-12 gap-2 p-3 items-center border-b last:border-b-0">
-                      <div className="col-span-5 font-medium">
-                        {new Date(backup.date).toLocaleString('de-DE')}
+                    <div key={backup.name} className="grid grid-cols-12 gap-2 p-3 items-center border-b last:border-b-0 hover:bg-muted/10">
+                      <div className="col-span-5 flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium truncate">{backup.name}</span>
                       </div>
-                      <div className="col-span-3 text-muted-foreground text-sm">
-                        {backup.size}
+                      <div className="col-span-3 text-sm text-muted-foreground">
+                        {formatDate(backup.timestamp)}
                       </div>
-                      <div className="col-span-4 flex justify-end gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => restoreBackup(backup.id)}
+                      <div className="col-span-2 text-sm text-muted-foreground">
+                        {backup?.size || "-"}
+                      </div>
+                      <div className="col-span-2 flex justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => restoreBackup(backup.name)}
                           disabled={isRestoring}
-                          className="gap-1"
+                          title="Backup wiederherstellen"
                         >
-                          {isRestoring && selectedBackup === backup.id ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          {isRestoring && selectedBackup === backup.name ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
-                            <Archive className="h-3.5 w-3.5" />
+                            <RotateCw className="h-4 w-4" />
                           )}
-                          Wiederherstellen
                         </Button>
-                        <Button 
-                          variant="destructive" 
-                          size="sm"
-                          onClick={() => deleteBackup(backup.id)}
-                          className="gap-1"
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => deleteBackup(backup.name)}
+                          disabled={isRestoring}
+                          title="Backup löschen"
                         >
-                          <Trash className="h-3.5 w-3.5" />
+                          <Trash className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
@@ -953,34 +881,20 @@ function BackupManagement() {
                 </ScrollArea>
               </div>
             )}
-          </div>
-        </CardContent>
-      </Card>
-    </section>
-  );
-}
-
-// Produkt-Verwaltung
-function ProductManagement() {
-  const [products, setProducts] = useState([]);
-  // Hier weitere Produkt-Verwaltungslogik
-
-  return (
-    <section className="mb-6">
-      <h2 className="text-2xl font-bold mb-6">Produkt-Verwaltung</h2>
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            Produkte verwalten
-          </CardTitle>
-          <CardDescription>
-            Hier können Sie Produkte hinzufügen, bearbeiten oder entfernen
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="text-muted-foreground text-center p-4">
-            <p>Produktverwaltung wird in einem zukünftigen Update implementiert.</p>
+            
+            <div className="bg-muted rounded-md p-4 text-sm">
+              <div className="flex items-start">
+                <Info className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0 text-muted-foreground" />
+                <div>
+                  <p className="font-medium mb-1">Über Backups</p>
+                  <p className="text-muted-foreground">
+                    Backups enthalten einen vollständigen Snapshot der Datenbank zum Zeitpunkt der Erstellung.
+                    Die Wiederherstellung eines Backups überschreibt alle aktuellen Daten.
+                    Es wird empfohlen, vor größeren Änderungen ein Backup zu erstellen.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -991,114 +905,256 @@ function ProductManagement() {
 // Banner-Verwaltung
 function BannerManagement() {
   const { toast } = useToast();
+  const [editingBanner, setEditingBanner] = useState<string | null>(null);
 
   const copyShortcode = (shortcode: string) => {
     navigator.clipboard.writeText(`[banner position="${shortcode}"]`);
     toast({
       title: "Shortcode kopiert!",
-      description: "Fügen Sie diesen Code an der gewünschten Stelle Ihrer Website ein."
+      description: "Fügen Sie diesen Code an der gewünschten Stelle Ihrer Website ein. Der Banner wird nur angezeigt, wenn er aktiv ist, ansonsten wird der Container automatisch ausgeblendet."
     });
   };
 
   return (
-    <section className="mb-6">
-      <h2 className="text-2xl font-bold mb-6">Marketing-Banner</h2>
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold mb-6">Banner-Verwaltung</h2>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {DEFAULT_BANNER_POSITIONS.map(position => (
+          <Card key={position.shortcode}>
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <div>
+                  <CardTitle>{position.name}</CardTitle>
+                  <CardDescription className="mt-1.5">
+                    {position.description}
+                    <div className="mt-2 p-2 bg-muted rounded-md text-xs">
+                      <div className="font-medium mb-2">Format-Anforderungen:</div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="p-2 border rounded-md">
+                          <div className="font-medium">App Format</div>
+                          <div className="text-muted-foreground">
+                            {position.appDimensions.width} x {position.appDimensions.height}px
+                          </div>
+                        </div>
+                        <div className="p-2 border rounded-md">
+                          <div className="font-medium">Web Format</div>
+                          <div className="text-muted-foreground">
+                            {position.webDimensions.width} x {position.webDimensions.height}px
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardDescription>
+                </div>
+                <Button
+                  variant="ghost" 
+                  size="icon"
+                  onClick={() => copyShortcode(position.shortcode)}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="border rounded-md overflow-hidden">
+                  <div className="h-[160px] bg-muted flex items-center justify-center">
+                    <ImageIcon className="h-16 w-16 text-muted-foreground" />
+                  </div>
+                  <div className="p-3 flex items-center justify-between bg-muted/40">
+                    <div>
+                      <div className="text-sm font-medium flex items-center gap-2">
+                        <Badge variant="outline" className="bg-amber-100 text-amber-800 hover:bg-amber-200">
+                          Inaktiv
+                        </Badge>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        Aktualisiert: Nie
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => setEditingBanner(editingBanner === position.shortcode ? null : position.shortcode)}
+                    >
+                      <Upload className="h-4 w-4 mr-1" />
+                      Bearbeiten
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Produkt-Verwaltung
+function ProductManagement() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const { products = [] } = useProducts();
+  const { toast } = useToast();
+
+  const filteredProducts = products.filter((product: any) => {
+    const matchesSearch =
+      product?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product?.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSearch;
+  });
+
+  return (
+    <section>
+      <h2 className="text-2xl font-bold mb-6">Produktverwaltung</h2>
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Bell className="h-5 w-5" />
-            Banner-Verwaltung
+            <Package className="h-5 w-5" />
+            Produkte verwalten
           </CardTitle>
           <CardDescription>
-            Erstellen und verwalten Sie Marketing-Banner, die an verschiedenen Stellen der Website angezeigt werden
+            Verwalten Sie die angebotenen Produkte, überwachen Sie deren Status und fügen Sie neue Produkte hinzu.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Header-Banner</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-12 bg-primary/10 border-2 border-dashed border-primary/20 rounded flex items-center justify-center mb-3">
-                    Vorschaubereich
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <Badge className="bg-green-600">Aktiv</Badge>
-                    </div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="gap-1"
-                      onClick={() => copyShortcode("header")}
-                    >
-                      <Copy className="h-3.5 w-3.5" /> 
-                      <span className="font-mono text-xs">header</span>
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Sidebar-Banner</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-12 bg-primary/10 border-2 border-dashed border-primary/20 rounded flex items-center justify-center mb-3">
-                    Vorschaubereich
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <Badge variant="outline">Inaktiv</Badge>
-                    </div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="gap-1"
-                      onClick={() => copyShortcode("sidebar")}
-                    >
-                      <Copy className="h-3.5 w-3.5" /> 
-                      <span className="font-mono text-xs">sidebar</span>
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Footer-Banner</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-12 bg-primary/10 border-2 border-dashed border-primary/20 rounded flex items-center justify-center mb-3">
-                    Vorschaubereich
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <Badge className="bg-green-600">Aktiv</Badge>
-                    </div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="gap-1"
-                      onClick={() => copyShortcode("footer")}
-                    >
-                      <Copy className="h-3.5 w-3.5" /> 
-                      <span className="font-mono text-xs">footer</span>
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+          {/* Stats Overview */}
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-2xl font-bold text-primary">
+                  {filteredProducts.filter((p: any) => p.isActive && !p.isArchived).length}
+                </div>
+                <p className="text-sm text-muted-foreground">Aktive Produkte</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-2xl font-bold text-yellow-600">
+                  {filteredProducts.filter((p: any) => p.validUntil && new Date(p.validUntil) < new Date()).length}
+                </div>
+                <p className="text-sm text-muted-foreground">Abgelaufene Produkte</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-2xl font-bold text-muted-foreground">
+                  {filteredProducts.filter((p: any) => p.isArchived).length}
+                </div>
+                <p className="text-sm text-muted-foreground">Archivierte Produkte</p>
+              </CardContent>
+            </Card>
           </div>
+
+          {/* Suchleiste und Aktionen */}
+          <div className="flex flex-col sm:flex-row gap-4 mb-6 items-start sm:items-center justify-between">
+            <div className="relative w-full sm:w-auto">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Produkte suchen..."
+                className="pl-9"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <Button asChild>
+              <Link href="/create/product">
+                <Plus className="h-4 w-4 mr-2" />
+                Neues Produkt anlegen
+              </Link>
+            </Button>
+          </div>
+
+          {/* Produkttabelle */}
+          {filteredProducts.length === 0 ? (
+            <div className="bg-muted rounded-md p-8 text-center">
+              <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium mb-2">Keine Produkte vorhanden</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Es wurden noch keine Produkte erstellt. Fügen Sie Ihr erstes Produkt hinzu.
+              </p>
+              <Button asChild>
+                <Link href="/create/product">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Neues Produkt anlegen
+                </Link>
+              </Button>
+            </div>
+          ) : (
+            <div className="border rounded-md">
+              <div className="grid grid-cols-12 gap-2 p-3 font-medium text-sm border-b bg-muted/40">
+                <div className="col-span-5">Produkt</div>
+                <div className="col-span-2">Preis</div>
+                <div className="col-span-2 text-center">Status</div>
+                <div className="col-span-3 text-right">Aktionen</div>
+              </div>
+              <ScrollArea className="h-[400px]">
+                {filteredProducts.map((product: any) => (
+                  <div key={product.id} className="grid grid-cols-12 gap-2 p-3 items-center border-b last:border-b-0">
+                    <div className="col-span-5 flex items-center gap-2">
+                      <div className="w-10 h-10 bg-muted rounded-md flex items-center justify-center">
+                        <Package className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <div className="font-medium">{product.name}</div>
+                        <div className="text-xs text-muted-foreground truncate max-w-[200px]">
+                          {product.description}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="col-span-2">
+                      <div className="font-medium">{product.price?.toFixed(2)} €</div>
+                      {product.msrp && (
+                        <div className="text-xs text-muted-foreground line-through">
+                          {product.msrp?.toFixed(2)} €
+                        </div>
+                      )}
+                    </div>
+                    <div className="col-span-2 text-center">
+                      {product.isArchived ? (
+                        <Badge variant="outline" className="bg-muted text-muted-foreground">
+                          Archiviert
+                        </Badge>
+                      ) : product.isActive ? (
+                        <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-200">
+                          Aktiv
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="bg-amber-100 text-amber-800 hover:bg-amber-200">
+                          Inaktiv
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="col-span-3 flex justify-end gap-1">
+                      <Button variant="ghost" size="icon" asChild>
+                        <Link href={`/products/${product.id}`}>
+                          <Eye className="h-4 w-4" />
+                        </Link>
+                      </Button>
+                      <Button variant="ghost" size="icon" asChild>
+                        <Link href={`/products/${product.id}/edit`}>
+                          <Edit className="h-4 w-4" />
+                        </Link>
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => {
+                          // Produkt archivieren
+                          toast({
+                            title: "Produkt archiviert",
+                            description: `"${product.name}" wurde erfolgreich archiviert.`,
+                          });
+                        }}
+                      >
+                        <Archive className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </ScrollArea>
+            </div>
+          )}
         </CardContent>
-        <CardFooter className="flex justify-end">
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Neuen Banner erstellen
-          </Button>
-        </CardFooter>
       </Card>
     </section>
   );
@@ -1107,21 +1163,40 @@ function BannerManagement() {
 // Event-Verwaltung
 function EventSection() {
   return (
-    <section className="mb-6">
-      <h2 className="text-2xl font-bold mb-6">Event-Verwaltung</h2>
+    <section className="mb-10">
+      <h2 className="text-2xl font-bold mb-6">Event Management</h2>
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
+            <CalendarDays className="h-5 w-5" />
             Events verwalten
           </CardTitle>
           <CardDescription>
-            Hier können Sie anstehende Events überwachen und verwalten
+            Verwalten Sie Events und Termine, prüfen Sie Anmeldungen und erstellen Sie neue Events.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-muted-foreground text-center p-4">
-            <p>Eventverwaltung wird in einem zukünftigen Update implementiert.</p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-between">
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Im Event-Manager können Sie alle Events einsehen, bearbeiten und archivieren.
+                Überwachen Sie Anmeldungen und verwalten Sie die Events zentral.
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button variant="outline" asChild>
+                <Link href="/events/manager">
+                  <CalendarRange className="h-4 w-4 mr-2" />
+                  Event-Manager öffnen
+                </Link>
+              </Button>
+              <Button asChild>
+                <Link href="/create/event">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Neues Event erstellen
+                </Link>
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
